@@ -20,52 +20,24 @@
  */
 package com.epam.reportportal.listeners;
 
-import com.github.avarabyeu.restendpoint.http.exception.RestEndpointIOException;
-import org.slf4j.Logger;
-
-import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.ta.reportportal.ws.model.launch.Mode;
-import com.google.common.base.Throwables;
 
 /**
  * Provide utilities for listeners
- * 
+ *
  * @author Aliaksei_Makayed
- * 
  */
 public class ListenersUtils {
 
-	private ListenersUtils() {
-	}
+    private ListenersUtils() {
+    }
 
-	/**
-	 * Handle exceptions in the listeners. log error in case of
-	 * {@link ReportPortalException} or {@link com.github.avarabyeu.restendpoint.http.exception.RestEndpointIOException} or
-	 * propagates exception exactly as-is, if and only if it is an instance of
-	 * {@link RuntimeException} or {@link Error}.
-	 * 
-	 * @param exception
-	 * @param logger
-	 * @param message
-	 */
-	public static void handleException(Exception exception, Logger logger, String message) {
-		if (ReportPortalException.class.isInstance(exception) || RestEndpointIOException.class.equals(exception.getClass())) {
-			if (logger != null) {
-				logger.error(message, exception);
-			} else {
-				System.out.println(exception.getMessage());
-			}
-		} else {
-			Throwables.propagateIfPossible(exception);
-		}
-	}
+    public static Mode getLaunchMode(String mode) {
+        return Mode.isExists(mode) ? Mode.valueOf(mode.toUpperCase()) : Mode.DEFAULT;
+    }
 
-	public static Mode getLaunchMode(String mode) {
-		return Mode.isExists(mode) ? Mode.valueOf(mode.toUpperCase()) : Mode.DEFAULT;
-	}
-
-	public static Boolean getEnable(String enable) {
-		return null == enable || Boolean.parseBoolean(enable);
-	}
+    public static Boolean getEnable(String enable) {
+        return null == enable || Boolean.parseBoolean(enable);
+    }
 
 }

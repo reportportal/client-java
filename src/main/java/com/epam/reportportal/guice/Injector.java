@@ -151,9 +151,10 @@ public class Injector {
         List<Module> extensionModules = new ArrayList<>(extensionClasses.size());
         for (String extensionClass : extensionClasses) {
             try {
-                Class<Module> extension = (Class<Module>) Class.forName(extensionClass);
-                Preconditions.checkArgument(Module.class.isAssignableFrom(extension),
+                Class<?> extensionClassObj = Class.forName(extensionClass);
+                Preconditions.checkArgument(Module.class.isAssignableFrom(extensionClassObj),
                         "Extension class '%s' is not an Guice's Module", extensionClass);
+                Class<Module> extension = (Class<Module>) extensionClassObj;
                 extensionModules.add(extension.getConstructor(new Class[] {}).newInstance());
             } catch (ClassNotFoundException e) {
                 String errorMessage = "Extension class with name '" + extensionClass + "' not found";
