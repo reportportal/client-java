@@ -52,9 +52,8 @@ public class ImageConverter {
     /**
      * Convert image to black and white colors
      *
-     * @param source
-     * @throws IOException
-     * @throws Exception
+     * @param source Data Source
+     * @throws IOException In case of IO exception
      */
     public static TypeAwareByteSource convert(ByteSource source) throws IOException {
         BufferedImage image;
@@ -79,8 +78,7 @@ public class ImageConverter {
     /**
      * Convert BufferedImage to input stream
      *
-     * @param image
-     * @throws IOException
+     * @param image Image to be converted
      */
     private static TypeAwareByteSource convertToInputStream(BufferedImage image) {
         ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
