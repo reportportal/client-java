@@ -24,6 +24,7 @@ import com.epam.reportportal.message.HashMarkSeparatedMessageParser;
 import com.epam.reportportal.message.MessageParser;
 import com.epam.reportportal.message.ReportPortalMessage;
 import com.epam.reportportal.message.TypeAwareByteSource;
+import com.epam.reportportal.utils.files.ImageConverter;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.Constants;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
@@ -40,6 +41,7 @@ import io.reactivex.functions.Function;
 import io.reactivex.subjects.PublishSubject;
 import org.reactivestreams.Publisher;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Date;
@@ -75,19 +77,21 @@ public class LoggingContext {
      * @return New Logging Context
      */
     public static LoggingContext init(Maybe<String> itemId, final ReportPortalClient client) {
-        return init(itemId, client, DEFAULT_BUFFER_SIZE);
+        return init(itemId, client, DEFAULT_BUFFER_SIZE, false);
     }
 
     /**
      * Initializes new logging context and attaches it to current thread
      *
-     * @param itemId     Test Item ID
-     * @param client     Client of ReportPortal
-     * @param bufferSize Size of back-pressure buffer
+     * @param itemId        Test Item ID
+     * @param client        Client of ReportPortal
+     * @param bufferSize    Size of back-pressure buffer
+     * @param convertImages Whether Image should be converted to BlackAndWhite
      * @return New Logging Context
      */
-    public static LoggingContext init(Maybe<String> itemId, final ReportPortalClient client, int bufferSize) {
-        LoggingContext context = new LoggingContext(itemId, client, bufferSize);
+    public static LoggingContext init(Maybe<String> itemId, final ReportPortalClient client, int bufferSize,
+            boolean convertImages) {
+        LoggingContext context = new LoggingContext(itemId, client, bufferSize, convertImages);
         CONTEXT_THREAD_LOCAL.set(context);
         return context;
     }
@@ -111,7 +115,7 @@ public class LoggingContext {
         final LoggingContext loggingContext = CONTEXT_THREAD_LOCAL.get();
         if (null != loggingContext) {
             loggingContext.emit(new com.google.common.base.Function<String, SaveLogRQ>() {
-                @Nullable
+                @Nonnull
                 @Override
                 public SaveLogRQ apply(@Nullable String id) {
                     SaveLogRQ rq = new SaveLogRQ();
@@ -124,8 +128,8 @@ public class LoggingContext {
                         final TypeAwareByteSource data = rpMessage.getData();
                         SaveLogRQ.File file = new SaveLogRQ.File();
                         try {
-                            //file.setContent(shouldConvertImage ? ImageConverter.convertIfImage(content) : content);
-                            file.setContent(data.read());
+                            file.setContent(
+                                    (loggingContext.convertImages ? ImageConverter.convertIfImage(data) : data).read());
                             file.setContentType(data.getMediaType().toString());
                             file.setName(UUID.randomUUID().toString());
                             rq.setFile(file);
@@ -159,10 +163,13 @@ public class LoggingContext {
     private final PublishSubject<Maybe<SaveLogRQ>> emitter;
     /* ID of TestItem in ReportPortal */
     private final Maybe<String> itemId;
+    /* Whether Image should be converted to BlackAndWhite */
+    private final boolean convertImages;
 
-    LoggingContext(Maybe<String> itemId, final ReportPortalClient client, int bufferSize) {
+    LoggingContext(Maybe<String> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
         this.itemId = itemId;
         this.emitter = PublishSubject.create();
+        this.convertImages = convertImages;
         emitter.toFlowable(BackpressureStrategy.BUFFER)
                 .flatMap(new Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>() {
                     @Override

@@ -35,9 +35,15 @@ import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import static com.epam.reportportal.service.LoggingCallback.LOG_ERROR;
+import static com.epam.reportportal.service.LoggingCallback.LOG_SUCCESS;
+import static com.epam.reportportal.service.LoggingCallback.logCreated;
 
 /**
  * Default ReportPortal Reporter implementation. Uses
@@ -59,6 +65,7 @@ public class ReportPortal {
      */
     private final ReportPortalClient rpClient;
     private final int logBufferSize;
+    private final boolean convertImage;
 
     /**
      * Messages queue to track items execution order
@@ -73,13 +80,15 @@ public class ReportPortal {
 
     private Maybe<String> launch;
 
-    private ReportPortal(ReportPortalClient rpClient, int logBufferSize) {
+    private ReportPortal(ReportPortalClient rpClient, int logBufferSize, boolean convertImage) {
         this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
         this.logBufferSize = logBufferSize;
+        this.convertImage = convertImage;
     }
 
-    public static ReportPortal startLaunch(ReportPortalClient rpClient, int logBufferSize, StartLaunchRQ rq) {
-        ReportPortal service = new ReportPortal(rpClient, logBufferSize);
+    public static ReportPortal startLaunch(ReportPortalClient rpClient, int logBufferSize, boolean convertImage,
+            StartLaunchRQ rq) {
+        ReportPortal service = new ReportPortal(rpClient, logBufferSize, convertImage);
         service.startLaunch(rq);
         return service;
     }
@@ -91,20 +100,10 @@ public class ReportPortal {
      * @return Launch ID promise
      */
     public Maybe<String> startLaunch(StartLaunchRQ rq) {
-        this.launch = rpClient.startLaunch(rq).map(TO_ID)
-                .doOnSuccess(new Consumer<String>() {
-                    @Override
-                    public void accept(String s) throws Exception {
-                        System.out.println("Launch created");
-                    }
-                })
-                .doOnError(new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable throwable) throws Exception {
-                        throwable.printStackTrace();
-                    }
-                })
-                .cache();
+        this.launch = rpClient.startLaunch(rq)
+                .doOnSuccess(logCreated("launch"))
+                .doOnError(LOG_ERROR)
+                .map(TO_ID).cache();
         return launch;
     }
 
@@ -119,7 +118,7 @@ public class ReportPortal {
                 .andThen(this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
                     @Override
                     public Maybe<OperationCompletionRS> apply(String id) throws Exception {
-                        return rpClient.finishLaunch(id, rq);
+                        return rpClient.finishLaunch(id, rq).doOnSuccess(LOG_SUCCESS).doOnError(LOG_ERROR);
                     }
                 })).cache();
         finish.blockingGet();
@@ -136,7 +135,10 @@ public class ReportPortal {
             @Override
             public Maybe<String> apply(String id) throws Exception {
                 rq.setLaunchId(id);
-                return rpClient.startTestItem(rq).map(TO_ID);
+                return rpClient.startTestItem(rq)
+                        .doOnSuccess(logCreated("item"))
+                        .doOnError(LOG_ERROR)
+                        .map(TO_ID);
 
             }
         }).cache();
@@ -158,14 +160,17 @@ public class ReportPortal {
                     @Override
                     public MaybeSource<String> apply(String parentId) throws Exception {
                         rq.setLaunchId(launchId);
-                        return rpClient.startTestItem(parentId, rq).map(TO_ID);
+                        return rpClient.startTestItem(parentId, rq)
+                                .doOnSuccess(logCreated("item"))
+                                .doOnError(LOG_ERROR)
+                                .map(TO_ID);
                     }
                 });
             }
         }).cache();
 
         QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement());
-        LoggingContext.init(itemId, this.rpClient, this.logBufferSize);
+        LoggingContext.init(itemId, this.rpClient, this.logBufferSize, this.convertImage);
         return itemId;
     }
 
@@ -187,7 +192,9 @@ public class ReportPortal {
                 .andThen(itemId.flatMap(new Function<String, MaybeSource<OperationCompletionRS>>() {
                     @Override
                     public Maybe<OperationCompletionRS> apply(String itemId) throws Exception {
-                        return rpClient.finishTestItem(itemId, rq);
+                        return rpClient.finishTestItem(itemId, rq)
+                                .doOnSuccess(LOG_SUCCESS)
+                                .doOnError(LOG_ERROR);
                     }
                 }).doAfterSuccess(new Consumer<OperationCompletionRS>() {
                     @Override
