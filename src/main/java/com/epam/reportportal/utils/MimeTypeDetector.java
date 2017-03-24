@@ -20,17 +20,16 @@
  */
 package com.epam.reportportal.utils;
 
-import com.google.common.base.Strings;
 import com.google.common.io.ByteSource;
-import com.google.common.net.MediaType;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+
+import static com.google.common.base.Strings.isNullOrEmpty;
 
 /**
  * Utility stuff to detect mime type of binary data
@@ -45,34 +44,24 @@ public class MimeTypeDetector {
         //statics only
     }
 
-    public static MediaType detect(File file) {
+    public static String detect(File file) throws IOException {
         final Metadata metadata = new Metadata();
         metadata.set(Metadata.RESOURCE_NAME_KEY, file.getName());
-        try {
-            return detect(TikaInputStream.get(file), metadata);
-        } catch (FileNotFoundException e) {
-            throw new IllegalArgumentException("Unable to resolve mime type", e);
-        }
+        return detect(TikaInputStream.get(file), metadata);
+
     }
 
-    public static MediaType detect(ByteSource source, String resourceName) {
+    public static String detect(ByteSource source, String resourceName) throws IOException {
 
         final Metadata metadata = new Metadata();
-        if (!Strings.isNullOrEmpty(resourceName)) {
+        if (!isNullOrEmpty(resourceName)) {
             metadata.set(Metadata.RESOURCE_NAME_KEY, resourceName);
         }
-        try {
-            return detect(TikaInputStream.get(source.openBufferedStream()), metadata);
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Unable to resolve mime type", e);
-        }
+        return detect(TikaInputStream.get(source.openBufferedStream()), metadata);
+
     }
 
-    public static MediaType detect(TikaInputStream is, Metadata metadata) {
-        try {
-            return MediaType.parse(detector.detect(is, metadata).toString());
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Unable to resolve mime type", e);
-        }
+    public static String detect(TikaInputStream is, Metadata metadata) throws IOException {
+        return detector.detect(is, metadata).toString();
     }
 }

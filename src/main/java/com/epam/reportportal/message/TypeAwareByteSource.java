@@ -22,7 +22,6 @@ package com.epam.reportportal.message;
 
 import com.google.common.base.Preconditions;
 import com.google.common.io.ByteSource;
-import com.google.common.net.MediaType;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,9 +34,9 @@ import java.io.InputStream;
 public class TypeAwareByteSource extends ByteSource {
 
     private final ByteSource delegate;
-    private final MediaType mediaType;
+    private final String mediaType;
 
-    public TypeAwareByteSource(ByteSource delegate, MediaType mediaType) {
+    public TypeAwareByteSource(ByteSource delegate, String mediaType) {
         this.delegate = Preconditions.checkNotNull(delegate);
         this.mediaType = mediaType;
     }
@@ -47,7 +46,7 @@ public class TypeAwareByteSource extends ByteSource {
         return delegate.openStream();
     }
 
-    public MediaType getMediaType() {
+    public String getMediaType() {
         return mediaType;
     }
 }

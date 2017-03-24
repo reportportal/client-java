@@ -24,7 +24,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteSource;
-import com.google.common.io.Files;
 import com.google.common.io.Resources;
 
 import java.io.File;
@@ -32,6 +31,8 @@ import java.net.URL;
 import java.util.List;
 
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
+import static com.google.common.io.Files.asByteSource;
+import static com.google.common.io.Resources.getResource;
 
 /**
  * Colon separated message parser. Expects string in the following format:<br>
@@ -53,12 +54,18 @@ public class HashMarkSeparatedMessageParser implements MessageParser {
                 if (!file.exists()) {
                     return null;
                 }
-                return new TypeAwareByteSource(Files.asByteSource(file), detect(file));
+                return new TypeAwareByteSource(asByteSource(file), detect(file));
             }
         },
         BASE64 {
             @Override
             public TypeAwareByteSource toByteSource(final String data) {
+                if (data.contains(":")) {
+                    final String[] parts = data.split(":");
+                    String type = parts[1];
+                    return new TypeAwareByteSource(ByteSource.wrap(BaseEncoding.base64().decode(parts[0])), type);
+
+                }
                 final ByteSource source = ByteSource.wrap(BaseEncoding.base64().decode(data));
                 return new TypeAwareByteSource(source, detect(source, null));
             }
@@ -66,7 +73,7 @@ public class HashMarkSeparatedMessageParser implements MessageParser {
         RESOURCE {
             @Override
             public TypeAwareByteSource toByteSource(String resourceName) {
-                URL resource = Resources.getResource(resourceName);
+                URL resource = getResource(resourceName);
                 if (null == resource) {
                     return null;
                 }

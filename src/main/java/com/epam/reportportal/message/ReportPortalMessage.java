@@ -20,12 +20,12 @@
  */
 package com.epam.reportportal.message;
 
-import com.epam.reportportal.utils.MimeTypeDetector;
 import com.google.common.io.ByteSource;
-import com.google.common.io.Files;
-import com.google.common.net.MediaType;
 
 import java.io.File;
+
+import static com.epam.reportportal.utils.MimeTypeDetector.detect;
+import static com.google.common.io.Files.asByteSource;
 
 /**
  * Report portal message wrapper. This wrapper should be used if any file <br>
@@ -47,7 +47,7 @@ public class ReportPortalMessage {
 
     public ReportPortalMessage(final ByteSource data, String mediaType, String message) {
         this(message);
-        this.data = new TypeAwareByteSource(data, MediaType.parse(mediaType));
+        this.data = new TypeAwareByteSource(data, mediaType);
     }
 
     public ReportPortalMessage(final TypeAwareByteSource data, String message) {
@@ -56,7 +56,7 @@ public class ReportPortalMessage {
     }
 
     public ReportPortalMessage(File file, String message) {
-        this(new TypeAwareByteSource(Files.asByteSource(file), MimeTypeDetector.detect(file)), message);
+        this(new TypeAwareByteSource(asByteSource(file), detect(file)), message);
     }
 
     public String getMessage() {

@@ -72,7 +72,25 @@ public class ImageConverter {
      * @param source DataSource
      */
     public static boolean isImage(TypeAwareByteSource source) {
-        return source.getMediaType().type().equalsIgnoreCase(IMAGE_TYPE);
+        return isImage(source.getMediaType());
+    }
+
+    /**
+     * Check is input file is image
+     *
+     * @param contentType ContentType
+     */
+    public static boolean isImage(MediaType contentType) {
+        return contentType.type().equalsIgnoreCase(IMAGE_TYPE);
+    }
+
+    /**
+     * Check is input file is image
+     *
+     * @param contentType ContentType
+     */
+    public static boolean isImage(String contentType) {
+        return isImage(MediaType.parse(contentType));
     }
 
     /**
@@ -87,7 +105,7 @@ public class ImageConverter {
         } catch (IOException e) {
             throw new InternalReportPortalClientException("Unable to transform file to byte array.", e);
         }
-        return new TypeAwareByteSource(ByteSource.wrap(byteOutputStream.toByteArray()), MediaType.PNG);
+        return new TypeAwareByteSource(ByteSource.wrap(byteOutputStream.toByteArray()), MediaType.PNG.toString());
 
     }
 

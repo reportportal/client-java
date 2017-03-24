@@ -20,13 +20,14 @@
  */
 package com.epam.reportportal.service;
 
-import com.epam.reportportal.exception.ReportPortalClientException;
+import com.epam.reportportal.exception.GeneralReportPortalException;
+import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.ta.reportportal.ws.model.ErrorRS;
 import com.github.avarabyeu.restendpoint.http.DefaultErrorHandler;
 import com.github.avarabyeu.restendpoint.http.HttpMethod;
 import com.github.avarabyeu.restendpoint.http.exception.RestEndpointIOException;
-import com.github.avarabyeu.restendpoint.http.exception.SerializerException;
 import com.github.avarabyeu.restendpoint.serializer.Serializer;
+import com.google.common.base.Charsets;
 import com.google.common.io.ByteSource;
 
 import java.io.IOException;
@@ -49,20 +50,43 @@ public class ReportPortalErrorHandler extends DefaultErrorHandler {
     @Override
     protected void handleError(URI requestUri, HttpMethod requestMethod, int statusCode, String statusMessage,
             ByteSource errorBody) throws RestEndpointIOException {
-        throw new ReportPortalClientException(statusCode, statusMessage, deserializeError(errorBody));
+        try {
+            //read the body
+            final byte[] body = errorBody.read();
+
+            //try to deserialize an error
+            ErrorRS errorRS = deserializeError(body);
+            if (null != errorRS) {
+
+                //ok, it's know ReportPortal error
+                throw new ReportPortalException(statusCode, statusMessage, errorRS);
+            } else {
+                //there is some unknown error since we cannot de-serialize it into default error object
+                throw new GeneralReportPortalException(statusCode, statusMessage, new String(body, Charsets.UTF_8));
+            }
+
+        } catch (IOException e) {
+            //cannot read the body. just throw the general error
+            throw new GeneralReportPortalException(statusCode, statusMessage, "Cannot read the response");
+        }
+
     }
 
-    private ErrorRS deserializeError(ByteSource contentSource) throws RestEndpointIOException {
-        byte[] content;
+    /**
+     * Try to deserialize an error body
+     *
+     * @param content content to be deserialized
+     * @return Serialized object or NULL if it's impossible
+     */
+    private ErrorRS deserializeError(byte[] content) {
         try {
-            content = contentSource.read();
             if (null != content) {
                 return serializer.deserialize(content, ErrorRS.class);
             } else {
                 return null;
             }
 
-        } catch (IOException | RestEndpointIOException e ) {
+        } catch (Exception e) {
             return null;
         }
 

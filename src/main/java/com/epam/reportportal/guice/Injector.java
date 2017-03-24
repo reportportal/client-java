@@ -30,8 +30,9 @@ import com.google.inject.Guice;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.util.Modules;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,6 +42,8 @@ import java.util.List;
  * @author Andrei Varabyeu
  */
 public class Injector {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Injector.class);
 
     /* extension class can be provided as JVM or ENV variable */
     public static final String RP_EXTENSION_PROPERTY_NAME = "rp.extension";
@@ -148,7 +151,7 @@ public class Injector {
      */
     private List<Module> buildExtensions(String extensions) {
         List<String> extensionClasses = Splitter.on(",").splitToList(extensions);
-        List<Module> extensionModules = new ArrayList<>(extensionClasses.size());
+        List<Module> extensionModules = new ArrayList<Module>(extensionClasses.size());
         for (String extensionClass : extensionClasses) {
             try {
                 Class<?> extensionClassObj = Class.forName(extensionClass);
@@ -158,13 +161,13 @@ public class Injector {
                 extensionModules.add(extension.getConstructor(new Class[] {}).newInstance());
             } catch (ClassNotFoundException e) {
                 String errorMessage = "Extension class with name '" + extensionClass + "' not found";
-                System.err.println(errorMessage);
+                LOGGER.error(errorMessage);
                 throw new InternalReportPortalClientException(errorMessage, e);
 
-            } catch (IllegalAccessException | InstantiationException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (Exception e) {
                 String errorMessage =
                         "Unable to create instance of '" + extensionClass + "'. Does it have empty constructor?";
-                System.err.println(errorMessage);
+                LOGGER.error(errorMessage);
                 throw new InternalReportPortalClientException(errorMessage, e);
             }
         }

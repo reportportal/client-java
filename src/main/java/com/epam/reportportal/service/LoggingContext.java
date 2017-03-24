@@ -20,17 +20,12 @@
  */
 package com.epam.reportportal.service;
 
-import com.epam.reportportal.message.HashMarkSeparatedMessageParser;
-import com.epam.reportportal.message.MessageParser;
-import com.epam.reportportal.message.ReportPortalMessage;
 import com.epam.reportportal.message.TypeAwareByteSource;
-import com.epam.reportportal.utils.files.ImageConverter;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.Constants;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.github.avarabyeu.restendpoint.http.MultiPartRequest;
 import com.google.common.base.Strings;
-import com.google.common.io.ByteSource;
 import com.google.common.net.MediaType;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
@@ -41,12 +36,11 @@ import io.reactivex.functions.Function;
 import io.reactivex.subjects.PublishSubject;
 import org.reactivestreams.Publisher;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.util.Date;
 import java.util.List;
-import java.util.UUID;
+
+import static com.epam.reportportal.utils.files.ImageConverter.convert;
+import static com.epam.reportportal.utils.files.ImageConverter.isImage;
+import static com.google.common.io.ByteSource.wrap;
 
 /**
  * Logging context holds thread-local context for logging and converts
@@ -64,10 +58,9 @@ import java.util.UUID;
 public class LoggingContext {
 
     /* default back-pressure buffer size */
-    public static final int DEFAULT_BUFFER_SIZE = 10;
+    private static final int DEFAULT_BUFFER_SIZE = 10;
 
-    private static final ThreadLocal<LoggingContext> CONTEXT_THREAD_LOCAL = new ThreadLocal<>();
-    private static final MessageParser MESSAGE_PARSER = new HashMarkSeparatedMessageParser();
+    private static final ThreadLocal<LoggingContext> CONTEXT_THREAD_LOCAL = new ThreadLocal<LoggingContext>();
 
     /**
      * Initializes new logging context and attaches it to current thread
@@ -94,55 +87,6 @@ public class LoggingContext {
         LoggingContext context = new LoggingContext(itemId, client, bufferSize, convertImages);
         CONTEXT_THREAD_LOCAL.set(context);
         return context;
-    }
-
-    /**
-     * Emits log message if there is any active context attached to the current thread
-     *
-     * @param logSupplier Log supplier
-     */
-    public static void emitLog(com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
-        final LoggingContext loggingContext = CONTEXT_THREAD_LOCAL.get();
-        if (null != loggingContext) {
-            loggingContext.emit(logSupplier);
-        }
-    }
-
-    /**
-     * Emits log message if there is any active context attached to the current thread
-     */
-    public static void emitLog(final String message, final String level, final Date time) {
-        final LoggingContext loggingContext = CONTEXT_THREAD_LOCAL.get();
-        if (null != loggingContext) {
-            loggingContext.emit(new com.google.common.base.Function<String, SaveLogRQ>() {
-                @Nonnull
-                @Override
-                public SaveLogRQ apply(@Nullable String id) {
-                    SaveLogRQ rq = new SaveLogRQ();
-                    rq.setLevel(level);
-                    rq.setLogTime(time);
-                    rq.setTestItemId(id);
-                    if (MESSAGE_PARSER.supports(message)) {
-                        final ReportPortalMessage rpMessage = MESSAGE_PARSER.parse(message);
-                        rq.setMessage(rpMessage.getMessage());
-                        final TypeAwareByteSource data = rpMessage.getData();
-                        SaveLogRQ.File file = new SaveLogRQ.File();
-                        try {
-                            file.setContent(
-                                    (loggingContext.convertImages ? ImageConverter.convertIfImage(data) : data).read());
-                            file.setContentType(data.getMediaType().toString());
-                            file.setName(UUID.randomUUID().toString());
-                            rq.setFile(file);
-                        } catch (IOException e) {
-                            // seems like there is some problem. Do not report an file
-                        }
-                    } else {
-                        rq.setMessage(message);
-                    }
-                    return rq;
-                }
-            });
-        }
     }
 
     /**
@@ -191,7 +135,7 @@ public class LoggingContext {
                                 builder.addBinaryPart(Constants.LOG_REQUEST_BINARY_PART, file.getName(),
                                         Strings.isNullOrEmpty(file.getContentType()) ?
                                                 MediaType.OCTET_STREAM.toString() :
-                                                file.getContentType(), ByteSource.wrap(file.getContent()));
+                                                file.getContentType(), wrap(file.getContent()));
                             }
                         }
                         return client.log(builder.build()).toFlowable();
@@ -207,16 +151,33 @@ public class LoggingContext {
 
     }
 
+    /**
+     * Emits log. Basically, put it into processing pipeline
+     *
+     * @param logSupplier Log Message Factory. Key if the function is actual test item ID
+     */
     public void emit(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
         emitter.onNext(itemId.map(new Function<String, SaveLogRQ>() {
             @Override
             public SaveLogRQ apply(String input) throws Exception {
-                return logSupplier.apply(input);
+                final SaveLogRQ rq = logSupplier.apply(input);
+                SaveLogRQ.File file = rq.getFile();
+                if (convertImages && null != file && isImage(file.getContentType())) {
+                    final TypeAwareByteSource source = convert(wrap(file.getContent()));
+                    file.setContent(source.read());
+                    file.setContentType(source.getMediaType());
+                }
+                return rq;
             }
         }));
 
     }
 
+    /**
+     * Marks flow as completed
+     *
+     * @return {@link Completable}
+     */
     public Completable completed() {
         emitter.onComplete();
         return emitter.ignoreElements();

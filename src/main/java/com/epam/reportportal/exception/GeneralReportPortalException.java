@@ -20,28 +20,36 @@
  */
 package com.epam.reportportal.exception;
 
-import com.epam.ta.reportportal.ws.model.ErrorRS;
-
 /**
  * Base ReportPortal. Used for unclassified errors
  *
  * @author Andrei Varabyeu
  */
-public class ReportPortalException extends GeneralReportPortalException {
+public class GeneralReportPortalException extends RuntimeException {
     private static final long serialVersionUID = -3747137063782963453L;
 
     /**
-     * HTTP Error Response Body
+     * HTTP Status Code
      */
-    protected ErrorRS error;
+    protected int statusCode;
+    /**
+     * HTTP Status Message
+     */
+    protected String statusMessage;
 
-    public ReportPortalException(int statusCode, String statusMessage, ErrorRS error) {
-        super(statusCode, statusMessage, error.getMessage());
-        this.error = error;
+    public GeneralReportPortalException(int statusCode, String statusMessage, String errorContent) {
+        super(errorContent);
+        this.statusCode = statusCode;
+        this.statusMessage = statusMessage;
+
     }
 
-    public ErrorRS getError() {
-        return error;
+    public int getStatusCode() {
+        return statusCode;
+    }
+
+    public String getStatusMessage() {
+        return statusMessage;
     }
 
     @Override
@@ -50,9 +58,8 @@ public class ReportPortalException extends GeneralReportPortalException {
         builder.append("Report Portal returned error\n")
                 .append("Status code: ").append(statusCode).append("\n")
                 .append("Status message: ").append(statusMessage).append("\n");
-        if (null != error) {
-            builder.append("Error Message: ").append(error.getMessage()).append("\n")
-                    .append("Error Type: ").append(error.getErrorType()).append("\n");
+        if (null != getMessage()) {
+            builder.append("Error Message: ").append(getMessage()).append("\n");
         }
         return builder.toString();
     }

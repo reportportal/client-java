@@ -144,7 +144,7 @@ public class ReportPortalClientModule implements Module {
                 builder.setSSLContext(
                         SSLContextBuilder.create().loadTrustMaterial(SslUtils.loadKeyStore(keyStore, keyStorePassword),
                                 TrustSelfSignedStrategy.INSTANCE).build());
-            } catch (NoSuchAlgorithmException | KeyManagementException | KeyStoreException e) {
+            } catch (Exception e) {
                 throw new InternalReportPortalClientException(
                         "Unable to load trust store");
             }

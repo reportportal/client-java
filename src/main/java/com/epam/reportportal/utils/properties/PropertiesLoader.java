@@ -30,7 +30,6 @@ import com.google.common.io.Resources;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Authenticator;
@@ -114,16 +113,18 @@ public class PropertiesLoader {
     private static Properties loadFromFile() throws IOException {
         Properties props = new Properties();
         File propertiesFile = new File(PATH);
-        InputStream is;
-        try (Closer closer = Closer.create()) {
-            is = propertiesFile.exists() ?
+
+        Closer closer = Closer.create();
+        try {
+            InputStream is = propertiesFile.exists() ?
                     new FileInputStream(propertiesFile) :
                     PropertiesLoader.class.getResourceAsStream(INNER_PATH);
             closer.register(is);
-            if (is == null) {
-                throw new FileNotFoundException(INNER_PATH);
-            }
             props.load(is);
+        } catch (Throwable e) {
+            throw closer.rethrow(e);
+        } finally {
+            closer.close();
         }
         return props;
     }
