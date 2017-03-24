@@ -20,6 +20,8 @@
  */
 package com.epam.reportportal.message;
 
+import java.io.IOException;
+
 /**
  * Parses formatted message for report portal
  * 
@@ -30,7 +32,7 @@ public interface MessageParser {
 
 	String RP_MESSAGE_PREFIX = "RP_MESSAGE";
 
-	ReportPortalMessage parse(String message);
+	ReportPortalMessage parse(String message) throws IOException;
 
 	boolean supports(String message);
 }

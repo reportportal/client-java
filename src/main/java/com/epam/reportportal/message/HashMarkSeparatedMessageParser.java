@@ -27,6 +27,7 @@ import com.google.common.io.ByteSource;
 import com.google.common.io.Resources;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 
@@ -49,7 +50,7 @@ public class HashMarkSeparatedMessageParser implements MessageParser {
     private enum MessageType {
         FILE {
             @Override
-            public TypeAwareByteSource toByteSource(String data) {
+            public TypeAwareByteSource toByteSource(String data) throws IOException {
                 File file = new File(data);
                 if (!file.exists()) {
                     return null;
@@ -59,7 +60,7 @@ public class HashMarkSeparatedMessageParser implements MessageParser {
         },
         BASE64 {
             @Override
-            public TypeAwareByteSource toByteSource(final String data) {
+            public TypeAwareByteSource toByteSource(final String data) throws IOException {
                 if (data.contains(":")) {
                     final String[] parts = data.split(":");
                     String type = parts[1];
@@ -72,7 +73,7 @@ public class HashMarkSeparatedMessageParser implements MessageParser {
         },
         RESOURCE {
             @Override
-            public TypeAwareByteSource toByteSource(String resourceName) {
+            public TypeAwareByteSource toByteSource(String resourceName) throws IOException {
                 URL resource = getResource(resourceName);
                 if (null == resource) {
                     return null;
@@ -82,7 +83,7 @@ public class HashMarkSeparatedMessageParser implements MessageParser {
             }
         };
 
-        abstract public TypeAwareByteSource toByteSource(String data);
+        abstract public TypeAwareByteSource toByteSource(String data) throws IOException;
 
         public static MessageType fromString(String messageType) {
             return MessageType.valueOf(messageType);
@@ -92,7 +93,7 @@ public class HashMarkSeparatedMessageParser implements MessageParser {
     private static final int CHUNKS_COUNT = 4;
 
     @Override
-    public ReportPortalMessage parse(String message) {
+    public ReportPortalMessage parse(String message) throws IOException {
         List<String> split = Splitter.on("#").limit(CHUNKS_COUNT).splitToList(message);
 
         // -1 because there may be no

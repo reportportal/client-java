@@ -238,7 +238,7 @@ public class ReportPortal {
      */
     static class TreeItem {
         Maybe<String> parent;
-        List<Completable> children = new CopyOnWriteArrayList<>();
+        List<Completable> children = new CopyOnWriteArrayList<Completable>();
 
         TreeItem withParent(Maybe<String> parent) {
             this.parent = parent;

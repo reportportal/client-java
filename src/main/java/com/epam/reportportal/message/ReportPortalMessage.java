@@ -23,6 +23,7 @@ package com.epam.reportportal.message;
 import com.google.common.io.ByteSource;
 
 import java.io.File;
+import java.io.IOException;
 
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
 import static com.google.common.io.Files.asByteSource;
@@ -55,7 +56,7 @@ public class ReportPortalMessage {
         this.data = data;
     }
 
-    public ReportPortalMessage(File file, String message) {
+    public ReportPortalMessage(File file, String message) throws IOException {
         this(new TypeAwareByteSource(asByteSource(file), detect(file)), message);
     }
 
