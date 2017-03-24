@@ -67,7 +67,7 @@ import static com.google.common.io.Files.toByteArray;
  */
 public class ReportPortal {
 
-    public static final MessageParser MESSAGE_PARSER = new HashMarkSeparatedMessageParser();
+    private static final MessageParser MESSAGE_PARSER = new HashMarkSeparatedMessageParser();
 
     static final Logger LOGGER = LoggerFactory.getLogger(ReportPortal.class);
 
@@ -250,7 +250,7 @@ public class ReportPortal {
             return this;
         }
 
-        void freeChildren(){
+        void freeChildren() {
             this.children = null;
         }
     }
@@ -330,6 +330,16 @@ public class ReportPortal {
                 return rq;
             }
         });
+    }
+
+    /**
+     * Check whether message is parsable
+     *
+     * @param message Message to be checked
+     * @return TRUE if parsable, FALSE otherwise
+     */
+    public static boolean isMessageParsable(String message) {
+        return MESSAGE_PARSER.supports(message);
     }
 
 }
