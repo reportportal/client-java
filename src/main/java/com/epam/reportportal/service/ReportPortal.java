@@ -67,9 +67,9 @@ import static com.google.common.io.Files.toByteArray;
  */
 public class ReportPortal {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(ReportPortal.class);
+    public static final MessageParser MESSAGE_PARSER = new HashMarkSeparatedMessageParser();
 
-    private static final MessageParser DEFAULT_MESSAGE_PARSER = new HashMarkSeparatedMessageParser();
+    static final Logger LOGGER = LoggerFactory.getLogger(ReportPortal.class);
 
     private static final Function<EntryCreatedRS, String> TO_ID = new Function<EntryCreatedRS, String>() {
         @Override
@@ -282,8 +282,8 @@ public class ReportPortal {
                 rq.setLogTime(time);
                 rq.setTestItemId(id);
                 try {
-                    if (DEFAULT_MESSAGE_PARSER.supports(message)) {
-                        final ReportPortalMessage rpMessage = DEFAULT_MESSAGE_PARSER.parse(message);
+                    if (MESSAGE_PARSER.supports(message)) {
+                        final ReportPortalMessage rpMessage = MESSAGE_PARSER.parse(message);
                         rq.setMessage(rpMessage.getMessage());
                         final TypeAwareByteSource data = rpMessage.getData();
                         SaveLogRQ.File file = new SaveLogRQ.File();

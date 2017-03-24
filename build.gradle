@@ -49,9 +49,9 @@ shadowJar {
     }
     classifier = null
     relocate 'com.github.avarabyeu.restendpoint', 'com.epam.restendpoint'
-    relocate 'org.apache.http', 'repacked.org.apache.http'
-    relocate 'com.google.common', 'repacked.com.google.common'
-    relocate 'org.apache.commons.logging', 'repacked.org.apache.commons.logging'
+    relocate 'org.apache.http', 'rp.org.apache.http'
+    relocate 'com.google.common', 'rp.com.google.common'
+    relocate 'org.apache.commons.logging', 'rp.org.apache.commons.logging'
 }
 
 dependencies {
