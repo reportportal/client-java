@@ -58,8 +58,8 @@ public class GeneralReportPortalException extends RuntimeException {
         builder.append("Report Portal returned error\n")
                 .append("Status code: ").append(statusCode).append("\n")
                 .append("Status message: ").append(statusMessage).append("\n");
-        if (null != getMessage()) {
-            builder.append("Error Message: ").append(getMessage()).append("\n");
+        if (null != super.getMessage()) {
+            builder.append("Error Message: ").append(super.getMessage()).append("\n");
         }
         return builder.toString();
     }
