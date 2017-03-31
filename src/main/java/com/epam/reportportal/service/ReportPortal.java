@@ -20,8 +20,6 @@
  */
 package com.epam.reportportal.service;
 
-import com.epam.reportportal.message.HashMarkSeparatedMessageParser;
-import com.epam.reportportal.message.MessageParser;
 import com.epam.reportportal.message.ReportPortalMessage;
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.ta.reportportal.ws.model.EntryCreatedRS;
@@ -40,6 +38,7 @@ import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,8 +65,6 @@ import static com.google.common.io.Files.toByteArray;
  * @author Andrei Varabyeu
  */
 public class ReportPortal {
-
-    private static final MessageParser MESSAGE_PARSER = new HashMarkSeparatedMessageParser();
 
     static final Logger LOGGER = LoggerFactory.getLogger(ReportPortal.class);
 
@@ -122,6 +119,7 @@ public class ReportPortal {
                 .doOnSuccess(logCreated("launch"))
                 .doOnError(LOG_ERROR)
                 .map(TO_ID).cache();
+        this.launch.subscribeOn(Schedulers.io()).subscribe();
         return launch;
     }
 
@@ -160,6 +158,7 @@ public class ReportPortal {
 
             }
         }).cache();
+        testItem.subscribeOn(Schedulers.io()).subscribe();
         QUEUE.getUnchecked(launch).addToQueue(testItem.ignoreElement());
         return testItem;
     }
@@ -186,7 +185,7 @@ public class ReportPortal {
                 });
             }
         }).cache();
-
+        itemId.subscribeOn(Schedulers.io()).subscribe();
         QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement());
         LoggingContext.init(itemId, this.rpClient, this.logBufferSize, this.convertImage);
         return itemId;
@@ -221,7 +220,7 @@ public class ReportPortal {
                         treeItem.freeChildren();
                     }
                 }).ignoreElement()).cache();
-
+        finishCompletion.subscribeOn(Schedulers.io()).subscribe();
         //find parent and add to its queue
         final Maybe<String> parent = treeItem.parent;
         if (null != parent) {
@@ -281,40 +280,21 @@ public class ReportPortal {
                 rq.setLevel(level);
                 rq.setLogTime(time);
                 rq.setTestItemId(id);
-                try {
-                    if (MESSAGE_PARSER.supports(message)) {
-                        final ReportPortalMessage rpMessage = MESSAGE_PARSER.parse(message);
-                        rq.setMessage(rpMessage.getMessage());
-                        final TypeAwareByteSource data = rpMessage.getData();
-                        SaveLogRQ.File file = new SaveLogRQ.File();
-                        file.setContent(rpMessage.getData().read());
-
-                        file.setContentType(data.getMediaType());
-                        file.setName(UUID.randomUUID().toString());
-                        rq.setFile(file);
-
-                    } else {
-                        rq.setMessage(message);
-                    }
-
-                } catch (Exception e) {
-                    // seems like there is some problem. Do not report an file
-                    LOGGER.error("Cannot send file to ReportPortal", e);
-                }
+                rq.setMessage(message);
                 return rq;
             }
         });
 
     }
 
-    public static boolean emitLog(final String message, final String level, final File file) {
+    public static boolean emitLog(final String message, final String level, final Date time, final File file) {
         return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
             @Nonnull
             @Override
             public SaveLogRQ apply(@Nullable String id) {
                 SaveLogRQ rq = new SaveLogRQ();
                 rq.setLevel(level);
-                rq.setLogTime(Calendar.getInstance().getTime());
+                rq.setLogTime(time);
                 rq.setTestItemId(id);
                 rq.setMessage(message);
 
@@ -332,25 +312,33 @@ public class ReportPortal {
         });
     }
 
-    /**
-     * Check whether message is parsable
-     *
-     * @param message Message to be checked
-     * @return TRUE if parsable, FALSE otherwise
-     */
-    public static boolean isMessageParsable(String message) {
-        return MESSAGE_PARSER.supports(message);
-    }
+    public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
+        return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
+            @Nonnull
+            @Override
+            public SaveLogRQ apply(@Nullable String id) {
+                SaveLogRQ rq = new SaveLogRQ();
+                rq.setLevel(level);
+                rq.setLogTime(time);
+                rq.setTestItemId(id);
+                rq.setMessage(message.getMessage());
+                try {
+                    final TypeAwareByteSource data = message.getData();
+                    SaveLogRQ.File file = new SaveLogRQ.File();
+                    file.setContent(data.read());
 
-    /**
-     * Parses Message
-     *
-     * @param message Message to parse
-     * @return {@link ReportPortalMessage}
-     * @throws IOException In case of IO exception
-     */
-    public static ReportPortalMessage parseMessage(String message) throws IOException {
-        return MESSAGE_PARSER.parse(message);
+                    file.setContentType(data.getMediaType());
+                    file.setName(UUID.randomUUID().toString());
+                    rq.setFile(file);
+
+                } catch (Exception e) {
+                    // seems like there is some problem. Do not report an file
+                    LOGGER.error("Cannot send file to ReportPortal", e);
+                }
+
+                return rq;
+            }
+        });
     }
 
 }

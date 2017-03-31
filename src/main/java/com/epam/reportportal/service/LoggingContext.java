@@ -33,6 +33,7 @@ import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.PublishSubject;
 import org.reactivestreams.Publisher;
 
@@ -147,7 +148,7 @@ public class LoggingContext {
                         throwable.printStackTrace();
                     }
                 })
-                .subscribe();
+                .subscribeOn(Schedulers.io()).subscribe();
 
     }
 
