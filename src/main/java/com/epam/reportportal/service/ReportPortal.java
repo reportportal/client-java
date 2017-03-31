@@ -342,4 +342,15 @@ public class ReportPortal {
         return MESSAGE_PARSER.supports(message);
     }
 
+    /**
+     * Parses Message
+     *
+     * @param message Message to parse
+     * @return {@link ReportPortalMessage}
+     * @throws IOException In case of IO exception
+     */
+    public static ReportPortalMessage parseMessage(String message) throws IOException {
+        return MESSAGE_PARSER.parse(message);
+    }
+
 }

@@ -58,9 +58,6 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 /**
@@ -118,7 +115,7 @@ public class ReportPortalClientModule implements Module {
             @ListenerPropertyValue(ListenerProperty.BASE_URL) String baseUrl,
             @ListenerPropertyValue(ListenerProperty.PROJECT_NAME) String project,
             ErrorHandler errorHandler) {
-        return new HttpClientRestEndpoint(httpClient, serializers, errorHandler, baseUrl + "/" + project);
+        return new HttpClientRestEndpoint(httpClient, serializers, errorHandler, baseUrl + API_BASE + "/" + project);
     }
 
     /**
