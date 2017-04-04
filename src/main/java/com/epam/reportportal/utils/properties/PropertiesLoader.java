@@ -48,22 +48,31 @@ public class PropertiesLoader {
 
     public static final String INNER_PATH = "reportportal.properties";
     public static final String PATH = "./reportportal.properties";
+
     private static final String[] PROXY_PROPERTIES = { "http.proxyHost", "http.proxyPort", "http.nonProxyHosts",
             "https.proxyHost",
             "https.proxyPort", "ftp.proxyHost", "ftp.proxyPort", "ftp.nonProxyHosts", "socksProxyHost",
             "socksProxyPort", "http.proxyUser",
             "http.proxyPassword" };
 
-    private static Supplier<Properties> PROPERTIES_SUPPLIER = memoize(new Supplier<Properties>() {
-        @Override
-        public Properties get() {
-            try {
-                return loadProperties();
-            } catch (IOException e) {
-                throw new InternalReportPortalClientException("Unable to load properties", e);
+    private Supplier<Properties> propertiesSupplier;
+
+    public static PropertiesLoader load() {
+        return new PropertiesLoader(new Supplier<Properties>() {
+            @Override
+            public Properties get() {
+                try {
+                    return loadProperties();
+                } catch (IOException e) {
+                    throw new InternalReportPortalClientException("Unable to load properties", e);
+                }
             }
-        }
-    });
+        });
+    }
+
+    private PropertiesLoader(Supplier<Properties> propertiesSupplier) {
+        this.propertiesSupplier = memoize(propertiesSupplier);
+    }
 
     /**
      * Get specified property loaded from properties file and reloaded from from
@@ -71,16 +80,25 @@ public class PropertiesLoader {
      *
      * @param propertyName Name of property
      */
-    public static String getProperty(String propertyName) {
-        return PROPERTIES_SUPPLIER.get().getProperty(propertyName);
+    public String getProperty(String propertyName) {
+        return propertiesSupplier.get().getProperty(propertyName);
     }
 
     /**
      * Get all properties loaded from properties file and reloaded from from
      * environment variables.
      */
-    public static Properties getProperties() {
-        return PROPERTIES_SUPPLIER.get();
+    public Properties getProperties() {
+        return propertiesSupplier.get();
+    }
+
+    /**
+     * Overrides properties with provided values
+     *
+     * @param overrides Values to overrides
+     */
+    public void overrideWith(Properties overrides) {
+        overrideWith(propertiesSupplier.get(), overrides);
     }
 
     /**

@@ -44,7 +44,7 @@ public class PropertiesLoaderTest {
 
 		Properties loadedProps = null;
 		try {
-			loadedProps = PropertiesLoader.getProperties();
+			loadedProps = PropertiesLoader.load().getProperties();
 		} catch (InternalReportPortalClientException e) {
 			Assert.fail("Unable to load properties: " + e.getLocalizedMessage());
 		}

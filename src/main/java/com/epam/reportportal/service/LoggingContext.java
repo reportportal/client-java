@@ -58,10 +58,10 @@ import static com.google.common.io.ByteSource.wrap;
  */
 public class LoggingContext {
 
-    static final ThreadLocal<LoggingContext> CONTEXT_THREAD_LOCAL = new ThreadLocal<LoggingContext>();
-
     /* default back-pressure buffer size */
-    private static final int DEFAULT_BUFFER_SIZE = 10;
+    public static final int DEFAULT_BUFFER_SIZE = 10;
+
+    static final ThreadLocal<LoggingContext> CONTEXT_THREAD_LOCAL = new ThreadLocal<LoggingContext>();
 
     /**
      * Initializes new logging context and attaches it to current thread

@@ -39,16 +39,19 @@ import com.google.inject.name.Names;
 public class ConfigurationModule implements Module {
     @Override
     public void configure(Binder binder) {
-        Names.bindProperties(binder, PropertiesLoader.getProperties());
+        final PropertiesLoader properties = PropertiesLoader.load();
+        Names.bindProperties(binder, properties.getProperties());
         for (final ListenerProperty listenerProperty : ListenerProperty.values()) {
             binder.bind(Key.get(String.class, ListenerPropertyBinder.named(listenerProperty)))
                     .toProvider(new Provider<String>() {
                         @Override
                         public String get() {
-                            return PropertiesLoader.getProperty(listenerProperty.getPropertyName());
+                            return properties.getProperty(listenerProperty.getPropertyName());
                         }
                     });
         }
+
+        binder.bind(PropertiesLoader.class).toInstance(properties);
     }
 
     /**
@@ -56,7 +59,7 @@ public class ConfigurationModule implements Module {
      */
     @Provides
     @Singleton
-    public ListenerParameters provideListenerProperties() {
-        return new ListenerParameters(PropertiesLoader.getProperties());
+    public ListenerParameters provideListenerProperties(PropertiesLoader propertiesLoader) {
+        return new ListenerParameters(propertiesLoader.getProperties());
     }
 }

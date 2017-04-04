@@ -27,7 +27,7 @@ import com.epam.ta.reportportal.ws.model.launch.Mode;
  *
  * @author Aliaksei_Makayed
  */
-public class ListenersUtils {
+public final class ListenersUtils {
 
     private ListenersUtils() {
     }

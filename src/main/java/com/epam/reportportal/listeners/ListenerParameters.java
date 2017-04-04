@@ -20,108 +20,121 @@
  */
 package com.epam.reportportal.listeners;
 
-import static com.epam.reportportal.utils.properties.ListenerProperty.*;
+import com.epam.reportportal.utils.TagsParser;
+import com.epam.ta.reportportal.ws.model.launch.Mode;
 
 import java.util.Properties;
 import java.util.Set;
 
-import com.epam.reportportal.utils.TagsParser;
-import com.epam.ta.reportportal.ws.model.launch.Mode;
+import static com.epam.reportportal.utils.properties.ListenerProperty.BASE_URL;
+import static com.epam.reportportal.utils.properties.ListenerProperty.DESCRIPTION;
+import static com.epam.reportportal.utils.properties.ListenerProperty.ENABLE;
+import static com.epam.reportportal.utils.properties.ListenerProperty.LAUNCH_NAME;
+import static com.epam.reportportal.utils.properties.ListenerProperty.LAUNCH_TAGS;
+import static com.epam.reportportal.utils.properties.ListenerProperty.MODE;
+import static com.epam.reportportal.utils.properties.ListenerProperty.PROJECT_NAME;
+import static com.epam.reportportal.utils.properties.ListenerProperty.SKIPPED_AS_ISSUE;
+import static com.epam.reportportal.utils.properties.ListenerProperty.UUID;
 
 /**
  * Report portal listeners parameters
- * 
+ *
+ * @deprecated Use {@link com.epam.reportportal.utils.properties.PropertiesLoader} directly
  */
+@Deprecated
 public class ListenerParameters {
 
-	private String description;
-	private String uuid;
-	private String baseUrl;
-	private String projectName;
-	private String launchName;
-	private Mode launchRunningMode;
-	private Set<String> tags;
-	private Boolean enable;
-	private Boolean isSkippedAnIssue;
+    private String description;
+    private String uuid;
+    private String baseUrl;
+    private String projectName;
+    private String launchName;
+    private Mode launchRunningMode;
+    private Set<String> tags;
+    private Boolean enable;
+    private Boolean isSkippedAnIssue;
 
-	public ListenerParameters() {
+    public ListenerParameters() {
 
-	}
+    }
 
-	public ListenerParameters(Properties properties) {
-		if (properties != null) {
-			this.description = properties.getProperty(DESCRIPTION.getPropertyName());
-			this.uuid = properties.getProperty(UUID.getPropertyName());
-			this.baseUrl = properties.getProperty(BASE_URL.getPropertyName());
-			this.projectName = properties.getProperty(PROJECT_NAME.getPropertyName());
-			this.launchName = properties.getProperty(LAUNCH_NAME.getPropertyName());
-			this.tags = TagsParser.parseAsSet(properties.getProperty(LAUNCH_TAGS.getPropertyName()));
-			this.launchRunningMode = ListenersUtils.getLaunchMode(properties.getProperty(MODE.getPropertyName()));
-			this.enable = ListenersUtils.getEnable(properties.getProperty(ENABLE.getPropertyName()));
-			this.isSkippedAnIssue = ListenersUtils.getEnable(properties.getProperty(SKIPPED_AS_ISSUE.getPropertyName()));
-		}
-	}
+    public ListenerParameters(Properties properties) {
+        if (properties != null) {
+            this.description = properties.getProperty(DESCRIPTION.getPropertyName());
+            this.uuid = properties.getProperty(UUID.getPropertyName());
+            this.baseUrl = properties.getProperty(BASE_URL.getPropertyName());
+            this.projectName = properties.getProperty(PROJECT_NAME.getPropertyName());
+            this.launchName = properties.getProperty(LAUNCH_NAME.getPropertyName());
+            this.tags = TagsParser.parseAsSet(properties.getProperty(LAUNCH_TAGS.getPropertyName()));
+            this.launchRunningMode = ListenersUtils.getLaunchMode(properties.getProperty(MODE.getPropertyName()));
+            this.enable = ListenersUtils.getEnable(properties.getProperty(ENABLE.getPropertyName()));
+            this.isSkippedAnIssue = ListenersUtils
+                    .getEnable(properties.getProperty(SKIPPED_AS_ISSUE.getPropertyName()));
+        }
+    }
 
-	public String getUuid() {
-		return uuid;
-	}
+    public String getUuid() {
+        return uuid;
+    }
 
-	public void setUuid(String uuid) {
-		this.uuid = uuid;
-	}
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
 
-	public String getBaseUrl() {
-		return baseUrl;
-	}
+    public String getBaseUrl() {
+        return baseUrl;
+    }
 
-	public void setBaseUrl(String baseUrl) {
-		this.baseUrl = baseUrl;
-	}
+    public void setBaseUrl(String baseUrl) {
+        this.baseUrl = baseUrl;
+    }
 
-	public String getProjectName() {
-		return projectName;
-	}
+    public String getProjectName() {
+        return projectName;
+    }
 
-	public void setProjectName(String projectName) {
-		this.projectName = projectName;
-	}
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
+    }
 
-	public String getLaunchName() {
-		return launchName;
-	}
+    public String getLaunchName() {
+        return launchName;
+    }
 
-	public void setLaunchName(String launchName) {
-		this.launchName = launchName;
-	}
+    public void setLaunchName(String launchName) {
+        this.launchName = launchName;
+    }
 
-	public Set<String> getTags() {
-		return tags;
-	}
+    public Set<String> getTags() {
+        return tags;
+    }
 
-	public Mode getMode() {
-		return launchRunningMode;
-	}
+    public Mode getMode() {
+        return launchRunningMode;
+    }
 
-	public Boolean getEnable() {
-		return enable;
-	}
+    public Boolean getEnable() {
+        return enable;
+    }
 
-	public Boolean getIsSkippedAnIssue() {
-		return isSkippedAnIssue;
-	}
+    public Boolean getIsSkippedAnIssue() {
+        return isSkippedAnIssue;
+    }
 
-	public String getDescription() {
-		return description;
-	}
+    public String getDescription() {
+        return description;
+    }
 
-	public void setDescription(String description) {
-		this.description = description;
-	}
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-	@Override
-	public String toString() {
-		return "ListenerParameters [description=" + description + ", uuid=" + uuid + ", baseUrl=" + baseUrl + ", projectName=" + projectName
-				+ ", launchName=" + launchName + ", launchRunningMode=" + launchRunningMode + ", tags=" + tags + ", enable=" + enable
-				+ ", isSkippedAnIssue=" + isSkippedAnIssue + "]";
-	}
+    @Override
+    public String toString() {
+        return "ListenerParameters [description=" + description + ", uuid=" + uuid + ", baseUrl=" + baseUrl
+                + ", projectName=" + projectName
+                + ", launchName=" + launchName + ", launchRunningMode=" + launchRunningMode + ", tags=" + tags
+                + ", enable=" + enable
+                + ", isSkippedAnIssue=" + isSkippedAnIssue + "]";
+    }
 }
