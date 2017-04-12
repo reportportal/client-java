@@ -56,10 +56,10 @@ shadowJar {
 
 dependencies {
 
-    compile 'com.epam.reportportal:commons-model:3.0.0-BETA-1'
+    compile 'com.epam.reportportal:commons-model:3.0.0-RC1'
 
     compile 'com.google.guava:guava:20.0'
-    compile 'com.github.avarabyeu:restendpoint-jdk6:0.2.2'
+    compile 'com.github.avarabyeu:restendpoint-jdk6:0.2.3'
 
     shadow ('com.google.inject:guice:4.1.0')
     shadow 'com.fasterxml.jackson.core:jackson-databind:2.8.6'
