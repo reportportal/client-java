@@ -20,15 +20,18 @@
  */
 package com.epam.reportportal.listeners;
 
+import com.epam.reportportal.service.LoggingContext;
 import com.epam.reportportal.utils.TagsParser;
+import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.launch.Mode;
 
-import java.util.Properties;
 import java.util.Set;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.BASE_URL;
+import static com.epam.reportportal.utils.properties.ListenerProperty.BATCH_SIZE_LOGS;
 import static com.epam.reportportal.utils.properties.ListenerProperty.DESCRIPTION;
 import static com.epam.reportportal.utils.properties.ListenerProperty.ENABLE;
+import static com.epam.reportportal.utils.properties.ListenerProperty.IS_CONVERT_IMAGE;
 import static com.epam.reportportal.utils.properties.ListenerProperty.LAUNCH_NAME;
 import static com.epam.reportportal.utils.properties.ListenerProperty.LAUNCH_TAGS;
 import static com.epam.reportportal.utils.properties.ListenerProperty.MODE;
@@ -38,10 +41,7 @@ import static com.epam.reportportal.utils.properties.ListenerProperty.UUID;
 
 /**
  * Report portal listeners parameters
- *
- * @deprecated Use {@link com.epam.reportportal.utils.properties.PropertiesLoader} directly
  */
-@Deprecated
 public class ListenerParameters {
 
     private String description;
@@ -53,24 +53,34 @@ public class ListenerParameters {
     private Set<String> tags;
     private Boolean enable;
     private Boolean isSkippedAnIssue;
+    private Integer batchLogsSize;
+    private boolean convertImage;
 
     public ListenerParameters() {
 
     }
 
-    public ListenerParameters(Properties properties) {
-        if (properties != null) {
-            this.description = properties.getProperty(DESCRIPTION.getPropertyName());
-            this.uuid = properties.getProperty(UUID.getPropertyName());
-            this.baseUrl = properties.getProperty(BASE_URL.getPropertyName());
-            this.projectName = properties.getProperty(PROJECT_NAME.getPropertyName());
-            this.launchName = properties.getProperty(LAUNCH_NAME.getPropertyName());
-            this.tags = TagsParser.parseAsSet(properties.getProperty(LAUNCH_TAGS.getPropertyName()));
-            this.launchRunningMode = ListenersUtils.getLaunchMode(properties.getProperty(MODE.getPropertyName()));
-            this.enable = ListenersUtils.getEnable(properties.getProperty(ENABLE.getPropertyName()));
-            this.isSkippedAnIssue = ListenersUtils
-                    .getEnable(properties.getProperty(SKIPPED_AS_ISSUE.getPropertyName()));
-        }
+    public ListenerParameters(PropertiesLoader properties) {
+        this.description = properties.getProperty(DESCRIPTION);
+        this.uuid = properties.getProperty(UUID);
+        this.baseUrl = properties.getProperty(BASE_URL);
+        this.projectName = properties.getProperty(PROJECT_NAME);
+        this.launchName = properties.getProperty(LAUNCH_NAME);
+        this.tags = TagsParser.parseAsSet(properties.getProperty(LAUNCH_TAGS));
+        this.launchRunningMode = ListenersUtils.getLaunchMode(properties.getProperty(MODE));
+        this.enable = properties.getPropertyAsBoolean(ENABLE, true);
+        this.isSkippedAnIssue = properties.getPropertyAsBoolean(SKIPPED_AS_ISSUE, true);
+
+        this.batchLogsSize = properties.getPropertyAsInt(BATCH_SIZE_LOGS, LoggingContext.DEFAULT_BUFFER_SIZE);
+        this.convertImage = properties.getPropertyAsBoolean(IS_CONVERT_IMAGE, false);
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public String getUuid() {
@@ -105,36 +115,69 @@ public class ListenerParameters {
         this.launchName = launchName;
     }
 
+    public Mode getLaunchRunningMode() {
+        return launchRunningMode;
+    }
+
+    public void setLaunchRunningMode(Mode launchRunningMode) {
+        this.launchRunningMode = launchRunningMode;
+    }
+
     public Set<String> getTags() {
         return tags;
     }
 
-    public Mode getMode() {
-        return launchRunningMode;
+    public void setTags(Set<String> tags) {
+        this.tags = tags;
     }
 
     public Boolean getEnable() {
         return enable;
     }
 
-    public Boolean getIsSkippedAnIssue() {
+    public void setEnable(Boolean enable) {
+        this.enable = enable;
+    }
+
+    public Boolean getSkippedAnIssue() {
         return isSkippedAnIssue;
     }
 
-    public String getDescription() {
-        return description;
+    public void setSkippedAnIssue(Boolean skippedAnIssue) {
+        isSkippedAnIssue = skippedAnIssue;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public Integer getBatchLogsSize() {
+        return batchLogsSize;
+    }
+
+    public void setBatchLogsSize(Integer batchLogsSize) {
+        this.batchLogsSize = batchLogsSize;
+    }
+
+    public boolean isConvertImage() {
+        return convertImage;
+    }
+
+    public void setConvertImage(boolean convertImage) {
+        this.convertImage = convertImage;
     }
 
     @Override
     public String toString() {
-        return "ListenerParameters [description=" + description + ", uuid=" + uuid + ", baseUrl=" + baseUrl
-                + ", projectName=" + projectName
-                + ", launchName=" + launchName + ", launchRunningMode=" + launchRunningMode + ", tags=" + tags
-                + ", enable=" + enable
-                + ", isSkippedAnIssue=" + isSkippedAnIssue + "]";
+        final StringBuilder sb = new StringBuilder("ListenerParameters{");
+        sb.append("description='").append(description).append('\'');
+        sb.append(", uuid='").append(uuid).append('\'');
+        sb.append(", baseUrl='").append(baseUrl).append('\'');
+        sb.append(", projectName='").append(projectName).append('\'');
+        sb.append(", launchName='").append(launchName).append('\'');
+        sb.append(", launchRunningMode=").append(launchRunningMode);
+        sb.append(", tags=").append(tags);
+        sb.append(", enable=").append(enable);
+        sb.append(", isSkippedAnIssue=").append(isSkippedAnIssue);
+        sb.append(", batchLogsSize=").append(batchLogsSize);
+        sb.append(", convertImage=").append(convertImage);
+        sb.append('}');
+        return sb.toString();
     }
 }

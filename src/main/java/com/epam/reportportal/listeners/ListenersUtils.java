@@ -30,14 +30,11 @@ import com.epam.ta.reportportal.ws.model.launch.Mode;
 public final class ListenersUtils {
 
     private ListenersUtils() {
+        //statics only
     }
 
     public static Mode getLaunchMode(String mode) {
         return Mode.isExists(mode) ? Mode.valueOf(mode.toUpperCase()) : Mode.DEFAULT;
-    }
-
-    public static Boolean getEnable(String enable) {
-        return null == enable || Boolean.parseBoolean(enable);
     }
 
 }

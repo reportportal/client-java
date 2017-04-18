@@ -27,6 +27,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.io.Closer;
 import com.google.common.io.Resources;
+import org.apache.commons.lang.BooleanUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -40,6 +41,7 @@ import java.util.Properties;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.values;
 import static com.google.common.base.Suppliers.memoize;
+import static org.apache.commons.lang.BooleanUtils.toBoolean;
 
 /**
  * Load report portal launch start properties
@@ -82,6 +84,45 @@ public class PropertiesLoader {
      */
     public String getProperty(String propertyName) {
         return propertiesSupplier.get().getProperty(propertyName);
+    }
+
+    /**
+     * Get specified property
+     *
+     * @param propertyName Name of property
+     */
+    public String getProperty(ListenerProperty propertyName, String defaultValue) {
+        final String value = propertiesSupplier.get().getProperty(propertyName.getPropertyName());
+        return value != null ? value : defaultValue;
+    }
+
+    /**
+     * Get specified property
+     *
+     * @param propertyName Name of property
+     */
+    public boolean getPropertyAsBoolean(ListenerProperty propertyName, boolean defaultValue) {
+        final String value = propertiesSupplier.get().getProperty(propertyName.getPropertyName());
+        return null != value ? toBoolean(value) : defaultValue;
+    }
+
+    /**
+     * Get specified property
+     *
+     * @param propertyName Name of property
+     */
+    public int getPropertyAsInt(ListenerProperty propertyName, int defaultValue) {
+        final String value = propertiesSupplier.get().getProperty(propertyName.getPropertyName());
+        return null != value ? Integer.parseInt(value) : defaultValue;
+    }
+
+    /**
+     * Get specified property
+     *
+     * @param propertyName Name of property
+     */
+    public String getProperty(ListenerProperty propertyName) {
+        return propertiesSupplier.get().getProperty(propertyName.getPropertyName());
     }
 
     /**

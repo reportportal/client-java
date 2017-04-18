@@ -60,6 +60,6 @@ public class ConfigurationModule implements Module {
     @Provides
     @Singleton
     public ListenerParameters provideListenerProperties(PropertiesLoader propertiesLoader) {
-        return new ListenerParameters(propertiesLoader.getProperties());
+        return new ListenerParameters(propertiesLoader);
     }
 }

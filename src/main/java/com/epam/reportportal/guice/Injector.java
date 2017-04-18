@@ -149,6 +149,7 @@ public class Injector {
      * @param extensions Command-separated list of extension module classes
      * @return List of Guice's modules
      */
+    @SuppressWarnings("unchecked")
     private List<Module> buildExtensions(String extensions) {
         List<String> extensionClasses = Splitter.on(",").splitToList(extensions);
         List<Module> extensionModules = new ArrayList<Module>(extensionClasses.size());
