@@ -206,7 +206,7 @@ public class ReportPortal {
 
         //wait for the children to complete
         final Completable finishCompletion = Completable.concat(treeItem.children)
-                .andThen(itemId.flatMap(new Function<String, MaybeSource<OperationCompletionRS>>() {
+                .andThen(itemId.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
                     @Override
                     public Maybe<OperationCompletionRS> apply(String itemId) throws Exception {
                         return rpClient.finishTestItem(itemId, rq)
@@ -219,7 +219,7 @@ public class ReportPortal {
                         //cleanup children
                         treeItem.freeChildren();
                     }
-                }).ignoreElement()).cache();
+                })).ignoreElement().cache();
         finishCompletion.subscribeOn(Schedulers.io()).subscribe();
         //find parent and add to its queue
         final Maybe<String> parent = treeItem.parent;
