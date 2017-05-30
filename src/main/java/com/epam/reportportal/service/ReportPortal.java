@@ -137,7 +137,11 @@ public class ReportPortal {
                         return rpClient.finishLaunch(id, rq).doOnSuccess(LOG_SUCCESS).doOnError(LOG_ERROR);
                     }
                 })).cache();
-        finish.blockingGet();
+        try {
+            finish.blockingGet();
+        } catch (Exception e) {
+            LOGGER.error("Unable to finish launch in ReportPortal", e);
+        }
     }
 
     /**
