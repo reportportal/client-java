@@ -20,16 +20,15 @@
  */
 package com.epam.reportportal.utils.properties;
 
-import java.io.IOException;
-import java.util.Properties;
-
+import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.epam.reportportal.exception.InternalReportPortalClientException;
-import com.epam.reportportal.utils.properties.ListenerProperty;
-import com.epam.reportportal.utils.properties.PropertiesLoader;
+import java.io.IOException;
+import java.util.Properties;
+
+import static org.hamcrest.Matchers.is;
 
 public class PropertiesLoaderTest {
 
@@ -69,4 +68,10 @@ public class PropertiesLoaderTest {
 		PropertiesLoader.overrideWith(properties, overrides);
 		Assert.assertEquals("Incorrect override behaviour", properties.getProperty(propertyKey), "overridenFromPropertiesObject");
  	}
+
+	@Test
+	public void testUtf() throws IOException {
+		Assert.assertThat("Incorrect encoding!", PropertiesLoader.load("utf-demo.properties").getProperty("utf8"), is("привет мир!"));
+
+	}
 }
