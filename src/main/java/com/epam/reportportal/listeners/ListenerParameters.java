@@ -36,6 +36,7 @@ import static com.epam.reportportal.utils.properties.ListenerProperty.LAUNCH_NAM
 import static com.epam.reportportal.utils.properties.ListenerProperty.LAUNCH_TAGS;
 import static com.epam.reportportal.utils.properties.ListenerProperty.MODE;
 import static com.epam.reportportal.utils.properties.ListenerProperty.PROJECT_NAME;
+import static com.epam.reportportal.utils.properties.ListenerProperty.REPORTING_TIMEOUT;
 import static com.epam.reportportal.utils.properties.ListenerProperty.SKIPPED_AS_ISSUE;
 import static com.epam.reportportal.utils.properties.ListenerProperty.UUID;
 
@@ -55,6 +56,7 @@ public class ListenerParameters {
     private Boolean isSkippedAnIssue;
     private Integer batchLogsSize;
     private boolean convertImage;
+    private Integer reportingTimeout;
 
     public ListenerParameters() {
 
@@ -73,6 +75,7 @@ public class ListenerParameters {
 
         this.batchLogsSize = properties.getPropertyAsInt(BATCH_SIZE_LOGS, LoggingContext.DEFAULT_BUFFER_SIZE);
         this.convertImage = properties.getPropertyAsBoolean(IS_CONVERT_IMAGE, false);
+        this.reportingTimeout = properties.getPropertyAsInt(REPORTING_TIMEOUT, 5 * 60);
     }
 
     public String getDescription() {
@@ -161,6 +164,10 @@ public class ListenerParameters {
 
     public void setConvertImage(boolean convertImage) {
         this.convertImage = convertImage;
+    }
+
+    public Integer getReportingTimeout() {
+        return reportingTimeout;
     }
 
     @Override

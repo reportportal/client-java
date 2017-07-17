@@ -20,6 +20,7 @@
  */
 package com.epam.reportportal.service;
 
+import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.message.ReportPortalMessage;
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.ta.reportportal.ws.model.EntryCreatedRS;
@@ -51,6 +52,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.service.LoggingCallback.LOG_ERROR;
 import static com.epam.reportportal.service.LoggingCallback.LOG_SUCCESS;
@@ -79,8 +81,7 @@ public class ReportPortal {
      * REST Client
      */
     private final ReportPortalClient rpClient;
-    private final int logBufferSize;
-    private final boolean convertImage;
+    private final ListenerParameters parameters;
 
     /**
      * Messages queue to track items execution order
@@ -95,15 +96,14 @@ public class ReportPortal {
 
     private Maybe<String> launch;
 
-    private ReportPortal(ReportPortalClient rpClient, int logBufferSize, boolean convertImage) {
+    private ReportPortal(ReportPortalClient rpClient, ListenerParameters parameters) {
         this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
-        this.logBufferSize = logBufferSize;
-        this.convertImage = convertImage;
+        this.parameters = Preconditions.checkNotNull(parameters, "Parameters shouldn't be NULL");
     }
 
-    public static ReportPortal startLaunch(ReportPortalClient rpClient, int logBufferSize, boolean convertImage,
+    public static ReportPortal startLaunch(ReportPortalClient rpClient, ListenerParameters parameters,
             StartLaunchRQ rq) {
-        ReportPortal service = new ReportPortal(rpClient, logBufferSize, convertImage);
+        ReportPortal service = new ReportPortal(rpClient, parameters);
         service.startLaunch(rq);
         return service;
     }
@@ -138,7 +138,7 @@ public class ReportPortal {
                     }
                 })).cache();
         try {
-            finish.blockingGet();
+            finish.timeout(parameters.getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
         } catch (Exception e) {
             LOGGER.error("Unable to finish launch in ReportPortal", e);
         }
@@ -191,7 +191,7 @@ public class ReportPortal {
         }).cache();
         itemId.subscribeOn(Schedulers.io()).subscribe();
         QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement());
-        LoggingContext.init(itemId, this.rpClient, this.logBufferSize, this.convertImage);
+        LoggingContext.init(itemId, this.rpClient, parameters.getBatchLogsSize(), parameters.isConvertImage());
         return itemId;
     }
 

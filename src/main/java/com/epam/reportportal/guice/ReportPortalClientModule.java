@@ -28,6 +28,7 @@ import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.service.ReportPortalErrorHandler;
 import com.epam.reportportal.utils.SslUtils;
 import com.epam.reportportal.utils.properties.ListenerProperty;
+import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.avarabyeu.restendpoint.http.ErrorHandler;
 import com.github.avarabyeu.restendpoint.http.HttpClientRestEndpoint;
@@ -46,6 +47,7 @@ import com.google.inject.name.Named;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
@@ -123,11 +125,14 @@ public class ReportPortalClientModule implements Module {
      */
     @Provides
     public CloseableHttpAsyncClient provideHttpClient(
-            @ListenerPropertyValue(ListenerProperty.BASE_URL) String baseUrl,
-            @ListenerPropertyValue(ListenerProperty.UUID) final String uuid,
-            @Nullable @ListenerPropertyValue(ListenerProperty.KEYSTORE_RESOURCE) String keyStore,
-            @Nullable @ListenerPropertyValue(ListenerProperty.KEYSTORE_PASSWORD) String keyStorePassword)
+            PropertiesLoader propertiesLoader,
+            @Nullable RequestConfig requestConfig)
             throws MalformedURLException {
+
+        String baseUrl = propertiesLoader.getProperty(ListenerProperty.BASE_URL);
+        String keyStore = propertiesLoader.getProperty(ListenerProperty.KEYSTORE_RESOURCE);
+        String keyStorePassword = propertiesLoader.getProperty(ListenerProperty.KEYSTORE_PASSWORD);
+        final String uuid = propertiesLoader.getProperty(ListenerProperty.UUID);
 
         final HttpAsyncClientBuilder builder = HttpAsyncClients.custom();
         if (HTTPS.equals(new URL(baseUrl).getProtocol()) && keyStore != null) {
@@ -147,12 +152,19 @@ public class ReportPortalClientModule implements Module {
             }
 
         }
-        return builder.addInterceptorLast(new HttpRequestInterceptor() {
-            @Override
-            public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
-                request.setHeader(HttpHeaders.AUTHORIZATION, "bearer " + uuid);
-            }
-        }).build();
+        return builder.setDefaultRequestConfig(requestConfig == null ? RequestConfig.DEFAULT : requestConfig)
+                .addInterceptorLast(new HttpRequestInterceptor() {
+                    @Override
+                    public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
+                        request.setHeader(HttpHeaders.AUTHORIZATION, "bearer " + uuid);
+                    }
+                }).build();
+    }
+
+    @Provides
+    @Singleton
+    public RequestConfig requestConfig() {
+        return RequestConfig.DEFAULT;
     }
 
     /**
