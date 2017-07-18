@@ -32,7 +32,6 @@ import io.reactivex.Maybe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
@@ -121,7 +120,6 @@ public abstract class ReportPortal {
      */
     public static boolean emitLog(final String message, final String level, final Date time) {
         return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
-            @Nonnull
             @Override
             public SaveLogRQ apply(@Nullable String id) {
                 SaveLogRQ rq = new SaveLogRQ();
@@ -137,7 +135,6 @@ public abstract class ReportPortal {
 
     public static boolean emitLog(final String message, final String level, final Date time, final File file) {
         return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
-            @Nonnull
             @Override
             public SaveLogRQ apply(@Nullable String id) {
                 SaveLogRQ rq = new SaveLogRQ();
@@ -162,7 +159,6 @@ public abstract class ReportPortal {
 
     public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
         return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
-            @Nonnull
             @Override
             public SaveLogRQ apply(@Nullable String id) {
                 SaveLogRQ rq = new SaveLogRQ();
@@ -192,7 +188,7 @@ public abstract class ReportPortal {
     /**
      * Implementation for disabled Reporting
      */
-    public static ReportPortal NOOP_RP = new ReportPortal() {
+    public static final ReportPortal NOOP_RP = new ReportPortal() {
 
         @Override
         public Maybe<String> startLaunch(StartLaunchRQ rq) {

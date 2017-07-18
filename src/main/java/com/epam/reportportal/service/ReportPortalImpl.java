@@ -1,5 +1,6 @@
 package com.epam.reportportal.service;
 
+import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.ta.reportportal.ws.model.EntryCreatedRS;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
@@ -25,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import static com.epam.reportportal.service.LoggingCallback.LOG_ERROR;
 import static com.epam.reportportal.service.LoggingCallback.LOG_SUCCESS;
 import static com.epam.reportportal.service.LoggingCallback.logCreated;
+import static com.google.common.collect.Lists.newArrayList;
 
 /**
  * Default Implementation of ReportPortal reporter
@@ -86,7 +88,7 @@ public class ReportPortalImpl extends ReportPortal {
      */
     public void finishLaunch(final FinishExecutionRQ rq) {
         final Maybe<OperationCompletionRS> finish = Completable
-                .concat(QUEUE.getUnchecked(this.launch).children)
+                .concat(QUEUE.getUnchecked(this.launch).getChildren())
                 .andThen(this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
                     @Override
                     public Maybe<OperationCompletionRS> apply(String id) throws Exception {
@@ -157,15 +159,18 @@ public class ReportPortalImpl extends ReportPortal {
      * @param itemId Item ID promise
      * @param rq     Finish request
      */
-    public void finishTestItem(Maybe<String> itemId, final FinishTestItemRQ rq) {
+    public void finishTestItem(final Maybe<String> itemId, final FinishTestItemRQ rq) {
         Preconditions.checkArgument(null != itemId, "ItemID should not be null");
 
         QUEUE.getUnchecked(launch).addToQueue(LoggingContext.complete());
 
-        final TreeItem treeItem = QUEUE.getUnchecked(itemId);
+        final TreeItem treeItem = QUEUE.getIfPresent(itemId);
+        if (null == treeItem) {
+            throw new InternalReportPortalClientException("Item " + itemId + " not found in the cache");
+        }
 
         //wait for the children to complete
-        final Completable finishCompletion = Completable.concat(treeItem.children)
+        final Completable finishCompletion = Completable.concat(treeItem.getChildren())
                 .andThen(itemId.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
                     @Override
                     public Maybe<OperationCompletionRS> apply(String itemId) throws Exception {
@@ -173,16 +178,16 @@ public class ReportPortalImpl extends ReportPortal {
                                 .doOnSuccess(LOG_SUCCESS)
                                 .doOnError(LOG_ERROR);
                     }
-                }).doAfterSuccess(new Consumer<OperationCompletionRS>() {
+                })).doAfterSuccess(new Consumer<OperationCompletionRS>() {
                     @Override
                     public void accept(OperationCompletionRS operationCompletionRS) throws Exception {
                         //cleanup children
-                        treeItem.freeChildren();
+                        QUEUE.invalidate(itemId);
                     }
-                })).ignoreElement().cache();
+                }).ignoreElement().cache();
         finishCompletion.subscribeOn(Schedulers.io()).subscribe();
         //find parent and add to its queue
-        final Maybe<String> parent = treeItem.parent;
+        final Maybe<String> parent = treeItem.getParent();
         if (null != parent) {
             QUEUE.getUnchecked(parent).addToQueue(finishCompletion);
         } else {
@@ -196,10 +201,10 @@ public class ReportPortalImpl extends ReportPortal {
      * Wrapper around TestItem entity to be able to track parent and children items
      */
     static class TreeItem {
-        Maybe<String> parent;
-        List<Completable> children = new CopyOnWriteArrayList<Completable>();
+        private Maybe<String> parent;
+        private List<Completable> children = new CopyOnWriteArrayList<Completable>();
 
-        TreeItem withParent(Maybe<String> parent) {
+        synchronized TreeItem withParent(Maybe<String> parent) {
             this.parent = parent;
             return this;
         }
@@ -209,8 +214,12 @@ public class ReportPortalImpl extends ReportPortal {
             return this;
         }
 
-        void freeChildren() {
-            this.children = null;
+        List<Completable> getChildren() {
+            return newArrayList(this.children);
+        }
+
+        synchronized Maybe<String> getParent() {
+            return parent;
         }
     }
 }
