@@ -20,41 +20,24 @@
  */
 package com.epam.reportportal.service;
 
+import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.message.ReportPortalMessage;
 import com.epam.reportportal.message.TypeAwareByteSource;
-import com.epam.ta.reportportal.ws.model.EntryCreatedRS;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
-import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import com.google.common.base.Preconditions;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import io.reactivex.Completable;
 import io.reactivex.Maybe;
-import io.reactivex.MaybeSource;
-import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Function;
-import io.reactivex.schedulers.Schedulers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
 
-import static com.epam.reportportal.service.LoggingCallback.LOG_ERROR;
-import static com.epam.reportportal.service.LoggingCallback.LOG_SUCCESS;
-import static com.epam.reportportal.service.LoggingCallback.logCreated;
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
 import static com.google.common.io.Files.toByteArray;
 
@@ -64,46 +47,17 @@ import static com.google.common.io.Files.toByteArray;
  *
  * @author Andrei Varabyeu
  */
-public class ReportPortal {
+public abstract class ReportPortal {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ReportPortal.class);
 
-    private static final Function<EntryCreatedRS, String> TO_ID = new Function<EntryCreatedRS, String>() {
-        @Override
-        public String apply(EntryCreatedRS rs) throws Exception {
-            return rs.getId();
-        }
-    };
-
-    /**
-     * REST Client
-     */
-    private final ReportPortalClient rpClient;
-    private final int logBufferSize;
-    private final boolean convertImage;
-
-    /**
-     * Messages queue to track items execution order
-     */
-    private final LoadingCache<Maybe<String>, TreeItem> QUEUE = CacheBuilder.newBuilder().build(
-            new CacheLoader<Maybe<String>, TreeItem>() {
-                @Override
-                public TreeItem load(Maybe<String> key) throws Exception {
-                    return new TreeItem();
-                }
-            });
-
-    private Maybe<String> launch;
-
-    private ReportPortal(ReportPortalClient rpClient, int logBufferSize, boolean convertImage) {
-        this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
-        this.logBufferSize = logBufferSize;
-        this.convertImage = convertImage;
-    }
-
-    public static ReportPortal startLaunch(ReportPortalClient rpClient, int logBufferSize, boolean convertImage,
+    public static ReportPortal startLaunch(ReportPortalClient rpClient, ListenerParameters parameters,
             StartLaunchRQ rq) {
-        ReportPortal service = new ReportPortal(rpClient, logBufferSize, convertImage);
+        if (!parameters.getEnable()) {
+            return NOOP_RP;
+        }
+
+        ReportPortalImpl service = new ReportPortalImpl(rpClient, parameters);
         service.startLaunch(rq);
         return service;
     }
@@ -114,35 +68,14 @@ public class ReportPortal {
      * @param rq Request Data
      * @return Launch ID promise
      */
-    public Maybe<String> startLaunch(StartLaunchRQ rq) {
-        this.launch = rpClient.startLaunch(rq)
-                .doOnSuccess(logCreated("launch"))
-                .doOnError(LOG_ERROR)
-                .map(TO_ID).cache();
-        this.launch.subscribeOn(Schedulers.io()).subscribe();
-        return launch;
-    }
+    abstract public Maybe<String> startLaunch(StartLaunchRQ rq);
 
     /**
      * Finishes launch in ReportPortal. Blocks until all items are reported correctly
      *
      * @param rq Finish RQ
      */
-    public void finishLaunch(final FinishExecutionRQ rq) {
-        final Maybe<OperationCompletionRS> finish = Completable
-                .concat(QUEUE.getUnchecked(this.launch).children)
-                .andThen(this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
-                    @Override
-                    public Maybe<OperationCompletionRS> apply(String id) throws Exception {
-                        return rpClient.finishLaunch(id, rq).doOnSuccess(LOG_SUCCESS).doOnError(LOG_ERROR);
-                    }
-                })).cache();
-        try {
-            finish.blockingGet();
-        } catch (Exception e) {
-            LOGGER.error("Unable to finish launch in ReportPortal", e);
-        }
-    }
+    abstract public void finishLaunch(final FinishExecutionRQ rq);
 
     /**
      * Starts new test item in ReportPortal asynchronously (non-blocking)
@@ -150,22 +83,7 @@ public class ReportPortal {
      * @param rq Start RQ
      * @return Test Item ID promise
      */
-    public Maybe<String> startTestItem(final StartTestItemRQ rq) {
-        final Maybe<String> testItem = this.launch.flatMap(new Function<String, Maybe<String>>() {
-            @Override
-            public Maybe<String> apply(String id) throws Exception {
-                rq.setLaunchId(id);
-                return rpClient.startTestItem(rq)
-                        .doOnSuccess(logCreated("item"))
-                        .doOnError(LOG_ERROR)
-                        .map(TO_ID);
-
-            }
-        }).cache();
-        testItem.subscribeOn(Schedulers.io()).subscribe();
-        QUEUE.getUnchecked(launch).addToQueue(testItem.ignoreElement());
-        return testItem;
-    }
+    abstract public Maybe<String> startTestItem(final StartTestItemRQ rq);
 
     /**
      * Starts new test item in ReportPortal asynchronously (non-blocking)
@@ -173,27 +91,7 @@ public class ReportPortal {
      * @param rq Start RQ
      * @return Test Item ID promise
      */
-    public Maybe<String> startTestItem(final Maybe<String> parentId, final StartTestItemRQ rq) {
-        final Maybe<String> itemId = this.launch.flatMap(new Function<String, Maybe<String>>() {
-            @Override
-            public Maybe<String> apply(final String launchId) throws Exception {
-                return parentId.flatMap(new Function<String, MaybeSource<String>>() {
-                    @Override
-                    public MaybeSource<String> apply(String parentId) throws Exception {
-                        rq.setLaunchId(launchId);
-                        return rpClient.startTestItem(parentId, rq)
-                                .doOnSuccess(logCreated("item"))
-                                .doOnError(LOG_ERROR)
-                                .map(TO_ID);
-                    }
-                });
-            }
-        }).cache();
-        itemId.subscribeOn(Schedulers.io()).subscribe();
-        QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement());
-        LoggingContext.init(itemId, this.rpClient, this.logBufferSize, this.convertImage);
-        return itemId;
-    }
+    abstract public Maybe<String> startTestItem(final Maybe<String> parentId, final StartTestItemRQ rq);
 
     /**
      * Finishes Test Item in ReportPortal. Non-blocking. Schedules finish after success of all child items
@@ -201,62 +99,7 @@ public class ReportPortal {
      * @param itemId Item ID promise
      * @param rq     Finish request
      */
-    public void finishTestItem(Maybe<String> itemId, final FinishTestItemRQ rq) {
-        Preconditions.checkArgument(null != itemId, "ItemID should not be null");
-
-        QUEUE.getUnchecked(launch).addToQueue(LoggingContext.complete());
-
-        final TreeItem treeItem = QUEUE.getUnchecked(itemId);
-
-        //wait for the children to complete
-        final Completable finishCompletion = Completable.concat(treeItem.children)
-                .andThen(itemId.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
-                    @Override
-                    public Maybe<OperationCompletionRS> apply(String itemId) throws Exception {
-                        return rpClient.finishTestItem(itemId, rq)
-                                .doOnSuccess(LOG_SUCCESS)
-                                .doOnError(LOG_ERROR);
-                    }
-                }).doAfterSuccess(new Consumer<OperationCompletionRS>() {
-                    @Override
-                    public void accept(OperationCompletionRS operationCompletionRS) throws Exception {
-                        //cleanup children
-                        treeItem.freeChildren();
-                    }
-                })).ignoreElement().cache();
-        finishCompletion.subscribeOn(Schedulers.io()).subscribe();
-        //find parent and add to its queue
-        final Maybe<String> parent = treeItem.parent;
-        if (null != parent) {
-            QUEUE.getUnchecked(parent).addToQueue(finishCompletion);
-        } else {
-            //seems like this is root item
-            QUEUE.getUnchecked(this.launch).addToQueue(finishCompletion);
-        }
-
-    }
-
-    /**
-     * Wrapper around TestItem entity to be able to track parent and children items
-     */
-    static class TreeItem {
-        Maybe<String> parent;
-        List<Completable> children = new CopyOnWriteArrayList<Completable>();
-
-        TreeItem withParent(Maybe<String> parent) {
-            this.parent = parent;
-            return this;
-        }
-
-        TreeItem addToQueue(Completable completable) {
-            this.children.add(completable);
-            return this;
-        }
-
-        void freeChildren() {
-            this.children = null;
-        }
-    }
+    abstract public void finishTestItem(Maybe<String> itemId, final FinishTestItemRQ rq);
 
     /**
      * Emits log message if there is any active context attached to the current thread
@@ -277,7 +120,6 @@ public class ReportPortal {
      */
     public static boolean emitLog(final String message, final String level, final Date time) {
         return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
-            @Nonnull
             @Override
             public SaveLogRQ apply(@Nullable String id) {
                 SaveLogRQ rq = new SaveLogRQ();
@@ -293,7 +135,6 @@ public class ReportPortal {
 
     public static boolean emitLog(final String message, final String level, final Date time, final File file) {
         return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
-            @Nonnull
             @Override
             public SaveLogRQ apply(@Nullable String id) {
                 SaveLogRQ rq = new SaveLogRQ();
@@ -318,7 +159,6 @@ public class ReportPortal {
 
     public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
         return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
-            @Nonnull
             @Override
             public SaveLogRQ apply(@Nullable String id) {
                 SaveLogRQ rq = new SaveLogRQ();
@@ -345,4 +185,34 @@ public class ReportPortal {
         });
     }
 
+    /**
+     * Implementation for disabled Reporting
+     */
+    public static final ReportPortal NOOP_RP = new ReportPortal() {
+
+        @Override
+        public Maybe<String> startLaunch(StartLaunchRQ rq) {
+            return Maybe.empty();
+        }
+
+        @Override
+        public void finishLaunch(FinishExecutionRQ rq) {
+
+        }
+
+        @Override
+        public Maybe<String> startTestItem(StartTestItemRQ rq) {
+            return Maybe.empty();
+        }
+
+        @Override
+        public Maybe<String> startTestItem(Maybe<String> parentId, StartTestItemRQ rq) {
+            return Maybe.empty();
+        }
+
+        @Override
+        public void finishTestItem(Maybe<String> itemId, FinishTestItemRQ rq) {
+
+        }
+    };
 }
