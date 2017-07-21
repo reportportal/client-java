@@ -121,7 +121,7 @@ public class ReportPortalImpl extends ReportPortal {
             }
         }).cache();
         testItem.subscribeOn(Schedulers.io()).subscribe();
-        QUEUE.getUnchecked(launch).addToQueue(testItem.ignoreElement());
+        QUEUE.getUnchecked(testItem).addToQueue(testItem.ignoreElement());
         return testItem;
     }
 
