@@ -1,6 +1,5 @@
 package com.epam.reportportal.service;
 
-import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.ta.reportportal.ws.model.EntryCreatedRS;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
@@ -164,9 +163,10 @@ public class ReportPortalImpl extends ReportPortal {
 
         QUEUE.getUnchecked(launch).addToQueue(LoggingContext.complete());
 
-        final TreeItem treeItem = QUEUE.getIfPresent(itemId);
+        TreeItem treeItem = QUEUE.getIfPresent(itemId);
         if (null == treeItem) {
-            throw new InternalReportPortalClientException("Item " + itemId + " not found in the cache");
+            treeItem = new TreeItem();
+            LOGGER.error("Item {} not found in the cache", itemId);
         }
 
         //wait for the children to complete
