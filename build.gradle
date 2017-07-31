@@ -101,6 +101,12 @@ javadoc() {
 }
 
 
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+    archives shadowJar
+}
+
 publishing {
     publications {
         shadow(MavenPublication) {
