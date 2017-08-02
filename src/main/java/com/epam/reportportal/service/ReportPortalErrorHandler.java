@@ -58,7 +58,7 @@ public class ReportPortalErrorHandler extends DefaultErrorHandler {
             ErrorRS errorRS = deserializeError(body);
             if (null != errorRS) {
 
-                //ok, it's know ReportPortal error
+                //ok, it's known ReportPortal error
                 throw new ReportPortalException(statusCode, statusMessage, errorRS);
             } else {
                 //there is some unknown error since we cannot de-serialize it into default error object
