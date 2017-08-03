@@ -1,7 +1,10 @@
 package com.epam.reportportal.service;
 
+import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.utils.RetryWithDelay;
 import com.epam.ta.reportportal.ws.model.EntryCreatedRS;
+import com.epam.ta.reportportal.ws.model.ErrorType;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
@@ -16,6 +19,7 @@ import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
+import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
 import java.util.List;
@@ -40,6 +44,8 @@ public class ReportPortalImpl extends ReportPortal {
             return rs.getId();
         }
     };
+    private static final int ITEM_FINISH_MAX_RETRIES = 10;
+    private static final int ITEM_FINISH_RETRY_TIMEOUT = 10;
 
     /**
      * REST Client
@@ -175,6 +181,14 @@ public class ReportPortalImpl extends ReportPortal {
                     @Override
                     public Maybe<OperationCompletionRS> apply(String itemId) throws Exception {
                         return rpClient.finishTestItem(itemId, rq)
+                                .retry(new RetryWithDelay(new Predicate<Throwable>() {
+                                    @Override
+                                    public boolean test(Throwable throwable) throws Exception {
+                                        return throwable instanceof ReportPortalException
+                                                && ErrorType.FINISH_ITEM_NOT_ALLOWED
+                                                .equals(((ReportPortalException) throwable).getError().getErrorType());
+                                    }
+                                }, ITEM_FINISH_MAX_RETRIES, TimeUnit.SECONDS.toMillis(ITEM_FINISH_RETRY_TIMEOUT)))
                                 .doOnSuccess(LOG_SUCCESS)
                                 .doOnError(LOG_ERROR);
                     }
