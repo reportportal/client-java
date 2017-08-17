@@ -97,7 +97,7 @@ public class ReportPortalImpl extends ReportPortal {
                 .andThen(this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
                     @Override
                     public Maybe<OperationCompletionRS> apply(String id) throws Exception {
-                        System.setProperty("ID_LAUNCH",id);
+                        System.setProperty("rp.launch.id",id);
                         return rpClient.finishLaunch(id, rq).doOnSuccess(LOG_SUCCESS).doOnError(LOG_ERROR);
                     }
                 })).cache();
