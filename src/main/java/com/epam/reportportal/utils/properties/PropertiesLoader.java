@@ -28,7 +28,6 @@ import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.io.Closer;
 import com.google.common.io.Resources;
-import org.apache.commons.lang.BooleanUtils;
 
 import java.io.*;
 import java.net.Authenticator;
@@ -179,7 +178,6 @@ public class PropertiesLoader {
         overrideWith(props, System.getProperties());
         overrideWith(props, System.getenv());
 
-        validateProperties(props);
         setProxyProperties(props);
         return props;
     }
@@ -209,6 +207,13 @@ public class PropertiesLoader {
             closer.close();
         }
         return props;
+    }
+
+	/**
+	 * Validates properties
+	 */
+	public void validate() {
+        validateProperties(this.getProperties());
     }
 
     /**

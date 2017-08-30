@@ -40,6 +40,8 @@ public class ConfigurationModule implements Module {
     @Override
     public void configure(Binder binder) {
         final PropertiesLoader properties = PropertiesLoader.load();
+        properties.validate();
+
         Names.bindProperties(binder, properties.getProperties());
         for (final ListenerProperty listenerProperty : ListenerProperty.values()) {
             binder.bind(Key.get(String.class, ListenerPropertyBinder.named(listenerProperty)))
