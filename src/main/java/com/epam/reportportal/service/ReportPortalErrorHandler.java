@@ -3,7 +3,7 @@
  *
  *
  * This file is part of EPAM Report Portal.
- * https://github.com/reportportal/client-java-core
+ * https://github.com/reportportal/client
  *
  * Report Portal is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,7 +58,7 @@ public class ReportPortalErrorHandler extends DefaultErrorHandler {
             ErrorRS errorRS = deserializeError(body);
             if (null != errorRS) {
 
-                //ok, it's know ReportPortal error
+                //ok, it's known ReportPortal error
                 throw new ReportPortalException(statusCode, statusMessage, errorRS);
             } else {
                 //there is some unknown error since we cannot de-serialize it into default error object

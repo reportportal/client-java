@@ -3,7 +3,7 @@
  *
  *
  * This file is part of EPAM Report Portal.
- * https://github.com/reportportal/client-java-core
+ * https://github.com/reportportal/client-core
  *
  * Report Portal is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.List;
 
 /**
@@ -94,7 +95,9 @@ public class ReportPortalClientModule implements Module {
     @Provides
     @Singleton
     public Serializer provideSerializer() {
-        return new JacksonSerializer(new ObjectMapper());
+        final ObjectMapper om = new ObjectMapper();
+        om.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ"));
+        return new JacksonSerializer(om);
     }
 
     @Provides

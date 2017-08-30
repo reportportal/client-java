@@ -1,7 +1,7 @@
 plugins {
     id 'net.researchgate.release' version '2.4.1'
     id "com.jfrog.bintray" version "1.7"
-    id 'com.github.johnrengelman.shadow' version '1.2.4'
+    id 'com.github.johnrengelman.shadow' version '2.0.1'
 
 }
 apply plugin: 'java'
@@ -101,9 +101,21 @@ javadoc() {
 }
 
 
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+    archives shadowJar
+}
+
 publishing {
     publications {
-        shadow(MavenPublication) {
+        shadow(MavenPublication) { publication ->
+            project.shadow.component(publication)
+//
+//
+//            artifact project.tasks.shadowJar
+            artifact project.tasks.javadocJar
+            artifact project.tasks.sourcesJar
 
             pom.withXml {
                 def root = asNode()
@@ -116,9 +128,9 @@ publishing {
                 }
             }
 
-            from components.shadow
             groupId 'com.epam.reportportal'
             artifactId "$project.name"
+
         }
     }
 }

@@ -1,7 +1,11 @@
 package com.epam.reportportal.service;
 
+import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.utils.LaunchFile;
+import com.epam.reportportal.utils.RetryWithDelay;
 import com.epam.ta.reportportal.ws.model.EntryCreatedRS;
+import com.epam.ta.reportportal.ws.model.ErrorType;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
@@ -16,6 +20,7 @@ import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
+import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
 import java.util.List;
@@ -40,6 +45,8 @@ public class ReportPortalImpl extends ReportPortal {
             return rs.getId();
         }
     };
+    private static final int ITEM_FINISH_MAX_RETRIES = 10;
+    private static final int ITEM_FINISH_RETRY_TIMEOUT = 10;
 
     /**
      * REST Client
@@ -59,6 +66,7 @@ public class ReportPortalImpl extends ReportPortal {
             });
 
     private Maybe<String> launch;
+    private Maybe<LaunchFile> launchFile;
 
     ReportPortalImpl(ReportPortalClient rpClient, ListenerParameters parameters) {
         this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
@@ -75,8 +83,16 @@ public class ReportPortalImpl extends ReportPortal {
         this.launch = rpClient.startLaunch(rq)
                 .doOnSuccess(logCreated("launch"))
                 .doOnError(LOG_ERROR)
-                .map(TO_ID).cache();
+                .map(TO_ID)
+                .doOnSuccess(new Consumer<String>() {
+                    @Override
+                    public void accept(String id) throws Exception {
+                        System.setProperty("rp.launch.id",id);
+                    }
+                })
+                .cache();
         this.launch.subscribeOn(Schedulers.io()).subscribe();
+        this.launchFile = LaunchFile.create(this.launch);
         return launch;
     }
 
@@ -86,12 +102,17 @@ public class ReportPortalImpl extends ReportPortal {
      * @param rq Finish RQ
      */
     public void finishLaunch(final FinishExecutionRQ rq) {
-        final Maybe<OperationCompletionRS> finish = Completable
+        final Maybe<?> finish = Completable
                 .concat(QUEUE.getUnchecked(this.launch).getChildren())
                 .andThen(this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
                     @Override
                     public Maybe<OperationCompletionRS> apply(String id) throws Exception {
                         return rpClient.finishLaunch(id, rq).doOnSuccess(LOG_SUCCESS).doOnError(LOG_ERROR);
+                    }
+                })).ignoreElement().andThen(launchFile.doOnSuccess(new Consumer<LaunchFile>() {
+                    @Override
+                    public void accept(LaunchFile launchFile) throws Exception {
+                        launchFile.remove();
                     }
                 })).cache();
         try {
@@ -175,6 +196,14 @@ public class ReportPortalImpl extends ReportPortal {
                     @Override
                     public Maybe<OperationCompletionRS> apply(String itemId) throws Exception {
                         return rpClient.finishTestItem(itemId, rq)
+                                .retry(new RetryWithDelay(new Predicate<Throwable>() {
+                                    @Override
+                                    public boolean test(Throwable throwable) throws Exception {
+                                        return throwable instanceof ReportPortalException
+                                                && ErrorType.FINISH_ITEM_NOT_ALLOWED
+                                                .equals(((ReportPortalException) throwable).getError().getErrorType());
+                                    }
+                                }, ITEM_FINISH_MAX_RETRIES, TimeUnit.SECONDS.toMillis(ITEM_FINISH_RETRY_TIMEOUT)))
                                 .doOnSuccess(LOG_SUCCESS)
                                 .doOnError(LOG_ERROR);
                     }
