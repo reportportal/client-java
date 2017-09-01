@@ -91,7 +91,7 @@ public class ReportPortalImpl extends ReportPortal {
                     }
                 })
                 .cache();
-        this.launch.subscribeOn(Schedulers.io()).subscribe();
+        this.launch.subscribeOn(Schedulers.computation()).subscribe();
         this.launchFile = LaunchFile.create(this.launch);
         return launch;
     }
@@ -140,7 +140,7 @@ public class ReportPortalImpl extends ReportPortal {
 
             }
         }).cache();
-        testItem.subscribeOn(Schedulers.io()).subscribe();
+        testItem.subscribeOn(Schedulers.computation()).subscribe();
         QUEUE.getUnchecked(testItem).addToQueue(testItem.ignoreElement());
         return testItem;
     }
@@ -167,7 +167,7 @@ public class ReportPortalImpl extends ReportPortal {
                 });
             }
         }).cache();
-        itemId.subscribeOn(Schedulers.io()).subscribe();
+        itemId.subscribeOn(Schedulers.computation()).subscribe();
         QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement());
         LoggingContext.init(itemId, this.rpClient, parameters.getBatchLogsSize(), parameters.isConvertImage());
         return itemId;
@@ -214,7 +214,7 @@ public class ReportPortalImpl extends ReportPortal {
                         QUEUE.invalidate(itemId);
                     }
                 }).ignoreElement().cache();
-        finishCompletion.subscribeOn(Schedulers.io()).subscribe();
+        finishCompletion.subscribeOn(Schedulers.computation()).subscribe();
         //find parent and add to its queue
         final Maybe<String> parent = treeItem.getParent();
         if (null != parent) {

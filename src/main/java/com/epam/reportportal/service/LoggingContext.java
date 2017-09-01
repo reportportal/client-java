@@ -148,7 +148,7 @@ public class LoggingContext {
                         throwable.printStackTrace();
                     }
                 })
-                .subscribeOn(Schedulers.io()).subscribe();
+                .observeOn(Schedulers.computation()).subscribe();
 
     }
 
