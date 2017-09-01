@@ -18,26 +18,29 @@
  * You should have received a copy of the GNU General Public License
  * along with Report Portal.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.epam.reportportal.utils;
+package com.epam.reportportal.utils.markdown;
 
+import com.epam.reportportal.utils.markdown.MarkdownUtils;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static com.epam.reportportal.utils.markdown.MarkdownUtils.asCode;
 
 /**
  *
  * @author Andrei Varabyeu
  *
  */
-public class ReportPortalUtilsTest {
+public class MarkdownUtilsTest {
 	@Test
 	public void asMarkdown() throws Exception {
-		Assert.assertEquals("Incorrect markdown prefix", "!!!MARKDOWN_MODE!!!hello", ReportPortalUtils.asMarkdown("hello"));
+		Assert.assertEquals("Incorrect markdown prefix", "!!!MARKDOWN_MODE!!!hello", MarkdownUtils.asMarkdown("hello"));
 	}
 
 	@Test
 	public void toMarkdownScript() throws Exception {
 		Assert.assertEquals("Incorrect markdown prefix", "!!!MARKDOWN_MODE!!!```groovy\nhello\n```",
-				ReportPortalUtils.toMarkdownCode("groovy", "hello"));
+				asCode("groovy", "hello"));
 	}
 
 }

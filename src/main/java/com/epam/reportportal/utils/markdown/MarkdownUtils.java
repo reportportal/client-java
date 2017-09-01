@@ -18,7 +18,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Report Portal.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.epam.reportportal.utils;
+package com.epam.reportportal.utils.markdown;
 
 import static com.google.common.base.Strings.nullToEmpty;
 
@@ -27,7 +27,7 @@ import static com.google.common.base.Strings.nullToEmpty;
  *
  * @author Andrei Varabyeu
  */
-public class ReportPortalUtils {
+public class MarkdownUtils {
 
 	public static final String MARKDOWN_MODE = "!!!MARKDOWN_MODE!!!";
 	private static final char NEW_LINE = '\n';
@@ -49,7 +49,7 @@ public class ReportPortalUtils {
 	 * @param script   Script
 	 * @return Message to be sent to ReportPortal
 	 */
-	public static String toMarkdownCode(String language, String script) {
+	public static String asCode(String language, String script) {
 		//@formatter:off
 		return new StringBuilder()
 				.append(MARKDOWN_MODE)
