@@ -3,7 +3,7 @@
  *
  *
  * This file is part of EPAM Report Portal.
- * https://github.com/reportportal/client
+ * https://github.com/reportportal/client-java-core
  *
  * Report Portal is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,6 +59,13 @@ public abstract class ReportPortal {
 
         ReportPortalImpl service = new ReportPortalImpl(rpClient, parameters);
         service.startLaunch(rq);
+        return service;
+    }
+
+    public static ReportPortal reuseLaunch(ReportPortalClient rpClient, ListenerParameters parameters,
+            String currentLaunchId) {
+        ReportPortalImpl service = new ReportPortalImpl(rpClient, parameters);
+        service.reuseLaunch(currentLaunchId);
         return service;
     }
 
@@ -147,9 +154,9 @@ public abstract class ReportPortal {
                     SaveLogRQ.File f = new SaveLogRQ.File();
                     f.setContentType(detect(file));
                     f.setContent(toByteArray(file));
-					
+
                     f.setName(UUID.randomUUID().toString());
-                    rq.setFile(f);					
+                    rq.setFile(f);
                 } catch (IOException e) {
                     // seems like there is some problem. Do not report an file
                     LOGGER.error("Cannot send file to ReportPortal", e);

@@ -96,6 +96,19 @@ public class ReportPortalImpl extends ReportPortal {
         return launch;
     }
 
+    public Maybe<String> reuseLaunch(final String currentLaunchId) {
+        this.launch = Maybe.create(new MaybeOnSubscribe<String>()
+        {
+            @Override
+            public void subscribe(MaybeEmitter<String> e) throws Exception
+            {
+                e.onSuccess(currentLaunchId);
+            }
+        });
+        this.launch.subscribeOn(Schedulers.io()).subscribe();
+        return launch;
+    }
+
     /**
      * Finishes launch in ReportPortal. Blocks until all items are reported correctly
      *
