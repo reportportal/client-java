@@ -52,7 +52,7 @@ public abstract class ReportPortal {
     static final Logger LOGGER = LoggerFactory.getLogger(ReportPortal.class);
 
     public static ReportPortal startLaunch(ReportPortalClient rpClient, ListenerParameters parameters,
-            StartLaunchRQ rq) {
+                                           StartLaunchRQ rq) {
         if (!parameters.getEnable()) {
             return NOOP_RP;
         }
@@ -62,10 +62,18 @@ public abstract class ReportPortal {
         return service;
     }
 
-    public static ReportPortal reuseLaunch(ReportPortalClient rpClient, ListenerParameters parameters,
-            String currentLaunchId) {
+    /**
+     * Factory method for {@link ReportPortal} that uses already started launch
+     *
+     * @param rpClient        ReportPortal client
+     * @param parameters      Listener Parameters
+     * @param currentLaunchId Launch to be used
+     * @return
+     */
+    public static ReportPortal withLauch(ReportPortalClient rpClient, ListenerParameters parameters,
+                                         Maybe<String> currentLaunchId) {
         ReportPortalImpl service = new ReportPortalImpl(rpClient, parameters);
-        service.reuseLaunch(currentLaunchId);
+        service.useLaunch(currentLaunchId);
         return service;
     }
 

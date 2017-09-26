@@ -4,12 +4,7 @@ import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.utils.LaunchFile;
 import com.epam.reportportal.utils.RetryWithDelay;
-import com.epam.ta.reportportal.ws.model.EntryCreatedRS;
-import com.epam.ta.reportportal.ws.model.ErrorType;
-import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
-import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
-import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
-import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
@@ -27,9 +22,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
-import static com.epam.reportportal.service.LoggingCallback.LOG_ERROR;
-import static com.epam.reportportal.service.LoggingCallback.LOG_SUCCESS;
-import static com.epam.reportportal.service.LoggingCallback.logCreated;
+import static com.epam.reportportal.service.LoggingCallback.*;
 import static com.google.common.collect.Lists.newArrayList;
 
 /**
@@ -87,7 +80,7 @@ public class ReportPortalImpl extends ReportPortal {
                 .doOnSuccess(new Consumer<String>() {
                     @Override
                     public void accept(String id) throws Exception {
-                        System.setProperty("rp.launch.id",id);
+                        System.setProperty("rp.launch.id", id);
                     }
                 })
                 .cache();
@@ -96,16 +89,15 @@ public class ReportPortalImpl extends ReportPortal {
         return launch;
     }
 
-    public Maybe<String> reuseLaunch(final String currentLaunchId) {
-        this.launch = Maybe.create(new MaybeOnSubscribe<String>()
-        {
-            @Override
-            public void subscribe(MaybeEmitter<String> e) throws Exception
-            {
-                e.onSuccess(currentLaunchId);
-            }
-        });
-        this.launch.subscribeOn(Schedulers.io()).subscribe();
+    /**
+     * Provides ability to report in already started launch
+     *
+     * @param launch Launch to be used
+     * @return Launch to be used
+     */
+    public Maybe<String> useLaunch(final Maybe<String> launch) {
+        this.launch = launch;
+        this.launch.subscribeOn(Schedulers.computation()).subscribe();
         return launch;
     }
 
