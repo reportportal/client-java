@@ -58,14 +58,15 @@ shadowJar {
 
 dependencies {
 
-    compile 'com.epam.reportportal:commons-model:3.0.0'
+//    compile 'com.epam.reportportal:commons-model:3.0.0'
+    compile 'com.github.reportportal:commons-model:7e8acf7916e1f8c7fa7d371a7060888cd8948821'
     compile 'com.google.guava:guava:20.0'
     compile 'com.github.avarabyeu:restendpoint-jdk6:0.2.3'
     compile 'com.google.inject:guice:4.1.0'
 
-    shadow 'com.fasterxml.jackson.core:jackson-databind:2.8.6'
-    shadow 'com.fasterxml.jackson.core:jackson-annotations:2.8.6'
-    shadow 'io.reactivex.rxjava2:rxjava:2.0.6'
+    shadow 'com.fasterxml.jackson.core:jackson-databind:2.8.10'
+    shadow 'com.fasterxml.jackson.core:jackson-annotations:2.8.10'
+    shadow 'io.reactivex.rxjava2:rxjava:2.1.4'
     shadow 'org.apache.tika:tika-core:1.4'
     shadow 'org.slf4j:slf4j-api:1.7.2'
     shadow 'com.google.code.findbugs:findbugs:3.0.1'

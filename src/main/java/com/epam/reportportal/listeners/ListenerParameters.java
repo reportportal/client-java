@@ -27,18 +27,7 @@ import com.epam.ta.reportportal.ws.model.launch.Mode;
 
 import java.util.Set;
 
-import static com.epam.reportportal.utils.properties.ListenerProperty.BASE_URL;
-import static com.epam.reportportal.utils.properties.ListenerProperty.BATCH_SIZE_LOGS;
-import static com.epam.reportportal.utils.properties.ListenerProperty.DESCRIPTION;
-import static com.epam.reportportal.utils.properties.ListenerProperty.ENABLE;
-import static com.epam.reportportal.utils.properties.ListenerProperty.IS_CONVERT_IMAGE;
-import static com.epam.reportportal.utils.properties.ListenerProperty.LAUNCH_NAME;
-import static com.epam.reportportal.utils.properties.ListenerProperty.LAUNCH_TAGS;
-import static com.epam.reportportal.utils.properties.ListenerProperty.MODE;
-import static com.epam.reportportal.utils.properties.ListenerProperty.PROJECT_NAME;
-import static com.epam.reportportal.utils.properties.ListenerProperty.REPORTING_TIMEOUT;
-import static com.epam.reportportal.utils.properties.ListenerProperty.SKIPPED_AS_ISSUE;
-import static com.epam.reportportal.utils.properties.ListenerProperty.UUID;
+import static com.epam.reportportal.utils.properties.ListenerProperty.*;
 
 /**
  * Report portal listeners parameters
@@ -57,6 +46,8 @@ public class ListenerParameters {
     private Integer batchLogsSize;
     private boolean convertImage;
     private Integer reportingTimeout;
+    private String keystore;
+    private String keystorePassword;
 
     public ListenerParameters() {
 
@@ -76,6 +67,9 @@ public class ListenerParameters {
         this.batchLogsSize = properties.getPropertyAsInt(BATCH_SIZE_LOGS, LoggingContext.DEFAULT_BUFFER_SIZE);
         this.convertImage = properties.getPropertyAsBoolean(IS_CONVERT_IMAGE, false);
         this.reportingTimeout = properties.getPropertyAsInt(REPORTING_TIMEOUT, 5 * 60);
+
+        this.keystore = properties.getProperty(KEYSTORE_RESOURCE);
+        this.keystorePassword = properties.getProperty(KEYSTORE_PASSWORD);
     }
 
     public String getDescription() {
@@ -168,6 +162,26 @@ public class ListenerParameters {
 
     public Integer getReportingTimeout() {
         return reportingTimeout;
+    }
+
+    public String getKeystore() {
+        return keystore;
+    }
+
+    public void setKeystore(String keystore) {
+        this.keystore = keystore;
+    }
+
+    public void setReportingTimeout(Integer reportingTimeout) {
+        this.reportingTimeout = reportingTimeout;
+    }
+
+    public String getKeystorePassword() {
+        return keystorePassword;
+    }
+
+    public void setKeystorePassword(String keystorePassword) {
+        this.keystorePassword = keystorePassword;
     }
 
     @Override

@@ -22,15 +22,12 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
-import static com.epam.reportportal.service.LoggingCallback.*;
+import static com.epam.reportportal.service.LoggingCallback.LOG_ERROR;
+import static com.epam.reportportal.service.LoggingCallback.LOG_SUCCESS;
+import static com.epam.reportportal.service.LoggingCallback.logCreated;
 import static com.google.common.collect.Lists.newArrayList;
 
-/**
- * Default Implementation of ReportPortal reporter
- *
- * @author Andrei Varabyeu
- */
-public class ReportPortalImpl extends ReportPortal {
+public class LaunchImpl extends Launch {
 
     private static final Function<EntryCreatedRS, String> TO_ID = new Function<EntryCreatedRS, String>() {
         @Override
@@ -50,18 +47,18 @@ public class ReportPortalImpl extends ReportPortal {
     /**
      * Messages queue to track items execution order
      */
-    private final LoadingCache<Maybe<String>, TreeItem> QUEUE = CacheBuilder.newBuilder().build(
-            new CacheLoader<Maybe<String>, TreeItem>() {
+    private final LoadingCache<Maybe<String>, ReportPortalImpl.TreeItem> QUEUE = CacheBuilder.newBuilder().build(
+            new CacheLoader<Maybe<String>, ReportPortalImpl.TreeItem>() {
                 @Override
-                public TreeItem load(Maybe<String> key) throws Exception {
-                    return new TreeItem();
+                public ReportPortalImpl.TreeItem load(Maybe<String> key) throws Exception {
+                    return new ReportPortalImpl.TreeItem();
                 }
             });
 
     private Maybe<String> launch;
     private Maybe<LaunchFile> launchFile;
 
-    ReportPortalImpl(ReportPortalClient rpClient, ListenerParameters parameters) {
+    LaunchImpl(ReportPortalClient rpClient, ListenerParameters parameters) {
         this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
         this.parameters = Preconditions.checkNotNull(parameters, "Parameters shouldn't be NULL");
     }
@@ -106,7 +103,7 @@ public class ReportPortalImpl extends ReportPortal {
      *
      * @param rq Finish RQ
      */
-    public void finishLaunch(final FinishExecutionRQ rq) {
+    public void finish(final FinishExecutionRQ rq) {
         final Maybe<?> finish = Completable
                 .concat(QUEUE.getUnchecked(this.launch).getChildren())
                 .andThen(this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
@@ -189,9 +186,9 @@ public class ReportPortalImpl extends ReportPortal {
 
         QUEUE.getUnchecked(launch).addToQueue(LoggingContext.complete());
 
-        TreeItem treeItem = QUEUE.getIfPresent(itemId);
+        ReportPortalImpl.TreeItem treeItem = QUEUE.getIfPresent(itemId);
         if (null == treeItem) {
-            treeItem = new TreeItem();
+            treeItem = new ReportPortalImpl.TreeItem();
             LOGGER.error("Item {} not found in the cache", itemId);
         }
 
@@ -238,12 +235,12 @@ public class ReportPortalImpl extends ReportPortal {
         private Maybe<String> parent;
         private List<Completable> children = new CopyOnWriteArrayList<Completable>();
 
-        synchronized TreeItem withParent(Maybe<String> parent) {
+        synchronized LaunchImpl.TreeItem withParent(Maybe<String> parent) {
             this.parent = parent;
             return this;
         }
 
-        TreeItem addToQueue(Completable completable) {
+        LaunchImpl.TreeItem addToQueue(Completable completable) {
             this.children.add(completable);
             return this;
         }
