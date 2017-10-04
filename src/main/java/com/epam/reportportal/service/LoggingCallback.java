@@ -24,7 +24,7 @@ import com.epam.ta.reportportal.ws.model.EntryCreatedRS;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import io.reactivex.functions.Consumer;
 
-import static com.epam.reportportal.service.ReportPortal.LOGGER;
+import static com.epam.reportportal.service.Launch.LOGGER;
 
 /**
  * Set of logging callback for ReportPortal client

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 EPAM Systems
+ * Copyright 2017 EPAM Systems
  *
  *
  * This file is part of EPAM Report Portal.
@@ -26,12 +26,14 @@ import static com.epam.ta.reportportal.ws.model.launch.Mode.DEBUG;
 import static com.epam.ta.reportportal.ws.model.launch.Mode.DEFAULT;
 import static org.junit.Assert.assertEquals;
 
-public class ListenerUtilsTest {
+public class ListenerParametersTest {
+
 
     @Test
-    public void getLaunchMode() {
-        assertEquals(DEFAULT, ListenersUtils.getLaunchMode("notvalid"));
-        assertEquals(DEBUG, ListenersUtils.getLaunchMode("Debug"));
+    public void testParseLaunchMode() {
+        assertEquals(DEFAULT, new ListenerParameters().parseLaunchMode("notvalid"));
+        assertEquals(DEBUG, new ListenerParameters().parseLaunchMode("Debug"));
     }
+
 
 }

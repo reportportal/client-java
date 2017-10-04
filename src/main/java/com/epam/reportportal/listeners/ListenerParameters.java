@@ -24,6 +24,7 @@ import com.epam.reportportal.service.LoggingContext;
 import com.epam.reportportal.utils.TagsParser;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.launch.Mode;
+import com.google.common.annotations.VisibleForTesting;
 
 import java.util.Set;
 
@@ -60,7 +61,7 @@ public class ListenerParameters {
         this.projectName = properties.getProperty(PROJECT_NAME);
         this.launchName = properties.getProperty(LAUNCH_NAME);
         this.tags = TagsParser.parseAsSet(properties.getProperty(LAUNCH_TAGS));
-        this.launchRunningMode = ListenersUtils.getLaunchMode(properties.getProperty(MODE));
+        this.launchRunningMode = parseLaunchMode(properties.getProperty(MODE));
         this.enable = properties.getPropertyAsBoolean(ENABLE, true);
         this.isSkippedAnIssue = properties.getPropertyAsBoolean(SKIPPED_AS_ISSUE, true);
 
@@ -182,6 +183,11 @@ public class ListenerParameters {
 
     public void setKeystorePassword(String keystorePassword) {
         this.keystorePassword = keystorePassword;
+    }
+
+    @VisibleForTesting
+    Mode parseLaunchMode(String mode) {
+        return Mode.isExists(mode) ? Mode.valueOf(mode.toUpperCase()) : Mode.DEFAULT;
     }
 
     @Override

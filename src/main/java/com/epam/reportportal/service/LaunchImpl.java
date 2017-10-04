@@ -22,9 +22,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
-import static com.epam.reportportal.service.LoggingCallback.LOG_ERROR;
-import static com.epam.reportportal.service.LoggingCallback.LOG_SUCCESS;
-import static com.epam.reportportal.service.LoggingCallback.logCreated;
+import static com.epam.reportportal.service.LoggingCallback.*;
 import static com.google.common.collect.Lists.newArrayList;
 
 public class LaunchImpl extends Launch {
@@ -47,11 +45,11 @@ public class LaunchImpl extends Launch {
     /**
      * Messages queue to track items execution order
      */
-    private final LoadingCache<Maybe<String>, ReportPortalImpl.TreeItem> QUEUE = CacheBuilder.newBuilder().build(
-            new CacheLoader<Maybe<String>, ReportPortalImpl.TreeItem>() {
+    private final LoadingCache<Maybe<String>, LaunchImpl.TreeItem> QUEUE = CacheBuilder.newBuilder().build(
+            new CacheLoader<Maybe<String>, LaunchImpl.TreeItem>() {
                 @Override
-                public ReportPortalImpl.TreeItem load(Maybe<String> key) throws Exception {
-                    return new ReportPortalImpl.TreeItem();
+                public LaunchImpl.TreeItem load(Maybe<String> key) throws Exception {
+                    return new LaunchImpl.TreeItem();
                 }
             });
 
@@ -186,9 +184,9 @@ public class LaunchImpl extends Launch {
 
         QUEUE.getUnchecked(launch).addToQueue(LoggingContext.complete());
 
-        ReportPortalImpl.TreeItem treeItem = QUEUE.getIfPresent(itemId);
+        LaunchImpl.TreeItem treeItem = QUEUE.getIfPresent(itemId);
         if (null == treeItem) {
-            treeItem = new ReportPortalImpl.TreeItem();
+            treeItem = new LaunchImpl.TreeItem();
             LOGGER.error("Item {} not found in the cache", itemId);
         }
 
