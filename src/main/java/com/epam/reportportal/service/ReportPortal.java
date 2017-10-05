@@ -22,6 +22,8 @@ package com.epam.reportportal.service;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.message.ReportPortalMessage;
+import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.restendpoint.http.HttpClientRestEndpoint;
 import com.epam.reportportal.restendpoint.http.RestEndpoint;
 import com.epam.reportportal.restendpoint.http.RestEndpoints;
@@ -31,6 +33,7 @@ import com.epam.reportportal.utils.SslUtils;
 import com.epam.reportportal.utils.properties.ListenerProperty;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.net.HttpHeaders;
@@ -47,10 +50,17 @@ import org.apache.http.ssl.SSLContextBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.UUID;
+
+import static com.epam.reportportal.utils.MimeTypeDetector.detect;
+import static com.google.common.io.Files.toByteArray;
 
 /**
  * Default ReportPortal Reporter implementation. Uses
@@ -117,6 +127,93 @@ public class ReportPortal {
 	 */
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	/**
+	 * Emits log message if there is any active context attached to the current thread
+	 *
+	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
+	 */
+	public static boolean emitLog(com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
+		final LoggingContext loggingContext = LoggingContext.CONTEXT_THREAD_LOCAL.get();
+		if (null != loggingContext) {
+			loggingContext.emit(logSupplier);
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Emits log message if there is any active context attached to the current thread
+	 */
+	public static boolean emitLog(final String message, final String level, final Date time) {
+		return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
+			@Override
+			public SaveLogRQ apply(@Nullable String id) {
+				SaveLogRQ rq = new SaveLogRQ();
+				rq.setLevel(level);
+				rq.setLogTime(time);
+				rq.setTestItemId(id);
+				rq.setMessage(message);
+				return rq;
+			}
+		});
+
+	}
+
+	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
+		return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
+			@Override
+			public SaveLogRQ apply(@Nullable String id) {
+				SaveLogRQ rq = new SaveLogRQ();
+				rq.setLevel(level);
+				rq.setLogTime(time);
+				rq.setTestItemId(id);
+				rq.setMessage(message);
+
+				try {
+					SaveLogRQ.File f = new SaveLogRQ.File();
+					f.setContentType(detect(file));
+					f.setContent(toByteArray(file));
+
+					f.setName(UUID.randomUUID().toString());
+					rq.setFile(f);
+				} catch (IOException e) {
+					// seems like there is some problem. Do not report an file
+					LOGGER.error("Cannot send file to ReportPortal", e);
+				}
+
+				return rq;
+			}
+		});
+	}
+
+	public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
+		return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
+			@Override
+			public SaveLogRQ apply(@Nullable String id) {
+				SaveLogRQ rq = new SaveLogRQ();
+				rq.setLevel(level);
+				rq.setLogTime(time);
+				rq.setTestItemId(id);
+				rq.setMessage(message.getMessage());
+				try {
+					final TypeAwareByteSource data = message.getData();
+					SaveLogRQ.File file = new SaveLogRQ.File();
+					file.setContent(data.read());
+
+					file.setContentType(data.getMediaType());
+					file.setName(UUID.randomUUID().toString());
+					rq.setFile(file);
+
+				} catch (Exception e) {
+					// seems like there is some problem. Do not report an file
+					LOGGER.error("Cannot send file to ReportPortal", e);
+				}
+
+				return rq;
+			}
+		});
 	}
 
 	public static class Builder {
