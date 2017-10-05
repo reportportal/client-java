@@ -22,7 +22,6 @@ package com.epam.reportportal.exception;
 
 /**
  * Report portal client exception define any internal client logic exception.
- * 
  */
 public class InternalReportPortalClientException extends RuntimeException {
 

@@ -20,18 +20,16 @@
  */
 package com.epam;
 
-import java.io.IOException;
-
 import com.epam.reportportal.message.HashMarkSeparatedMessageParser;
 import com.epam.reportportal.message.MessageParser;
 import com.epam.reportportal.message.ReportPortalMessage;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.IOException;
+
 /**
- * 
  * @author Andrei Varabyeu
- * 
  */
 public class HashMarkSeparatedMessageParserTest {
 

@@ -20,11 +20,11 @@
  */
 package com.epam;
 
-import java.util.Map;
-
 import com.epam.reportportal.utils.TagsParser;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.Map;
 
 public class TagsParserTest {
 	@Test

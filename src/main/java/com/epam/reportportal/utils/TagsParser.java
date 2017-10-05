@@ -20,15 +20,14 @@
  */
 package com.epam.reportportal.utils;
 
+import com.google.common.collect.Sets;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.Sets;
-
 /**
  * This class contains functionality for parsing tags from string.
- * 
  */
 public class TagsParser {
 
@@ -43,7 +42,7 @@ public class TagsParser {
 	 * tag1:tag1<br>
 	 * tag2:tag2<br>
 	 * tag3:tag3<br>
-	 * 
+	 *
 	 * @param rawTags
 	 */
 	public static Map<String, String> findAllTags(String rawTags) {
@@ -63,7 +62,7 @@ public class TagsParser {
 
 	/**
 	 * Parse tag string.
-	 * 
+	 *
 	 * @param rawTags
 	 */
 	private static Map<String, String> parseTags(String rawTags) {

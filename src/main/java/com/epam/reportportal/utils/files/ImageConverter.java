@@ -26,7 +26,7 @@ import com.google.common.io.ByteSource;
 import com.google.common.net.MediaType;
 
 import javax.imageio.ImageIO;
-import java.awt.Graphics2D;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -39,74 +39,76 @@ import java.io.IOException;
  */
 public class ImageConverter {
 
-    public static final String IMAGE_TYPE = "image";
+	public static final String IMAGE_TYPE = "image";
 
-    public static TypeAwareByteSource convertIfImage(TypeAwareByteSource content) {
-        try {
-            return isImage(content) ? convert(content) : content;
-        } catch (IOException e) {
-            throw new InternalReportPortalClientException("Unable to read screenshot file. " + e);
-        }
-    }
+	public static TypeAwareByteSource convertIfImage(TypeAwareByteSource content) {
+		try {
+			return isImage(content) ? convert(content) : content;
+		} catch (IOException e) {
+			throw new InternalReportPortalClientException("Unable to read screenshot file. " + e);
+		}
+	}
 
-    /**
-     * Convert image to black and white colors
-     *
-     * @param source Data Source
-     * @throws IOException In case of IO exception
-     */
-    public static TypeAwareByteSource convert(ByteSource source) throws IOException {
-        BufferedImage image;
-        image = ImageIO.read(source.openBufferedStream());
-        final BufferedImage blackAndWhiteImage = new BufferedImage(image.getWidth(null), image.getHeight(null),
-                BufferedImage.TYPE_BYTE_GRAY);
-        final Graphics2D graphics2D = (Graphics2D) blackAndWhiteImage.getGraphics();
-        graphics2D.drawImage(image, 0, 0, null);
-        graphics2D.dispose();
-        return convertToInputStream(blackAndWhiteImage);
-    }
+	/**
+	 * Convert image to black and white colors
+	 *
+	 * @param source Data Source
+	 * @throws IOException In case of IO exception
+	 */
+	public static TypeAwareByteSource convert(ByteSource source) throws IOException {
+		BufferedImage image;
+		image = ImageIO.read(source.openBufferedStream());
+		final BufferedImage blackAndWhiteImage = new BufferedImage(image.getWidth(null),
+				image.getHeight(null),
+				BufferedImage.TYPE_BYTE_GRAY
+		);
+		final Graphics2D graphics2D = (Graphics2D) blackAndWhiteImage.getGraphics();
+		graphics2D.drawImage(image, 0, 0, null);
+		graphics2D.dispose();
+		return convertToInputStream(blackAndWhiteImage);
+	}
 
-    /**
-     * Check is input file is image
-     *
-     * @param source DataSource
-     */
-    public static boolean isImage(TypeAwareByteSource source) {
-        return isImage(source.getMediaType());
-    }
+	/**
+	 * Check is input file is image
+	 *
+	 * @param source DataSource
+	 */
+	public static boolean isImage(TypeAwareByteSource source) {
+		return isImage(source.getMediaType());
+	}
 
-    /**
-     * Check is input file is image
-     *
-     * @param contentType ContentType
-     */
-    public static boolean isImage(MediaType contentType) {
-        return contentType.type().equalsIgnoreCase(IMAGE_TYPE);
-    }
+	/**
+	 * Check is input file is image
+	 *
+	 * @param contentType ContentType
+	 */
+	public static boolean isImage(MediaType contentType) {
+		return contentType.type().equalsIgnoreCase(IMAGE_TYPE);
+	}
 
-    /**
-     * Check is input file is image
-     *
-     * @param contentType ContentType
-     */
-    public static boolean isImage(String contentType) {
-        return isImage(MediaType.parse(contentType));
-    }
+	/**
+	 * Check is input file is image
+	 *
+	 * @param contentType ContentType
+	 */
+	public static boolean isImage(String contentType) {
+		return isImage(MediaType.parse(contentType));
+	}
 
-    /**
-     * Convert BufferedImage to input stream
-     *
-     * @param image Image to be converted
-     */
-    private static TypeAwareByteSource convertToInputStream(BufferedImage image) {
-        ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
-        try {
-            ImageIO.write(image, "png", byteOutputStream);
-        } catch (IOException e) {
-            throw new InternalReportPortalClientException("Unable to transform file to byte array.", e);
-        }
-        return new TypeAwareByteSource(ByteSource.wrap(byteOutputStream.toByteArray()), MediaType.PNG.toString());
+	/**
+	 * Convert BufferedImage to input stream
+	 *
+	 * @param image Image to be converted
+	 */
+	private static TypeAwareByteSource convertToInputStream(BufferedImage image) {
+		ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
+		try {
+			ImageIO.write(image, "png", byteOutputStream);
+		} catch (IOException e) {
+			throw new InternalReportPortalClientException("Unable to transform file to byte array.", e);
+		}
+		return new TypeAwareByteSource(ByteSource.wrap(byteOutputStream.toByteArray()), MediaType.PNG.toString());
 
-    }
+	}
 
 }

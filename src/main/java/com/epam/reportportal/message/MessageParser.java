@@ -24,9 +24,8 @@ import java.io.IOException;
 
 /**
  * Parses formatted message for report portal
- * 
+ *
  * @author Andrei Varabyeu
- * 
  */
 public interface MessageParser {
 

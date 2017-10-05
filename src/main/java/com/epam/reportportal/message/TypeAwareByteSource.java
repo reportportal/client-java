@@ -33,20 +33,20 @@ import java.io.InputStream;
  */
 public class TypeAwareByteSource extends ByteSource {
 
-    private final ByteSource delegate;
-    private final String mediaType;
+	private final ByteSource delegate;
+	private final String mediaType;
 
-    public TypeAwareByteSource(ByteSource delegate, String mediaType) {
-        this.delegate = Preconditions.checkNotNull(delegate);
-        this.mediaType = mediaType;
-    }
+	public TypeAwareByteSource(ByteSource delegate, String mediaType) {
+		this.delegate = Preconditions.checkNotNull(delegate);
+		this.mediaType = mediaType;
+	}
 
-    @Override
-    public InputStream openStream() throws IOException {
-        return delegate.openStream();
-    }
+	@Override
+	public InputStream openStream() throws IOException {
+		return delegate.openStream();
+	}
 
-    public String getMediaType() {
-        return mediaType;
-    }
+	public String getMediaType() {
+		return mediaType;
+	}
 }

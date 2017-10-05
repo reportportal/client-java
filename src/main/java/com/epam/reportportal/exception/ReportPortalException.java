@@ -28,32 +28,40 @@ import com.epam.ta.reportportal.ws.model.ErrorRS;
  * @author Andrei Varabyeu
  */
 public class ReportPortalException extends GeneralReportPortalException {
-    private static final long serialVersionUID = -3747137063782963453L;
+	private static final long serialVersionUID = -3747137063782963453L;
 
-    /**
-     * HTTP Error Response Body
-     */
-    protected ErrorRS error;
+	/**
+	 * HTTP Error Response Body
+	 */
+	protected ErrorRS error;
 
-    public ReportPortalException(int statusCode, String statusMessage, ErrorRS error) {
-        super(statusCode, statusMessage, error.getMessage());
-        this.error = error;
-    }
+	public ReportPortalException(int statusCode, String statusMessage, ErrorRS error) {
+		super(statusCode, statusMessage, error.getMessage());
+		this.error = error;
+	}
 
-    public ErrorRS getError() {
-        return error;
-    }
+	public ErrorRS getError() {
+		return error;
+	}
 
-    @Override
-    public String getMessage() {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("Report Portal returned error\n")
-                .append("Status code: ").append(statusCode).append("\n")
-                .append("Status message: ").append(statusMessage).append("\n");
-        if (null != error) {
-            builder.append("Error Message: ").append(error.getMessage()).append("\n")
-                    .append("Error Type: ").append(error.getErrorType()).append("\n");
-        }
-        return builder.toString();
-    }
+	@Override
+	public String getMessage() {
+		final StringBuilder builder = new StringBuilder();
+		builder.append("Report Portal returned error\n")
+				.append("Status code: ")
+				.append(statusCode)
+				.append("\n")
+				.append("Status message: ")
+				.append(statusMessage)
+				.append("\n");
+		if (null != error) {
+			builder.append("Error Message: ")
+					.append(error.getMessage())
+					.append("\n")
+					.append("Error Type: ")
+					.append(error.getErrorType())
+					.append("\n");
+		}
+		return builder.toString();
+	}
 }

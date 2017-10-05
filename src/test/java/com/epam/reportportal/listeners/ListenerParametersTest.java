@@ -28,12 +28,10 @@ import static org.junit.Assert.assertEquals;
 
 public class ListenerParametersTest {
 
-
-    @Test
-    public void testParseLaunchMode() {
-        assertEquals(DEFAULT, new ListenerParameters().parseLaunchMode("notvalid"));
-        assertEquals(DEBUG, new ListenerParameters().parseLaunchMode("Debug"));
-    }
-
+	@Test
+	public void testParseLaunchMode() {
+		assertEquals(DEFAULT, new ListenerParameters().parseLaunchMode("notvalid"));
+		assertEquals(DEBUG, new ListenerParameters().parseLaunchMode("Debug"));
+	}
 
 }

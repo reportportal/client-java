@@ -20,16 +20,13 @@
  */
 package com.epam.reportportal.utils.markdown;
 
-import com.epam.reportportal.utils.markdown.MarkdownUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
 import static com.epam.reportportal.utils.markdown.MarkdownUtils.asCode;
 
 /**
- *
  * @author Andrei Varabyeu
- *
  */
 public class MarkdownUtilsTest {
 	@Test
@@ -39,8 +36,7 @@ public class MarkdownUtilsTest {
 
 	@Test
 	public void toMarkdownScript() throws Exception {
-		Assert.assertEquals("Incorrect markdown prefix", "!!!MARKDOWN_MODE!!!```groovy\nhello\n```",
-				asCode("groovy", "hello"));
+		Assert.assertEquals("Incorrect markdown prefix", "!!!MARKDOWN_MODE!!!```groovy\nhello\n```", asCode("groovy", "hello"));
 	}
 
 }

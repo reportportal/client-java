@@ -38,30 +38,30 @@ import static com.google.common.base.Strings.isNullOrEmpty;
  */
 public class MimeTypeDetector {
 
-    private static Detector detector = new AutoDetectParser().getDetector();
+	private static Detector detector = new AutoDetectParser().getDetector();
 
-    private MimeTypeDetector() {
-        //statics only
-    }
+	private MimeTypeDetector() {
+		//statics only
+	}
 
-    public static String detect(File file) throws IOException {
-        final Metadata metadata = new Metadata();
-        metadata.set(Metadata.RESOURCE_NAME_KEY, file.getName());
-        return detect(TikaInputStream.get(file), metadata);
+	public static String detect(File file) throws IOException {
+		final Metadata metadata = new Metadata();
+		metadata.set(Metadata.RESOURCE_NAME_KEY, file.getName());
+		return detect(TikaInputStream.get(file), metadata);
 
-    }
+	}
 
-    public static String detect(ByteSource source, String resourceName) throws IOException {
+	public static String detect(ByteSource source, String resourceName) throws IOException {
 
-        final Metadata metadata = new Metadata();
-        if (!isNullOrEmpty(resourceName)) {
-            metadata.set(Metadata.RESOURCE_NAME_KEY, resourceName);
-        }
-        return detect(TikaInputStream.get(source.openBufferedStream()), metadata);
+		final Metadata metadata = new Metadata();
+		if (!isNullOrEmpty(resourceName)) {
+			metadata.set(Metadata.RESOURCE_NAME_KEY, resourceName);
+		}
+		return detect(TikaInputStream.get(source.openBufferedStream()), metadata);
 
-    }
+	}
 
-    public static String detect(TikaInputStream is, Metadata metadata) throws IOException {
-        return detector.detect(is, metadata).toString();
-    }
+	public static String detect(TikaInputStream is, Metadata metadata) throws IOException {
+		return detector.detect(is, metadata).toString();
+	}
 }

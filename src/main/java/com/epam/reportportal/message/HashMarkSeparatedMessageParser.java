@@ -44,69 +44,67 @@ import static com.google.common.io.Resources.getResource;
  */
 public class HashMarkSeparatedMessageParser implements MessageParser {
 
-    /**
-     * Different representations of binary data
-     */
-    private enum MessageType {
-        FILE {
-            @Override
-            public TypeAwareByteSource toByteSource(String data) throws IOException {
-                File file = new File(data);
-                if (!file.exists()) {
-                    return null;
-                }
-                return new TypeAwareByteSource(asByteSource(file), detect(file));
-            }
-        },
-        BASE64 {
-            @Override
-            public TypeAwareByteSource toByteSource(final String data) throws IOException {
-                if (data.contains(":")) {
-                    final String[] parts = data.split(":");
-                    String type = parts[1];
-                    return new TypeAwareByteSource(ByteSource.wrap(BaseEncoding.base64().decode(parts[0])), type);
+	/**
+	 * Different representations of binary data
+	 */
+	private enum MessageType {
+		FILE {
+			@Override
+			public TypeAwareByteSource toByteSource(String data) throws IOException {
+				File file = new File(data);
+				if (!file.exists()) {
+					return null;
+				}
+				return new TypeAwareByteSource(asByteSource(file), detect(file));
+			}
+		},
+		BASE64 {
+			@Override
+			public TypeAwareByteSource toByteSource(final String data) throws IOException {
+				if (data.contains(":")) {
+					final String[] parts = data.split(":");
+					String type = parts[1];
+					return new TypeAwareByteSource(ByteSource.wrap(BaseEncoding.base64().decode(parts[0])), type);
 
-                }
-                final ByteSource source = ByteSource.wrap(BaseEncoding.base64().decode(data));
-                return new TypeAwareByteSource(source, detect(source, null));
-            }
-        },
-        RESOURCE {
-            @Override
-            public TypeAwareByteSource toByteSource(String resourceName) throws IOException {
-                URL resource = getResource(resourceName);
-                if (null == resource) {
-                    return null;
-                }
-                final ByteSource source = Resources.asByteSource(resource);
-                return new TypeAwareByteSource(source, detect(source, resourceName));
-            }
-        };
+				}
+				final ByteSource source = ByteSource.wrap(BaseEncoding.base64().decode(data));
+				return new TypeAwareByteSource(source, detect(source, null));
+			}
+		},
+		RESOURCE {
+			@Override
+			public TypeAwareByteSource toByteSource(String resourceName) throws IOException {
+				URL resource = getResource(resourceName);
+				if (null == resource) {
+					return null;
+				}
+				final ByteSource source = Resources.asByteSource(resource);
+				return new TypeAwareByteSource(source, detect(source, resourceName));
+			}
+		};
 
-        abstract public TypeAwareByteSource toByteSource(String data) throws IOException;
+		abstract public TypeAwareByteSource toByteSource(String data) throws IOException;
 
-        public static MessageType fromString(String messageType) {
-            return MessageType.valueOf(messageType);
-        }
-    }
+		public static MessageType fromString(String messageType) {
+			return MessageType.valueOf(messageType);
+		}
+	}
 
-    private static final int CHUNKS_COUNT = 4;
+	private static final int CHUNKS_COUNT = 4;
 
-    @Override
-    public ReportPortalMessage parse(String message) throws IOException {
-        List<String> split = Splitter.on("#").limit(CHUNKS_COUNT).splitToList(message);
+	@Override
+	public ReportPortalMessage parse(String message) throws IOException {
+		List<String> split = Splitter.on("#").limit(CHUNKS_COUNT).splitToList(message);
 
-        // -1 because there may be no
-        if (CHUNKS_COUNT != split.size()) {
-            throw new RuntimeException(
-                    "Incorrect message format. Chunks: " + Joiner.on("\n").join(split) + "\n count: " + split.size());
-        }
-        return new ReportPortalMessage(MessageType.fromString(split.get(1)).toByteSource(split.get(2)),
-                split.get(3));
-    }
+		// -1 because there may be no
+		if (CHUNKS_COUNT != split.size()) {
+			throw new RuntimeException("Incorrect message format. Chunks: " + Joiner.on("\n").join(split) + "\n count: " + split.size());
+		}
+		return new ReportPortalMessage(MessageType.fromString(split.get(1)).toByteSource(split.get(2)), split.get(3));
+	}
 
-    @Override
-    public boolean supports(String message) {
-        return message.startsWith(RP_MESSAGE_PREFIX);
-    }
+	@Override
+	public boolean supports(String message) {
+		return message.startsWith(RP_MESSAGE_PREFIX);
+	}
 }

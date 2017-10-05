@@ -33,42 +33,42 @@ import static com.epam.reportportal.service.Launch.LOGGER;
  */
 final class LoggingCallback {
 
-    private LoggingCallback() {
-        //statics only
-    }
+	private LoggingCallback() {
+		//statics only
+	}
 
-    /**
-     * Logs success
-     */
-    static final Consumer<OperationCompletionRS> LOG_SUCCESS = new Consumer<OperationCompletionRS>() {
-        @Override
-        public void accept(OperationCompletionRS rs) throws Exception {
-            LOGGER.debug(rs.getResultMessage());
-        }
-    };
+	/**
+	 * Logs success
+	 */
+	static final Consumer<OperationCompletionRS> LOG_SUCCESS = new Consumer<OperationCompletionRS>() {
+		@Override
+		public void accept(OperationCompletionRS rs) throws Exception {
+			LOGGER.debug(rs.getResultMessage());
+		}
+	};
 
-    /**
-     * Logs an error
-     */
-    static final Consumer<Throwable> LOG_ERROR = new Consumer<Throwable>() {
-        @Override
-        public void accept(Throwable rs) throws Exception {
-            LOGGER.error("ReportPortal execution error", rs);
-        }
-    };
+	/**
+	 * Logs an error
+	 */
+	static final Consumer<Throwable> LOG_ERROR = new Consumer<Throwable>() {
+		@Override
+		public void accept(Throwable rs) throws Exception {
+			LOGGER.error("ReportPortal execution error", rs);
+		}
+	};
 
-    /**
-     * Logs message once some entity creation
-     *
-     * @param entry Type of entity
-     * @return Consumer/Callback
-     */
-    static Consumer<EntryCreatedRS> logCreated(final String entry) {
-        return new Consumer<EntryCreatedRS>() {
-            @Override
-            public void accept(EntryCreatedRS rs) throws Exception {
-                LOGGER.debug("ReportPortal {} with ID '{}' has been created", entry, rs.getId());
-            }
-        };
-    }
+	/**
+	 * Logs message once some entity creation
+	 *
+	 * @param entry Type of entity
+	 * @return Consumer/Callback
+	 */
+	static Consumer<EntryCreatedRS> logCreated(final String entry) {
+		return new Consumer<EntryCreatedRS>() {
+			@Override
+			public void accept(EntryCreatedRS rs) throws Exception {
+				LOGGER.debug("ReportPortal {} with ID '{}' has been created", entry, rs.getId());
+			}
+		};
+	}
 }

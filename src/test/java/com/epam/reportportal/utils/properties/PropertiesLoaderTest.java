@@ -67,7 +67,7 @@ public class PropertiesLoaderTest {
 		overrides.setProperty(propertyKey, "overridenFromPropertiesObject");
 		PropertiesLoader.overrideWith(properties, overrides);
 		Assert.assertEquals("Incorrect override behaviour", properties.getProperty(propertyKey), "overridenFromPropertiesObject");
- 	}
+	}
 
 	@Test
 	public void testUtf() throws IOException {

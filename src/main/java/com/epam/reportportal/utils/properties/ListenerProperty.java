@@ -25,7 +25,7 @@ package com.epam.reportportal.utils.properties;
  */
 public enum ListenerProperty {
 
-    //@formatter:off
+	//@formatter:off
     BASE_URL("rp.endpoint", true),
     PROJECT_NAME("rp.project", true),
     LAUNCH_NAME("rp.launch", true),

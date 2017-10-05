@@ -31,13 +31,12 @@ import org.junit.Test;
  * @author Andrei Varabyeu
  */
 public class ImageConverterTest {
-    @Test
-    public void isImage() throws Exception {
-        final String resourceName = "defaultUserPhoto.jpg";
-        final ByteSource byteSource = Resources.asByteSource(Resources.getResource(resourceName));
-        boolean r = ImageConverter
-                .isImage(new TypeAwareByteSource(byteSource, MimeTypeDetector.detect(byteSource, resourceName)));
-        Assert.assertTrue("Incorrect image type detection", r);
-    }
+	@Test
+	public void isImage() throws Exception {
+		final String resourceName = "defaultUserPhoto.jpg";
+		final ByteSource byteSource = Resources.asByteSource(Resources.getResource(resourceName));
+		boolean r = ImageConverter.isImage(new TypeAwareByteSource(byteSource, MimeTypeDetector.detect(byteSource, resourceName)));
+		Assert.assertTrue("Incorrect image type detection", r);
+	}
 
 }

@@ -35,37 +35,37 @@ import static com.google.common.io.Files.asByteSource;
  */
 public class ReportPortalMessage {
 
-    private TypeAwareByteSource data;
+	private TypeAwareByteSource data;
 
-    private String message;
+	private String message;
 
-    public ReportPortalMessage() {
-    }
+	public ReportPortalMessage() {
+	}
 
-    public ReportPortalMessage(String message) {
-        this.message = message;
-    }
+	public ReportPortalMessage(String message) {
+		this.message = message;
+	}
 
-    public ReportPortalMessage(final ByteSource data, String mediaType, String message) {
-        this(message);
-        this.data = new TypeAwareByteSource(data, mediaType);
-    }
+	public ReportPortalMessage(final ByteSource data, String mediaType, String message) {
+		this(message);
+		this.data = new TypeAwareByteSource(data, mediaType);
+	}
 
-    public ReportPortalMessage(final TypeAwareByteSource data, String message) {
-        this(message);
-        this.data = data;
-    }
+	public ReportPortalMessage(final TypeAwareByteSource data, String message) {
+		this(message);
+		this.data = data;
+	}
 
-    public ReportPortalMessage(File file, String message) throws IOException {
-        this(new TypeAwareByteSource(asByteSource(file), detect(file)), message);
-    }
+	public ReportPortalMessage(File file, String message) throws IOException {
+		this(new TypeAwareByteSource(asByteSource(file), detect(file)), message);
+	}
 
-    public String getMessage() {
-        return message;
-    }
+	public String getMessage() {
+		return message;
+	}
 
-    public TypeAwareByteSource getData() {
-        return data;
-    }
+	public TypeAwareByteSource getData() {
+		return data;
+	}
 
 }

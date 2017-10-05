@@ -26,41 +26,45 @@ package com.epam.reportportal.exception;
  * @author Andrei Varabyeu
  */
 public class GeneralReportPortalException extends RuntimeException {
-    private static final long serialVersionUID = -3747137063782963453L;
+	private static final long serialVersionUID = -3747137063782963453L;
 
-    /**
-     * HTTP Status Code
-     */
-    protected int statusCode;
-    /**
-     * HTTP Status Message
-     */
-    protected String statusMessage;
+	/**
+	 * HTTP Status Code
+	 */
+	protected int statusCode;
+	/**
+	 * HTTP Status Message
+	 */
+	protected String statusMessage;
 
-    public GeneralReportPortalException(int statusCode, String statusMessage, String errorContent) {
-        super(errorContent);
-        this.statusCode = statusCode;
-        this.statusMessage = statusMessage;
+	public GeneralReportPortalException(int statusCode, String statusMessage, String errorContent) {
+		super(errorContent);
+		this.statusCode = statusCode;
+		this.statusMessage = statusMessage;
 
-    }
+	}
 
-    public int getStatusCode() {
-        return statusCode;
-    }
+	public int getStatusCode() {
+		return statusCode;
+	}
 
-    public String getStatusMessage() {
-        return statusMessage;
-    }
+	public String getStatusMessage() {
+		return statusMessage;
+	}
 
-    @Override
-    public String getMessage() {
-        final StringBuilder builder = new StringBuilder();
-        builder.append("Report Portal returned error\n")
-                .append("Status code: ").append(statusCode).append("\n")
-                .append("Status message: ").append(statusMessage).append("\n");
-        if (null != super.getMessage()) {
-            builder.append("Error Message: ").append(super.getMessage()).append("\n");
-        }
-        return builder.toString();
-    }
+	@Override
+	public String getMessage() {
+		final StringBuilder builder = new StringBuilder();
+		builder.append("Report Portal returned error\n")
+				.append("Status code: ")
+				.append(statusCode)
+				.append("\n")
+				.append("Status message: ")
+				.append(statusMessage)
+				.append("\n");
+		if (null != super.getMessage()) {
+			builder.append("Error Message: ").append(super.getMessage()).append("\n");
+		}
+		return builder.toString();
+	}
 }

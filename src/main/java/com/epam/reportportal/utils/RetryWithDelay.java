@@ -31,36 +31,36 @@ import static java.lang.Thread.sleep;
  */
 public class RetryWithDelay implements Predicate<Throwable> {
 
-    private final Predicate<? super Throwable> predicate;
-    private final long maxRetries;
-    private final long retryDelayMillis;
-    private int retryCount;
+	private final Predicate<? super Throwable> predicate;
+	private final long maxRetries;
+	private final long retryDelayMillis;
+	private int retryCount;
 
-    public RetryWithDelay(Predicate<? super Throwable> predicate, final long maxRetries, final long retryDelayMillis) {
-        this.maxRetries = maxRetries;
-        this.retryDelayMillis = retryDelayMillis;
-        this.retryCount = 0;
-        this.predicate = predicate;
-    }
+	public RetryWithDelay(Predicate<? super Throwable> predicate, final long maxRetries, final long retryDelayMillis) {
+		this.maxRetries = maxRetries;
+		this.retryDelayMillis = retryDelayMillis;
+		this.retryCount = 0;
+		this.predicate = predicate;
+	}
 
-    @Override
-    public boolean test(final Throwable throwable) throws Exception {
-        try {
-            //check whether we should retry this exception
-            if (!predicate.test(throwable)) {
-                return false;
-            }
-        } catch (Exception e) {
-            //pass the error if smth goes wrong
-            return false;
-        }
+	@Override
+	public boolean test(final Throwable throwable) throws Exception {
+		try {
+			//check whether we should retry this exception
+			if (!predicate.test(throwable)) {
+				return false;
+			}
+		} catch (Exception e) {
+			//pass the error if smth goes wrong
+			return false;
+		}
 
-        if (++retryCount < maxRetries) {
-            sleep(retryDelayMillis);
-            return true;
-        }
+		if (++retryCount < maxRetries) {
+			sleep(retryDelayMillis);
+			return true;
+		}
 
-        // Max retries hit. Just pass the error along.
-        return false;
-    }
+		// Max retries hit. Just pass the error along.
+		return false;
+	}
 }

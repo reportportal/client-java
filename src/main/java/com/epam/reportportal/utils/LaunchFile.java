@@ -35,73 +35,73 @@ import java.io.File;
  */
 public class LaunchFile {
 
-    public static final String FILE_PREFIX = "rplaunch";
+	public static final String FILE_PREFIX = "rplaunch";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(LaunchFile.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LaunchFile.class);
 
-    private final File file;
+	private final File file;
 
-    private LaunchFile(File file) {
-        this.file = file;
-    }
+	private LaunchFile(File file) {
+		this.file = file;
+	}
 
-    public static Maybe<LaunchFile> create(Maybe<String> id) {
-        final Maybe<LaunchFile> lfPromise = id.map(new Function<String, LaunchFile>() {
-            @Override
-            public LaunchFile apply(String launchId) throws Exception {
-                LaunchFile lf = null;
-                try {
-                    final File file = new File(getTempDir(), String.format("%s-%s.tmp", FILE_PREFIX, launchId));
-                    if (file.createNewFile()) {
-                        file.deleteOnExit();
-                        LOGGER.info("ReportPortal's temp file '{}' is created", file.getAbsolutePath());
-                    }
+	public static Maybe<LaunchFile> create(Maybe<String> id) {
+		final Maybe<LaunchFile> lfPromise = id.map(new Function<String, LaunchFile>() {
+			@Override
+			public LaunchFile apply(String launchId) throws Exception {
+				LaunchFile lf = null;
+				try {
+					final File file = new File(getTempDir(), String.format("%s-%s.tmp", FILE_PREFIX, launchId));
+					if (file.createNewFile()) {
+						file.deleteOnExit();
+						LOGGER.info("ReportPortal's temp file '{}' is created", file.getAbsolutePath());
+					}
 
-                    lf = new LaunchFile(file);
-                    return lf;
-                } catch (Exception e) {
-                    LOGGER.error("Cannot create ReportPortal launch file", e);
-                    throw e;
-                } finally {
-                    Runtime.getRuntime().addShutdownHook(new Thread(new RemoveFileHook(lf)));
-                }
-            }
-        }).cache().onErrorReturnItem(new LaunchFile(null));
-        lfPromise.subscribe();
-        return lfPromise;
-    }
+					lf = new LaunchFile(file);
+					return lf;
+				} catch (Exception e) {
+					LOGGER.error("Cannot create ReportPortal launch file", e);
+					throw e;
+				} finally {
+					Runtime.getRuntime().addShutdownHook(new Thread(new RemoveFileHook(lf)));
+				}
+			}
+		}).cache().onErrorReturnItem(new LaunchFile(null));
+		lfPromise.subscribe();
+		return lfPromise;
+	}
 
-    public File getFile() {
-        return file;
-    }
+	public File getFile() {
+		return file;
+	}
 
-    public void remove() {
-        if (null != file && file.exists() && file.delete()) {
-            LOGGER.info("ReportPortal's temp file '{}' has been removed", file.getAbsolutePath());
-        }
-    }
+	public void remove() {
+		if (null != file && file.exists() && file.delete()) {
+			LOGGER.info("ReportPortal's temp file '{}' has been removed", file.getAbsolutePath());
+		}
+	}
 
-    public static File getTempDir() {
-        File tempDir = new File(StandardSystemProperty.JAVA_IO_TMPDIR.value(), "reportportal");
-        if (tempDir.mkdirs()) {
-            LOGGER.info("Temp directory for ReportPortal launch files is created: '{}'", tempDir.getAbsolutePath());
-        }
+	public static File getTempDir() {
+		File tempDir = new File(StandardSystemProperty.JAVA_IO_TMPDIR.value(), "reportportal");
+		if (tempDir.mkdirs()) {
+			LOGGER.info("Temp directory for ReportPortal launch files is created: '{}'", tempDir.getAbsolutePath());
+		}
 
-        return tempDir;
-    }
+		return tempDir;
+	}
 
-    private static class RemoveFileHook implements Runnable {
-        private final LaunchFile file;
+	private static class RemoveFileHook implements Runnable {
+		private final LaunchFile file;
 
-        private RemoveFileHook(LaunchFile file) {
-            this.file = file;
-        }
+		private RemoveFileHook(LaunchFile file) {
+			this.file = file;
+		}
 
-        @Override
-        public void run() {
-            if (null != file) {
-                file.remove();
-            }
-        }
-    }
+		@Override
+		public void run() {
+			if (null != file) {
+				file.remove();
+			}
+		}
+	}
 }

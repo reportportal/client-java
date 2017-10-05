@@ -38,17 +38,15 @@ shadowJar {
 
     dependencies {
         include(dependency('com.github.avarabyeu:restendpoint-jdk6'))
-        include(dependency('org.apache.httpcomponents:httpasyncclient'))
+        include(dependency('org.apache.httpcomponents:httpclient'))
         include(dependency('org.apache.httpcomponents:httpmime'))
         include(dependency('org.apache.httpcomponents:httpcore'))
         include(dependency('org.apache.httpcomponents:httpcore-nio'))
-        include(dependency('org.apache.httpcomponents:httpclient'))
         include(dependency('commons-logging:commons-logging'))
         include(dependency('com.google.guava:guava'))
 
     }
     classifier = null
-    relocate 'com.github.avarabyeu.restendpoint', 'com.epam.restendpoint'
     relocate 'org.apache.http', 'rp.org.apache.http'
     relocate 'com.google.common', 'rp.com.google.common'
     relocate 'org.apache.commons.logging', 'rp.org.apache.commons.logging'
@@ -57,9 +55,9 @@ shadowJar {
 dependencies {
 
 //    compile 'com.epam.reportportal:commons-model:3.0.0'
-    compile 'com.github.reportportal:commons-model:7e8acf7916e1f8c7fa7d371a7060888cd8948821'
+    compile 'com.github.reportportal:commons-model:7e8acf7'
     compile 'com.google.guava:guava:20.0'
-    compile 'com.github.avarabyeu:restendpoint-jdk6:0.2.3'
+    compile 'com.github.reportportal:restendpoint:e5d70a7'
 
     shadow 'com.fasterxml.jackson.core:jackson-databind:2.8.10'
     shadow 'com.fasterxml.jackson.core:jackson-annotations:2.8.10'
