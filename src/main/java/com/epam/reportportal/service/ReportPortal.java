@@ -100,6 +100,15 @@ public class ReportPortal {
 		return service;
 	}
 
+	/**
+	 * Creates new builder for {@link ReportPortal}
+	 *
+	 * @return builder for {@link ReportPortal}
+	 */
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	public static class Builder {
 		public static final String API_BASE = "/api/v1";
 		private static final String HTTPS = "https";
