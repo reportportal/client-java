@@ -60,6 +60,7 @@ dependencies {
 
     shadow 'com.fasterxml.jackson.core:jackson-databind:2.8.10'
     shadow 'com.fasterxml.jackson.core:jackson-annotations:2.8.10'
+    shadow 'io.reactivex.rxjava2:rxjava:2.1.5'
     shadow 'org.apache.tika:tika-core:1.4'
     shadow 'org.slf4j:slf4j-api:1.7.25'
 
