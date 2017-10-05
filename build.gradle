@@ -37,7 +37,7 @@ shadowJar {
 //    configurations = [project.configurations.runtime]
 
     dependencies {
-        include(dependency('com.github.avarabyeu:restendpoint-jdk6'))
+        include(dependency('com.github.reportportal:restendpoint'))
         include(dependency('org.apache.httpcomponents:httpclient'))
         include(dependency('org.apache.httpcomponents:httpmime'))
         include(dependency('org.apache.httpcomponents:httpcore'))
