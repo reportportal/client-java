@@ -38,7 +38,6 @@ import java.util.Properties;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.values;
 import static com.google.common.base.Suppliers.memoize;
-import static org.apache.commons.lang.BooleanUtils.toBoolean;
 
 /**
  * Load report portal launch start properties
@@ -48,9 +47,22 @@ public class PropertiesLoader {
 	public static final String INNER_PATH = "reportportal.properties";
 	public static final String PATH = "./reportportal.properties";
 
-	private static final String[] PROXY_PROPERTIES = { "http.proxyHost", "http.proxyPort", "http.nonProxyHosts", "https.proxyHost",
-			"https.proxyPort", "ftp.proxyHost", "ftp.proxyPort", "ftp.nonProxyHosts", "socksProxyHost", "socksProxyPort", "http.proxyUser",
-			"http.proxyPassword" };
+	//@formatter:off
+	private static final String[] PROXY_PROPERTIES = {
+			"http.proxyHost",
+			"http.proxyPort",
+			"http.nonProxyHosts",
+			"https.proxyHost",
+			"https.proxyPort",
+			"ftp.proxyHost",
+			"ftp.proxyPort",
+			"ftp.nonProxyHosts",
+			"socksProxyHost",
+			"socksProxyPort",
+			"http.proxyUser",
+			"http.proxyPassword"
+	};
+	//@formatter:on
 
 	private Supplier<Properties> propertiesSupplier;
 
@@ -128,7 +140,7 @@ public class PropertiesLoader {
 	 */
 	public boolean getPropertyAsBoolean(ListenerProperty propertyName, boolean defaultValue) {
 		final String value = propertiesSupplier.get().getProperty(propertyName.getPropertyName());
-		return null != value ? toBoolean(value) : defaultValue;
+		return null != value ? Boolean.valueOf(value) : defaultValue;
 	}
 
 	/**

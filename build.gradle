@@ -41,7 +41,6 @@ shadowJar {
         include(dependency('org.apache.httpcomponents:httpclient'))
         include(dependency('org.apache.httpcomponents:httpmime'))
         include(dependency('org.apache.httpcomponents:httpcore'))
-        include(dependency('org.apache.httpcomponents:httpcore-nio'))
         include(dependency('commons-logging:commons-logging'))
         include(dependency('com.google.guava:guava'))
 
@@ -57,16 +56,12 @@ dependencies {
 //    compile 'com.epam.reportportal:commons-model:3.0.0'
     compile 'com.github.reportportal:commons-model:7e8acf7'
     compile 'com.google.guava:guava:20.0'
-    compile 'com.github.reportportal:restendpoint:e5d70a7'
+    compile 'com.github.reportportal:restendpoint:255b630'
 
     shadow 'com.fasterxml.jackson.core:jackson-databind:2.8.10'
     shadow 'com.fasterxml.jackson.core:jackson-annotations:2.8.10'
-    shadow 'io.reactivex.rxjava2:rxjava:2.1.4'
     shadow 'org.apache.tika:tika-core:1.4'
-    shadow 'org.slf4j:slf4j-api:1.7.2'
-    shadow 'com.google.code.findbugs:findbugs:3.0.1'
-    shadow 'javax.inject:javax.inject:1'
-
+    shadow 'org.slf4j:slf4j-api:1.7.25'
 
     testCompile 'junit:junit:4.12'
     testCompile 'org.mockito:mockito-all:2.0.2-beta'
