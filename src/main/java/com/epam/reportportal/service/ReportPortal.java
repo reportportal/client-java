@@ -76,7 +76,7 @@ public class ReportPortal {
 	 * Starts launch in ReportPortal
 	 *
 	 * @param rq Request Data
-	 * @return Launch ID promise
+	 * @return Launch
 	 */
 	public Launch startLaunch(StartLaunchRQ rq) {
 		if (!parameters.getEnable()) {
@@ -92,12 +92,19 @@ public class ReportPortal {
 	 * Factory method for {@link ReportPortal} that uses already started launch
 	 *
 	 * @param currentLaunchId Launch to be used
-	 * @return
+	 * @return This instance for chaining
 	 */
 	public Launch withLaunch(Maybe<String> currentLaunchId) {
 		LaunchImpl service = new LaunchImpl(rpClient, parameters);
 		service.useLaunch(currentLaunchId);
 		return service;
+	}
+
+	/**
+	 * @return Configuration parameters
+	 */
+	public ListenerParameters getParameters() {
+		return parameters;
 	}
 
 	/**
