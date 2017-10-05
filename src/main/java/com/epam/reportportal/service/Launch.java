@@ -20,7 +20,7 @@ import static com.epam.reportportal.utils.MimeTypeDetector.detect;
 import static com.google.common.io.Files.toByteArray;
 
 public abstract class Launch {
-	static final Logger LOGGER = LoggerFactory.getLogger(ReportPortal.class);
+	static final Logger LOGGER = LoggerFactory.getLogger(Launch.class);
 
 	/**
 	 * Finishes launch in ReportPortal. Blocks until all items are reported correctly

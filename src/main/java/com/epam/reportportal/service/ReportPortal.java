@@ -44,6 +44,8 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.ssl.SSLContextBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -58,6 +60,7 @@ import java.text.SimpleDateFormat;
  */
 public class ReportPortal {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(ReportPortal.class);
 	private static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
 
 	private ReportPortalClient rpClient;
@@ -133,12 +136,18 @@ public class ReportPortal {
 			return this;
 		}
 
-		public ReportPortal build() throws MalformedURLException {
-			ListenerParameters params = null == this.parameters ? new ListenerParameters(defaultPropertiesLoader()) : this.parameters;
-			HttpClient client = null == this.httpClient ? defaultClient(params) : this.httpClient;
+		public ReportPortal build() {
+			try {
+				ListenerParameters params = null == this.parameters ? new ListenerParameters(defaultPropertiesLoader()) : this.parameters;
+				HttpClient client = null == this.httpClient ? defaultClient(params) : this.httpClient;
 
-			ReportPortalClient restEndpoint = RestEndpoints.forInterface(ReportPortalClient.class, buildRestEndpoint(params, client));
-			return new ReportPortal(restEndpoint, params);
+				ReportPortalClient restEndpoint = RestEndpoints.forInterface(ReportPortalClient.class, buildRestEndpoint(params, client));
+				return new ReportPortal(restEndpoint, params);
+			} catch (Exception e) {
+				String errMsg = "Cannot build ReportPortal client";
+				LOGGER.error(errMsg, e);
+				throw new InternalReportPortalClientException(errMsg, e);
+			}
 
 		}
 
