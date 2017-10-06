@@ -57,6 +57,7 @@ public class LaunchImpl extends Launch {
 	private Maybe<LaunchFile> launchFile;
 
 	LaunchImpl(ReportPortalClient rpClient, ListenerParameters parameters) {
+		super(parameters);
 		this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
 		this.parameters = Preconditions.checkNotNull(parameters, "Parameters shouldn't be NULL");
 	}

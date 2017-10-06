@@ -1,5 +1,6 @@
 package com.epam.reportportal.service;
 
+import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -9,6 +10,11 @@ import org.slf4j.LoggerFactory;
 
 public abstract class Launch {
 	static final Logger LOGGER = LoggerFactory.getLogger(Launch.class);
+	private final ListenerParameters parameters;
+
+	Launch(ListenerParameters parameters) {
+		this.parameters = parameters;
+	}
 
 	/**
 	 * Finishes launch in ReportPortal. Blocks until all items are reported correctly
@@ -41,10 +47,14 @@ public abstract class Launch {
 	 */
 	abstract public void finishTestItem(Maybe<String> itemId, final FinishTestItemRQ rq);
 
+	public ListenerParameters getParameters(){
+		return this.parameters;
+	}
+
 	/**
 	 * Implementation for disabled Reporting
 	 */
-	public static final Launch NOOP_LAUNCH = new Launch() {
+	public static final Launch NOOP_LAUNCH = new Launch(null) {
 
 		@Override
 		public void finish(FinishExecutionRQ rq) {
