@@ -68,7 +68,7 @@ public class LaunchImpl extends Launch {
 	 * @param rq Request Data
 	 * @return Launch ID promise
 	 */
-	public synchronized Maybe<String> start(StartLaunchRQ rq) {
+	synchronized Maybe<String> start(StartLaunchRQ rq) {
 		if (null != this.launch) {
 			throw new InternalReportPortalClientException("Launch has started already!");
 		}

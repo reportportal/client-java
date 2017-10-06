@@ -97,7 +97,7 @@ public class ReportPortal {
 		}
 
 		LaunchImpl service = new LaunchImpl(rpClient, parameters);
-		service.startLaunch(rq);
+		service.start(rq);
 		return service;
 	}
 
