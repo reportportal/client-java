@@ -108,7 +108,7 @@ public class LaunchImpl extends Launch {
 	 */
 	public synchronized void finish(final FinishExecutionRQ rq) {
 		if (this.launch == null) {
-			throw new InternalReportPortalClientException("Cannot finish launch which is not started!");
+			return;
 		}
 		final Maybe<?> finish = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren())
 				.andThen(this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
@@ -130,6 +130,7 @@ public class LaunchImpl extends Launch {
 		} catch (Exception e) {
 			LOGGER.error("Unable to finish launch in ReportPortal", e);
 		}
+		this.launch = null;
 	}
 
 	/**
