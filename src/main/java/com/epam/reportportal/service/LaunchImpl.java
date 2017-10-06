@@ -40,7 +40,6 @@ public class LaunchImpl extends Launch {
 	 * REST Client
 	 */
 	private final ReportPortalClient rpClient;
-	private final ListenerParameters parameters;
 
 	/**
 	 * Messages queue to track items execution order
@@ -59,7 +58,7 @@ public class LaunchImpl extends Launch {
 	LaunchImpl(ReportPortalClient rpClient, ListenerParameters parameters) {
 		super(parameters);
 		this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
-		this.parameters = Preconditions.checkNotNull(parameters, "Parameters shouldn't be NULL");
+		Preconditions.checkNotNull(parameters, "Parameters shouldn't be NULL");
 	}
 
 	/**
@@ -119,7 +118,7 @@ public class LaunchImpl extends Launch {
 				}))
 				.cache();
 		try {
-			finish.timeout(parameters.getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
+			finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
 		} catch (Exception e) {
 			LOGGER.error("Unable to finish launch in ReportPortal", e);
 		}
@@ -166,7 +165,7 @@ public class LaunchImpl extends Launch {
 		}).cache();
 		itemId.subscribeOn(Schedulers.computation()).subscribe();
 		QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement());
-		LoggingContext.init(itemId, this.rpClient, parameters.getBatchLogsSize(), parameters.isConvertImage());
+		LoggingContext.init(itemId, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
 		return itemId;
 	}
 

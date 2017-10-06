@@ -54,7 +54,7 @@ public abstract class Launch {
 	/**
 	 * Implementation for disabled Reporting
 	 */
-	public static final Launch NOOP_LAUNCH = new Launch(null) {
+	public static final Launch NOOP_LAUNCH = new Launch(new ListenerParameters()) {
 
 		@Override
 		public void finish(FinishExecutionRQ rq) {
