@@ -1,5 +1,6 @@
 package com.epam.reportportal.service;
 
+import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.utils.LaunchFile;
@@ -67,7 +68,10 @@ public class LaunchImpl extends Launch {
 	 * @param rq Request Data
 	 * @return Launch ID promise
 	 */
-	public Maybe<String> startLaunch(StartLaunchRQ rq) {
+	public synchronized Maybe<String> start(StartLaunchRQ rq) {
+		if (null != this.launch) {
+			throw new InternalReportPortalClientException("Launch has started already!");
+		}
 		this.launch = rpClient.startLaunch(rq)
 				.doOnSuccess(logCreated("launch"))
 				.doOnError(LOG_ERROR)
@@ -101,7 +105,10 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @param rq Finish RQ
 	 */
-	public void finish(final FinishExecutionRQ rq) {
+	public synchronized void finish(final FinishExecutionRQ rq) {
+		if (this.launch == null) {
+			throw new InternalReportPortalClientException("Cannot finish launch which is not started!");
+		}
 		final Maybe<?> finish = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren())
 				.andThen(this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
 					@Override
