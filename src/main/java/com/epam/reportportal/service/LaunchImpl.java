@@ -70,7 +70,8 @@ public class LaunchImpl extends Launch {
 	 */
 	synchronized Maybe<String> start(StartLaunchRQ rq) {
 		if (null != this.launch) {
-			throw new InternalReportPortalClientException("Launch has started already!");
+			LOGGER.warn("Trying to create new instance of launch! It's started already");
+			return this.launch;
 		}
 		this.launch = rpClient.startLaunch(rq)
 				.doOnSuccess(logCreated("launch"))
