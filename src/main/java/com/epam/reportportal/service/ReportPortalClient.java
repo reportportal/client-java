@@ -27,6 +27,7 @@ import com.epam.reportportal.restendpoint.http.annotation.Path;
 import com.epam.reportportal.restendpoint.http.annotation.Request;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 
@@ -39,7 +40,7 @@ import static com.epam.reportportal.restendpoint.http.HttpMethod.PUT;
 public interface ReportPortalClient {
 
 	@Request(method = POST, url = "/launch")
-	Maybe<EntryCreatedRS> startLaunch(@Body StartLaunchRQ rq);
+	Maybe<StartLaunchRS> startLaunch(@Body StartLaunchRQ rq);
 
 	@Request(method = PUT, url = "/launch/{launchId}/finish")
 	Maybe<OperationCompletionRS> finishLaunch(@Path("launchId") String launch, @Body FinishExecutionRQ rq);

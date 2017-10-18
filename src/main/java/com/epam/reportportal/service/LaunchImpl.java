@@ -6,6 +6,7 @@ import com.epam.reportportal.utils.LaunchFile;
 import com.epam.reportportal.utils.RetryWithDelay;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -61,22 +62,33 @@ public class LaunchImpl extends Launch {
 		this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
 		Preconditions.checkNotNull(parameters, "Parameters shouldn't be NULL");
 
-		this.launch = Maybe.defer(new Callable<MaybeSource<? extends String>>() {
-			@Override
-			public MaybeSource<? extends String> call() throws Exception {
-				return launch = rpClient.startLaunch(rq)
-						.doOnSuccess(logCreated("launch"))
-						.doOnError(LOG_ERROR)
-						.map(TO_ID)
-						.doOnSuccess(new Consumer<String>() {
-							@Override
-							public void accept(String id) throws Exception {
-								System.setProperty("rp.launch.id", id);
-							}
-						});
-			}
-		}).subscribeOn(Schedulers.computation()).cache();
-		this.launchFile = LaunchFile.create(launch);
+		if (!parameters.isRerun()) {
+			Maybe<StartLaunchRS> launchPromise = Maybe.defer(new Callable<MaybeSource<? extends StartLaunchRS>>() {
+				@Override
+				public MaybeSource<? extends StartLaunchRS> call() throws Exception {
+					return rpClient.startLaunch(rq)
+							.doOnSuccess(logCreated("launch"))
+							.doOnError(LOG_ERROR)
+							.doOnSuccess(new Consumer<StartLaunchRS>() {
+								@Override
+								public void accept(StartLaunchRS rs) throws Exception {
+									System.setProperty("rp.launch.id", rs.getId());
+								}
+							});
+				}
+			}).subscribeOn(Schedulers.computation()).cache();
+			this.launch = launchPromise.map(new Function<StartLaunchRS, String>() {
+				@Override
+				public String apply(StartLaunchRS rs) throws Exception {
+					return rs.getId();
+				}
+			});
+
+			this.launchFile = LaunchFile.create(rq.getName(), launchPromise);
+		} else {
+			this.launch = LaunchFile.find(rq.getName());
+		}
+
 	}
 
 	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch) {
@@ -85,7 +97,6 @@ public class LaunchImpl extends Launch {
 		Preconditions.checkNotNull(parameters, "Parameters shouldn't be NULL");
 
 		this.launch = launch.subscribeOn(Schedulers.computation()).cache();
-		this.launchFile = LaunchFile.create(launch);
 	}
 
 	/**

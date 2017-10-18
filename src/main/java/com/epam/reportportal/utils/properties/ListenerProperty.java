@@ -39,6 +39,7 @@ public enum ListenerProperty {
     REPORTING_TIMEOUT("rp.reporting.timeout", false),
     MODE("rp.mode", false),
     ENABLE("rp.enable", false),
+    RERUN("rp.rerun", false),
     SKIPPED_AS_ISSUE("rp.skipped.issue", false),
     // http proxy
     HTTP_PROXY_HOST("http.proxyHost", false),

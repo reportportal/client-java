@@ -49,6 +49,7 @@ public class ListenerParameters {
 	private Integer reportingTimeout;
 	private String keystore;
 	private String keystorePassword;
+	private boolean rerun;
 
 	public ListenerParameters() {
 
@@ -71,6 +72,7 @@ public class ListenerParameters {
 
 		this.keystore = properties.getProperty(KEYSTORE_RESOURCE);
 		this.keystorePassword = properties.getProperty(KEYSTORE_PASSWORD);
+		this.rerun = properties.getPropertyAsBoolean(RERUN, false);
 	}
 
 	public String getDescription() {
@@ -183,6 +185,14 @@ public class ListenerParameters {
 
 	public void setKeystorePassword(String keystorePassword) {
 		this.keystorePassword = keystorePassword;
+	}
+
+	public boolean isRerun() {
+		return rerun;
+	}
+
+	public void setRerun(boolean rerun) {
+		this.rerun = rerun;
 	}
 
 	@VisibleForTesting
