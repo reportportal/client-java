@@ -91,13 +91,12 @@ public class ReportPortal {
 	 * @param rq Request Data
 	 * @return Launch
 	 */
-	public Launch startLaunch(StartLaunchRQ rq) {
+	public Launch newLaunch(StartLaunchRQ rq) {
 		if (!parameters.getEnable()) {
 			return Launch.NOOP_LAUNCH;
 		}
 
-		LaunchImpl service = new LaunchImpl(rpClient, parameters);
-		service.start(rq);
+		LaunchImpl service = new LaunchImpl(rpClient, parameters, rq);
 		return service;
 	}
 
@@ -108,9 +107,7 @@ public class ReportPortal {
 	 * @return This instance for chaining
 	 */
 	public Launch withLaunch(Maybe<String> currentLaunchId) {
-		LaunchImpl service = new LaunchImpl(rpClient, parameters);
-		service.useLaunch(currentLaunchId);
-		return service;
+		return new LaunchImpl(rpClient, parameters, currentLaunchId);
 	}
 
 	/**

@@ -1,6 +1,5 @@
 package com.epam.reportportal.service;
 
-import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.utils.LaunchFile;
@@ -20,6 +19,7 @@ import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -56,49 +56,48 @@ public class LaunchImpl extends Launch {
 	private Maybe<String> launch;
 	private Maybe<LaunchFile> launchFile;
 
-	LaunchImpl(ReportPortalClient rpClient, ListenerParameters parameters) {
+	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, final StartLaunchRQ rq) {
 		super(parameters);
 		this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
 		Preconditions.checkNotNull(parameters, "Parameters shouldn't be NULL");
+
+		this.launch = Maybe.defer(new Callable<MaybeSource<? extends String>>() {
+			@Override
+			public MaybeSource<? extends String> call() throws Exception {
+				return launch = rpClient.startLaunch(rq)
+						.doOnSuccess(logCreated("launch"))
+						.doOnError(LOG_ERROR)
+						.map(TO_ID)
+						.doOnSuccess(new Consumer<String>() {
+							@Override
+							public void accept(String id) throws Exception {
+								System.setProperty("rp.launch.id", id);
+							}
+						});
+			}
+		}).subscribeOn(Schedulers.computation()).cache();
+		this.launchFile = LaunchFile.create(launch);
+	}
+
+	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch) {
+		super(parameters);
+		this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
+		Preconditions.checkNotNull(parameters, "Parameters shouldn't be NULL");
+
+		this.launch = launch.subscribeOn(Schedulers.computation()).cache();
+		this.launchFile = LaunchFile.create(launch);
 	}
 
 	/**
-	 * Starts launch in ReportPortal
+	 * Starts launch in ReportPortal. Does NOT starts the same launch twice
 	 *
-	 * @param rq Request Data
 	 * @return Launch ID promise
 	 */
-	synchronized Maybe<String> start(StartLaunchRQ rq) {
-		if (null != this.launch) {
-			LOGGER.warn("Trying to create new instance of launch! It's started already");
-			return this.launch;
-		}
-		this.launch = rpClient.startLaunch(rq)
-				.doOnSuccess(logCreated("launch"))
-				.doOnError(LOG_ERROR)
-				.map(TO_ID)
-				.doOnSuccess(new Consumer<String>() {
-					@Override
-					public void accept(String id) throws Exception {
-						System.setProperty("rp.launch.id", id);
-					}
-				})
-				.cache();
-		this.launch.subscribeOn(Schedulers.computation()).subscribe();
-		this.launchFile = LaunchFile.create(this.launch);
-		return launch;
-	}
+	public synchronized Maybe<String> start() {
+		launch.subscribe();
+		//		LOGGER.warn("Trying to create new instance of launch! It's started already");
+		return this.launch;
 
-	/**
-	 * Provides ability to report in already started launch
-	 *
-	 * @param launch Launch to be used
-	 * @return Launch to be used
-	 */
-	public Maybe<String> useLaunch(final Maybe<String> launch) {
-		this.launch = launch;
-		this.launch.subscribeOn(Schedulers.computation()).subscribe();
-		return launch;
 	}
 
 	/**
@@ -107,9 +106,6 @@ public class LaunchImpl extends Launch {
 	 * @param rq Finish RQ
 	 */
 	public synchronized void finish(final FinishExecutionRQ rq) {
-		if (this.launch == null) {
-			return;
-		}
 		final Maybe<?> finish = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren())
 				.andThen(this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
 					@Override
@@ -130,7 +126,6 @@ public class LaunchImpl extends Launch {
 		} catch (Exception e) {
 			LOGGER.error("Unable to finish launch in ReportPortal", e);
 		}
-		this.launch = null;
 	}
 
 	/**

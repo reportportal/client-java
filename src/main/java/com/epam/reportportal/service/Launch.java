@@ -16,6 +16,8 @@ public abstract class Launch {
 		this.parameters = parameters;
 	}
 
+	abstract public Maybe<String> start();
+
 	/**
 	 * Finishes launch in ReportPortal. Blocks until all items are reported correctly
 	 *
@@ -55,6 +57,11 @@ public abstract class Launch {
 	 * Implementation for disabled Reporting
 	 */
 	public static final Launch NOOP_LAUNCH = new Launch(new ListenerParameters()) {
+
+		@Override
+		public Maybe<String> start() {
+			return Maybe.empty();
+		}
 
 		@Override
 		public void finish(FinishExecutionRQ rq) {
