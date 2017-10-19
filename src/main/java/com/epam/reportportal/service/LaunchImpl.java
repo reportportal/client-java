@@ -55,7 +55,7 @@ public class LaunchImpl extends Launch {
 			});
 
 	private Maybe<String> launch;
-	private Maybe<LaunchFile> launchFile;
+	private boolean rerun;
 
 	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, final StartLaunchRQ rq) {
 		super(parameters);
@@ -84,9 +84,10 @@ public class LaunchImpl extends Launch {
 				}
 			});
 
-			this.launchFile = LaunchFile.create(rq.getName(), launchPromise);
+			LaunchFile.create(rq.getName(), launchPromise);
 		} else {
 			this.launch = LaunchFile.find(rq.getName());
+			this.rerun = true;
 		}
 
 	}
@@ -234,6 +235,10 @@ public class LaunchImpl extends Launch {
 			QUEUE.getUnchecked(this.launch).addToQueue(finishCompletion);
 		}
 
+	}
+
+	public boolean isRerun() {
+		return rerun;
 	}
 
 	/**
