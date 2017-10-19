@@ -26,6 +26,7 @@ import com.epam.reportportal.restendpoint.http.annotation.Multipart;
 import com.epam.reportportal.restendpoint.http.annotation.Path;
 import com.epam.reportportal.restendpoint.http.annotation.Request;
 import com.epam.ta.reportportal.ws.model.*;
+import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
@@ -46,10 +47,10 @@ public interface ReportPortalClient {
 	Maybe<OperationCompletionRS> finishLaunch(@Path("launchId") String launch, @Body FinishExecutionRQ rq);
 
 	@Request(method = POST, url = "/item/")
-	Maybe<EntryCreatedRS> startTestItem(@Body StartTestItemRQ rq);
+	Maybe<ItemCreatedRS> startTestItem(@Body StartTestItemRQ rq);
 
 	@Request(method = POST, url = "/item/{parent}")
-	Maybe<EntryCreatedRS> startTestItem(@Path("parent") String parent, @Body StartTestItemRQ rq);
+	Maybe<ItemCreatedRS> startTestItem(@Path("parent") String parent, @Body StartTestItemRQ rq);
 
 	@Request(method = PUT, url = "/item/{itemId}")
 	Maybe<OperationCompletionRS> finishTestItem(@Path("itemId") String itemId, @Body FinishTestItemRQ rq);
