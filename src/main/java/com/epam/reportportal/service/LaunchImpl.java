@@ -117,7 +117,7 @@ public class LaunchImpl extends Launch {
 	 * @param rq Finish RQ
 	 */
 	public synchronized void finish(final FinishExecutionRQ rq) {
-		final Maybe<?> finish = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren())
+		final Completable finish = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren())
 				.andThen(this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
 					@Override
 					public Maybe<OperationCompletionRS> apply(String id) throws Exception {
@@ -125,12 +125,6 @@ public class LaunchImpl extends Launch {
 					}
 				}))
 				.ignoreElement()
-				.andThen(launchFile.doOnSuccess(new Consumer<LaunchFile>() {
-					@Override
-					public void accept(LaunchFile launchFile) throws Exception {
-						launchFile.remove();
-					}
-				}))
 				.cache();
 		try {
 			finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
