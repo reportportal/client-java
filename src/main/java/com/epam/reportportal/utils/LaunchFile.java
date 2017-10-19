@@ -91,7 +91,6 @@ public class LaunchFile {
 							String.format("%s-%s-#%d-%s.tmp", FILE_PREFIX, name, launchId.getNumber(), launchId.getId())
 					);
 					if (file.createNewFile()) {
-						file.deleteOnExit();
 						LOGGER.info("ReportPortal's temp file '{}' is created", file.getAbsolutePath());
 					}
 
