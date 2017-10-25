@@ -145,7 +145,7 @@ public class LaunchImpl extends Launch {
 			@Override
 			public Maybe<String> apply(String id) throws Exception {
 				rq.setLaunchId(id);
-				rq.setRerun(getParameters().isRerun());
+				rq.setRetry(getParameters().isRerun());
 				return rpClient.startTestItem(rq).doOnSuccess(logCreated("item")).doOnError(LOG_ERROR).map(TO_ID);
 
 			}
@@ -169,7 +169,7 @@ public class LaunchImpl extends Launch {
 					@Override
 					public MaybeSource<String> apply(String parentId) throws Exception {
 						rq.setLaunchId(launchId);
-						rq.setRerun(getParameters().isRerun());
+						rq.setRetry(getParameters().isRerun());
 						return rpClient.startTestItem(parentId, rq).doOnSuccess(logCreated("item")).doOnError(LOG_ERROR).map(TO_ID);
 					}
 				});
