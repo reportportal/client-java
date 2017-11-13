@@ -280,7 +280,10 @@ public class ReportPortal {
 				}
 
 				try {
-					builder.setSSLContext(SSLContextBuilder.create()
+					builder
+							.setMaxConnPerRoute(50)
+							.setMaxConnTotal(100)
+							.setSSLContext(SSLContextBuilder.create()
 							.loadTrustMaterial(SslUtils.loadKeyStore(keyStore, keyStorePassword), TrustSelfSignedStrategy.INSTANCE)
 							.build());
 				} catch (Exception e) {
