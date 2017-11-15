@@ -280,10 +280,7 @@ public class ReportPortal {
 				}
 
 				try {
-					builder
-							.setMaxConnPerRoute(50)
-							.setMaxConnTotal(100)
-							.setSSLContext(SSLContextBuilder.create()
+					builder.setSSLContext(SSLContextBuilder.create()
 							.loadTrustMaterial(SslUtils.loadKeyStore(keyStore, keyStorePassword), TrustSelfSignedStrategy.INSTANCE)
 							.build());
 				} catch (Exception e) {
@@ -291,6 +288,7 @@ public class ReportPortal {
 				}
 
 			}
+			builder.setMaxConnPerRoute(50).setMaxConnTotal(100);
 			return builder.addInterceptorLast(new HttpRequestInterceptor() {
 				@Override
 				public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
