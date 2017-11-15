@@ -145,7 +145,6 @@ public class LaunchImpl extends Launch {
 			@Override
 			public Maybe<String> apply(String id) throws Exception {
 				rq.setLaunchId(id);
-				System.out.println("Starting test item..." + Thread.currentThread().getName());
 				return rpClient.startTestItem(rq).doOnSuccess(logCreated("item")).doOnError(LOG_ERROR).map(TO_ID);
 
 			}
@@ -169,6 +168,7 @@ public class LaunchImpl extends Launch {
 					@Override
 					public MaybeSource<String> apply(String parentId) throws Exception {
 						rq.setLaunchId(launchId);
+						System.out.println("Starting test item..." + Thread.currentThread().getName());
 						return rpClient.startTestItem(parentId, rq).doOnSuccess(logCreated("item")).doOnError(LOG_ERROR).map(TO_ID);
 					}
 				});
