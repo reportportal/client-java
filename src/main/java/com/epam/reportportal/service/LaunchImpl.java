@@ -76,7 +76,7 @@ public class LaunchImpl extends Launch {
 								}
 							});
 				}
-			}).subscribeOn(Schedulers.computation()).cache();
+			}).subscribeOn(Schedulers.io()).cache();
 			this.launch = launchPromise.map(new Function<StartLaunchRS, String>() {
 				@Override
 				public String apply(StartLaunchRS rs) throws Exception {
@@ -97,7 +97,7 @@ public class LaunchImpl extends Launch {
 		this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
 		Preconditions.checkNotNull(parameters, "Parameters shouldn't be NULL");
 
-		this.launch = launch.subscribeOn(Schedulers.computation()).cache();
+		this.launch = launch.subscribeOn(Schedulers.io()).cache();
 	}
 
 	/**
@@ -149,7 +149,7 @@ public class LaunchImpl extends Launch {
 
 			}
 		}).cache();
-		testItem.subscribeOn(Schedulers.computation()).subscribe();
+		testItem.subscribeOn(Schedulers.io()).subscribe();
 		QUEUE.getUnchecked(testItem).addToQueue(testItem.ignoreElement());
 		return testItem;
 	}
@@ -173,7 +173,7 @@ public class LaunchImpl extends Launch {
 				});
 			}
 		}).cache();
-		itemId.subscribeOn(Schedulers.computation()).subscribe();
+		itemId.subscribeOn(Schedulers.io()).subscribe();
 		QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement());
 		LoggingContext.init(itemId, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
 		return itemId;
@@ -223,7 +223,7 @@ public class LaunchImpl extends Launch {
 				})
 				.ignoreElement()
 				.cache();
-		finishCompletion.subscribeOn(Schedulers.computation()).subscribe();
+		finishCompletion.subscribeOn(Schedulers.io()).subscribe();
 		//find parent and add to its queue
 		final Maybe<String> parent = treeItem.getParent();
 		if (null != parent) {
