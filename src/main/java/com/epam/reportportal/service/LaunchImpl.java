@@ -154,6 +154,15 @@ public class LaunchImpl extends Launch {
 		return testItem;
 	}
 
+	public Maybe<String> startTestItem(final Maybe<String> parentId, final Maybe<String> retryOf, final StartTestItemRQ rq) {
+		return retryOf.flatMap(new Function<String, Maybe<String>>() {
+			@Override
+			public Maybe<String> apply(String s) throws Exception {
+				return startTestItem(parentId, rq);
+			}
+		}).cache();
+	}
+
 	/**
 	 * Starts new test item in ReportPortal asynchronously (non-blocking)
 	 *

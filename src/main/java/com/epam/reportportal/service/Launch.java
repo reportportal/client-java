@@ -42,6 +42,16 @@ public abstract class Launch {
 	abstract public Maybe<String> startTestItem(final Maybe<String> parentId, final StartTestItemRQ rq);
 
 	/**
+	 * Starts new test item in ReportPortal in respect of provided retry
+	 *
+	 * @param parentId promise of ID of parent
+	 * @param retryOf  promise of ID of retried element
+	 * @param rq       promise of ID of request
+	 * @return Promise of Test Item ID
+	 */
+	abstract public Maybe<String> startTestItem(final Maybe<String> parentId, final Maybe<String> retryOf, final StartTestItemRQ rq);
+
+	/**
 	 * Finishes Test Item in ReportPortal. Non-blocking. Schedules finish after success of all child items
 	 *
 	 * @param itemId Item ID promise
@@ -49,7 +59,7 @@ public abstract class Launch {
 	 */
 	abstract public void finishTestItem(Maybe<String> itemId, final FinishTestItemRQ rq);
 
-	public ListenerParameters getParameters(){
+	public ListenerParameters getParameters() {
 		return this.parameters;
 	}
 
@@ -75,6 +85,11 @@ public abstract class Launch {
 
 		@Override
 		public Maybe<String> startTestItem(Maybe<String> parentId, StartTestItemRQ rq) {
+			return Maybe.empty();
+		}
+
+		@Override
+		public Maybe<String> startTestItem(Maybe<String> parentId, Maybe<String> retryOf, StartTestItemRQ rq) {
 			return Maybe.empty();
 		}
 
