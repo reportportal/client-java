@@ -2,9 +2,11 @@ package com.epam.reportportal.service;
 
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.utils.LaunchFile;
 import com.epam.reportportal.utils.RetryWithDelay;
 import com.epam.ta.reportportal.ws.model.*;
+import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import com.google.common.base.Preconditions;
@@ -37,6 +39,8 @@ public class LaunchImpl extends Launch {
 	};
 	private static final int ITEM_FINISH_MAX_RETRIES = 10;
 	private static final int ITEM_FINISH_RETRY_TIMEOUT = 10;
+	private static final String NOT_ISSUE = "NOT_ISSUE";
+
 
 	/**
 	 * REST Client
@@ -197,6 +201,12 @@ public class LaunchImpl extends Launch {
 	 */
 	public void finishTestItem(final Maybe<String> itemId, final FinishTestItemRQ rq) {
 		Preconditions.checkArgument(null != itemId, "ItemID should not be null");
+
+		if (Statuses.SKIPPED.equals(rq.getStatus()) && !getParameters().getSkippedAnIssue()) {
+			Issue issue = new Issue();
+			issue.setIssueType(NOT_ISSUE);
+			rq.setIssue(issue);
+		}
 
 		QUEUE.getUnchecked(launch).addToQueue(LoggingContext.complete());
 
