@@ -152,7 +152,7 @@ public class LaunchImpl extends Launch {
 				return rpClient.startTestItem(rq).doOnSuccess(logCreated("item")).doOnError(LOG_ERROR).map(TO_ID);
 
 			}
-		}).cache();
+		}).doOnError(LOG_ERROR).cache();
 		testItem.subscribeOn(Schedulers.io()).subscribe();
 		QUEUE.getUnchecked(testItem).addToQueue(testItem.ignoreElement());
 		return testItem;
@@ -186,7 +186,7 @@ public class LaunchImpl extends Launch {
 					}
 				});
 			}
-		}).cache();
+		}).doOnError(LOG_ERROR).cache();
 		itemId.subscribeOn(Schedulers.io()).subscribe();
 		QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement());
 		LoggingContext.init(itemId, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
