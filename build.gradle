@@ -37,7 +37,7 @@ shadowJar {
 //    configurations = [project.configurations.runtime]
 
     dependencies {
-        include(dependency('com.github.reportportal:restendpoint'))
+        include(dependency('com.epam.reportportal:restendpoint'))
         include(dependency('org.apache.httpcomponents:httpclient'))
         include(dependency('org.apache.httpcomponents:httpmime'))
         include(dependency('org.apache.httpcomponents:httpcore'))
@@ -56,7 +56,7 @@ dependencies {
 //    compile 'com.epam.reportportal:commons-model:3.0.0'
     compile 'com.epam.reportportal:commons-model:4.0.0'
     compile 'com.google.guava:guava:20.0'
-    compile 'com.github.reportportal:restendpoint:255b630'
+    compile 'com.epam.reportportal:restendpoint:0.2.4'
 
     shadow 'com.fasterxml.jackson.core:jackson-databind:2.8.10'
     shadow 'com.fasterxml.jackson.core:jackson-annotations:2.8.10'
