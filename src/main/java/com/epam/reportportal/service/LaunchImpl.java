@@ -80,7 +80,7 @@ public class LaunchImpl extends Launch {
 								}
 							});
 				}
-			}).subscribeOn(Schedulers.io()).cache();
+			}).doOnError(LOG_ERROR).subscribeOn(Schedulers.io()).cache();
 			this.launch = launchPromise.map(new Function<StartLaunchRS, String>() {
 				@Override
 				public String apply(StartLaunchRS rs) throws Exception {
@@ -174,6 +174,9 @@ public class LaunchImpl extends Launch {
 	 * @return Test Item ID promise
 	 */
 	public Maybe<String> startTestItem(final Maybe<String> parentId, final StartTestItemRQ rq) {
+		if (null == parentId) {
+			return startTestItem(rq);
+		}
 		final Maybe<String> itemId = this.launch.flatMap(new Function<String, Maybe<String>>() {
 			@Override
 			public Maybe<String> apply(final String launchId) throws Exception {
