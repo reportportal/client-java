@@ -34,6 +34,7 @@ import com.epam.reportportal.utils.properties.ListenerProperty;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.net.HttpHeaders;
@@ -248,6 +249,7 @@ public class ReportPortal {
 		protected RestEndpoint buildRestEndpoint(ListenerParameters parameters, HttpClient client) {
 			final ObjectMapper om = new ObjectMapper();
 			om.setDateFormat(new SimpleDateFormat(DEFAULT_DATE_FORMAT));
+			om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
 			String baseUrl = parameters.getBaseUrl();
 			String project = parameters.getProjectName();
