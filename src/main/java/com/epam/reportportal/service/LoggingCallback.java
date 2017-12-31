@@ -53,7 +53,7 @@ final class LoggingCallback {
 	static final Consumer<Throwable> LOG_ERROR = new Consumer<Throwable>() {
 		@Override
 		public void accept(Throwable rs) throws Exception {
-			LOGGER.error("[%s] ReportPortal execution error", Thread.currentThread().getId(), rs);
+			LOGGER.error("[{}] ReportPortal execution error", Thread.currentThread().getId(), rs);
 		}
 	};
 

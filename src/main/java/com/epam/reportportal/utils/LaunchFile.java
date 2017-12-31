@@ -91,7 +91,7 @@ public class LaunchFile {
 							String.format("%s-%s-#%d-%s.tmp", FILE_PREFIX, name, launchId.getNumber(), launchId.getId())
 					);
 					if (file.createNewFile()) {
-						LOGGER.info("ReportPortal's temp file '{}' is created", file.getAbsolutePath());
+						LOGGER.debug("ReportPortal's temp file '{}' is created", file.getAbsolutePath());
 					}
 
 					return new LaunchFile(file);
@@ -111,14 +111,14 @@ public class LaunchFile {
 
 	public void remove() {
 		if (null != file && file.exists() && file.delete()) {
-			LOGGER.info("ReportPortal's temp file '{}' has been removed", file.getAbsolutePath());
+			LOGGER.debug("ReportPortal's temp file '{}' has been removed", file.getAbsolutePath());
 		}
 	}
 
 	public static File getTempDir() {
 		File tempDir = new File(StandardSystemProperty.JAVA_IO_TMPDIR.value(), "reportportal");
 		if (tempDir.mkdirs()) {
-			LOGGER.info("Temp directory for ReportPortal launch files is created: '{}'", tempDir.getAbsolutePath());
+			LOGGER.debug("Temp directory for ReportPortal launch files is created: '{}'", tempDir.getAbsolutePath());
 		}
 
 		return tempDir;
