@@ -30,8 +30,6 @@ import com.google.common.io.Closer;
 import com.google.common.io.Resources;
 
 import java.io.*;
-import java.net.Authenticator;
-import java.net.PasswordAuthentication;
 import java.net.URL;
 import java.util.Map;
 import java.util.Properties;
@@ -46,23 +44,6 @@ public class PropertiesLoader {
 
 	public static final String INNER_PATH = "reportportal.properties";
 	public static final String PATH = "./reportportal.properties";
-
-	//@formatter:off
-	private static final String[] PROXY_PROPERTIES = {
-			"http.proxyHost",
-			"http.proxyPort",
-			"http.nonProxyHosts",
-			"https.proxyHost",
-			"https.proxyPort",
-			"ftp.proxyHost",
-			"ftp.proxyPort",
-			"ftp.nonProxyHosts",
-			"socksProxyHost",
-			"socksProxyPort",
-			"http.proxyUser",
-			"http.proxyPassword"
-	};
-	//@formatter:on
 
 	private Supplier<Properties> propertiesSupplier;
 
@@ -199,7 +180,6 @@ public class PropertiesLoader {
 		overrideWith(props, System.getProperties());
 		overrideWith(props, System.getenv());
 
-		setProxyProperties(props);
 		return props;
 	}
 
@@ -284,21 +264,4 @@ public class PropertiesLoader {
 		return Optional.fromNullable(loader.getResource(resourceName));
 	}
 
-	private static void setProxyProperties(Properties properties) {
-		for (String property : PROXY_PROPERTIES) {
-			if (properties.containsKey(property)) {
-				System.setProperty(property, properties.get(property).toString());
-			}
-		}
-		final String userName = System.getProperty("http.proxyUser");
-		final String password = System.getProperty("http.proxyPassword");
-		if (userName != null && password != null) {
-			Authenticator.setDefault(new Authenticator() {
-				@Override
-				protected PasswordAuthentication getPasswordAuthentication() {
-					return new PasswordAuthentication(userName, password.toCharArray());
-				}
-			});
-		}
-	}
 }

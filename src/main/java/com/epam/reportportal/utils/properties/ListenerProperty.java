@@ -40,24 +40,7 @@ public enum ListenerProperty {
     MODE("rp.mode", false),
     ENABLE("rp.enable", false),
     RERUN("rp.rerun", false),
-    SKIPPED_AS_ISSUE("rp.skipped.issue", false),
-    // http proxy
-    HTTP_PROXY_HOST("http.proxyHost", false),
-    HTTP_PROXY_PORT("http.proxyPort", false),
-    HTTP_NON_PROXY_HOST("http.nonProxyHosts", false),
-    // https proxy
-    HTTPS_PROXY_HOST("https.proxyHost", false),
-    HTTPS_PROXY_PORT("https.proxyPort", false),
-    // ftp proxy
-    FTP_PROXY_HOST("ftp.proxyHost", false),
-    FTP_PROXY_PORT("ftp.proxyPort", false),
-    FTP_NON_PROXY_HOSTS("ftp.nonProxyHosts", false),
-    // socks proxy
-    SOCKS_PROXY_HOST("socksProxyHost", false),
-    SOCKS_PROXY_PORT("socksProxyPort", false),
-    // proxy credentials
-    PROXY_USER("http.proxyUser", false),
-    PROXY_PASSWORD("http.proxyPassword", false);
+    SKIPPED_AS_ISSUE("rp.skipped.issue", false);
     //formatter:on
 
     private String propertyName;
