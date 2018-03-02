@@ -231,7 +231,7 @@ public class ReportPortal {
 				ListenerParameters params = null == this.parameters ? new ListenerParameters(defaultPropertiesLoader()) : this.parameters;
 				HttpClient client = null == this.httpClient ?
 						defaultClient(params) :
-						this.httpClient.addInterceptorLast(new BearerAuthInterceptor(this.parameters.getUuid())).build();
+						this.httpClient.addInterceptorLast(new BearerAuthInterceptor(params.getUuid())).build();
 
 				ReportPortalClient restEndpoint = RestEndpoints.forInterface(ReportPortalClient.class, buildRestEndpoint(params, client));
 				return new ReportPortal(restEndpoint, params);
