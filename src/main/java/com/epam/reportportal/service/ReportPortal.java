@@ -37,16 +37,11 @@ import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
-import com.google.common.net.HttpHeaders;
 import io.reactivex.Maybe;
-import org.apache.http.HttpException;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.protocol.HttpContext;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -218,10 +213,10 @@ public class ReportPortal {
 		public static final String API_BASE = "/api/v1";
 		private static final String HTTPS = "https";
 
-		private HttpClient httpClient;
+		private HttpClientBuilder httpClient;
 		private ListenerParameters parameters;
 
-		public Builder withHttpClient(HttpClient client) {
+		public Builder withHttpClient(HttpClientBuilder client) {
 			this.httpClient = client;
 			return this;
 		}
@@ -234,7 +229,9 @@ public class ReportPortal {
 		public ReportPortal build() {
 			try {
 				ListenerParameters params = null == this.parameters ? new ListenerParameters(defaultPropertiesLoader()) : this.parameters;
-				HttpClient client = null == this.httpClient ? defaultClient(params) : this.httpClient;
+				HttpClient client = null == this.httpClient ?
+						defaultClient(params) :
+						this.httpClient.addInterceptorLast(new BearerAuthInterceptor(this.parameters.getUuid())).build();
 
 				ReportPortalClient restEndpoint = RestEndpoints.forInterface(ReportPortalClient.class, buildRestEndpoint(params, client));
 				return new ReportPortal(restEndpoint, params);
@@ -291,12 +288,7 @@ public class ReportPortal {
 
 			}
 			builder.setMaxConnPerRoute(50).setMaxConnTotal(100);
-			return builder.addInterceptorLast(new HttpRequestInterceptor() {
-				@Override
-				public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
-					request.setHeader(HttpHeaders.AUTHORIZATION, "bearer " + uuid);
-				}
-			}).build();
+			return builder.addInterceptorLast(new BearerAuthInterceptor(uuid)).build();
 
 		}
 
