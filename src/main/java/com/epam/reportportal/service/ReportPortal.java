@@ -114,12 +114,28 @@ public class ReportPortal {
 	}
 
 	/**
+	 * @return ReportPortal client
+	 */
+	public ReportPortalClient getClient() {
+		return this.rpClient;
+	}
+
+	/**
 	 * Creates new builder for {@link ReportPortal}
 	 *
 	 * @return builder for {@link ReportPortal}
 	 */
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	/**
+	 * Creates new ReportPortal based on already built dependencies
+	 *
+	 * @return builder for {@link ReportPortal}
+	 */
+	public static ReportPortal create(ReportPortalClient client, ListenerParameters params) {
+		return new ReportPortal(client, params);
 	}
 
 	/**
@@ -229,12 +245,22 @@ public class ReportPortal {
 		public ReportPortal build() {
 			try {
 				ListenerParameters params = null == this.parameters ? new ListenerParameters(defaultPropertiesLoader()) : this.parameters;
+				return new ReportPortal(buildClient(ReportPortalClient.class, params), params);
+			} catch (Exception e) {
+				String errMsg = "Cannot build ReportPortal client";
+				LOGGER.error(errMsg, e);
+				throw new InternalReportPortalClientException(errMsg, e);
+			}
+
+		}
+
+		public <T extends ReportPortalClient> T buildClient(Class<T> clientType, ListenerParameters params) {
+			try {
 				HttpClient client = null == this.httpClient ?
 						defaultClient(params) :
 						this.httpClient.addInterceptorLast(new BearerAuthInterceptor(params.getUuid())).build();
 
-				ReportPortalClient restEndpoint = RestEndpoints.forInterface(ReportPortalClient.class, buildRestEndpoint(params, client));
-				return new ReportPortal(restEndpoint, params);
+				return RestEndpoints.forInterface(clientType, buildRestEndpoint(params, client));
 			} catch (Exception e) {
 				String errMsg = "Cannot build ReportPortal client";
 				LOGGER.error(errMsg, e);
