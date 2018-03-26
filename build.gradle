@@ -54,9 +54,9 @@ shadowJar {
 dependencies {
 
 //    compile 'com.epam.reportportal:commons-model:3.0.0'
-    compile 'com.epam.reportportal:commons-model:4.0.0'
+    compile 'com.epam.reportportal:commons-model:4.0.4'
     compile 'com.google.guava:guava:20.0'
-    compile 'com.epam.reportportal:restendpoint:0.2.4'
+    compile 'com.epam.reportportal:restendpoint:0.2.5'
 
     shadow 'com.fasterxml.jackson.core:jackson-databind:2.8.10'
     shadow 'com.fasterxml.jackson.core:jackson-annotations:2.8.10'

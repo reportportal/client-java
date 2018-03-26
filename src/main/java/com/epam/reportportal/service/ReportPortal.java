@@ -308,7 +308,7 @@ public class ReportPortal {
 				}
 
 			}
-			builder.setMaxConnPerRoute(50).setMaxConnTotal(100);
+			builder.setMaxConnPerRoute(50).setMaxConnTotal(100).evictExpiredConnections();
 			return builder.addInterceptorLast(new BearerAuthInterceptor(uuid)).build();
 
 		}

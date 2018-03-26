@@ -16,10 +16,7 @@
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.restendpoint.http.MultiPartRequest;
-import com.epam.reportportal.restendpoint.http.annotation.Body;
-import com.epam.reportportal.restendpoint.http.annotation.Multipart;
-import com.epam.reportportal.restendpoint.http.annotation.Path;
-import com.epam.reportportal.restendpoint.http.annotation.Request;
+import com.epam.reportportal.restendpoint.http.annotation.*;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -55,4 +52,7 @@ public interface ReportPortalClient {
 
 	@Request(method = POST, url = "/log/")
 	Maybe<BatchSaveOperatingRS> log(@Body @Multipart MultiPartRequest rq);
+
+	@Close
+	void close();
 }

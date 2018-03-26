@@ -31,6 +31,7 @@ import com.google.common.cache.LoadingCache;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
+import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
@@ -146,7 +147,12 @@ public class LaunchImpl extends Launch {
 					public Maybe<OperationCompletionRS> apply(String id) throws Exception {
 						return rpClient.finishLaunch(id, rq).doOnSuccess(LOG_SUCCESS).doOnError(LOG_ERROR);
 					}
-				}))
+				})).doOnComplete(new Action() {
+					@Override
+					public void run() throws Exception {
+						rpClient.close();
+					}
+				})
 				.ignoreElement()
 				.cache();
 		try {
