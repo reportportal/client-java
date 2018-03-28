@@ -16,6 +16,7 @@
 package com.epam.reportportal.exception;
 
 import com.epam.ta.reportportal.ws.model.ErrorRS;
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * Base ReportPortal. Used for unclassified errors
@@ -23,6 +24,7 @@ import com.epam.ta.reportportal.ws.model.ErrorRS;
  * @author Andrei Varabyeu
  */
 public class ReportPortalException extends GeneralReportPortalException {
+	private static final int MAX_ERROR_MESSAGE_LENGTH = 100000;
 	private static final long serialVersionUID = -3747137063782963453L;
 
 	/**
@@ -51,12 +53,20 @@ public class ReportPortalException extends GeneralReportPortalException {
 				.append("\n");
 		if (null != error) {
 			builder.append("Error Message: ")
-					.append(error.getMessage())
+					.append(trimMessage(error.getMessage(), MAX_ERROR_MESSAGE_LENGTH))
 					.append("\n")
 					.append("Error Type: ")
 					.append(error.getErrorType())
 					.append("\n");
 		}
 		return builder.toString();
+	}
+
+	@VisibleForTesting
+	static String trimMessage(String message, int maxLength) {
+		if (message.length() > maxLength) {
+			return message.substring(0, maxLength);
+		}
+		return message;
 	}
 }
