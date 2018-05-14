@@ -64,7 +64,7 @@ public class ReportPortalException extends GeneralReportPortalException {
 
 	@VisibleForTesting
 	static String trimMessage(String message, int maxLength) {
-		if (message.length() > maxLength) {
+		if ((null != message) && (message.length() > maxLength)) {
 			return message.substring(0, maxLength);
 		}
 		return message;
