@@ -32,5 +32,6 @@ public class ReportPortalExceptionTest {
 		Assert.assertEquals(errMessage, "hello world", ReportPortalException.trimMessage(toTrim, 15));
 		Assert.assertEquals(errMessage, "hello world", ReportPortalException.trimMessage(toTrim, 11));
 		Assert.assertEquals(errMessage, "hello", ReportPortalException.trimMessage(toTrim, 5));
+		Assert.assertEquals(errMessage, "", ReportPortalException.trimMessage(null, 5));
 	}
 }

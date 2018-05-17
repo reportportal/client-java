@@ -17,6 +17,7 @@ package com.epam.reportportal.exception;
 
 import com.epam.ta.reportportal.ws.model.ErrorRS;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 
 /**
  * Base ReportPortal. Used for unclassified errors
@@ -64,7 +65,11 @@ public class ReportPortalException extends GeneralReportPortalException {
 
 	@VisibleForTesting
 	static String trimMessage(String message, int maxLength) {
-		if ((null != message) && (message.length() > maxLength)) {
+		if (Strings.isNullOrEmpty(message)) {
+			return "";
+		}
+
+		if (message.length() > maxLength) {
 			return message.substring(0, maxLength);
 		}
 		return message;
