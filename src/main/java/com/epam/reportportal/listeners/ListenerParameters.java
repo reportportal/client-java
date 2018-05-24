@@ -51,6 +51,17 @@ public class ListenerParameters {
 
 	public ListenerParameters() {
 
+		this.isSkippedAnIssue = true;
+
+		this.batchLogsSize = LoggingContext.DEFAULT_BUFFER_SIZE;
+		this.convertImage = false;
+		this.reportingTimeout = 5 * 60;
+
+		this.rerun = false;
+
+		this.ioPoolSize = 100;
+		this.maxConnectionsPerRoute = 50;
+		this.maxConnectionsTotal = 100;
 	}
 
 	public ListenerParameters(PropertiesLoader properties) {
