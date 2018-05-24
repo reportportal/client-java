@@ -33,6 +33,7 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
@@ -51,6 +52,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
 import static com.google.common.io.Files.toByteArray;
@@ -228,6 +231,7 @@ public class ReportPortal {
 
 		private HttpClientBuilder httpClient;
 		private ListenerParameters parameters;
+		private ExecutorService executorService;
 
 		public Builder withHttpClient(HttpClientBuilder client) {
 			this.httpClient = client;
@@ -242,6 +246,9 @@ public class ReportPortal {
 		public ReportPortal build() {
 			try {
 				ListenerParameters params = null == this.parameters ? new ListenerParameters(defaultPropertiesLoader()) : this.parameters;
+				executorService = Executors.newFixedThreadPool(params.getIoPoolSize(),
+						new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build()
+				);
 				return new ReportPortal(buildClient(ReportPortalClient.class, params), params);
 			} catch (Exception e) {
 				String errMsg = "Cannot build ReportPortal client";
@@ -279,7 +286,7 @@ public class ReportPortal {
 				add(jacksonSerializer);
 				add(new ByteArraySerializer());
 				add(new NotJsonSerializer());
-			}}, new ReportPortalErrorHandler(jacksonSerializer), buildEndpointUrl(baseUrl, project));
+			}}, new ReportPortalErrorHandler(jacksonSerializer), buildEndpointUrl(baseUrl, project), executorService);
 		}
 
 		protected String buildEndpointUrl(String baseUrl, String project) {
@@ -309,7 +316,10 @@ public class ReportPortal {
 				}
 
 			}
-			builder.setMaxConnPerRoute(50).setMaxConnTotal(100).evictExpiredConnections();
+
+			builder.setMaxConnPerRoute(parameters.getMaxConnectionsPerRoute())
+					.setMaxConnTotal(parameters.getMaxConnectionsTotal())
+					.evictExpiredConnections();
 			return builder.addInterceptorLast(new BearerAuthInterceptor(uuid)).build();
 
 		}

@@ -45,6 +45,9 @@ public class ListenerParameters {
 	private String keystore;
 	private String keystorePassword;
 	private boolean rerun;
+	private Integer ioPoolSize;
+	private Integer maxConnectionsPerRoute;
+	private Integer maxConnectionsTotal;
 
 	public ListenerParameters() {
 
@@ -68,6 +71,10 @@ public class ListenerParameters {
 		this.keystore = properties.getProperty(KEYSTORE_RESOURCE);
 		this.keystorePassword = properties.getProperty(KEYSTORE_PASSWORD);
 		this.rerun = properties.getPropertyAsBoolean(RERUN, false);
+
+		this.ioPoolSize = properties.getPropertyAsInt(IO_POOL_SIZE, 100);
+		this.maxConnectionsPerRoute = properties.getPropertyAsInt(MAX_CONNECTIONS_PER_ROUTE, 50);
+		this.maxConnectionsTotal = properties.getPropertyAsInt(MAX_CONNECTIONS_TOTAL, 100);
 	}
 
 	public String getDescription() {
@@ -190,6 +197,30 @@ public class ListenerParameters {
 		this.rerun = rerun;
 	}
 
+	public Integer getIoPoolSize() {
+		return ioPoolSize;
+	}
+
+	public void setIoPoolSize(Integer ioPoolSize) {
+		this.ioPoolSize = ioPoolSize;
+	}
+
+	public Integer getMaxConnectionsPerRoute() {
+		return maxConnectionsPerRoute;
+	}
+
+	public void setMaxConnectionsPerRoute(Integer maxConnectionsPerRoute) {
+		this.maxConnectionsPerRoute = maxConnectionsPerRoute;
+	}
+
+	public Integer getMaxConnectionsTotal() {
+		return maxConnectionsTotal;
+	}
+
+	public void setMaxConnectionsTotal(Integer maxConnectionsTotal) {
+		this.maxConnectionsTotal = maxConnectionsTotal;
+	}
+
 	@VisibleForTesting
 	Mode parseLaunchMode(String mode) {
 		return Mode.isExists(mode) ? Mode.valueOf(mode.toUpperCase()) : Mode.DEFAULT;
@@ -209,6 +240,13 @@ public class ListenerParameters {
 		sb.append(", isSkippedAnIssue=").append(isSkippedAnIssue);
 		sb.append(", batchLogsSize=").append(batchLogsSize);
 		sb.append(", convertImage=").append(convertImage);
+		sb.append(", reportingTimeout=").append(reportingTimeout);
+		sb.append(", keystore='").append(keystore).append('\'');
+		sb.append(", keystorePassword='").append(keystorePassword).append('\'');
+		sb.append(", rerun=").append(rerun);
+		sb.append(", ioPoolSize=").append(ioPoolSize);
+		sb.append(", maxConnectionsPerRoute=").append(maxConnectionsPerRoute);
+		sb.append(", maxConnectionsTotal=").append(maxConnectionsTotal);
 		sb.append('}');
 		return sb.toString();
 	}
