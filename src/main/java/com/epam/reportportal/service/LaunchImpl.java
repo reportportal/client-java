@@ -43,6 +43,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.service.LoggingCallback.*;
+import static com.epam.reportportal.utils.SubscriptionUtils.logCompletableResults;
+import static com.epam.reportportal.utils.SubscriptionUtils.logMaybeResults;
 import static com.google.common.collect.Lists.newArrayList;
 
 /**
@@ -56,10 +58,16 @@ public class LaunchImpl extends Launch {
 			return rs.getId();
 		}
 	};
+	private static final Consumer<StartLaunchRS> LAUNCH_SUCCESS_CONSUMER = new Consumer<StartLaunchRS>() {
+		@Override
+		public void accept(StartLaunchRS rs) throws Exception {
+			logCreated("launch").accept(rs);
+			System.setProperty("rp.launch.id", rs.getId());
+		}
+	};
 	private static final int ITEM_FINISH_MAX_RETRIES = 10;
 	private static final int ITEM_FINISH_RETRY_TIMEOUT = 10;
 	private static final String NOT_ISSUE = "NOT_ISSUE";
-
 
 	/**
 	 * REST Client
@@ -89,17 +97,9 @@ public class LaunchImpl extends Launch {
 			Maybe<StartLaunchRS> launchPromise = Maybe.defer(new Callable<MaybeSource<? extends StartLaunchRS>>() {
 				@Override
 				public MaybeSource<? extends StartLaunchRS> call() throws Exception {
-					return rpClient.startLaunch(rq)
-							.doOnSuccess(logCreated("launch"))
-							.doOnError(LOG_ERROR)
-							.doOnSuccess(new Consumer<StartLaunchRS>() {
-								@Override
-								public void accept(StartLaunchRS rs) throws Exception {
-									System.setProperty("rp.launch.id", rs.getId());
-								}
-							});
+					return rpClient.startLaunch(rq).doOnSuccess(LAUNCH_SUCCESS_CONSUMER).doOnError(LOG_ERROR);
 				}
-			}).doOnError(LOG_ERROR).subscribeOn(Schedulers.computation()).cache();
+			}).subscribeOn(Schedulers.computation()).cache();
 			this.launch = launchPromise.map(new Function<StartLaunchRS, String>() {
 				@Override
 				public String apply(StartLaunchRS rs) throws Exception {
@@ -129,8 +129,9 @@ public class LaunchImpl extends Launch {
 	 * @return Launch ID promise
 	 */
 	public synchronized Maybe<String> start() {
-		launch.subscribe();
-		//		LOGGER.warn("Trying to create new instance of launch! It's started already");
+
+		launch.subscribe(logMaybeResults("Launch start"));
+
 		return this.launch;
 
 	}
@@ -177,7 +178,7 @@ public class LaunchImpl extends Launch {
 
 			}
 		}).doOnError(LOG_ERROR).cache();
-		testItem.subscribeOn(Schedulers.computation()).subscribe();
+		testItem.subscribeOn(Schedulers.computation()).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(testItem).addToQueue(testItem.ignoreElement());
 		return testItem;
 	}
@@ -214,7 +215,7 @@ public class LaunchImpl extends Launch {
 				});
 			}
 		}).doOnError(LOG_ERROR).cache();
-		itemId.subscribeOn(Schedulers.computation()).subscribe();
+		itemId.subscribeOn(Schedulers.computation()).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement());
 		LoggingContext.init(itemId, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
 		return itemId;
@@ -270,7 +271,7 @@ public class LaunchImpl extends Launch {
 				})
 				.ignoreElement()
 				.cache();
-		finishCompletion.subscribeOn(Schedulers.computation()).subscribe();
+		finishCompletion.subscribeOn(Schedulers.computation()).subscribe(logCompletableResults("Finish test item"));
 		//find parent and add to its queue
 		final Maybe<String> parent = treeItem.getParent();
 		if (null != parent) {
