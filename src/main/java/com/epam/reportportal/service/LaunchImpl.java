@@ -147,7 +147,7 @@ public class LaunchImpl extends Launch {
 					public Maybe<OperationCompletionRS> apply(String id) throws Exception {
 						return rpClient.finishLaunch(id, rq).doOnSuccess(LOG_SUCCESS).doOnError(LOG_ERROR);
 					}
-				})).doOnComplete(new Action() {
+				})).doFinally(new Action() {
 					@Override
 					public void run() throws Exception {
 						rpClient.close();
