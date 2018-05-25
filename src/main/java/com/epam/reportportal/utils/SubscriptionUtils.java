@@ -93,7 +93,7 @@ public class SubscriptionUtils {
 
 			@Override
 			public void onError(Throwable e) {
-				LOGGER.error("{} completed with error ", type, e);
+				LOGGER.error("[{}] ReportPortal {} execution error", Thread.currentThread().getId(), type, e);
 			}
 
 			@Override

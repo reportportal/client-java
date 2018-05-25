@@ -28,13 +28,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import io.reactivex.Completable;
-import io.reactivex.Maybe;
-import io.reactivex.MaybeSource;
-import io.reactivex.functions.Action;
-import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Function;
-import io.reactivex.functions.Predicate;
+import io.reactivex.*;
+import io.reactivex.functions.*;
 import io.reactivex.schedulers.Schedulers;
 
 import java.util.List;
@@ -94,21 +89,39 @@ public class LaunchImpl extends Launch {
 		Preconditions.checkNotNull(parameters, "Parameters shouldn't be NULL");
 
 		if (!parameters.isRerun()) {
-			Maybe<StartLaunchRS> launchPromise = Maybe.defer(new Callable<MaybeSource<? extends StartLaunchRS>>() {
-				@Override
-				public MaybeSource<? extends StartLaunchRS> call() throws Exception {
-					return rpClient.startLaunch(rq).doOnSuccess(LAUNCH_SUCCESS_CONSUMER).doOnError(LOG_ERROR);
-				}
-			}).subscribeOn(Schedulers.computation()).cache();
-			this.launch = launchPromise.map(new Function<StartLaunchRS, String>() {
-				@Override
-				public String apply(StartLaunchRS rs) throws Exception {
-					return rs.getId();
-				}
-			});
 
-			LaunchFile.create(rq.getName(), launchPromise);
+			LOGGER.info("Not rerun!");
+
+			this.launch = Maybe.create(new MaybeOnSubscribe<String>() {
+				@Override
+				public void subscribe(final MaybeEmitter<String> emitter) throws Exception {
+
+					Maybe<StartLaunchRS> launchPromise = Maybe.defer(new Callable<MaybeSource<? extends StartLaunchRS>>() {
+						@Override
+						public MaybeSource<? extends StartLaunchRS> call() throws Exception {
+							return rpClient.startLaunch(rq).doOnSuccess(LAUNCH_SUCCESS_CONSUMER).doOnError(LOG_ERROR);
+						}
+					}).subscribeOn(Schedulers.computation()).cache();
+
+					LaunchFile.create(rq.getName(), launchPromise);
+
+					launchPromise.subscribe(new Consumer<StartLaunchRS>() {
+						@Override
+						public void accept(StartLaunchRS startLaunchRS) throws Exception {
+							emitter.onSuccess(startLaunchRS.getId());
+						}
+					}, new Consumer<Throwable>() {
+						@Override
+						public void accept(Throwable throwable) throws Exception {
+
+							LOG_ERROR.accept(throwable);
+							emitter.onComplete();
+						}
+					});
+				}
+			}).cache();
 		} else {
+			LOGGER.info("rerun!");
 			this.launch = LaunchFile.find(rq.getName());
 			this.rerun = true;
 		}
@@ -170,14 +183,15 @@ public class LaunchImpl extends Launch {
 	 * @return Test Item ID promise
 	 */
 	public Maybe<String> startTestItem(final StartTestItemRQ rq) {
+
 		final Maybe<String> testItem = this.launch.flatMap(new Function<String, Maybe<String>>() {
 			@Override
 			public Maybe<String> apply(String id) throws Exception {
 				rq.setLaunchId(id);
-				return rpClient.startTestItem(rq).doOnSuccess(logCreated("item")).doOnError(LOG_ERROR).map(TO_ID);
+				return rpClient.startTestItem(rq).doOnSuccess(logCreated("item")).map(TO_ID);
 
 			}
-		}).doOnError(LOG_ERROR).cache();
+		}).cache();
 		testItem.subscribeOn(Schedulers.computation()).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(testItem).addToQueue(testItem.ignoreElement());
 		return testItem;
@@ -210,11 +224,11 @@ public class LaunchImpl extends Launch {
 					public MaybeSource<String> apply(String parentId) throws Exception {
 						rq.setLaunchId(launchId);
 						LOGGER.debug("Starting test item..." + Thread.currentThread().getName());
-						return rpClient.startTestItem(parentId, rq).doOnSuccess(logCreated("item")).doOnError(LOG_ERROR).map(TO_ID);
+						return rpClient.startTestItem(parentId, rq).doOnSuccess(logCreated("item")).map(TO_ID);
 					}
 				});
 			}
-		}).doOnError(LOG_ERROR).cache();
+		}).cache();
 		itemId.subscribeOn(Schedulers.computation()).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement());
 		LoggingContext.init(itemId, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
@@ -228,6 +242,7 @@ public class LaunchImpl extends Launch {
 	 * @param rq     Finish request
 	 */
 	public void finishTestItem(final Maybe<String> itemId, final FinishTestItemRQ rq) {
+
 		Preconditions.checkArgument(null != itemId, "ItemID should not be null");
 
 		if (Statuses.SKIPPED.equals(rq.getStatus()) && !getParameters().getSkippedAnIssue()) {

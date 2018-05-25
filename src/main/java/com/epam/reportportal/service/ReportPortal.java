@@ -25,7 +25,6 @@ import com.epam.reportportal.restendpoint.http.RestEndpoints;
 import com.epam.reportportal.restendpoint.serializer.ByteArraySerializer;
 import com.epam.reportportal.restendpoint.serializer.Serializer;
 import com.epam.reportportal.restendpoint.serializer.json.JacksonSerializer;
-import com.epam.reportportal.serializers.NotJsonSerializer;
 import com.epam.reportportal.utils.SslUtils;
 import com.epam.reportportal.utils.properties.ListenerProperty;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
@@ -285,7 +284,6 @@ public class ReportPortal {
 			return new HttpClientRestEndpoint(client, new LinkedList<Serializer>() {{
 				add(jacksonSerializer);
 				add(new ByteArraySerializer());
-				add(new NotJsonSerializer());
 			}}, new ReportPortalErrorHandler(jacksonSerializer), buildEndpointUrl(baseUrl, project), executorService);
 		}
 
