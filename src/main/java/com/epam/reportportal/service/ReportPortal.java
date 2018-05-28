@@ -23,6 +23,7 @@ import com.epam.reportportal.restendpoint.http.HttpClientRestEndpoint;
 import com.epam.reportportal.restendpoint.http.RestEndpoint;
 import com.epam.reportportal.restendpoint.http.RestEndpoints;
 import com.epam.reportportal.restendpoint.serializer.ByteArraySerializer;
+import com.epam.reportportal.restendpoint.serializer.Serializer;
 import com.epam.reportportal.restendpoint.serializer.json.JacksonSerializer;
 import com.epam.reportportal.utils.SslUtils;
 import com.epam.reportportal.utils.properties.ListenerProperty;
@@ -31,7 +32,7 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
@@ -48,7 +49,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
 import static com.google.common.io.Files.toByteArray;
@@ -226,6 +230,7 @@ public class ReportPortal {
 
 		private HttpClientBuilder httpClient;
 		private ListenerParameters parameters;
+		private ExecutorService executorService;
 
 		public Builder withHttpClient(HttpClientBuilder client) {
 			this.httpClient = client;
@@ -240,6 +245,9 @@ public class ReportPortal {
 		public ReportPortal build() {
 			try {
 				ListenerParameters params = null == this.parameters ? new ListenerParameters(defaultPropertiesLoader()) : this.parameters;
+				executorService = Executors.newFixedThreadPool(params.getIoPoolSize(),
+						new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build()
+				);
 				return new ReportPortal(buildClient(ReportPortalClient.class, params), params);
 			} catch (Exception e) {
 				String errMsg = "Cannot build ReportPortal client";
@@ -272,13 +280,11 @@ public class ReportPortal {
 			String baseUrl = parameters.getBaseUrl();
 			String project = parameters.getProjectName();
 
-			JacksonSerializer jacksonSerializer = new JacksonSerializer(om);
-			return new HttpClientRestEndpoint(
-					client,
-					Lists.newArrayList(jacksonSerializer, new ByteArraySerializer()),
-					new ReportPortalErrorHandler(jacksonSerializer),
-					buildEndpointUrl(baseUrl, project)
-			);
+			final JacksonSerializer jacksonSerializer = new JacksonSerializer(om);
+			return new HttpClientRestEndpoint(client, new LinkedList<Serializer>() {{
+				add(jacksonSerializer);
+				add(new ByteArraySerializer());
+			}}, new ReportPortalErrorHandler(jacksonSerializer), buildEndpointUrl(baseUrl, project), executorService);
 		}
 
 		protected String buildEndpointUrl(String baseUrl, String project) {
@@ -308,7 +314,10 @@ public class ReportPortal {
 				}
 
 			}
-			builder.setMaxConnPerRoute(50).setMaxConnTotal(100).evictExpiredConnections();
+
+			builder.setMaxConnPerRoute(parameters.getMaxConnectionsPerRoute())
+					.setMaxConnTotal(parameters.getMaxConnectionsTotal())
+					.evictExpiredConnections();
 			return builder.addInterceptorLast(new BearerAuthInterceptor(uuid)).build();
 
 		}

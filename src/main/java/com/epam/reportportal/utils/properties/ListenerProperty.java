@@ -35,7 +35,10 @@ public enum ListenerProperty {
     MODE("rp.mode", false),
     ENABLE("rp.enable", false),
     RERUN("rp.rerun", false),
-    SKIPPED_AS_ISSUE("rp.skipped.issue", false);
+    SKIPPED_AS_ISSUE("rp.skipped.issue", false),
+    IO_POOL_SIZE("rp.io.pool.size", false),
+    MAX_CONNECTIONS_PER_ROUTE("rp.max.connections.per.route", false),
+    MAX_CONNECTIONS_TOTAL("rp.max.connections.total", false);
     //formatter:on
 
     private String propertyName;

@@ -29,6 +29,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.epam.reportportal.utils.SubscriptionUtils.logMaybeResults;
+
 /**
  * Add Launch file
  *
@@ -96,7 +98,7 @@ public class LaunchFile {
 				}
 			}
 		}).cache().onErrorReturnItem(new LaunchFile(null));
-		lfPromise.subscribe();
+		lfPromise.subscribe(logMaybeResults("Launch file create"));
 		return lfPromise;
 	}
 

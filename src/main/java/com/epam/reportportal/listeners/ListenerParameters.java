@@ -30,6 +30,15 @@ import static com.epam.reportportal.utils.properties.ListenerProperty.*;
  */
 public class ListenerParameters {
 
+	private static final int DEFAULT_REPORTING_TIMEOUT = 5 * 60;
+	private static final int DEFAULT_IO_POOL_SIZE = 100;
+	private static final int DEFAULT_MAX_CONNECTIONS_PER_ROUTE = 50;
+	private static final int DEFAULT_MAX_CONNECTIONS_TOTAL = 100;
+	private static final boolean DEFAULT_ENABLE = true;
+	private static final boolean DEFAULT_SKIP_ISSUE = true;
+	private static final boolean DEFAULT_CONVERT_IMAGE = false;
+	private static final boolean DEFAULT_RETURN = false;
+
 	private String description;
 	private String uuid;
 	private String baseUrl;
@@ -45,9 +54,23 @@ public class ListenerParameters {
 	private String keystore;
 	private String keystorePassword;
 	private boolean rerun;
+	private Integer ioPoolSize;
+	private Integer maxConnectionsPerRoute;
+	private Integer maxConnectionsTotal;
 
 	public ListenerParameters() {
 
+		this.isSkippedAnIssue = DEFAULT_SKIP_ISSUE;
+
+		this.batchLogsSize = LoggingContext.DEFAULT_BUFFER_SIZE;
+		this.convertImage = DEFAULT_CONVERT_IMAGE;
+		this.reportingTimeout = DEFAULT_REPORTING_TIMEOUT;
+
+		this.rerun = DEFAULT_RETURN;
+
+		this.ioPoolSize = DEFAULT_IO_POOL_SIZE;
+		this.maxConnectionsPerRoute = DEFAULT_MAX_CONNECTIONS_PER_ROUTE;
+		this.maxConnectionsTotal = DEFAULT_MAX_CONNECTIONS_TOTAL;
 	}
 
 	public ListenerParameters(PropertiesLoader properties) {
@@ -58,16 +81,20 @@ public class ListenerParameters {
 		this.launchName = properties.getProperty(LAUNCH_NAME);
 		this.tags = TagsParser.parseAsSet(properties.getProperty(LAUNCH_TAGS));
 		this.launchRunningMode = parseLaunchMode(properties.getProperty(MODE));
-		this.enable = properties.getPropertyAsBoolean(ENABLE, true);
-		this.isSkippedAnIssue = properties.getPropertyAsBoolean(SKIPPED_AS_ISSUE, true);
+		this.enable = properties.getPropertyAsBoolean(ENABLE, DEFAULT_ENABLE);
+		this.isSkippedAnIssue = properties.getPropertyAsBoolean(SKIPPED_AS_ISSUE, DEFAULT_SKIP_ISSUE);
 
 		this.batchLogsSize = properties.getPropertyAsInt(BATCH_SIZE_LOGS, LoggingContext.DEFAULT_BUFFER_SIZE);
-		this.convertImage = properties.getPropertyAsBoolean(IS_CONVERT_IMAGE, false);
-		this.reportingTimeout = properties.getPropertyAsInt(REPORTING_TIMEOUT, 5 * 60);
+		this.convertImage = properties.getPropertyAsBoolean(IS_CONVERT_IMAGE, DEFAULT_CONVERT_IMAGE);
+		this.reportingTimeout = properties.getPropertyAsInt(REPORTING_TIMEOUT, DEFAULT_REPORTING_TIMEOUT);
 
 		this.keystore = properties.getProperty(KEYSTORE_RESOURCE);
 		this.keystorePassword = properties.getProperty(KEYSTORE_PASSWORD);
-		this.rerun = properties.getPropertyAsBoolean(RERUN, false);
+		this.rerun = properties.getPropertyAsBoolean(RERUN, DEFAULT_RETURN);
+
+		this.ioPoolSize = properties.getPropertyAsInt(IO_POOL_SIZE, DEFAULT_IO_POOL_SIZE);
+		this.maxConnectionsPerRoute = properties.getPropertyAsInt(MAX_CONNECTIONS_PER_ROUTE, DEFAULT_MAX_CONNECTIONS_PER_ROUTE);
+		this.maxConnectionsTotal = properties.getPropertyAsInt(MAX_CONNECTIONS_TOTAL, DEFAULT_MAX_CONNECTIONS_TOTAL);
 	}
 
 	public String getDescription() {
@@ -190,6 +217,30 @@ public class ListenerParameters {
 		this.rerun = rerun;
 	}
 
+	public Integer getIoPoolSize() {
+		return ioPoolSize;
+	}
+
+	public void setIoPoolSize(Integer ioPoolSize) {
+		this.ioPoolSize = ioPoolSize;
+	}
+
+	public Integer getMaxConnectionsPerRoute() {
+		return maxConnectionsPerRoute;
+	}
+
+	public void setMaxConnectionsPerRoute(Integer maxConnectionsPerRoute) {
+		this.maxConnectionsPerRoute = maxConnectionsPerRoute;
+	}
+
+	public Integer getMaxConnectionsTotal() {
+		return maxConnectionsTotal;
+	}
+
+	public void setMaxConnectionsTotal(Integer maxConnectionsTotal) {
+		this.maxConnectionsTotal = maxConnectionsTotal;
+	}
+
 	@VisibleForTesting
 	Mode parseLaunchMode(String mode) {
 		return Mode.isExists(mode) ? Mode.valueOf(mode.toUpperCase()) : Mode.DEFAULT;
@@ -209,6 +260,13 @@ public class ListenerParameters {
 		sb.append(", isSkippedAnIssue=").append(isSkippedAnIssue);
 		sb.append(", batchLogsSize=").append(batchLogsSize);
 		sb.append(", convertImage=").append(convertImage);
+		sb.append(", reportingTimeout=").append(reportingTimeout);
+		sb.append(", keystore='").append(keystore).append('\'');
+		sb.append(", keystorePassword='").append(keystorePassword).append('\'');
+		sb.append(", rerun=").append(rerun);
+		sb.append(", ioPoolSize=").append(ioPoolSize);
+		sb.append(", maxConnectionsPerRoute=").append(maxConnectionsPerRoute);
+		sb.append(", maxConnectionsTotal=").append(maxConnectionsTotal);
 		sb.append('}');
 		return sb.toString();
 	}

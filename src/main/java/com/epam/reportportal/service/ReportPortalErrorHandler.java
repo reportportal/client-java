@@ -16,17 +16,22 @@
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.exception.GeneralReportPortalException;
+import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.restendpoint.http.DefaultErrorHandler;
-import com.epam.reportportal.restendpoint.http.HttpMethod;
+import com.epam.reportportal.restendpoint.http.Response;
 import com.epam.reportportal.restendpoint.http.exception.RestEndpointIOException;
 import com.epam.reportportal.restendpoint.serializer.Serializer;
 import com.epam.ta.reportportal.ws.model.ErrorRS;
 import com.google.common.base.Charsets;
 import com.google.common.io.ByteSource;
+import org.apache.http.HttpHeaders;
+import org.apache.http.entity.ContentType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
+import java.util.Collection;
 
 /**
  * Report Portal Error Handler<br>
@@ -36,6 +41,8 @@ import java.net.URI;
  */
 public class ReportPortalErrorHandler extends DefaultErrorHandler {
 
+	private static final Logger LOG = LoggerFactory.getLogger(ReportPortalErrorHandler.class);
+
 	private Serializer serializer;
 
 	public ReportPortalErrorHandler(Serializer serializer) {
@@ -43,9 +50,28 @@ public class ReportPortalErrorHandler extends DefaultErrorHandler {
 	}
 
 	@Override
-	protected void handleError(URI requestUri, HttpMethod requestMethod, int statusCode, String statusMessage, ByteSource errorBody)
-			throws RestEndpointIOException {
+	public void handle(Response<ByteSource> rs) throws RestEndpointIOException {
+
+		if (!hasError(rs)) {
+			return;
+		}
+
+		handleError(rs);
+	}
+
+	@Override
+	public boolean hasError(Response<ByteSource> rs) {
+
+		return super.hasError(rs) || isNotJson(rs);
+	}
+
+	private void handleError(Response<ByteSource> rs) throws RestEndpointIOException {
 		try {
+
+			ByteSource errorBody = rs.getBody();
+			int statusCode = rs.getStatus();
+			String statusMessage = rs.getReason();
+
 			//read the body
 			final byte[] body = errorBody.read();
 
@@ -56,13 +82,20 @@ public class ReportPortalErrorHandler extends DefaultErrorHandler {
 				//ok, it's known ReportPortal error
 				throw new ReportPortalException(statusCode, statusMessage, errorRS);
 			} else {
-				//there is some unknown error since we cannot de-serialize it into default error object
-				throw new GeneralReportPortalException(statusCode, statusMessage, new String(body, Charsets.UTF_8));
+
+				if (isNotJson(rs)) {
+
+					throw new InternalReportPortalClientException("Report portal is not functioning correctly. Response is not json");
+				} else {
+
+					//there is some unknown error since we cannot de-serialize it into default error object
+					throw new GeneralReportPortalException(statusCode, statusMessage, new String(body, Charsets.UTF_8));
+				}
 			}
 
 		} catch (IOException e) {
 			//cannot read the body. just throw the general error
-			throw new GeneralReportPortalException(statusCode, statusMessage, "Cannot read the response");
+			throw new GeneralReportPortalException(rs.getStatus(), rs.getReason(), "Cannot read the response");
 		}
 
 	}
@@ -85,5 +118,23 @@ public class ReportPortalErrorHandler extends DefaultErrorHandler {
 			return null;
 		}
 
+	}
+
+	private boolean isNotJson(Response<ByteSource> rs) {
+
+		boolean result = true;
+
+		Collection<String> contentTypes = rs.getHeaders().get(HttpHeaders.CONTENT_TYPE);
+
+		for (String contentType : contentTypes) {
+
+			boolean isJson = contentType.contains(ContentType.APPLICATION_JSON.getMimeType());
+			if (isJson) {
+				result = false;
+				break;
+			}
+		}
+
+		return result;
 	}
 }
