@@ -19,6 +19,8 @@ import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.restendpoint.http.annotation.*;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
+import com.epam.ta.reportportal.ws.model.launch.LaunchResource;
+import com.epam.ta.reportportal.ws.model.launch.MergeLaunchesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
@@ -34,6 +36,9 @@ public interface ReportPortalClient {
 
 	@Request(method = POST, url = "/launch")
 	Maybe<StartLaunchRS> startLaunch(@Body StartLaunchRQ rq);
+
+    @Request(method = POST, url = "/launch/merge")
+    Maybe<LaunchResource> mergeLaunches(@Body MergeLaunchesRQ rq);
 
 	@Request(method = PUT, url = "/launch/{launchId}/finish")
 	Maybe<OperationCompletionRS> finishLaunch(@Path("launchId") String launch, @Body FinishExecutionRQ rq);
