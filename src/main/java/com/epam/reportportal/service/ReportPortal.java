@@ -42,7 +42,6 @@ import org.apache.http.ssl.SSLContextBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -87,7 +86,7 @@ public class ReportPortal {
 	 * @return Launch
 	 */
 	public Launch newLaunch(StartLaunchRQ rq) {
-		if (!parameters.getEnable()) {
+		if (Boolean.TRUE != parameters.getEnable()) {
 			return Launch.NOOP_LAUNCH;
 		}
 
@@ -157,7 +156,7 @@ public class ReportPortal {
 	public static boolean emitLog(final String message, final String level, final Date time) {
 		return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(@Nullable String id) {
+			public SaveLogRQ apply(String id) {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
@@ -172,7 +171,7 @@ public class ReportPortal {
 	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
 		return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(@Nullable String id) {
+			public SaveLogRQ apply(String id) {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
@@ -199,7 +198,7 @@ public class ReportPortal {
 	public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
 		return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(@Nullable String id) {
+			public SaveLogRQ apply(String id) {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
@@ -315,7 +314,8 @@ public class ReportPortal {
 
 			}
 
-			builder.setMaxConnPerRoute(parameters.getMaxConnectionsPerRoute())
+			builder.disableAutomaticRetries()
+					.setMaxConnPerRoute(parameters.getMaxConnectionsPerRoute())
 					.setMaxConnTotal(parameters.getMaxConnectionsTotal())
 					.evictExpiredConnections();
 			return builder.addInterceptorLast(new BearerAuthInterceptor(uuid)).build();

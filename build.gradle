@@ -56,11 +56,11 @@ dependencies {
 //    compile 'com.epam.reportportal:commons-model:3.0.0'
     compile 'com.epam.reportportal:commons-model:4.2.0'
     compile 'com.google.guava:guava:20.0'
-    compile 'com.epam.reportportal:restendpoint:0.2.7'
+    compile 'com.epam.reportportal:restendpoint:0.2.8'
 
     shadow 'com.fasterxml.jackson.core:jackson-databind:2.8.10'
     shadow 'com.fasterxml.jackson.core:jackson-annotations:2.8.10'
-    shadow 'io.reactivex.rxjava2:rxjava:2.1.6'
+    shadow 'io.reactivex.rxjava2:rxjava:2.1.16'
     shadow 'org.apache.tika:tika-core:1.4'
     shadow 'org.slf4j:slf4j-api:1.7.25'
 
