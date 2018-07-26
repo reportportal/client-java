@@ -16,6 +16,7 @@
 package com.epam.reportportal.utils;
 
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
+import com.google.common.base.CharMatcher;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.collect.Lists;
 import io.reactivex.Maybe;
@@ -30,6 +31,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.epam.reportportal.utils.SubscriptionUtils.logMaybeResults;
+import static com.google.common.base.CharMatcher.javaLetterOrDigit;
 
 /**
  * Add Launch file
@@ -52,7 +54,7 @@ public class LaunchFile {
 
 	public static Maybe<String> find(final String name) {
 		File tempDir = getTempDir();
-		final String prefix = FILE_PREFIX + "-" + name;
+		final String prefix = FILE_PREFIX + "-" + normalizeLaunchName(name);
 		List<String> files = Arrays.asList(tempDir.list(new FilenameFilter() {
 			@Override
 			public boolean accept(File dir, String name) {
@@ -85,7 +87,7 @@ public class LaunchFile {
 			public LaunchFile apply(StartLaunchRS launchId) throws Exception {
 				try {
 					final File file = new File(getTempDir(),
-							String.format("%s-%s-#%d-%s.tmp", FILE_PREFIX, name, launchId.getNumber(), launchId.getId())
+							String.format("%s-%s-#%d-%s.tmp", FILE_PREFIX, normalizeLaunchName(name), launchId.getNumber(), launchId.getId())
 					);
 					if (file.createNewFile()) {
 						LOGGER.debug("ReportPortal's temp file '{}' is created", file.getAbsolutePath());
@@ -134,5 +136,9 @@ public class LaunchFile {
 				file.remove();
 			}
 		}
+	}
+
+	private static String normalizeLaunchName(String launchName) {
+		return javaLetterOrDigit().or(CharMatcher.whitespace()).retainFrom(launchName);
 	}
 }
