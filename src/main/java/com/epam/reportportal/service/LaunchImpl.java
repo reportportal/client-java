@@ -194,6 +194,7 @@ public class LaunchImpl extends Launch {
 		}).cache();
 		testItem.subscribeOn(Schedulers.computation()).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(testItem).addToQueue(testItem.ignoreElement());
+		LoggingContext.init(testItem, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
 		return testItem;
 	}
 
