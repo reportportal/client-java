@@ -52,7 +52,7 @@ public class LaunchFile {
 		this.file = file;
 	}
 
-	public static Maybe<String> find(final String name) {
+	public static Maybe<Long> find(final String name) {
 		File tempDir = getTempDir();
 		final String prefix = FILE_PREFIX + "-" + normalizeLaunchName(name);
 		List<String> files = Arrays.asList(tempDir.list(new FilenameFilter() {
@@ -67,7 +67,10 @@ public class LaunchFile {
 			public StartLaunchRS apply(String input) {
 				Matcher m = FILENAME_PATTERN.matcher(input);
 				if (m.find()) {
-					return new StartLaunchRS(m.group(3), Long.parseLong(m.group(2)));
+					StartLaunchRS startLaunchRS = new StartLaunchRS();
+					startLaunchRS.setId(Long.parseLong(m.group(3)));
+					startLaunchRS.setNumber(Long.parseLong(m.group(2)));
+					return startLaunchRS;
 				}
 				throw new RuntimeException("Does not match:" + input);
 			}
@@ -87,7 +90,12 @@ public class LaunchFile {
 			public LaunchFile apply(StartLaunchRS launchId) throws Exception {
 				try {
 					final File file = new File(getTempDir(),
-							String.format("%s-%s-#%d-%s.tmp", FILE_PREFIX, normalizeLaunchName(name), launchId.getNumber(), launchId.getId())
+							String.format("%s-%s-#%d-%s.tmp",
+									FILE_PREFIX,
+									normalizeLaunchName(name),
+									launchId.getNumber(),
+									launchId.getId()
+							)
 					);
 					if (file.createNewFile()) {
 						LOGGER.debug("ReportPortal's temp file '{}' is created", file.getAbsolutePath());

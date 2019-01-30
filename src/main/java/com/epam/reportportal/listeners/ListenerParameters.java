@@ -16,11 +16,13 @@
 package com.epam.reportportal.listeners;
 
 import com.epam.reportportal.service.LoggingContext;
-import com.epam.reportportal.utils.TagsParser;
+import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
+import com.epam.ta.reportportal.ws.model.ItemAttributeResource;
 import com.epam.ta.reportportal.ws.model.launch.Mode;
 import com.google.common.annotations.VisibleForTesting;
 
+import java.util.List;
 import java.util.Set;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.*;
@@ -45,7 +47,7 @@ public class ListenerParameters {
 	private String projectName;
 	private String launchName;
 	private Mode launchRunningMode;
-	private Set<String> tags;
+	private List<ItemAttributeResource> attributes;
 	private Boolean enable;
 	private Boolean isSkippedAnIssue;
 	private Integer batchLogsSize;
@@ -79,7 +81,7 @@ public class ListenerParameters {
 		this.baseUrl = properties.getProperty(BASE_URL);
 		this.projectName = properties.getProperty(PROJECT_NAME);
 		this.launchName = properties.getProperty(LAUNCH_NAME);
-		this.tags = TagsParser.parseAsSet(properties.getProperty(LAUNCH_TAGS));
+		this.attributes = AttributeParser.parseAsList(properties.getProperty(LAUNCH_ATTRIBUTES));
 		this.launchRunningMode = parseLaunchMode(properties.getProperty(MODE));
 		this.enable = properties.getPropertyAsBoolean(ENABLE, DEFAULT_ENABLE);
 		this.isSkippedAnIssue = properties.getPropertyAsBoolean(SKIPPED_AS_ISSUE, DEFAULT_SKIP_ISSUE);
@@ -145,12 +147,12 @@ public class ListenerParameters {
 		this.launchRunningMode = launchRunningMode;
 	}
 
-	public Set<String> getTags() {
-		return tags;
+	public List<ItemAttributeResource> getAttributes() {
+		return attributes;
 	}
 
-	public void setTags(Set<String> tags) {
-		this.tags = tags;
+	public void setAttributes(List<ItemAttributeResource> attributes) {
+		this.attributes = attributes;
 	}
 
 	public Boolean getEnable() {
@@ -255,7 +257,7 @@ public class ListenerParameters {
 		sb.append(", projectName='").append(projectName).append('\'');
 		sb.append(", launchName='").append(launchName).append('\'');
 		sb.append(", launchRunningMode=").append(launchRunningMode);
-		sb.append(", tags=").append(tags);
+		sb.append(", attributes=").append(attributes);
 		sb.append(", enable=").append(enable);
 		sb.append(", isSkippedAnIssue=").append(isSkippedAnIssue);
 		sb.append(", batchLogsSize=").append(batchLogsSize);

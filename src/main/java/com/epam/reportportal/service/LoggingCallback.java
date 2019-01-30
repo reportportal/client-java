@@ -37,7 +37,7 @@ final class LoggingCallback {
 	 */
 	static final Consumer<OperationCompletionRS> LOG_SUCCESS = new Consumer<OperationCompletionRS>() {
 		@Override
-		public void accept(OperationCompletionRS rs) throws Exception {
+		public void accept(OperationCompletionRS rs) {
 			LOGGER.debug(rs.getResultMessage());
 		}
 	};
@@ -47,7 +47,7 @@ final class LoggingCallback {
 	 */
 	static final Consumer<Throwable> LOG_ERROR = new Consumer<Throwable>() {
 		@Override
-		public void accept(Throwable rs) throws Exception {
+		public void accept(Throwable rs) {
 			LOGGER.error("[{}] ReportPortal execution error", Thread.currentThread().getId(), rs);
 		}
 	};
@@ -61,7 +61,7 @@ final class LoggingCallback {
 	static Consumer<EntryCreatedRS> logCreated(final String entry) {
 		return new Consumer<EntryCreatedRS>() {
 			@Override
-			public void accept(EntryCreatedRS rs) throws Exception {
+			public void accept(EntryCreatedRS rs) {
 				LOGGER.debug("ReportPortal {} with ID '{}' has been created", entry, rs.getId());
 			}
 		};

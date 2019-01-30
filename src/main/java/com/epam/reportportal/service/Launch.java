@@ -34,7 +34,7 @@ public abstract class Launch {
 		this.parameters = parameters;
 	}
 
-	abstract public Maybe<String> start();
+	abstract public Maybe<Long> start();
 
 	/**
 	 * Finishes launch in ReportPortal. Blocks until all items are reported correctly
@@ -49,7 +49,7 @@ public abstract class Launch {
 	 * @param rq Start RQ
 	 * @return Test Item ID promise
 	 */
-	abstract public Maybe<String> startTestItem(final StartTestItemRQ rq);
+	abstract public Maybe<Long> startTestItem(final StartTestItemRQ rq);
 
 	/**
 	 * Starts new test item in ReportPortal asynchronously (non-blocking)
@@ -57,7 +57,7 @@ public abstract class Launch {
 	 * @param rq Start RQ
 	 * @return Test Item ID promise
 	 */
-	abstract public Maybe<String> startTestItem(final Maybe<String> parentId, final StartTestItemRQ rq);
+	abstract public Maybe<Long> startTestItem(final Maybe<Long> parentId, final StartTestItemRQ rq);
 
 	/**
 	 * Starts new test item in ReportPortal in respect of provided retry
@@ -67,7 +67,7 @@ public abstract class Launch {
 	 * @param rq       promise of ID of request
 	 * @return Promise of Test Item ID
 	 */
-	abstract public Maybe<String> startTestItem(final Maybe<String> parentId, final Maybe<String> retryOf, final StartTestItemRQ rq);
+	abstract public Maybe<Long> startTestItem(final Maybe<Long> parentId, final Maybe<Long> retryOf, final StartTestItemRQ rq);
 
 	/**
 	 * Finishes Test Item in ReportPortal. Non-blocking. Schedules finish after success of all child items
@@ -75,7 +75,7 @@ public abstract class Launch {
 	 * @param itemId Item ID promise
 	 * @param rq     Finish request
 	 */
-	abstract public void finishTestItem(Maybe<String> itemId, final FinishTestItemRQ rq);
+	abstract public void finishTestItem(Maybe<Long> itemId, final FinishTestItemRQ rq);
 
 	public ListenerParameters getParameters() {
 		return this.parameters;
@@ -87,7 +87,7 @@ public abstract class Launch {
 	public static final Launch NOOP_LAUNCH = new Launch(new ListenerParameters()) {
 
 		@Override
-		public Maybe<String> start() {
+		public Maybe<Long> start() {
 			return Maybe.empty();
 		}
 
@@ -97,22 +97,22 @@ public abstract class Launch {
 		}
 
 		@Override
-		public Maybe<String> startTestItem(StartTestItemRQ rq) {
+		public Maybe<Long> startTestItem(StartTestItemRQ rq) {
 			return Maybe.empty();
 		}
 
 		@Override
-		public Maybe<String> startTestItem(Maybe<String> parentId, StartTestItemRQ rq) {
+		public Maybe<Long> startTestItem(Maybe<Long> parentId, StartTestItemRQ rq) {
 			return Maybe.empty();
 		}
 
 		@Override
-		public Maybe<String> startTestItem(Maybe<String> parentId, Maybe<String> retryOf, StartTestItemRQ rq) {
+		public Maybe<Long> startTestItem(Maybe<Long> parentId, Maybe<Long> retryOf, StartTestItemRQ rq) {
 			return Maybe.empty();
 		}
 
 		@Override
-		public void finishTestItem(Maybe<String> itemId, FinishTestItemRQ rq) {
+		public void finishTestItem(Maybe<Long> itemId, FinishTestItemRQ rq) {
 
 		}
 	};

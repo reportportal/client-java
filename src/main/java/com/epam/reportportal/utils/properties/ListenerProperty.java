@@ -26,7 +26,7 @@ public enum ListenerProperty {
     LAUNCH_NAME("rp.launch", true),
     UUID("rp.uuid", true),
     BATCH_SIZE_LOGS("rp.batch.size.logs", false),
-    LAUNCH_TAGS("rp.tags", false),
+    LAUNCH_ATTRIBUTES("rp.attributes", false),
     DESCRIPTION("rp.description", false),
     IS_CONVERT_IMAGE("rp.convertimage", false),
     KEYSTORE_RESOURCE("rp.keystore.resource", false),

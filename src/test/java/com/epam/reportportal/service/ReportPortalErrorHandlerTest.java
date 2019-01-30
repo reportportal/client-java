@@ -76,7 +76,7 @@ public class ReportPortalErrorHandlerTest {
 		reportPortalErrorHandler.handle(invalidResponse);
 	}
 
-	@Test(expected = ReportPortalException.class)
+	@Test(expected = GeneralReportPortalException.class)
 	public void handle_known_error() throws Exception {
 		//  given:
 		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
