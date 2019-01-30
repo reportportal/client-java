@@ -27,23 +27,22 @@ import java.util.Set;
 public class AttributeParserTest {
 	@Test
 	public void testNull() {
-		List<ItemAttributeResource> itemAttributeResources = AttributeParser.parseAsList(null);
+		Set<ItemAttributeResource> itemAttributeResources = AttributeParser.parseAsList(null);
 		Assert.assertNull(itemAttributeResources);
 	}
 
 	@Test
 	public void testOnlyBuild() {
 		String attributesString = "BuIld:123445566-2343ds";
-		List<ItemAttributeResource> attributes = AttributeParser.parseAsList(attributesString);
+		Set<ItemAttributeResource> attributes = AttributeParser.parseAsList(attributesString);
 		Assert.assertEquals(1, attributes.size());
-		Assert.assertEquals("BuIld", attributes.get(0).getKey());
-		Assert.assertEquals("123445566-2343ds", attributes.get(0).getValue());
+		Assert.assertTrue(attributes.contains(new ItemAttributeResource("BuIld", "123445566-2343ds")));
 	}
 
 	@Test
 	public void testAttributesWithoutKey() {
 		String attributesString = "BuIld:123445566-2343ds;tag11";
-		List<ItemAttributeResource> attributes = AttributeParser.parseAsList(attributesString);
+		Set<ItemAttributeResource> attributes = AttributeParser.parseAsList(attributesString);
 		Assert.assertEquals(2, attributes.size());
 		Assert.assertTrue(attributes.contains(new ItemAttributeResource("BuIld", "123445566-2343ds")));
 		Assert.assertTrue(attributes.contains(new ItemAttributeResource(null, "tag11")));
@@ -52,7 +51,7 @@ public class AttributeParserTest {
 	@Test
 	public void testIncorrectAttribute() {
 		String attributesString = "BuIld:123445566-2343ds;0:ff:fs";
-		List<ItemAttributeResource> attributes = AttributeParser.parseAsList(attributesString);
+		Set<ItemAttributeResource> attributes = AttributeParser.parseAsList(attributesString);
 		Assert.assertEquals(1, attributes.size());
 		Assert.assertTrue(attributes.contains(new ItemAttributeResource("BuIld", "123445566-2343ds")));
 	}
@@ -60,7 +59,7 @@ public class AttributeParserTest {
 	@Test
 	public void testWithSpaces() {
 		String attributesString = " ;;BuIld:123445566-2343ds; ;tag; ; ;; ";
-		List<ItemAttributeResource> attributes = AttributeParser.parseAsList(attributesString);
+		Set<ItemAttributeResource> attributes = AttributeParser.parseAsList(attributesString);
 		Assert.assertEquals(2, attributes.size());
 		Assert.assertTrue(attributes.contains(new ItemAttributeResource("BuIld", "123445566-2343ds")));
 		Assert.assertTrue(attributes.contains(new ItemAttributeResource(null, "tag")));
@@ -69,7 +68,7 @@ public class AttributeParserTest {
 	@Test
 	public void testEmptyBuild() {
 		String attributesString = "BUILD:;tag;BuIld 123:123445566-2343ds;";
-		List<ItemAttributeResource> attributes = AttributeParser.parseAsList(attributesString);
+		Set<ItemAttributeResource> attributes = AttributeParser.parseAsList(attributesString);
 		Assert.assertEquals(3, attributes.size());
 		Assert.assertTrue(attributes.contains(new ItemAttributeResource("BuIld 123", "123445566-2343ds")));
 		Assert.assertTrue(attributes.contains(new ItemAttributeResource(null, "BUILD")));
@@ -79,14 +78,14 @@ public class AttributeParserTest {
 	@Test
 	public void testEmpty() {
 		String attributesString = " ";
-		List<ItemAttributeResource> attributes = AttributeParser.parseAsList(attributesString);
+		Set<ItemAttributeResource> attributes = AttributeParser.parseAsList(attributesString);
 		Assert.assertEquals(0, attributes.size());
 	}
 
 	@Test
 	public void testEmptyKey() {
 		String attributesString = ":BUILD;tag;";
-		List<ItemAttributeResource> attributes = AttributeParser.parseAsList(attributesString);
+		Set<ItemAttributeResource> attributes = AttributeParser.parseAsList(attributesString);
 		Assert.assertEquals(2, attributes.size());
 		Assert.assertTrue(attributes.contains(new ItemAttributeResource(null, "BUILD")));
 		Assert.assertTrue(attributes.contains(new ItemAttributeResource(null, "tag")));
@@ -96,8 +95,16 @@ public class AttributeParserTest {
 	@Test
 	public void testMissedBuildTag() {
 		String attributesString = "TAG1;:;";
-		List<ItemAttributeResource> attributes = AttributeParser.parseAsList(attributesString);
+		Set<ItemAttributeResource> attributes = AttributeParser.parseAsList(attributesString);
 		Assert.assertEquals(1, attributes.size());
+	}
+
+	@Test
+	public void testIgnoreDuplicates() {
+		String attributesString = "key:value;key:value";
+		Set<ItemAttributeResource> attributes = AttributeParser.parseAsList(attributesString);
+		Assert.assertEquals(1, attributes.size());
+		Assert.assertTrue(attributes.contains(new ItemAttributeResource("key", "value")));
 	}
 
 }

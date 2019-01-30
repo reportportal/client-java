@@ -47,7 +47,7 @@ public class ListenerParameters {
 	private String projectName;
 	private String launchName;
 	private Mode launchRunningMode;
-	private List<ItemAttributeResource> attributes;
+	private Set<ItemAttributeResource> attributes;
 	private Boolean enable;
 	private Boolean isSkippedAnIssue;
 	private Integer batchLogsSize;
@@ -147,11 +147,11 @@ public class ListenerParameters {
 		this.launchRunningMode = launchRunningMode;
 	}
 
-	public List<ItemAttributeResource> getAttributes() {
+	public Set<ItemAttributeResource> getAttributes() {
 		return attributes;
 	}
 
-	public void setAttributes(List<ItemAttributeResource> attributes) {
+	public void setAttributes(Set<ItemAttributeResource> attributes) {
 		this.attributes = attributes;
 	}
 

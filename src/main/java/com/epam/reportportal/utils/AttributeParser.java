@@ -41,7 +41,7 @@ public class AttributeParser {
 	 *
 	 * @param rawAttributes
 	 */
-	public static List<ItemAttributeResource> parseAsList(String rawAttributes) {
+	public static Set<ItemAttributeResource> parseAsList(String rawAttributes) {
 		if (null == rawAttributes) {
 			return null;
 		}
@@ -54,7 +54,7 @@ public class AttributeParser {
 				attributes.add(itemAttributeResource);
 			}
 		}
-		return new ArrayList<ItemAttributeResource>(attributes);
+		return attributes;
 	}
 
 	public static ItemAttributeResource splitKeyValue(String attribute) {
