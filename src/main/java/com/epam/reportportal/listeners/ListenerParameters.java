@@ -22,7 +22,6 @@ import com.epam.ta.reportportal.ws.model.ItemAttributeResource;
 import com.epam.ta.reportportal.ws.model.launch.Mode;
 import com.google.common.annotations.VisibleForTesting;
 
-import java.util.List;
 import java.util.Set;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.*;
@@ -81,7 +80,7 @@ public class ListenerParameters {
 		this.baseUrl = properties.getProperty(BASE_URL);
 		this.projectName = properties.getProperty(PROJECT_NAME);
 		this.launchName = properties.getProperty(LAUNCH_NAME);
-		this.attributes = AttributeParser.parseAsList(properties.getProperty(LAUNCH_ATTRIBUTES));
+		this.attributes = AttributeParser.parseAsSet(properties.getProperty(LAUNCH_ATTRIBUTES));
 		this.launchRunningMode = parseLaunchMode(properties.getProperty(MODE));
 		this.enable = properties.getPropertyAsBoolean(ENABLE, DEFAULT_ENABLE);
 		this.isSkippedAnIssue = properties.getPropertyAsBoolean(SKIPPED_AS_ISSUE, DEFAULT_SKIP_ISSUE);

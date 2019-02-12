@@ -39,11 +39,11 @@ public class AttributeParser {
 	 * null:attributeValue2<br>
 	 * null:attributeValue3<br>
 	 *
-	 * @param rawAttributes
+	 * @param rawAttributes Attributes string
 	 */
-	public static Set<ItemAttributeResource> parseAsList(String rawAttributes) {
+	public static Set<ItemAttributeResource> parseAsSet(String rawAttributes) {
 		if (null == rawAttributes) {
-			return null;
+			return Sets.newHashSet();
 		}
 		Set<ItemAttributeResource> attributes = Sets.newHashSet();
 
