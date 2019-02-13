@@ -21,6 +21,7 @@ import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.ItemAttributeResource;
 import com.epam.ta.reportportal.ws.model.launch.Mode;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Sets;
 
 import java.util.Set;
 
@@ -66,6 +67,8 @@ public class ListenerParameters {
 		this.batchLogsSize = LoggingContext.DEFAULT_BUFFER_SIZE;
 		this.convertImage = DEFAULT_CONVERT_IMAGE;
 		this.reportingTimeout = DEFAULT_REPORTING_TIMEOUT;
+
+		this.attributes = Sets.newHashSet();
 
 		this.rerun = DEFAULT_RETURN;
 
