@@ -229,7 +229,6 @@ public class ReportPortal {
 
 		private HttpClientBuilder httpClient;
 		private ListenerParameters parameters;
-		private ExecutorService executorService;
 
 		public Builder withHttpClient(HttpClientBuilder client) {
 			this.httpClient = client;
@@ -244,10 +243,10 @@ public class ReportPortal {
 		public ReportPortal build() {
 			try {
 				ListenerParameters params = null == this.parameters ? new ListenerParameters(defaultPropertiesLoader()) : this.parameters;
-				executorService = Executors.newFixedThreadPool(params.getIoPoolSize(),
+				ExecutorService executorService = Executors.newFixedThreadPool(params.getIoPoolSize(),
 						new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build()
 				);
-				return new ReportPortal(buildClient(ReportPortalClient.class, params), params);
+				return new ReportPortal(buildClient(ReportPortalClient.class, params, executorService), params);
 			} catch (Exception e) {
 				String errMsg = "Cannot build ReportPortal client";
 				LOGGER.error(errMsg, e);
@@ -256,13 +255,13 @@ public class ReportPortal {
 
 		}
 
-		public <T extends ReportPortalClient> T buildClient(Class<T> clientType, ListenerParameters params) {
+		public <T extends ReportPortalClient> T buildClient(Class<T> clientType, ListenerParameters params, ExecutorService executorService) {
 			try {
 				HttpClient client = null == this.httpClient ?
 						defaultClient(params) :
 						this.httpClient.addInterceptorLast(new BearerAuthInterceptor(params.getUuid())).build();
 
-				return RestEndpoints.forInterface(clientType, buildRestEndpoint(params, client));
+				return RestEndpoints.forInterface(clientType, buildRestEndpoint(params, client, executorService));
 			} catch (Exception e) {
 				String errMsg = "Cannot build ReportPortal client";
 				LOGGER.error(errMsg, e);
@@ -271,7 +270,7 @@ public class ReportPortal {
 
 		}
 
-		protected RestEndpoint buildRestEndpoint(ListenerParameters parameters, HttpClient client) {
+		protected RestEndpoint buildRestEndpoint(ListenerParameters parameters, HttpClient client, ExecutorService executorService) {
 			final ObjectMapper om = new ObjectMapper();
 			om.setDateFormat(new SimpleDateFormat(DEFAULT_DATE_FORMAT));
 			om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
