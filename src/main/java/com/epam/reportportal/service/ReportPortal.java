@@ -229,7 +229,6 @@ public class ReportPortal {
 
 		private HttpClientBuilder httpClient;
 		private ListenerParameters parameters;
-		private ExecutorService executorService;
 
 		public Builder withHttpClient(HttpClientBuilder client) {
 			this.httpClient = client;
@@ -244,9 +243,6 @@ public class ReportPortal {
 		public ReportPortal build() {
 			try {
 				ListenerParameters params = null == this.parameters ? new ListenerParameters(defaultPropertiesLoader()) : this.parameters;
-				executorService = Executors.newFixedThreadPool(params.getIoPoolSize(),
-						new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build()
-				);
 				return new ReportPortal(buildClient(ReportPortalClient.class, params), params);
 			} catch (Exception e) {
 				String errMsg = "Cannot build ReportPortal client";
@@ -255,6 +251,7 @@ public class ReportPortal {
 			}
 
 		}
+
 
 		public <T extends ReportPortalClient> T buildClient(Class<T> clientType, ListenerParameters params) {
 			try {
@@ -283,7 +280,7 @@ public class ReportPortal {
 			return new HttpClientRestEndpoint(client, new LinkedList<Serializer>() {{
 				add(jacksonSerializer);
 				add(new ByteArraySerializer());
-			}}, new ReportPortalErrorHandler(jacksonSerializer), buildEndpointUrl(baseUrl, project), executorService);
+			}}, new ReportPortalErrorHandler(jacksonSerializer), buildEndpointUrl(baseUrl, project), buildExecutorService(parameters));
 		}
 
 		protected String buildEndpointUrl(String baseUrl, String project) {
@@ -325,6 +322,13 @@ public class ReportPortal {
 		protected PropertiesLoader defaultPropertiesLoader() {
 			return PropertiesLoader.load();
 		}
+
+		protected ExecutorService buildExecutorService(ListenerParameters params){
+			return Executors.newFixedThreadPool(params.getIoPoolSize(),
+					new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build()
+			);
+		}
+
 	}
 
 }

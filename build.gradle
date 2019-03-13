@@ -1,5 +1,5 @@
 plugins {
-    id 'net.researchgate.release' version '2.4.1'
+    id 'net.researchgate.release' version '2.6.0'
     id "com.jfrog.bintray" version "1.7"
     id 'com.github.johnrengelman.shadow' version '2.0.1'
 
@@ -31,6 +31,10 @@ sourceSets {
     }
 }
 
+ext {
+    jacksonVersion = "2.9.8"
+}
+
 //configurations.shadow.extendsFrom(configurations.runtime)
 
 shadowJar {
@@ -54,14 +58,17 @@ shadowJar {
 dependencies {
 
 //    compile 'com.epam.reportportal:commons-model:3.0.0'
-    compile 'com.epam.reportportal:commons-model:4.2.0'
+    compile ('com.epam.reportportal:commons-model:4.2.0') {
+        exclude group: 'com.fasterxml', module: 'jackson'
+        exclude group: 'com.fasterxml', module: 'jackson-databind'
+    }
     compile 'com.google.guava:guava:20.0'
-    compile 'com.epam.reportportal:restendpoint:0.2.8'
+    compile 'com.epam.reportportal:restendpoint:0.2.9'
 
-    shadow 'com.fasterxml.jackson.core:jackson-databind:2.8.10'
-    shadow 'com.fasterxml.jackson.core:jackson-annotations:2.8.10'
+    shadow "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    shadow "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
     shadow 'io.reactivex.rxjava2:rxjava:2.1.16'
-    shadow 'org.apache.tika:tika-core:1.4'
+    shadow 'org.apache.tika:tika-core:1.20'
     shadow 'org.slf4j:slf4j-api:1.7.25'
 
     testCompile 'junit:junit:4.12'
@@ -72,9 +79,9 @@ dependencies {
 test.useTestNG()
 test.maxParallelForks = 1
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '3.1'
-}
+//task wrapper(type: Wrapper) {
+//    gradleVersion = '4.10.2'
+//}
 
 
 task sourcesJar(type: Jar, dependsOn: classes) {
