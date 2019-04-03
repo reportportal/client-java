@@ -41,19 +41,19 @@ public interface ReportPortalClient {
 	Maybe<LaunchResource> mergeLaunches(@Body MergeLaunchesRQ rq);
 
 	@Request(method = PUT, url = "/launch/{launchId}/finish")
-	Maybe<OperationCompletionRS> finishLaunch(@Path("launchId") Long launch, @Body FinishExecutionRQ rq);
+	Maybe<OperationCompletionRS> finishLaunch(@Path("launchId") String launch, @Body FinishExecutionRQ rq);
 
 	@Request(method = POST, url = "/item/")
 	Maybe<ItemCreatedRS> startTestItem(@Body StartTestItemRQ rq);
 
 	@Request(method = POST, url = "/item/{parent}")
-	Maybe<ItemCreatedRS> startTestItem(@Path("parent") Long parent, @Body StartTestItemRQ rq);
+	Maybe<ItemCreatedRS> startTestItem(@Path("parent") String parent, @Body StartTestItemRQ rq);
 
 	@Request(method = PUT, url = "/item/{itemId}")
-	Maybe<OperationCompletionRS> finishTestItem(@Path("itemId") Long itemId, @Body FinishTestItemRQ rq);
+	Maybe<OperationCompletionRS> finishTestItem(@Path("itemId") String itemId, @Body FinishTestItemRQ rq);
 
 	@Request(method = POST, url = "/log/")
-	Maybe<EntryCreatedRS> log(@Body SaveLogRQ rq);
+	Maybe<EntryCreatedAsyncRS> log(@Body SaveLogRQ rq);
 
 	@Request(method = POST, url = "/log/")
 	Maybe<BatchSaveOperatingRS> log(@Body @Multipart MultiPartRequest rq);
