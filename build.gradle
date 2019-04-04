@@ -54,7 +54,7 @@ shadowJar {
 dependencies {
 
 //    compile 'com.epam.reportportal:commons-model:3.0.0'
-    compile 'com.github.reportportal:commons-model:284f32'
+    compile 'com.github.reportportal:commons-model:c321e28'
     compile 'com.google.guava:guava:20.0'
     compile 'com.epam.reportportal:restendpoint:0.2.8'
 
