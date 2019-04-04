@@ -81,7 +81,7 @@ public class LaunchFile {
 				return -1 * o1.getNumber().compareTo(o2.getNumber());
 			}
 		});
-		return Maybe.just(fileRSs.get(0).getClientRef());
+		return Maybe.just(fileRSs.get(0).getUuid());
 	}
 
 	public static Maybe<LaunchFile> create(final String name, Maybe<StartLaunchRS> id) {

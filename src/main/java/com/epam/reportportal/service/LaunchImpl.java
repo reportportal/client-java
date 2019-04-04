@@ -51,7 +51,7 @@ public class LaunchImpl extends Launch {
 	private static final Function<ItemCreatedRS, String> TO_ID = new Function<ItemCreatedRS, String>() {
 		@Override
 		public String apply(ItemCreatedRS rs) {
-			return rs.getClientRef();
+			return rs.getUuid();
 		}
 	};
 	private static final Consumer<StartLaunchRS> LAUNCH_SUCCESS_CONSUMER = new Consumer<StartLaunchRS>() {
@@ -109,7 +109,7 @@ public class LaunchImpl extends Launch {
 					launchPromise.subscribe(new Consumer<StartLaunchRS>() {
 						@Override
 						public void accept(StartLaunchRS startLaunchRS) throws Exception {
-							emitter.onSuccess(startLaunchRS.getClientRef());
+							emitter.onSuccess(startLaunchRS.getUuid());
 						}
 					}, new Consumer<Throwable>() {
 						@Override
