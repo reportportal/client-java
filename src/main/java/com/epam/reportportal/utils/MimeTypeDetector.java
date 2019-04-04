@@ -17,6 +17,7 @@ package com.epam.reportportal.utils;
 
 import com.google.common.io.ByteSource;
 import org.apache.tika.detect.Detector;
+import org.apache.tika.io.IOUtils;
 import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
@@ -42,7 +43,12 @@ public class MimeTypeDetector {
 	public static String detect(File file) throws IOException {
 		final Metadata metadata = new Metadata();
 		metadata.set(Metadata.RESOURCE_NAME_KEY, file.getName());
-		return detect(TikaInputStream.get(file), metadata);
+		TikaInputStream is  = TikaInputStream.get(file);
+		try {
+			return detect(is, metadata);
+		} finally {
+			IOUtils.closeQuietly(is);
+		}
 
 	}
 
@@ -52,7 +58,12 @@ public class MimeTypeDetector {
 		if (!isNullOrEmpty(resourceName)) {
 			metadata.set(Metadata.RESOURCE_NAME_KEY, resourceName);
 		}
-		return detect(TikaInputStream.get(source.openBufferedStream()), metadata);
+		TikaInputStream is = TikaInputStream.get(source.openBufferedStream());
+		try {
+			return detect(is, metadata);
+		} finally {
+			IOUtils.closeQuietly(is);
+		}
 
 	}
 
