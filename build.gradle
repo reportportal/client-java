@@ -43,6 +43,7 @@ shadowJar {
         include(dependency('org.apache.httpcomponents:httpcore'))
         include(dependency('commons-logging:commons-logging'))
         include(dependency('com.google.guava:guava'))
+        include(dependency('org.aspectj:aspectjrt'))
 
     }
     classifier = null
@@ -69,7 +70,7 @@ dependencies {
     compile 'com.epam.reportportal:restendpoint:0.2.8'
 
     agent "org.aspectj:aspectjweaver:1.9.2"
-    compile("org.aspectj:aspectjrt:1.9.2")
+    compileOnly "org.aspectj:aspectjrt:1.9.2"
 
     shadow 'com.fasterxml.jackson.core:jackson-databind:2.8.10'
     shadow 'com.fasterxml.jackson.core:jackson-annotations:2.8.10'
