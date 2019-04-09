@@ -51,12 +51,25 @@ shadowJar {
     relocate 'org.apache.commons.logging', 'rp.org.apache.commons.logging'
 }
 
+configurations {
+    agent
+}
+
+test {
+    doFirst {
+        jvmArgs("-javaagent:${configurations.agent.singleFile}")
+    }
+}
+
 dependencies {
 
 //    compile 'com.epam.reportportal:commons-model:3.0.0'
     compile 'com.github.reportportal:commons-model:48e54ba'
     compile 'com.google.guava:guava:20.0'
     compile 'com.epam.reportportal:restendpoint:0.2.8'
+
+    agent "org.aspectj:aspectjweaver:1.9.2"
+    compile("org.aspectj:aspectjrt:1.9.2")
 
     shadow 'com.fasterxml.jackson.core:jackson-databind:2.8.10'
     shadow 'com.fasterxml.jackson.core:jackson-annotations:2.8.10'
