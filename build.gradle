@@ -43,6 +43,7 @@ shadowJar {
         include(dependency('org.apache.httpcomponents:httpcore'))
         include(dependency('commons-logging:commons-logging'))
         include(dependency('com.google.guava:guava'))
+        include(dependency('org.jooq:joor-java-6'))
 
     }
     classifier = null
@@ -56,6 +57,7 @@ dependencies {
     compile 'com.github.reportportal:commons-model:48e54ba'
     compile 'com.google.guava:guava:20.0'
     compile 'com.epam.reportportal:restendpoint:0.2.8'
+    compile 'org.jooq:joor-java-6:0.9.7'
     shadow 'com.fasterxml.jackson.core:jackson-databind:2.8.10'
     shadow 'com.fasterxml.jackson.core:jackson-annotations:2.8.10'
     shadow 'io.reactivex.rxjava2:rxjava:2.1.16'

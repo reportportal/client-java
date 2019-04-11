@@ -10,7 +10,11 @@ import java.lang.annotation.Target;
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Step {
+public @interface StepDemo {
 
 	String value() default "";
+
+	boolean isIgnored() default false;
+
+	StepTemplateConfig templateConfig() default @StepTemplateConfig;
 }
