@@ -32,9 +32,11 @@ import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.PublishSubject;
 import org.reactivestreams.Publisher;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 
-import static com.epam.reportportal.utils.SubscriptionUtils.*;
+import static com.epam.reportportal.utils.SubscriptionUtils.logFlowableResults;
 import static com.epam.reportportal.utils.files.ImageConverter.convert;
 import static com.epam.reportportal.utils.files.ImageConverter.isImage;
 import static com.google.common.io.ByteSource.wrap;
@@ -57,7 +59,12 @@ public class LoggingContext {
 	/* default back-pressure buffer size */
 	public static final int DEFAULT_BUFFER_SIZE = 10;
 
-	static final ThreadLocal<LoggingContext> CONTEXT_THREAD_LOCAL = new ThreadLocal<LoggingContext>();
+	static final ThreadLocal<Deque<LoggingContext>> CONTEXT_THREAD_LOCAL = new ThreadLocal<Deque<LoggingContext>>() {
+		@Override
+		protected Deque<LoggingContext> initialValue() {
+			return new ArrayDeque<LoggingContext>();
+		}
+	};
 
 	/**
 	 * Initializes new logging context and attaches it to current thread
@@ -81,7 +88,7 @@ public class LoggingContext {
 	 */
 	public static LoggingContext init(Maybe<Long> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
 		LoggingContext context = new LoggingContext(itemId, client, bufferSize, convertImages);
-		CONTEXT_THREAD_LOCAL.set(context);
+		CONTEXT_THREAD_LOCAL.get().push(context);
 		return context;
 	}
 
@@ -91,7 +98,7 @@ public class LoggingContext {
 	 * @return Waiting queue to be able to track request sending completion
 	 */
 	public static Completable complete() {
-		final LoggingContext loggingContext = CONTEXT_THREAD_LOCAL.get();
+		final LoggingContext loggingContext = CONTEXT_THREAD_LOCAL.get().poll();
 		if (null != loggingContext) {
 			return loggingContext.completed();
 		} else {
