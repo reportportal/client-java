@@ -14,6 +14,8 @@ public @interface Step {
 
 	String value() default "";
 
+	String description() default "";
+
 	boolean isIgnored() default false;
 
 	StepTemplateConfig templateConfig() default @StepTemplateConfig;
