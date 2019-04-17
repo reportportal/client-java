@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Calendar;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Map;
 
 import static com.google.common.base.Throwables.getStackTraceAsString;
@@ -33,7 +34,12 @@ public class StepAspect {
 
 	private static InheritableThreadLocal<String> currentLaunchId = new InheritableThreadLocal<String>();
 
-	private static InheritableThreadLocal<Map<String, Launch>> launchMap = new InheritableThreadLocal<Map<String, Launch>>();
+	private static InheritableThreadLocal<Map<String, Launch>> launchMap = new InheritableThreadLocal<Map<String, Launch>>() {
+		@Override
+		protected Map<String, Launch> initialValue() {
+			return new HashMap<String, Launch>();
+		}
+	};
 
 	private static InheritableThreadLocal<Deque<Maybe<Long>>> stepStack = new InheritableThreadLocal<Deque<Maybe<Long>>>() {
 		@Override
