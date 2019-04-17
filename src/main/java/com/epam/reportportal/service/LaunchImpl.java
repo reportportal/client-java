@@ -29,7 +29,10 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.reactivex.*;
-import io.reactivex.functions.*;
+import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
+import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
 import java.util.List;
@@ -62,7 +65,7 @@ public class LaunchImpl extends Launch {
 	};
 	private static final int ITEM_FINISH_MAX_RETRIES = 10;
 	private static final int ITEM_FINISH_RETRY_TIMEOUT = 10;
-	private static final String NOT_ISSUE = "NOT_ISSUE";
+	public static final String NOT_ISSUE = "NOT_ISSUE";
 
 	/**
 	 * REST Client
