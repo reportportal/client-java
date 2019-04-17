@@ -44,26 +44,12 @@ shadowJar {
         include(dependency('commons-logging:commons-logging'))
         include(dependency('com.google.guava:guava'))
         include(dependency('org.jooq:joor-java-6'))
-        include(dependency('org.aspectj:aspectjrt'))
-        include(dependency('org.aspectj:aspectjweaver'))
 
     }
     classifier = null
     relocate 'org.apache.http', 'rp.org.apache.http'
     relocate 'com.google.common', 'rp.com.google.common'
     relocate 'org.apache.commons.logging', 'rp.org.apache.commons.logging'
-}
-
-configurations {
-    agent
-}
-
-test {
-
-    doFirst {
-        jvmArgs("-javaagent:${configurations.agent.singleFile}")
-
-    }
 }
 
 dependencies {
@@ -74,8 +60,8 @@ dependencies {
     compile 'com.epam.reportportal:restendpoint:0.2.8'
     compile 'org.jooq:joor-java-6:0.9.7'
 
-    agent "org.aspectj:aspectjweaver:1.9.2"
-    compile "org.aspectj:aspectjrt:1.9.2"
+    shadow "org.aspectj:aspectjweaver:1.9.2"
+    shadow "org.aspectj:aspectjrt:1.9.2"
     
     shadow 'com.fasterxml.jackson.core:jackson-databind:2.8.10'
     shadow 'com.fasterxml.jackson.core:jackson-annotations:2.8.10'
