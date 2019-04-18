@@ -34,22 +34,22 @@ import static com.epam.reportportal.restendpoint.http.HttpMethod.PUT;
  */
 public interface ReportPortalClient {
 
-	@Request(method = POST, url = "/launch")
+	@Request(method = POST, url = "/async/launch")
 	Maybe<StartLaunchRS> startLaunch(@Body StartLaunchRQ rq);
 
 	@Request(method = POST, url = "/launch/merge")
 	Maybe<LaunchResource> mergeLaunches(@Body MergeLaunchesRQ rq);
 
-	@Request(method = PUT, url = "/launch/{launchId}/finish")
+	@Request(method = PUT, url = "/async/launch/{launchId}/finish")
 	Maybe<OperationCompletionRS> finishLaunch(@Path("launchId") String launch, @Body FinishExecutionRQ rq);
 
-	@Request(method = POST, url = "/item/")
+	@Request(method = POST, url = "/async/item/")
 	Maybe<ItemCreatedRS> startTestItem(@Body StartTestItemRQ rq);
 
-	@Request(method = POST, url = "/item/{parent}")
+	@Request(method = POST, url = "/async/item/{parent}")
 	Maybe<ItemCreatedRS> startTestItem(@Path("parent") String parent, @Body StartTestItemRQ rq);
 
-	@Request(method = PUT, url = "/item/{itemId}")
+	@Request(method = PUT, url = "/async/item/{itemId}")
 	Maybe<OperationCompletionRS> finishTestItem(@Path("itemId") String itemId, @Body FinishTestItemRQ rq);
 
 	@Request(method = POST, url = "/log/")
