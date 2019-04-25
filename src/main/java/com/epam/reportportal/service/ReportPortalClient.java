@@ -52,10 +52,10 @@ public interface ReportPortalClient {
 	@Request(method = PUT, url = "/async/item/{itemId}")
 	Maybe<OperationCompletionRS> finishTestItem(@Path("itemId") String itemId, @Body FinishTestItemRQ rq);
 
-	@Request(method = POST, url = "/log/")
+	@Request(method = POST, url = "/async/log/")
 	Maybe<EntryCreatedAsyncRS> log(@Body SaveLogRQ rq);
 
-	@Request(method = POST, url = "/log/")
+	@Request(method = POST, url = "/async/log/")
 	Maybe<BatchSaveOperatingRS> log(@Body @Multipart MultiPartRequest rq);
 
 	@Close
