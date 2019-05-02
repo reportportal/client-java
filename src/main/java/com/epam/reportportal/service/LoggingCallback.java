@@ -15,8 +15,9 @@
  */
 package com.epam.reportportal.service;
 
-import com.epam.ta.reportportal.ws.model.EntryCreatedRS;
+import com.epam.ta.reportportal.ws.model.EntryCreatedAsyncRS;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
+import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import io.reactivex.functions.Consumer;
 
 import static com.epam.reportportal.service.Launch.LOGGER;
@@ -58,11 +59,11 @@ final class LoggingCallback {
 	 * @param entry Type of entity
 	 * @return Consumer/Callback
 	 */
-	static Consumer<EntryCreatedRS> logCreated(final String entry) {
-		return new Consumer<EntryCreatedRS>() {
+	static Consumer<EntryCreatedAsyncRS> logCreated(final String entry) {
+		return new Consumer<EntryCreatedAsyncRS>() {
 			@Override
-			public void accept(EntryCreatedRS rs) {
-				LOGGER.debug("ReportPortal {} with ID '{}' has been created", entry, rs.getId());
+			public void accept(EntryCreatedAsyncRS rs) {
+				LOGGER.debug("ReportPortal {} with ID '{}' has been created", entry, rs.getUuid());
 			}
 		};
 	}

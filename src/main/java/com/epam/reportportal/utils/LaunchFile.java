@@ -52,7 +52,7 @@ public class LaunchFile {
 		this.file = file;
 	}
 
-	public static Maybe<Long> find(final String name) {
+	public static Maybe<String> find(final String name) {
 		File tempDir = getTempDir();
 		final String prefix = FILE_PREFIX + "-" + normalizeLaunchName(name);
 		List<String> files = Arrays.asList(tempDir.list(new FilenameFilter() {
@@ -81,7 +81,7 @@ public class LaunchFile {
 				return -1 * o1.getNumber().compareTo(o2.getNumber());
 			}
 		});
-		return Maybe.just(fileRSs.get(0).getId());
+		return Maybe.just(fileRSs.get(0).getUuid());
 	}
 
 	public static Maybe<LaunchFile> create(final String name, Maybe<StartLaunchRS> id) {

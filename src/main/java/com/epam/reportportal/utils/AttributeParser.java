@@ -15,7 +15,7 @@
  */
 package com.epam.reportportal.utils;
 
-import com.epam.ta.reportportal.ws.model.ItemAttributeResource;
+import com.epam.ta.reportportal.ws.model.ItemAttributesRQ;
 import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
@@ -41,15 +41,15 @@ public class AttributeParser {
 	 *
 	 * @param rawAttributes Attributes string
 	 */
-	public static Set<ItemAttributeResource> parseAsSet(String rawAttributes) {
+	public static Set<ItemAttributesRQ> parseAsSet(String rawAttributes) {
 		if (null == rawAttributes) {
 			return Sets.newHashSet();
 		}
-		Set<ItemAttributeResource> attributes = Sets.newHashSet();
+		Set<ItemAttributesRQ> attributes = Sets.newHashSet();
 
 		String[] attributesSplitted = rawAttributes.trim().split(ATTRIBUTES_SPLITTER);
 		for (int i = 0; i < attributesSplitted.length; i++) {
-			ItemAttributeResource itemAttributeResource = splitKeyValue(attributesSplitted[i]);
+			ItemAttributesRQ itemAttributeResource = splitKeyValue(attributesSplitted[i]);
 			if (itemAttributeResource != null) {
 				attributes.add(itemAttributeResource);
 			}
@@ -57,19 +57,19 @@ public class AttributeParser {
 		return attributes;
 	}
 
-	public static ItemAttributeResource splitKeyValue(String attribute) {
+	public static ItemAttributesRQ splitKeyValue(String attribute) {
 		if (null == attribute || attribute.trim().isEmpty()) {
 			return null;
 		}
 		String[] keyValue = attribute.split(KEY_VALUE_SPLITTER);
 		if (keyValue.length == 1) {
-			return new ItemAttributeResource(null, keyValue[0].trim());
+			return new ItemAttributesRQ(null, keyValue[0].trim());
 		} else if (keyValue.length == 2) {
 			String key = keyValue[0].trim();
 			if (key.isEmpty()) {
 				key = null;
 			}
-			return new ItemAttributeResource(key, keyValue[1].trim());
+			return new ItemAttributesRQ(key, keyValue[1].trim());
 		}
 		return null;
 	}
