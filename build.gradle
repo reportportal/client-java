@@ -2,6 +2,7 @@ plugins {
     id 'net.researchgate.release' version '2.6.0'
     id "com.jfrog.bintray" version "1.7"
     id 'com.github.johnrengelman.shadow' version '2.0.1'
+    id "org.owasp.dependencycheck" version "4.0.2"
 
 }
 apply plugin: 'java'
@@ -32,7 +33,7 @@ sourceSets {
 }
 
 ext {
-    jacksonVersion = "2.9.8"
+    jacksonVersion = "2.9.9"
 }
 
 //configurations.shadow.extendsFrom(configurations.runtime)
@@ -59,11 +60,11 @@ dependencies {
 
 //    compile 'com.epam.reportportal:commons-model:3.0.0'
     compile ('com.epam.reportportal:commons-model:4.2.0') {
-        exclude group: 'com.fasterxml', module: 'jackson'
-        exclude group: 'com.fasterxml', module: 'jackson-databind'
+        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-annotations'
+        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
     }
-    compile 'com.google.guava:guava:20.0'
-    compile 'com.epam.reportportal:restendpoint:0.2.9'
+    compile 'com.google.guava:guava:24.1.1-jre'
+    compile 'com.epam.reportportal:restendpoint:0.2.11'
 
     shadow "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     shadow "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
@@ -80,7 +81,7 @@ test.useTestNG()
 test.maxParallelForks = 1
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '3.1'
+    gradleVersion = '4.9'
 }
 
 
