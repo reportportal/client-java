@@ -15,11 +15,9 @@
  */
 package com.epam.reportportal.utils;
 
-import com.epam.ta.reportportal.ws.model.ItemAttributesRQ;
+import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.google.common.collect.Sets;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 /**

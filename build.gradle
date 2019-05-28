@@ -54,10 +54,9 @@ shadowJar {
 dependencies {
 
 //    compile 'com.epam.reportportal:commons-model:3.0.0'
-    compile 'com.github.reportportal:commons-model:7f47482'
+    compile 'com.github.reportportal:commons-model:d157752'
     compile 'com.google.guava:guava:20.0'
     compile 'com.epam.reportportal:restendpoint:0.2.8'
-
     shadow 'com.fasterxml.jackson.core:jackson-databind:2.8.10'
     shadow 'com.fasterxml.jackson.core:jackson-annotations:2.8.10'
     shadow 'io.reactivex.rxjava2:rxjava:2.1.16'

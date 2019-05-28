@@ -16,7 +16,7 @@
 package com.epam;
 
 import com.epam.reportportal.utils.AttributeParser;
-import com.epam.ta.reportportal.ws.model.ItemAttributesRQ;
+import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
