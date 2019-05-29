@@ -73,7 +73,7 @@ public class LoggingContext {
 	 * @param client Client of ReportPortal
 	 * @return New Logging Context
 	 */
-	public static LoggingContext init(Maybe<Long> itemId, final ReportPortalClient client) {
+	public static LoggingContext init(Maybe<String> itemId, final ReportPortalClient client) {
 		return init(itemId, client, DEFAULT_BUFFER_SIZE, false);
 	}
 
@@ -86,7 +86,7 @@ public class LoggingContext {
 	 * @param convertImages Whether Image should be converted to BlackAndWhite
 	 * @return New Logging Context
 	 */
-	public static LoggingContext init(Maybe<Long> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
+	public static LoggingContext init(Maybe<String> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
 		LoggingContext context = new LoggingContext(itemId, client, bufferSize, convertImages);
 		CONTEXT_THREAD_LOCAL.get().push(context);
 		return context;
@@ -109,11 +109,11 @@ public class LoggingContext {
 	/* Log emitter */
 	private final PublishSubject<Maybe<SaveLogRQ>> emitter;
 	/* ID of TestItem in ReportPortal */
-	private final Maybe<Long> itemId;
+	private final Maybe<String> itemId;
 	/* Whether Image should be converted to BlackAndWhite */
 	private final boolean convertImages;
 
-	LoggingContext(Maybe<Long> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
+	LoggingContext(Maybe<String> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
 		this.itemId = itemId;
 		this.emitter = PublishSubject.create();
 		this.convertImages = convertImages;
@@ -163,10 +163,10 @@ public class LoggingContext {
 	 *
 	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
 	 */
-	public void emit(final com.google.common.base.Function<Long, SaveLogRQ> logSupplier) {
-		emitter.onNext(itemId.map(new Function<Long, SaveLogRQ>() {
+	public void emit(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
+		emitter.onNext(itemId.map(new Function<String, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(Long input) throws Exception {
+			public SaveLogRQ apply(String input) throws Exception {
 				final SaveLogRQ rq = logSupplier.apply(input);
 				SaveLogRQ.File file = rq.getFile();
 				if (convertImages && null != file && isImage(file.getContentType())) {

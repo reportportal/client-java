@@ -99,7 +99,7 @@ public class ReportPortal {
 	 * @param currentLaunchId Launch to be used
 	 * @return This instance for chaining
 	 */
-	public Launch withLaunch(Maybe<Long> currentLaunchId) {
+	public Launch withLaunch(Maybe<String> currentLaunchId) {
 		return new LaunchImpl(rpClient, parameters, currentLaunchId);
 	}
 
@@ -140,7 +140,7 @@ public class ReportPortal {
 	 *
 	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
 	 */
-	public static boolean emitLog(com.google.common.base.Function<Long, SaveLogRQ> logSupplier) {
+	public static boolean emitLog(com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
 		final LoggingContext loggingContext = LoggingContext.CONTEXT_THREAD_LOCAL.get().peek();
 		if (null != loggingContext) {
 			loggingContext.emit(logSupplier);
@@ -153,9 +153,9 @@ public class ReportPortal {
 	 * Emits log message if there is any active context attached to the current thread
 	 */
 	public static boolean emitLog(final String message, final String level, final Date time) {
-		return emitLog(new com.google.common.base.Function<Long, SaveLogRQ>() {
+		return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(Long itemId) {
+			public SaveLogRQ apply(String itemId) {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
@@ -168,9 +168,9 @@ public class ReportPortal {
 	}
 
 	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
-		return emitLog(new com.google.common.base.Function<Long, SaveLogRQ>() {
+		return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(Long itemId) {
+			public SaveLogRQ apply(String itemId) {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
@@ -195,9 +195,9 @@ public class ReportPortal {
 	}
 
 	public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLog(new com.google.common.base.Function<Long, SaveLogRQ>() {
+		return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(Long itemId) {
+			public SaveLogRQ apply(String itemId) {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);

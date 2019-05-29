@@ -33,7 +33,7 @@ public class LaunchFileTest {
 		f2.createNewFile();
 		f2.deleteOnExit();
 
-		Assert.assertEquals(13L, LaunchFile.find("xxxx").blockingGet().longValue());
+		Assert.assertEquals("13", LaunchFile.find("xxxx").blockingGet());
 	}
 
 }

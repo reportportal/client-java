@@ -18,7 +18,7 @@ package com.epam.reportportal.listeners;
 import com.epam.reportportal.service.LoggingContext;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
-import com.epam.ta.reportportal.ws.model.ItemAttributeResource;
+import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.Mode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
@@ -47,7 +47,7 @@ public class ListenerParameters {
 	private String projectName;
 	private String launchName;
 	private Mode launchRunningMode;
-	private Set<ItemAttributeResource> attributes;
+	private Set<ItemAttributesRQ> attributes;
 	private Boolean enable;
 	private Boolean isSkippedAnIssue;
 	private Integer batchLogsSize;
@@ -149,11 +149,11 @@ public class ListenerParameters {
 		this.launchRunningMode = launchRunningMode;
 	}
 
-	public Set<ItemAttributeResource> getAttributes() {
+	public Set<ItemAttributesRQ> getAttributes() {
 		return attributes;
 	}
 
-	public void setAttributes(Set<ItemAttributeResource> attributes) {
+	public void setAttributes(Set<ItemAttributesRQ> attributes) {
 		this.attributes = attributes;
 	}
 
