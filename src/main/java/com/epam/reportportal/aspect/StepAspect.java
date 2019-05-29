@@ -41,14 +41,14 @@ public class StepAspect {
 		}
 	};
 
-	private static InheritableThreadLocal<Deque<Maybe<Long>>> stepStack = new InheritableThreadLocal<Deque<Maybe<Long>>>() {
+	private static InheritableThreadLocal<Deque<Maybe<String>>> stepStack = new InheritableThreadLocal<Deque<Maybe<String>>>() {
 		@Override
-		protected Deque<Maybe<Long>> initialValue() {
+		protected Deque<Maybe<String>> initialValue() {
 			return Queues.newArrayDeque();
 		}
 	};
 
-	private static InheritableThreadLocal<Maybe<Long>> parentId = new InheritableThreadLocal<Maybe<Long>>();
+	private static InheritableThreadLocal<Maybe<String>> parentId = new InheritableThreadLocal<Maybe<String>>();
 
 	@Pointcut("@annotation(step)")
 	public void withStepAnnotation(Step step) {
@@ -66,7 +66,7 @@ public class StepAspect {
 
 			MethodSignature signature = (MethodSignature) joinPoint.getSignature();
 
-			Maybe<Long> parent = stepStack.get().peek();
+			Maybe<String> parent = stepStack.get().peek();
 			if (parent == null) {
 				parent = parentId.get();
 			}
@@ -74,7 +74,7 @@ public class StepAspect {
 			StartTestItemRQ startStepRequest = StepRequestUtils.buildStartStepRequest(signature, step, joinPoint);
 
 			Launch launch = launchMap.get().get(currentLaunchId.get());
-			Maybe<Long> stepMaybe = launch.startTestItem(parent, startStepRequest);
+			Maybe<String> stepMaybe = launch.startTestItem(parent, startStepRequest);
 
 			stepStack.get().push(stepMaybe);
 
@@ -85,7 +85,7 @@ public class StepAspect {
 	@AfterReturning(value = "anyMethod() && withStepAnnotation(step)", argNames = "step")
 	public void finishNestedStep(Step step) {
 		if (!step.isIgnored()) {
-			Maybe<Long> stepId = stepStack.get().poll();
+			Maybe<String> stepId = stepStack.get().poll();
 			if (stepId == null) {
 				LOGGER.error("Id of the 'STEP' to finish retrieved from step stack is NULL");
 				return;
@@ -100,15 +100,15 @@ public class StepAspect {
 
 		if (!step.isIgnored()) {
 
-			Maybe<Long> stepId = stepStack.get().poll();
+			Maybe<String> stepId = stepStack.get().poll();
 			if (stepId == null) {
 				LOGGER.error("Id of the 'STEP' to finish retrieved from step stack is NULL");
 				return;
 			}
 
-			ReportPortal.emitLog(new Function<Long, SaveLogRQ>() {
+			ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
 				@Override
-				public SaveLogRQ apply(Long itemId) {
+				public SaveLogRQ apply(String itemId) {
 					SaveLogRQ rq = new SaveLogRQ();
 					rq.setTestItemId(itemId);
 					rq.setLevel("ERROR");
@@ -139,7 +139,7 @@ public class StepAspect {
 		currentLaunchId.set(key);
 	}
 
-	public static void setParentId(Maybe<Long> parent) {
+	public static void setParentId(Maybe<String> parent) {
 		parentId.set(parent);
 	}
 }
