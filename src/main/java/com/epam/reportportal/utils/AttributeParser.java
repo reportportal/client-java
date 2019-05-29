@@ -15,7 +15,6 @@
  */
 package com.epam.reportportal.utils;
 
-import com.epam.ta.reportportal.ws.model.attribute.ItemAttributeResource;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.google.common.collect.Sets;
 
@@ -40,11 +39,11 @@ public class AttributeParser {
 	 *
 	 * @param rawAttributes Attributes string
 	 */
-	public static Set<ItemAttributeResource> parseAsSet(String rawAttributes) {
+	public static Set<ItemAttributesRQ> parseAsSet(String rawAttributes) {
 		if (null == rawAttributes) {
 			return Sets.newHashSet();
 		}
-		Set<ItemAttributeResource> attributes = Sets.newHashSet();
+		Set<ItemAttributesRQ> attributes = Sets.newHashSet();
 
 		String[] attributesSplitted = rawAttributes.trim().split(ATTRIBUTES_SPLITTER);
 		for (int i = 0; i < attributesSplitted.length; i++) {
