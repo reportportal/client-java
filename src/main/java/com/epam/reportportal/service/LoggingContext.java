@@ -34,7 +34,6 @@ import org.reactivestreams.Publisher;
 
 import java.util.List;
 
-import static com.epam.reportportal.utils.SubscriptionUtils.*;
 import static com.epam.reportportal.utils.files.ImageConverter.convert;
 import static com.epam.reportportal.utils.files.ImageConverter.isImage;
 import static com.google.common.io.ByteSource.wrap;
@@ -147,7 +146,7 @@ public class LoggingContext {
 					}
 				})
 				.observeOn(Schedulers.computation())
-				.subscribe(logFlowableResults("Logging context"));
+				.subscribe();
 
 	}
 
