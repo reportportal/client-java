@@ -32,6 +32,7 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Function;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
 import org.apache.http.client.HttpClient;
@@ -149,11 +150,29 @@ public class ReportPortal {
 		return false;
 	}
 
+	public static boolean emitLaunchLog(Function<String, SaveLogRQ> logSupplier) {
+		final LaunchLoggingContext launchLoggingContext = LaunchLoggingContext.CONTEXT_THREAD_LOCAL.get();
+		if (null != launchLoggingContext) {
+			launchLoggingContext.emit(logSupplier);
+			return true;
+		}
+		return false;
+	}
+
 	/**
 	 * Emits log message if there is any active context attached to the current thread
 	 */
 	public static boolean emitLog(final String message, final String level, final Date time) {
-		return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
+		return emitLog(getLogSupplier(message, level, time));
+
+	}
+
+	public static boolean emitLaunchLog(final String message, String level, Date time) {
+		return emitLaunchLog(getLogSupplier(message, level, time));
+	}
+
+	private static Function<String, SaveLogRQ> getLogSupplier(final String message, final String level, final Date time) {
+		return new Function<String, SaveLogRQ>() {
 			@Override
 			public SaveLogRQ apply(String itemId) {
 				SaveLogRQ rq = new SaveLogRQ();
@@ -163,12 +182,19 @@ public class ReportPortal {
 				rq.setMessage(message);
 				return rq;
 			}
-		});
-
+		};
 	}
 
 	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
-		return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
+		return emitLog(getLogSupplier(message, level, time, file));
+	}
+
+	public static boolean emitLaunchLog(final String message, final String level, final Date time, final File file) {
+		return emitLaunchLog(getLogSupplier(message, level, time, file));
+	}
+
+	private static Function<String, SaveLogRQ> getLogSupplier(final String message, final String level, final Date time, final File file) {
+		return new Function<String, SaveLogRQ>() {
 			@Override
 			public SaveLogRQ apply(String itemId) {
 				SaveLogRQ rq = new SaveLogRQ();
@@ -191,11 +217,19 @@ public class ReportPortal {
 
 				return rq;
 			}
-		});
+		};
 	}
 
 	public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
+		return emitLog(getLogSupplier(message, level, time));
+	}
+
+	public static boolean emitLaunchLog(final ReportPortalMessage message, final String level, final Date time) {
+		return emitLaunchLog(getLogSupplier(message, level, time));
+	}
+
+	private static Function<String, SaveLogRQ> getLogSupplier(final ReportPortalMessage message, final String level, final Date time) {
+		return new Function<String, SaveLogRQ>() {
 			@Override
 			public SaveLogRQ apply(String itemId) {
 				SaveLogRQ rq = new SaveLogRQ();
@@ -219,7 +253,7 @@ public class ReportPortal {
 
 				return rq;
 			}
-		});
+		};
 	}
 
 	public static class Builder {

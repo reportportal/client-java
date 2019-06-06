@@ -148,7 +148,7 @@ public class LaunchImpl extends Launch {
 	public synchronized Maybe<String> start() {
 
 		launch.subscribe(logMaybeResults("Launch start"));
-		LoggingContext.init(this.launch, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
+		LaunchLoggingContext.init(this.launch, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
 
 		return this.launch;
 
