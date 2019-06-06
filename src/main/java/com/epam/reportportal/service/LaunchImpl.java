@@ -30,7 +30,10 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.reactivex.*;
-import io.reactivex.functions.*;
+import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
+import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
 import java.util.List;
@@ -145,6 +148,7 @@ public class LaunchImpl extends Launch {
 	public synchronized Maybe<String> start() {
 
 		launch.subscribe(logMaybeResults("Launch start"));
+		LoggingContext.init(this.launch, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
 
 		return this.launch;
 

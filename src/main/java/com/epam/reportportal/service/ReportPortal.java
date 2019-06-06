@@ -159,7 +159,7 @@ public class ReportPortal {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
-				rq.setTestItemId(itemId);
+				rq.setItemId(itemId);
 				rq.setMessage(message);
 				return rq;
 			}
@@ -174,7 +174,7 @@ public class ReportPortal {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
-				rq.setTestItemId(itemId);
+				rq.setItemId(itemId);
 				rq.setMessage(message);
 
 				try {
@@ -201,7 +201,7 @@ public class ReportPortal {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
-				rq.setTestItemId(itemId);
+				rq.setItemId(itemId);
 				rq.setMessage(message.getMessage());
 				try {
 					final TypeAwareByteSource data = message.getData();
