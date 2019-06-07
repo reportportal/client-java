@@ -147,7 +147,7 @@ public class LaunchImpl extends Launch {
 	 */
 	public synchronized Maybe<String> start() {
 
-		launch.subscribeOn(Schedulers.computation()).subscribe(logMaybeResults("Launch start"));
+		launch.subscribe(logMaybeResults("Launch start"));
 		LaunchLoggingContext.init(this.launch, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
 
 		return this.launch;
@@ -160,6 +160,7 @@ public class LaunchImpl extends Launch {
 	 * @param rq Finish RQ
 	 */
 	public synchronized void finish(final FinishExecutionRQ rq) {
+		QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
 		final Completable finish = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren())
 				.andThen(this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
 					@Override
