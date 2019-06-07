@@ -54,6 +54,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static com.epam.reportportal.service.LaunchLoggingContext.DEFAULT_LAUNCH_KEY;
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
 import static com.google.common.io.Files.toByteArray;
 
@@ -141,7 +142,7 @@ public class ReportPortal {
 	 *
 	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
 	 */
-	public static boolean emitLog(com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
+	public static boolean emitLog(Function<String, SaveLogRQ> logSupplier) {
 		final LoggingContext loggingContext = LoggingContext.CONTEXT_THREAD_LOCAL.get();
 		if (null != loggingContext) {
 			loggingContext.emit(logSupplier);
@@ -151,7 +152,7 @@ public class ReportPortal {
 	}
 
 	public static boolean emitLaunchLog(Function<String, SaveLogRQ> logSupplier) {
-		final LaunchLoggingContext launchLoggingContext = LaunchLoggingContext.CONTEXT_THREAD_LOCAL.get();
+		final LaunchLoggingContext launchLoggingContext = LaunchLoggingContext.loggingContextMap.get(DEFAULT_LAUNCH_KEY);
 		if (null != launchLoggingContext) {
 			launchLoggingContext.emit(logSupplier);
 			return true;

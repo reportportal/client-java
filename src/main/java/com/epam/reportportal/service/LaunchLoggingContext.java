@@ -18,6 +18,7 @@ import io.reactivex.subjects.PublishSubject;
 import org.reactivestreams.Publisher;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.epam.reportportal.utils.SubscriptionUtils.logFlowableResults;
 import static com.epam.reportportal.utils.files.ImageConverter.convert;
@@ -31,8 +32,9 @@ public class LaunchLoggingContext {
 
 	/* default back-pressure buffer size */
 	public static final int DEFAULT_BUFFER_SIZE = 10;
+	public static final String DEFAULT_LAUNCH_KEY = "default";
 
-	static final ThreadLocal<LaunchLoggingContext> CONTEXT_THREAD_LOCAL = new ThreadLocal<LaunchLoggingContext>();
+	static ConcurrentHashMap<String, LaunchLoggingContext> loggingContextMap = new ConcurrentHashMap<String, LaunchLoggingContext>();
 	/* Log emitter */
 	private final PublishSubject<Maybe<SaveLogRQ>> emitter;
 	/* ID of TestItem in ReportPortal */
@@ -44,44 +46,37 @@ public class LaunchLoggingContext {
 		this.launchId = launchId;
 		this.emitter = PublishSubject.create();
 		this.convertImages = convertImages;
-		emitter.toFlowable(BackpressureStrategy.BUFFER)
-				.flatMap(new Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>() {
-					@Override
-					public Publisher<SaveLogRQ> apply(Maybe<SaveLogRQ> rq) throws Exception {
-						return rq.toFlowable();
-					}
-				})
-				.buffer(bufferSize)
-				.flatMap(new Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>() {
-					@Override
-					public Flowable<BatchSaveOperatingRS> apply(List<SaveLogRQ> rqs) throws Exception {
-						MultiPartRequest.Builder builder = new MultiPartRequest.Builder();
+		emitter.toFlowable(BackpressureStrategy.BUFFER).flatMap(new Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>() {
+			@Override
+			public Publisher<SaveLogRQ> apply(Maybe<SaveLogRQ> rq) throws Exception {
+				return rq.toFlowable();
+			}
+		}).buffer(bufferSize).flatMap(new Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>() {
+			@Override
+			public Flowable<BatchSaveOperatingRS> apply(List<SaveLogRQ> rqs) throws Exception {
+				MultiPartRequest.Builder builder = new MultiPartRequest.Builder();
 
-						builder.addSerializedPart(Constants.LOG_REQUEST_JSON_PART, rqs);
+				builder.addSerializedPart(Constants.LOG_REQUEST_JSON_PART, rqs);
 
-						for (SaveLogRQ rq : rqs) {
-							final SaveLogRQ.File file = rq.getFile();
-							if (null != file) {
-								builder.addBinaryPart(Constants.LOG_REQUEST_BINARY_PART,
-										file.getName(),
-										Strings.isNullOrEmpty(file.getContentType()) ?
-												MediaType.OCTET_STREAM.toString() :
-												file.getContentType(),
-										wrap(file.getContent())
-								);
-							}
-						}
-						return client.log(builder.build()).toFlowable();
+				for (SaveLogRQ rq : rqs) {
+					final SaveLogRQ.File file = rq.getFile();
+					if (null != file) {
+						builder.addBinaryPart(
+								Constants.LOG_REQUEST_BINARY_PART,
+								file.getName(),
+								Strings.isNullOrEmpty(file.getContentType()) ? MediaType.OCTET_STREAM.toString() : file.getContentType(),
+								wrap(file.getContent())
+						);
 					}
-				})
-				.doOnError(new Consumer<Throwable>() {
-					@Override
-					public void accept(Throwable throwable) throws Exception {
-						throwable.printStackTrace();
-					}
-				})
-				.observeOn(Schedulers.computation())
-				.subscribe(logFlowableResults("Logging context"));
+				}
+				return client.log(builder.build()).toFlowable();
+			}
+		}).doOnError(new Consumer<Throwable>() {
+			@Override
+			public void accept(Throwable throwable) throws Exception {
+				throwable.printStackTrace();
+			}
+		}).observeOn(Schedulers.computation()).subscribe(logFlowableResults("Launch logging context"));
 
 	}
 
@@ -89,7 +84,7 @@ public class LaunchLoggingContext {
 	 * Initializes new logging context and attaches it to current thread
 	 *
 	 * @param launchId Launch ID
-	 * @param client Client of ReportPortal
+	 * @param client   Client of ReportPortal
 	 * @return New Logging Context
 	 */
 	public static LaunchLoggingContext init(Maybe<String> launchId, final ReportPortalClient client) {
@@ -105,9 +100,10 @@ public class LaunchLoggingContext {
 	 * @param convertImages Whether Image should be converted to BlackAndWhite
 	 * @return New Logging Context
 	 */
-	public static LaunchLoggingContext init(Maybe<String> launchId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
+	public static LaunchLoggingContext init(Maybe<String> launchId, final ReportPortalClient client, int bufferSize,
+			boolean convertImages) {
 		LaunchLoggingContext context = new LaunchLoggingContext(launchId, client, bufferSize, convertImages);
-		CONTEXT_THREAD_LOCAL.set(context);
+		loggingContextMap.put(DEFAULT_LAUNCH_KEY, context);
 		return context;
 	}
 
@@ -117,7 +113,7 @@ public class LaunchLoggingContext {
 	 * @return Waiting queue to be able to track request sending completion
 	 */
 	public static Completable complete() {
-		final LaunchLoggingContext loggingContext = CONTEXT_THREAD_LOCAL.get();
+		final LaunchLoggingContext loggingContext = loggingContextMap.get(DEFAULT_LAUNCH_KEY);
 		if (null != loggingContext) {
 			return loggingContext.completed();
 		} else {
