@@ -2,7 +2,6 @@ plugins {
     id 'net.researchgate.release' version '2.6.0'
     id "com.jfrog.bintray" version "1.7"
     id 'com.github.johnrengelman.shadow' version '2.0.1'
-    id "org.owasp.dependencycheck" version "4.0.2"
 
 }
 apply plugin: 'java'
@@ -81,7 +80,7 @@ test.useTestNG()
 test.maxParallelForks = 1
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '4.9'
+    gradleVersion = '3.1'
 }
 
 
