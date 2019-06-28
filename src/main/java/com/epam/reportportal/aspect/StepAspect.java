@@ -70,11 +70,9 @@ public class StepAspect {
 			startNestedStep(joinPoint, step);
 			try {
 				result = joinPoint.proceed();
+				finishNestedStep();
 			} catch (Throwable throwable) {
 				failedNestedStep(throwable);
-			}
-			if (result != null) {
-				finishNestedStep();
 			}
 		}
 		return result;
@@ -102,7 +100,6 @@ public class StepAspect {
 
 		Maybe<String> stepId = stepStack.get().poll();
 		if (stepId == null) {
-			LOGGER.error("Id of the 'STEP' to finish retrieved from step stack is NULL");
 			return;
 		}
 		FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(Statuses.PASSED, Calendar.getInstance().getTime());
@@ -114,7 +111,6 @@ public class StepAspect {
 
 		Maybe<String> stepId = stepStack.get().poll();
 		if (stepId == null) {
-			LOGGER.error("Id of the 'STEP' to finish retrieved from step stack is NULL");
 			return;
 		}
 
