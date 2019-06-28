@@ -12,7 +12,10 @@ import com.google.common.base.Function;
 import com.google.common.collect.Queues;
 import io.reactivex.Maybe;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.*;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,73 +63,79 @@ public class StepAspect {
 
 	}
 
-	@Before(value = "anyMethod() && withStepAnnotation(step)", argNames = "joinPoint,step")
-	public void startNestedStep(JoinPoint joinPoint, Step step) {
+	@Around(value = "anyMethod() && withStepAnnotation(step)", argNames = "joinPoint, step")
+	public Object aroundStepExecution(ProceedingJoinPoint joinPoint, Step step) {
+		Object result = null;
 		if (!step.isIgnored()) {
-
-			MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-
-			Maybe<String> parent = stepStack.get().peek();
-			if (parent == null) {
-				parent = parentId.get();
+			startNestedStep(joinPoint, step);
+			try {
+				result = joinPoint.proceed();
+			} catch (Throwable throwable) {
+				failedNestedStep(throwable);
 			}
-
-			StartTestItemRQ startStepRequest = StepRequestUtils.buildStartStepRequest(signature, step, joinPoint);
-
-			Launch launch = launchMap.get().get(currentLaunchId.get());
-			Maybe<String> stepMaybe = launch.startTestItem(parent, startStepRequest);
-
-			stepStack.get().push(stepMaybe);
-
+			finishNestedStep();
 		}
+		return result;
+	}
+
+	private void startNestedStep(JoinPoint joinPoint, Step step) {
+
+		MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+
+		Maybe<String> parent = stepStack.get().peek();
+		if (parent == null) {
+			parent = parentId.get();
+		}
+
+		StartTestItemRQ startStepRequest = StepRequestUtils.buildStartStepRequest(signature, step, joinPoint);
+
+		Launch launch = launchMap.get().get(currentLaunchId.get());
+		Maybe<String> stepMaybe = launch.startTestItem(parent, startStepRequest);
+
+		stepStack.get().push(stepMaybe);
 
 	}
 
-	@AfterReturning(value = "anyMethod() && withStepAnnotation(step)", argNames = "step")
-	public void finishNestedStep(Step step) {
-		if (!step.isIgnored()) {
-			Maybe<String> stepId = stepStack.get().poll();
-			if (stepId == null) {
-				LOGGER.error("Id of the 'STEP' to finish retrieved from step stack is NULL");
-				return;
-			}
-			FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(Statuses.PASSED, Calendar.getInstance().getTime());
-			launchMap.get().get(currentLaunchId.get()).finishTestItem(stepId, finishStepRequest);
+	private void finishNestedStep() {
+
+		Maybe<String> stepId = stepStack.get().poll();
+		if (stepId == null) {
+			LOGGER.error("Id of the 'STEP' to finish retrieved from step stack is NULL");
+			return;
 		}
+		FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(Statuses.PASSED, Calendar.getInstance().getTime());
+		launchMap.get().get(currentLaunchId.get()).finishTestItem(stepId, finishStepRequest);
+
 	}
 
-	@AfterThrowing(value = "anyMethod() && withStepAnnotation(step)", throwing = "throwable", argNames = "step,throwable")
-	public void failedNestedStep(Step step, final Throwable throwable) {
+	public void failedNestedStep(final Throwable throwable) {
 
-		if (!step.isIgnored()) {
+		Maybe<String> stepId = stepStack.get().poll();
+		if (stepId == null) {
+			LOGGER.error("Id of the 'STEP' to finish retrieved from step stack is NULL");
+			return;
+		}
 
-			Maybe<String> stepId = stepStack.get().poll();
-			if (stepId == null) {
-				LOGGER.error("Id of the 'STEP' to finish retrieved from step stack is NULL");
-				return;
-			}
-
-			ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
-				@Override
-				public SaveLogRQ apply(String itemId) {
-					SaveLogRQ rq = new SaveLogRQ();
-					rq.setTestItemId(itemId);
-					rq.setLevel("ERROR");
-					rq.setLogTime(Calendar.getInstance().getTime());
-					if (throwable != null) {
-						rq.setMessage(getStackTraceAsString(throwable));
-					} else {
-						rq.setMessage("Test has failed without exception");
-					}
-					rq.setLogTime(Calendar.getInstance().getTime());
-
-					return rq;
+		ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
+			@Override
+			public SaveLogRQ apply(String itemId) {
+				SaveLogRQ rq = new SaveLogRQ();
+				rq.setTestItemId(itemId);
+				rq.setLevel("ERROR");
+				rq.setLogTime(Calendar.getInstance().getTime());
+				if (throwable != null) {
+					rq.setMessage(getStackTraceAsString(throwable));
+				} else {
+					rq.setMessage("Test has failed without exception");
 				}
-			});
+				rq.setLogTime(Calendar.getInstance().getTime());
 
-			FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(Statuses.FAILED, Calendar.getInstance().getTime());
-			launchMap.get().get(currentLaunchId.get()).finishTestItem(stepId, finishStepRequest);
-		}
+				return rq;
+			}
+		});
+
+		FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(Statuses.FAILED, Calendar.getInstance().getTime());
+		launchMap.get().get(currentLaunchId.get()).finishTestItem(stepId, finishStepRequest);
 
 	}
 
