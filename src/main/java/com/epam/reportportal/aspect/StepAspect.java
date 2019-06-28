@@ -73,7 +73,9 @@ public class StepAspect {
 			} catch (Throwable throwable) {
 				failedNestedStep(throwable);
 			}
-			finishNestedStep();
+			if (result != null) {
+				finishNestedStep();
+			}
 		}
 		return result;
 	}
