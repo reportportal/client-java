@@ -26,7 +26,17 @@ import static com.epam.reportportal.utils.files.ImageConverter.isImage;
 import static com.google.common.io.ByteSource.wrap;
 
 /**
+ * Logging context holds {@link ConcurrentHashMap} context for launch logging and converts
+ * {@link SaveLogRQ} to multipart HTTP request to ReportPortal
+ * Basic flow:
+ * After start some launch context should be initialized with observable of
+ * launch ID and ReportPortal client.
+ * Before actual finish of launch, context should be closed/completed.
+ * Context consists of {@link Flowable} with buffering back-pressure strategy to be able
+ * to batch incoming log messages into one request
+ *
  * @author <a href="mailto:ihar_kahadouski@epam.com">Ihar Kahadouski</a>
+ * @see #init(Maybe, ReportPortalClient)
  */
 public class LaunchLoggingContext {
 
@@ -37,7 +47,7 @@ public class LaunchLoggingContext {
 	static ConcurrentHashMap<String, LaunchLoggingContext> loggingContextMap = new ConcurrentHashMap<String, LaunchLoggingContext>();
 	/* Log emitter */
 	private final PublishSubject<Maybe<SaveLogRQ>> emitter;
-	/* ID of TestItem in ReportPortal */
+	/* ID of Launch in ReportPortal */
 	private final Maybe<String> launchId;
 	/* Whether Image should be converted to BlackAndWhite */
 	private final boolean convertImages;
