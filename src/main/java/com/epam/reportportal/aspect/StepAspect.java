@@ -24,8 +24,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static com.epam.reportportal.service.LaunchImpl.NOT_ISSUE;
-import static com.google.common.base.Throwables.getStackTraceAsString;
 import static com.google.common.base.Optional.fromNullable;
+import static com.google.common.base.Throwables.getStackTraceAsString;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -134,7 +134,11 @@ public class StepAspect {
 		});
 
 		FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(Statuses.FAILED, Calendar.getInstance().getTime());
-		launchMap.get().get(currentLaunchId.get()).finishTestItem(stepId, finishStepRequest);
+
+		while (stepId != null) {
+			launchMap.get().get(currentLaunchId.get()).finishTestItem(stepId, finishStepRequest);
+			stepId = stepStack.get().poll();
+		}
 
 		FinishTestItemRQ finishParentRequest = buildFinishTestMethodRq(Statuses.FAILED, Calendar.getInstance().getTime());
 		launchMap.get().get(currentLaunchId.get()).finishTestItem(parentId.get(), finishParentRequest);
