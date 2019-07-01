@@ -7,6 +7,7 @@ import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.google.common.base.Function;
 import com.google.common.collect.Queues;
@@ -20,12 +21,11 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Calendar;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
+import static com.epam.reportportal.service.LaunchImpl.NOT_ISSUE;
 import static com.google.common.base.Throwables.getStackTraceAsString;
+import static rp.com.google.common.base.Optional.fromNullable;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -64,7 +64,7 @@ public class StepAspect {
 	}
 
 	@Around(value = "anyMethod() && withStepAnnotation(step)", argNames = "joinPoint, step")
-	public Object aroundStepExecution(ProceedingJoinPoint joinPoint, Step step) {
+	public Object aroundStepExecution(ProceedingJoinPoint joinPoint, Step step) throws Throwable {
 		Object result = null;
 		if (!step.isIgnored()) {
 			startNestedStep(joinPoint, step);
@@ -73,6 +73,7 @@ public class StepAspect {
 				finishNestedStep();
 			} catch (Throwable throwable) {
 				failedNestedStep(throwable);
+				throw throwable;
 			}
 		}
 		return result;
@@ -135,6 +136,23 @@ public class StepAspect {
 		FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(Statuses.FAILED, Calendar.getInstance().getTime());
 		launchMap.get().get(currentLaunchId.get()).finishTestItem(stepId, finishStepRequest);
 
+		FinishTestItemRQ finishParentRequest = buildFinishTestMethodRq(Statuses.FAILED, Calendar.getInstance().getTime());
+		launchMap.get().get(currentLaunchId.get()).finishTestItem(parentId.get(), finishParentRequest);
+
+	}
+
+	private FinishTestItemRQ buildFinishTestMethodRq(String status, Date endTime) {
+		FinishTestItemRQ rq = new FinishTestItemRQ();
+		rq.setEndTime(endTime);
+		rq.setStatus(status);
+		// Allows indicate that SKIPPED is not to investigate items for WS
+		if (Statuses.SKIPPED.equals(status) && !fromNullable(launchMap.get().get(currentLaunchId.get()).getParameters().getSkippedAnIssue())
+				.or(false)) {
+			Issue issue = new Issue();
+			issue.setIssueType(NOT_ISSUE);
+			rq.setIssue(issue);
+		}
+		return rq;
 	}
 
 	public static void setCurrentLaunchId(String id) {
