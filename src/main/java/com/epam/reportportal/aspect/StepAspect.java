@@ -25,7 +25,7 @@ import java.util.*;
 
 import static com.epam.reportportal.service.LaunchImpl.NOT_ISSUE;
 import static com.google.common.base.Throwables.getStackTraceAsString;
-import static rp.com.google.common.base.Optional.fromNullable;
+import static com.google.common.base.Optional.fromNullable;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
