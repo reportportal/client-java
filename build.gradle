@@ -53,6 +53,7 @@ shadowJar {
     relocate 'org.apache.http', 'rp.org.apache.http'
     relocate 'com.google.common', 'rp.com.google.common'
     relocate 'org.apache.commons.logging', 'rp.org.apache.commons.logging'
+    relocate 'com.google.thirdparty', 'rp.com.google.thirdparty'
 }
 
 dependencies {
