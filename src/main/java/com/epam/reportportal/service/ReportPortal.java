@@ -32,6 +32,7 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Function;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
 import org.apache.http.client.HttpClient;
@@ -53,6 +54,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static com.epam.reportportal.service.LaunchLoggingContext.DEFAULT_LAUNCH_KEY;
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
 import static com.google.common.io.Files.toByteArray;
 
@@ -140,10 +142,19 @@ public class ReportPortal {
 	 *
 	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
 	 */
-	public static boolean emitLog(com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
+	public static boolean emitLog(Function<String, SaveLogRQ> logSupplier) {
 		final LoggingContext loggingContext = LoggingContext.CONTEXT_THREAD_LOCAL.get();
 		if (null != loggingContext) {
 			loggingContext.emit(logSupplier);
+			return true;
+		}
+		return false;
+	}
+
+	public static boolean emitLaunchLog(Function<String, SaveLogRQ> logSupplier) {
+		final LaunchLoggingContext launchLoggingContext = LaunchLoggingContext.loggingContextMap.get(DEFAULT_LAUNCH_KEY);
+		if (null != launchLoggingContext) {
+			launchLoggingContext.emit(logSupplier);
 			return true;
 		}
 		return false;
@@ -153,28 +164,44 @@ public class ReportPortal {
 	 * Emits log message if there is any active context attached to the current thread
 	 */
 	public static boolean emitLog(final String message, final String level, final Date time) {
-		return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String itemId) {
-				SaveLogRQ rq = new SaveLogRQ();
-				rq.setLevel(level);
-				rq.setLogTime(time);
-				rq.setTestItemId(itemId);
-				rq.setMessage(message);
-				return rq;
-			}
-		});
+		return emitLog(getLogSupplier(message, level, time));
 
 	}
 
-	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
-		return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
+	public static boolean emitLaunchLog(final String message, String level, Date time) {
+		return emitLaunchLog(getLogSupplier(message, level, time));
+	}
+
+	private static Function<String, SaveLogRQ> getLogSupplier(final String message, final String level, final Date time) {
+		return new Function<String, SaveLogRQ>() {
 			@Override
 			public SaveLogRQ apply(String itemId) {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
-				rq.setTestItemId(itemId);
+				rq.setItemId(itemId);
+				rq.setMessage(message);
+				return rq;
+			}
+		};
+	}
+
+	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
+		return emitLog(getLogSupplier(message, level, time, file));
+	}
+
+	public static boolean emitLaunchLog(final String message, final String level, final Date time, final File file) {
+		return emitLaunchLog(getLogSupplier(message, level, time, file));
+	}
+
+	private static Function<String, SaveLogRQ> getLogSupplier(final String message, final String level, final Date time, final File file) {
+		return new Function<String, SaveLogRQ>() {
+			@Override
+			public SaveLogRQ apply(String itemId) {
+				SaveLogRQ rq = new SaveLogRQ();
+				rq.setLevel(level);
+				rq.setLogTime(time);
+				rq.setItemId(itemId);
 				rq.setMessage(message);
 
 				try {
@@ -191,17 +218,25 @@ public class ReportPortal {
 
 				return rq;
 			}
-		});
+		};
 	}
 
 	public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
+		return emitLog(getLogSupplier(message, level, time));
+	}
+
+	public static boolean emitLaunchLog(final ReportPortalMessage message, final String level, final Date time) {
+		return emitLaunchLog(getLogSupplier(message, level, time));
+	}
+
+	private static Function<String, SaveLogRQ> getLogSupplier(final ReportPortalMessage message, final String level, final Date time) {
+		return new Function<String, SaveLogRQ>() {
 			@Override
 			public SaveLogRQ apply(String itemId) {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
-				rq.setTestItemId(itemId);
+				rq.setItemId(itemId);
 				rq.setMessage(message.getMessage());
 				try {
 					final TypeAwareByteSource data = message.getData();
@@ -219,7 +254,7 @@ public class ReportPortal {
 
 				return rq;
 			}
-		});
+		};
 	}
 
 	public static class Builder {
