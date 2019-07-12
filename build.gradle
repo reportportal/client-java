@@ -1,7 +1,7 @@
 plugins {
-    id 'net.researchgate.release' version '2.4.1'
-    id "com.jfrog.bintray" version "1.7"
-    id 'com.github.johnrengelman.shadow' version '2.0.1'
+    id 'net.researchgate.release' version '2.8.0'
+    id 'com.jfrog.bintray' version '1.8.4'
+    id 'com.github.johnrengelman.shadow' version '5.1.0'
 
 }
 apply plugin: 'java'
@@ -10,6 +10,10 @@ apply plugin: 'maven-publish'
 
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
+
+project.ext {
+    releaseMode = project.hasProperty("releaseMode")
+}
 
 description = 'EPAM Report portal. Client'
 
@@ -45,21 +49,24 @@ shadowJar {
         include(dependency('com.google.guava:guava'))
 
     }
-    classifier = null
+    archiveClassifier.set(null)
     relocate 'org.apache.http', 'rp.org.apache.http'
     relocate 'com.google.common', 'rp.com.google.common'
     relocate 'org.apache.commons.logging', 'rp.org.apache.commons.logging'
 }
 
 dependencies {
+    if (releaseMode) {
+        compile 'com.epam.reportportal:commons-model:3.0.0'
+    } else {
+        compile 'com.github.reportportal:commons-model:25f966e'
+    }
 
-//    compile 'com.epam.reportportal:commons-model:3.0.0'
-    compile 'com.github.reportportal:commons-model:1e01b5e'
-    compile 'com.google.guava:guava:20.0'
+    compile 'com.google.guava:guava:26.0-jre'
     compile 'com.epam.reportportal:restendpoint:0.2.8'
-    shadow 'com.fasterxml.jackson.core:jackson-databind:2.8.10'
-    shadow 'com.fasterxml.jackson.core:jackson-annotations:2.8.10'
-    shadow 'io.reactivex.rxjava2:rxjava:2.1.16'
+    shadow 'com.fasterxml.jackson.core:jackson-databind:2.9.9'
+    shadow 'com.fasterxml.jackson.core:jackson-annotations:2.9.9'
+    shadow 'io.reactivex.rxjava2:rxjava:2.2.10'
     shadow 'org.apache.tika:tika-core:1.4'
     shadow 'org.slf4j:slf4j-api:1.7.25'
 
@@ -71,18 +78,18 @@ dependencies {
 test.useTestNG()
 test.maxParallelForks = 1
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '3.1'
+wrapper {
+    gradleVersion = '5.4.1'
 }
 
 
 task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
+    archiveClassifier.set('sources')
     from sourceSets.main.allSource
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
+    archiveClassifier.set('javadoc')
     from javadoc.destinationDir
 }
 
