@@ -11,10 +11,6 @@ apply plugin: 'maven-publish'
 sourceCompatibility = 1.6
 targetCompatibility = 1.6
 
-project.ext {
-    releaseMode = project.hasProperty("releaseMode")
-}
-
 description = 'EPAM Report portal. Client'
 
 repositories {
@@ -56,11 +52,8 @@ shadowJar {
 }
 
 dependencies {
-    if (releaseMode) {
-        compile 'com.epam.reportportal:commons-model:3.0.0'
-    } else {
-        compile 'com.github.reportportal:commons-model:25f966e'
-    }
+//    compile 'com.epam.reportportal:commons-model:3.0.0'
+    compile 'com.github.reportportal:commons-model:25f966e'
 
     compile 'com.google.guava:guava:26.0-jre'
     compile 'com.epam.reportportal:restendpoint:0.2.8'
