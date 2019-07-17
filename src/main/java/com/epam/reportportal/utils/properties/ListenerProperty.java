@@ -36,6 +36,7 @@ public enum ListenerProperty {
     ENABLE("rp.enable", false),
     RERUN("rp.rerun", false),
     RERUN_OF("rp.rerun.of", false),
+    ASYNC_REPORTING("rp.reporting.async", false),
     SKIPPED_AS_ISSUE("rp.skipped.issue", false),
     IO_POOL_SIZE("rp.io.pool.size", false),
     MAX_CONNECTIONS_PER_ROUTE("rp.max.connections.per.route", false),

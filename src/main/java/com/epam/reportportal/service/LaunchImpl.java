@@ -61,7 +61,7 @@ public class LaunchImpl extends Launch {
 		@Override
 		public void accept(StartLaunchRS rs) throws Exception {
 			logCreated("launch").accept(rs);
-			System.setProperty("rp.launch.id", String.valueOf(rs.getId()));
+			System.setProperty("rp.launch.id", String.valueOf(rs.getUuid()));
 		}
 	};
 	private static final int ITEM_FINISH_MAX_RETRIES = 10;
