@@ -56,6 +56,7 @@ public class ListenerParameters {
 	private String keystore;
 	private String keystorePassword;
 	private boolean rerun;
+	private String rerunOf;
 	private Integer ioPoolSize;
 	private Integer maxConnectionsPerRoute;
 	private Integer maxConnectionsTotal;
@@ -95,6 +96,7 @@ public class ListenerParameters {
 		this.keystore = properties.getProperty(KEYSTORE_RESOURCE);
 		this.keystorePassword = properties.getProperty(KEYSTORE_PASSWORD);
 		this.rerun = properties.getPropertyAsBoolean(RERUN, DEFAULT_RETURN);
+		this.rerunOf = properties.getProperty(RERUN_OF);
 
 		this.ioPoolSize = properties.getPropertyAsInt(IO_POOL_SIZE, DEFAULT_IO_POOL_SIZE);
 		this.maxConnectionsPerRoute = properties.getPropertyAsInt(MAX_CONNECTIONS_PER_ROUTE, DEFAULT_MAX_CONNECTIONS_PER_ROUTE);
@@ -221,6 +223,14 @@ public class ListenerParameters {
 		this.rerun = rerun;
 	}
 
+	public String getRerunOf() {
+		return rerunOf;
+	}
+
+	public void setRerunOf(String rerunOf) {
+		this.rerunOf = rerunOf;
+	}
+
 	public Integer getIoPoolSize() {
 		return ioPoolSize;
 	}
@@ -268,6 +278,7 @@ public class ListenerParameters {
 		sb.append(", keystore='").append(keystore).append('\'');
 		sb.append(", keystorePassword='").append(keystorePassword).append('\'');
 		sb.append(", rerun=").append(rerun);
+		sb.append(", rerunOf='").append(rerunOf).append('\'');
 		sb.append(", ioPoolSize=").append(ioPoolSize);
 		sb.append(", maxConnectionsPerRoute=").append(maxConnectionsPerRoute);
 		sb.append(", maxConnectionsTotal=").append(maxConnectionsTotal);
