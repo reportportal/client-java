@@ -77,8 +77,9 @@ public class LaunchFile {
 				startLaunchRS.setUuid(m.group(3));
 				Date date = new Date(Long.parseLong(m.group(2)));
 				responses.put(date, startLaunchRS);
+			} else {
+				throw new RuntimeException("Does not match:" + file);
 			}
-			throw new RuntimeException("Does not match:" + file);
 		}
 
 		return Maybe.just(responses.values().iterator().next().getUuid());
