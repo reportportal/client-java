@@ -1,11 +1,10 @@
 package com.epam.reportportal.utils;
 
 import com.epam.reportportal.annotations.StepTemplateConfig;
+import com.epam.reportportal.utils.reflect.Accessible;
 
 import java.lang.reflect.Array;
 import java.util.Iterator;
-
-import static org.joor.Reflect.on;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -35,7 +34,8 @@ public class StepTemplateUtils {
 	 * @param object         Value of the current field
 	 * @return {@link String} representation of object field(s) value(s).
 	 */
-	public static String retrieveValue(StepTemplateConfig templateConfig, int index, String[] fields, Object object) {
+	public static String retrieveValue(StepTemplateConfig templateConfig, int index, String[] fields, Object object)
+			throws NoSuchFieldException {
 
 		if (object == null) {
 			return "null";
@@ -50,7 +50,8 @@ public class StepTemplateUtils {
 				return parseCollection(templateConfig, (Iterable) object, i, fields);
 			}
 
-			object = on(object).get(fields[i]);
+			object = Accessible.on(object).field(object.getClass().getField(fields[i])).getValue();
+
 		}
 
 		return parseDescendant(templateConfig, object);
@@ -63,7 +64,8 @@ public class StepTemplateUtils {
 	 * @param fields         Fields of the template part
 	 * @return {@link String} representation of the parsed Array
 	 */
-	private static String parseArray(StepTemplateConfig templateConfig, Object[] array, int index, String[] fields) {
+	private static String parseArray(StepTemplateConfig templateConfig, Object[] array, int index, String[] fields)
+			throws NoSuchFieldException {
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append(templateConfig.arrayStartSymbol());
 
@@ -85,7 +87,8 @@ public class StepTemplateUtils {
 	 * @param fields         Fields of the template part
 	 * @return {@link String} representation of the parsed Collection
 	 */
-	private static String parseCollection(StepTemplateConfig templateConfig, Iterable iterable, int index, String[] fields) {
+	private static String parseCollection(StepTemplateConfig templateConfig, Iterable iterable, int index, String[] fields)
+			throws NoSuchFieldException {
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append(templateConfig.iterableStartSymbol());
 

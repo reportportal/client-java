@@ -66,6 +66,10 @@ public class StepNameUtils {
 			LOGGER.error("Param - " + variableName + " was not found");
 			return null;
 		}
-		return StepTemplateUtils.retrieveValue(templateConfig, 1, fields, param);
+		try {
+			return StepTemplateUtils.retrieveValue(templateConfig, 1, fields, param);
+		} catch (NoSuchFieldException e) {
+			return null;
+		}
 	}
 }

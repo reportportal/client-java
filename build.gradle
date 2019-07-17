@@ -43,7 +43,6 @@ shadowJar {
         include(dependency('org.apache.httpcomponents:httpcore'))
         include(dependency('commons-logging:commons-logging'))
         include(dependency('com.google.guava:guava'))
-        include(dependency('org.jooq:joor-java-6'))
 
     }
     classifier = null
@@ -58,7 +57,6 @@ dependencies {
     compile 'com.github.reportportal:commons-model:1d72a05'
     compile 'com.google.guava:guava:20.0'
     compile 'com.epam.reportportal:restendpoint:0.2.8'
-    compile 'org.jooq:joor-java-6:0.9.7'
 
     shadow "org.aspectj:aspectjweaver:1.9.2"
     shadow "org.aspectj:aspectjrt:1.9.2"
