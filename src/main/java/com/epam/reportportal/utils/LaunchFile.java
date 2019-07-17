@@ -41,7 +41,9 @@ public class LaunchFile {
 
 	public static final String FILE_PREFIX = "rplaunch";
 
-	private static final Pattern FILENAME_PATTERN = Pattern.compile("rplaunch-(.*)-(.*)-(\\d)+\\.tmp");
+	private static final String uuidRegexp = "[0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}";
+
+	private static final Pattern FILENAME_PATTERN = Pattern.compile("rplaunch-(.*)-(\\d)+-(" + uuidRegexp + ")\\.tmp");
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LaunchFile.class);
 
@@ -72,8 +74,8 @@ public class LaunchFile {
 			Matcher m = FILENAME_PATTERN.matcher(file);
 			if (m.find()) {
 				StartLaunchRS startLaunchRS = new StartLaunchRS();
-				startLaunchRS.setUuid(m.group(2));
-				Date date = new Date(Long.parseLong(m.group(3)));
+				startLaunchRS.setUuid(m.group(3));
+				Date date = new Date(Long.parseLong(m.group(2)));
 				responses.put(date, startLaunchRS);
 			}
 			throw new RuntimeException("Does not match:" + file);
@@ -89,11 +91,11 @@ public class LaunchFile {
 				try {
 
 					final File file = new File(getTempDir(), String.format(
-							"%s-%s-%s-%d.tmp",
+							"%s-%s-%d-%s.tmp",
 							FILE_PREFIX,
 							normalizeLaunchName(name),
-							response.getUuid(),
-							Calendar.getInstance().getTimeInMillis()
+							Calendar.getInstance().getTimeInMillis(),
+							response.getUuid()
 					));
 					if (file.createNewFile()) {
 						LOGGER.debug("ReportPortal's temp file '{}' is created", file.getAbsolutePath());
