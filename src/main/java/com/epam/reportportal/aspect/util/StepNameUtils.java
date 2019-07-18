@@ -69,6 +69,7 @@ public class StepNameUtils {
 		try {
 			return StepTemplateUtils.retrieveValue(templateConfig, 1, fields, param);
 		} catch (NoSuchFieldException e) {
+			LOGGER.error("Unable to parse: " + templatePart);
 			return null;
 		}
 	}

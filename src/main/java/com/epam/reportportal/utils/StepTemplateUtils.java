@@ -50,7 +50,7 @@ public class StepTemplateUtils {
 				return parseCollection(templateConfig, (Iterable) object, i, fields);
 			}
 
-			object = Accessible.on(object).field(object.getClass().getField(fields[i])).getValue();
+			object = Accessible.on(object).field(fields[i]).getValue();
 
 		}
 

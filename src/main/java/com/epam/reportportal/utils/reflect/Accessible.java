@@ -40,7 +40,30 @@ public class Accessible {
 		return new AccessibleField(object, f);
 	}
 
+	public AccessibleField field(String name) throws NoSuchFieldException {
+		return new AccessibleField(object, getField(name));
+	}
+
 	public static Accessible on(Object object) {
 		return new Accessible(object);
+	}
+
+	private Field getField(String fieldName) throws NoSuchFieldException {
+		Class<?> clazz = object.getClass();
+
+		try {
+			return clazz.getField(fieldName);
+		} catch (NoSuchFieldException e) {
+			do {
+				try {
+					return clazz.getDeclaredField(fieldName);
+				} catch (NoSuchFieldException ignore) {
+				}
+
+				clazz = clazz.getSuperclass();
+			} while (clazz != null);
+
+			throw e;
+		}
 	}
 }
