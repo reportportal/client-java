@@ -40,6 +40,7 @@ public class ListenerParameters {
 	private static final boolean DEFAULT_SKIP_ISSUE = true;
 	private static final boolean DEFAULT_CONVERT_IMAGE = false;
 	private static final boolean DEFAULT_RETURN = false;
+	private static final boolean DEFAULT_ASYNC_REPORTING = true;
 
 	private String description;
 	private String uuid;
@@ -56,6 +57,8 @@ public class ListenerParameters {
 	private String keystore;
 	private String keystorePassword;
 	private boolean rerun;
+	private String rerunOf;
+	private boolean asyncReporting;
 	private Integer ioPoolSize;
 	private Integer maxConnectionsPerRoute;
 	private Integer maxConnectionsTotal;
@@ -71,6 +74,8 @@ public class ListenerParameters {
 		this.attributes = Sets.newHashSet();
 
 		this.rerun = DEFAULT_RETURN;
+
+		this.asyncReporting = DEFAULT_ASYNC_REPORTING;
 
 		this.ioPoolSize = DEFAULT_IO_POOL_SIZE;
 		this.maxConnectionsPerRoute = DEFAULT_MAX_CONNECTIONS_PER_ROUTE;
@@ -95,6 +100,9 @@ public class ListenerParameters {
 		this.keystore = properties.getProperty(KEYSTORE_RESOURCE);
 		this.keystorePassword = properties.getProperty(KEYSTORE_PASSWORD);
 		this.rerun = properties.getPropertyAsBoolean(RERUN, DEFAULT_RETURN);
+		this.rerunOf = properties.getProperty(RERUN_OF);
+
+		this.asyncReporting = properties.getPropertyAsBoolean(ASYNC_REPORTING, DEFAULT_ASYNC_REPORTING);
 
 		this.ioPoolSize = properties.getPropertyAsInt(IO_POOL_SIZE, DEFAULT_IO_POOL_SIZE);
 		this.maxConnectionsPerRoute = properties.getPropertyAsInt(MAX_CONNECTIONS_PER_ROUTE, DEFAULT_MAX_CONNECTIONS_PER_ROUTE);
@@ -217,8 +225,24 @@ public class ListenerParameters {
 		return rerun;
 	}
 
+	public boolean isAsyncReporting() {
+		return asyncReporting;
+	}
+
+	public void setAsyncReporting(boolean asyncReporting) {
+		this.asyncReporting = asyncReporting;
+	}
+
 	public void setRerun(boolean rerun) {
 		this.rerun = rerun;
+	}
+
+	public String getRerunOf() {
+		return rerunOf;
+	}
+
+	public void setRerunOf(String rerunOf) {
+		this.rerunOf = rerunOf;
 	}
 
 	public Integer getIoPoolSize() {
@@ -268,6 +292,8 @@ public class ListenerParameters {
 		sb.append(", keystore='").append(keystore).append('\'');
 		sb.append(", keystorePassword='").append(keystorePassword).append('\'');
 		sb.append(", rerun=").append(rerun);
+		sb.append(", rerunOf='").append(rerunOf).append('\'');
+		sb.append(", asyncReporting=").append(asyncReporting);
 		sb.append(", ioPoolSize=").append(ioPoolSize);
 		sb.append(", maxConnectionsPerRoute=").append(maxConnectionsPerRoute);
 		sb.append(", maxConnectionsTotal=").append(maxConnectionsTotal);
