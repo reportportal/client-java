@@ -39,7 +39,7 @@ public class StepNameUtils {
 		while (matcher.find()) {
 			String templatePart = matcher.group(1);
 			String replacement = getReplacement(templatePart, parametersMap, step.templateConfig());
-			matcher.appendReplacement(stringBuffer, replacement != null ? replacement : matcher.group());
+			matcher.appendReplacement(stringBuffer, replacement != null ? replacement : matcher.group(0));
 		}
 		matcher.appendTail(stringBuffer);
 		return stringBuffer.toString();

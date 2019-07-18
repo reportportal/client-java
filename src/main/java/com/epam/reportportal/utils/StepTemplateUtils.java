@@ -42,7 +42,7 @@ public class StepTemplateUtils {
 		}
 
 		for (int i = index; i < fields.length; i++) {
-			if (object instanceof Object[]) {
+			if (object.getClass().isArray()) {
 				return parseArray(templateConfig, (Object[]) object, i, fields);
 			}
 
