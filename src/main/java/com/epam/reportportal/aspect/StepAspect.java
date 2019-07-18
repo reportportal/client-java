@@ -101,7 +101,7 @@ public class StepAspect {
 				@Override
 				public SaveLogRQ apply(String itemId) {
 					SaveLogRQ rq = new SaveLogRQ();
-					rq.setTestItemId(itemId);
+					rq.setItemId(itemId);
 					rq.setLevel("ERROR");
 					rq.setLogTime(Calendar.getInstance().getTime());
 					if (throwable != null) {
