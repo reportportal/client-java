@@ -18,7 +18,6 @@ package com.epam.reportportal.service;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
-import com.epam.reportportal.utils.LaunchFile;
 import com.epam.reportportal.utils.RetryWithDelay;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
@@ -61,7 +60,7 @@ public class LaunchImpl extends Launch {
 		@Override
 		public void accept(StartLaunchRS rs) throws Exception {
 			logCreated("launch").accept(rs);
-			System.setProperty("rp.launch.id", String.valueOf(rs.getId()));
+			System.setProperty("rp.launch.id", String.valueOf(rs.getUuid()));
 		}
 	};
 	private static final int ITEM_FINISH_MAX_RETRIES = 10;
@@ -85,51 +84,40 @@ public class LaunchImpl extends Launch {
 			});
 
 	private Maybe<String> launch;
-	private boolean rerun;
 
 	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, final StartLaunchRQ rq) {
 		super(parameters);
 		this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
 		Preconditions.checkNotNull(parameters, "Parameters shouldn't be NULL");
 
-		if (!parameters.isRerun()) {
+		LOGGER.info("Rerun: {}", parameters.isRerun());
 
-			LOGGER.info("Not rerun!");
+		this.launch = Maybe.create(new MaybeOnSubscribe<String>() {
+			@Override
+			public void subscribe(final MaybeEmitter<String> emitter) {
 
-			this.launch = Maybe.create(new MaybeOnSubscribe<String>() {
-				@Override
-				public void subscribe(final MaybeEmitter<String> emitter) {
+				Maybe<StartLaunchRS> launchPromise = Maybe.defer(new Callable<MaybeSource<? extends StartLaunchRS>>() {
+					@Override
+					public MaybeSource<? extends StartLaunchRS> call() {
+						return rpClient.startLaunch(rq).doOnSuccess(LAUNCH_SUCCESS_CONSUMER).doOnError(LOG_ERROR);
+					}
+				}).subscribeOn(Schedulers.computation()).cache();
 
-					Maybe<StartLaunchRS> launchPromise = Maybe.defer(new Callable<MaybeSource<? extends StartLaunchRS>>() {
-						@Override
-						public MaybeSource<? extends StartLaunchRS> call() {
-							return rpClient.startLaunch(rq).doOnSuccess(LAUNCH_SUCCESS_CONSUMER).doOnError(LOG_ERROR);
-						}
-					}).subscribeOn(Schedulers.computation()).cache();
+				launchPromise.subscribe(new Consumer<StartLaunchRS>() {
+					@Override
+					public void accept(StartLaunchRS startLaunchRS) throws Exception {
+						emitter.onSuccess(startLaunchRS.getUuid());
+					}
+				}, new Consumer<Throwable>() {
+					@Override
+					public void accept(Throwable throwable) throws Exception {
 
-					LaunchFile.create(rq.getName(), launchPromise);
-
-					launchPromise.subscribe(new Consumer<StartLaunchRS>() {
-						@Override
-						public void accept(StartLaunchRS startLaunchRS) throws Exception {
-							emitter.onSuccess(startLaunchRS.getUuid());
-						}
-					}, new Consumer<Throwable>() {
-						@Override
-						public void accept(Throwable throwable) throws Exception {
-
-							LOG_ERROR.accept(throwable);
-							emitter.onComplete();
-						}
-					});
-				}
-			}).cache();
-		} else {
-			LOGGER.info("rerun!");
-			this.launch = LaunchFile.find(rq.getName());
-			this.rerun = true;
-		}
-
+						LOG_ERROR.accept(throwable);
+						emitter.onComplete();
+					}
+				});
+			}
+		}).cache();
 	}
 
 	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch) {
@@ -304,10 +292,6 @@ public class LaunchImpl extends Launch {
 			QUEUE.getUnchecked(this.launch).addToQueue(finishCompletion);
 		}
 
-	}
-
-	public boolean isRerun() {
-		return rerun;
 	}
 
 	/**

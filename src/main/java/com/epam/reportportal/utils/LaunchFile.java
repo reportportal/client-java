@@ -18,7 +18,6 @@ package com.epam.reportportal.utils;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.StandardSystemProperty;
-import com.google.common.collect.Lists;
 import io.reactivex.Maybe;
 import io.reactivex.functions.Function;
 import org.slf4j.Logger;
@@ -42,7 +41,9 @@ public class LaunchFile {
 
 	public static final String FILE_PREFIX = "rplaunch";
 
-	private static final Pattern FILENAME_PATTERN = Pattern.compile("rplaunch-(.*)-#(\\d)+-(.*)\\.tmp");
+	private static final String uuidRegexp = "[0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}";
+
+	private static final Pattern FILENAME_PATTERN = Pattern.compile("rplaunch-(.*)-(\\d)+-(" + uuidRegexp + ")\\.tmp");
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(LaunchFile.class);
 
@@ -62,41 +63,41 @@ public class LaunchFile {
 			}
 		}));
 
-		List<StartLaunchRS> fileRSs = new ArrayList(Lists.transform(files, new com.google.common.base.Function<String, StartLaunchRS>() {
+		Map<Date, StartLaunchRS> responses = new TreeMap<Date, StartLaunchRS>(new Comparator<Date>() {
 			@Override
-			public StartLaunchRS apply(String input) {
-				Matcher m = FILENAME_PATTERN.matcher(input);
-				if (m.find()) {
-					StartLaunchRS startLaunchRS = new StartLaunchRS();
-					startLaunchRS.setId(Long.parseLong(m.group(3)));
-					startLaunchRS.setNumber(Long.parseLong(m.group(2)));
-					return startLaunchRS;
-				}
-				throw new RuntimeException("Does not match:" + input);
-			}
-		}));
-		Collections.sort(fileRSs, new Comparator<StartLaunchRS>() {
-			@Override
-			public int compare(StartLaunchRS o1, StartLaunchRS o2) {
-				return -1 * o1.getNumber().compareTo(o2.getNumber());
+			public int compare(Date o1, Date o2) {
+				return -1 * o1.compareTo(o2);
 			}
 		});
-		return Maybe.just(fileRSs.get(0).getUuid());
+
+		for (String file : files) {
+			Matcher m = FILENAME_PATTERN.matcher(file);
+			if (m.find()) {
+				StartLaunchRS startLaunchRS = new StartLaunchRS();
+				startLaunchRS.setUuid(m.group(3));
+				Date date = new Date(Long.parseLong(m.group(2)));
+				responses.put(date, startLaunchRS);
+			} else {
+				throw new RuntimeException("Does not match:" + file);
+			}
+		}
+
+		return Maybe.just(responses.values().iterator().next().getUuid());
 	}
 
 	public static Maybe<LaunchFile> create(final String name, Maybe<StartLaunchRS> id) {
 		final Maybe<LaunchFile> lfPromise = id.map(new Function<StartLaunchRS, LaunchFile>() {
 			@Override
-			public LaunchFile apply(StartLaunchRS launchId) throws Exception {
+			public LaunchFile apply(StartLaunchRS response) throws Exception {
 				try {
-					final File file = new File(getTempDir(),
-							String.format("%s-%s-#%d-%s.tmp",
-									FILE_PREFIX,
-									normalizeLaunchName(name),
-									launchId.getNumber(),
-									launchId.getId()
-							)
-					);
+
+					final File file = new File(getTempDir(), String.format(
+							"%s-%s-%d-%s.tmp",
+							FILE_PREFIX,
+							normalizeLaunchName(name),
+							Calendar.getInstance().getTimeInMillis(),
+							response.getUuid()
+					));
 					if (file.createNewFile()) {
 						LOGGER.debug("ReportPortal's temp file '{}' is created", file.getAbsolutePath());
 					}
