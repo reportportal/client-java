@@ -5,6 +5,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * {@link Step#value()} template configuration. Required for customizing representation of the parsed collections and arrays.
+ * {@link StepTemplateConfig#methodNameTemplate()} required to set the invoked method name template to be included in the result value to
+ * prevent situations when the method argument has the same name as a default {@link StepTemplateConfig#METHOD_NAME_TEMPLATE}
+ *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
 @Target({})
