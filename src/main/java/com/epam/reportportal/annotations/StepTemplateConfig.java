@@ -14,10 +14,10 @@ public @interface StepTemplateConfig {
 	String METHOD_NAME_TEMPLATE = "method";
 	String ITERABLE_START_PATTERN = "[";
 	String ITERABLE_END_PATTERN = "]";
-	String ITERABLE_ELEMENT_DELIMITER = ",";
+	String ITERABLE_ELEMENT_DELIMITER = ", ";
 	String ARRAY_START_PATTERN = "{";
 	String ARRAY_END_PATTERN = "}";
-	String ARRAY_ELEMENT_DELIMITER = ",";
+	String ARRAY_ELEMENT_DELIMITER = ", ";
 
 	String methodNameTemplate() default METHOD_NAME_TEMPLATE;
 
