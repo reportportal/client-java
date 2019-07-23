@@ -58,11 +58,15 @@ dependencies {
     if (releaseMode) {
         compile 'com.epam.reportportal:commons-model:5.0.0-BETA-6'
     } else {
-        compile 'com.github.reportportal:commons-model:c034aa9'
+        compile 'com.github.reportportal:commons-model:8457463'
     }
     
     compile 'com.google.guava:guava:26.0-jre'
     compile 'com.epam.reportportal:restendpoint:0.2.8'
+
+    shadow "org.aspectj:aspectjweaver:1.9.2"
+    shadow "org.aspectj:aspectjrt:1.9.2"
+    
     shadow 'com.fasterxml.jackson.core:jackson-databind:2.9.9'
     shadow 'com.fasterxml.jackson.core:jackson-annotations:2.9.9'
     shadow 'io.reactivex.rxjava2:rxjava:2.2.10'
@@ -70,6 +74,8 @@ dependencies {
     shadow 'org.slf4j:slf4j-api:1.7.25'
 
     testCompile 'junit:junit:4.12'
+    testCompile 'com.tngtech.java:junit-dataprovider:1.13.1'
+
     testCompile 'org.mockito:mockito-all:2.0.2-beta'
     testCompile 'org.hamcrest:hamcrest-all:1.3'
 }

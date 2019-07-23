@@ -142,8 +142,8 @@ public class ReportPortal {
 	 *
 	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
 	 */
-	public static boolean emitLog(Function<String, SaveLogRQ> logSupplier) {
-		final LoggingContext loggingContext = LoggingContext.CONTEXT_THREAD_LOCAL.get();
+	public static boolean emitLog(com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
+		final LoggingContext loggingContext = LoggingContext.CONTEXT_THREAD_LOCAL.get().peek();
 		if (null != loggingContext) {
 			loggingContext.emit(logSupplier);
 			return true;

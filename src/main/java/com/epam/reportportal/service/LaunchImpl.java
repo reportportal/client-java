@@ -65,7 +65,7 @@ public class LaunchImpl extends Launch {
 	};
 	private static final int ITEM_FINISH_MAX_RETRIES = 10;
 	private static final int ITEM_FINISH_RETRY_TIMEOUT = 10;
-	private static final String NOT_ISSUE = "NOT_ISSUE";
+	public static final String NOT_ISSUE = "NOT_ISSUE";
 
 	/**
 	 * REST Client
