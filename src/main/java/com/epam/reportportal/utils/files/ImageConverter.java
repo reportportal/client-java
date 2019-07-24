@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2018 EPAM Systems
+ * Copyright 2019 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -48,6 +48,7 @@ public class ImageConverter {
 	 * Convert image to black and white colors
 	 *
 	 * @param source Data Source
+	 * @return {@link TypeAwareByteSource}
 	 * @throws IOException In case of IO exception
 	 */
 	public static TypeAwareByteSource convert(ByteSource source) throws IOException {
@@ -67,6 +68,7 @@ public class ImageConverter {
 	 * Check is input file is image
 	 *
 	 * @param source DataSource
+	 * @return true if image
 	 */
 	public static boolean isImage(TypeAwareByteSource source) {
 		return isImage(source.getMediaType());
@@ -76,6 +78,7 @@ public class ImageConverter {
 	 * Check is input file is image
 	 *
 	 * @param contentType ContentType
+	 * @return true if image
 	 */
 	public static boolean isImage(MediaType contentType) {
 		return contentType.type().equalsIgnoreCase(IMAGE_TYPE);
@@ -85,6 +88,7 @@ public class ImageConverter {
 	 * Check is input file is image
 	 *
 	 * @param contentType ContentType
+	 * @return true if image
 	 */
 	public static boolean isImage(String contentType) {
 		return isImage(MediaType.parse(contentType));
