@@ -131,6 +131,8 @@ public class ReportPortal {
 	/**
 	 * Creates new ReportPortal based on already built dependencies
 	 *
+	 * @param client Report Portal Client
+	 * @param params {@link ListenerParameters}
 	 * @return builder for {@link ReportPortal}
 	 */
 	public static ReportPortal create(ReportPortalClient client, ListenerParameters params) {
@@ -141,6 +143,7 @@ public class ReportPortal {
 	 * Emits log message if there is any active context attached to the current thread
 	 *
 	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
+	 * @return true if log has been emitted
 	 */
 	public static boolean emitLog(com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
 		final LoggingContext loggingContext = LoggingContext.CONTEXT_THREAD_LOCAL.get().peek();
@@ -162,6 +165,11 @@ public class ReportPortal {
 
 	/**
 	 * Emits log message if there is any active context attached to the current thread
+	 *
+	 * @param message Log message
+	 * @param level   Log level
+	 * @param time    Log time
+	 * @return true if log has been emitted
 	 */
 	public static boolean emitLog(final String message, final String level, final Date time) {
 		return emitLog(getLogSupplier(message, level, time));
