@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2018 EPAM Systems
+ * Copyright 2019 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -258,7 +258,8 @@ public class ReportPortal {
 	}
 
 	public static class Builder {
-		public static final String API_BASE = "/api/v1";
+		public static final String API_V1_BASE = "/api/v1";
+		public static final String API_V2_BASE = "/api/v2";
 		private static final String HTTPS = "https";
 
 		private HttpClientBuilder httpClient;
@@ -317,11 +318,12 @@ public class ReportPortal {
 			return new HttpClientRestEndpoint(client, new LinkedList<Serializer>() {{
 				add(jacksonSerializer);
 				add(new ByteArraySerializer());
-			}}, new ReportPortalErrorHandler(jacksonSerializer), buildEndpointUrl(baseUrl, project), executorService);
+			}}, new ReportPortalErrorHandler(jacksonSerializer), buildEndpointUrl(baseUrl, project, parameters.isAsyncReporting()), executorService);
 		}
 
-		protected String buildEndpointUrl(String baseUrl, String project) {
-			return baseUrl + API_BASE + "/" + project;
+		protected String buildEndpointUrl(String baseUrl, String project, boolean asyncReporting) {
+			String apiBase = asyncReporting ? API_V2_BASE : API_V1_BASE;
+			return baseUrl + apiBase + "/" + project;
 		}
 
 		protected HttpClient defaultClient(ListenerParameters parameters) throws MalformedURLException {
