@@ -80,12 +80,6 @@ dependencies {
     testCompile 'org.hamcrest:hamcrest-all:1.3'
 }
 
-release {
-    git {
-        requireBranch = 'v5'
-    }
-}
-
 test.useTestNG()
 test.maxParallelForks = 1
 
