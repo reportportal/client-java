@@ -53,7 +53,7 @@ import static com.google.common.io.ByteSource.wrap;
  * to batch incoming log messages into one request
  *
  * @author Andrei Varabyeu
- * @see #init(Maybe, ReportPortalClient)
+ * @see #init(Maybe, Maybe, ReportPortalClient)
  */
 public class LoggingContext {
 

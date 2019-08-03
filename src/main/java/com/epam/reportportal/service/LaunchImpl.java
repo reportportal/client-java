@@ -189,7 +189,7 @@ public class LaunchImpl extends Launch {
 		}).cache();
 		testItem.subscribeOn(Schedulers.computation()).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(testItem).addToQueue(testItem.ignoreElement());
-		LoggingContext.init(testItem, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
+		LoggingContext.init(this.launch, testItem, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
 		return testItem;
 	}
 
@@ -227,7 +227,7 @@ public class LaunchImpl extends Launch {
 		}).cache();
 		itemId.subscribeOn(Schedulers.computation()).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement());
-		LoggingContext.init(itemId, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
+		LoggingContext.init(this.launch, itemId, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
 		return itemId;
 	}
 
