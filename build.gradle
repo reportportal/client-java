@@ -58,7 +58,7 @@ dependencies {
     if (releaseMode) {
         compile 'com.epam.reportportal:commons-model:5.0.0-BETA-6'
     } else {
-        compile 'com.github.reportportal:commons-model:8457463'
+        compile 'com.github.reportportal:commons-model:23321138'
     }
 
     compile 'com.google.guava:guava:26.0-jre'

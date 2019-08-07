@@ -181,8 +181,8 @@ public class LaunchImpl extends Launch {
 
 		final Maybe<String> testItem = this.launch.flatMap(new Function<String, Maybe<String>>() {
 			@Override
-			public Maybe<String> apply(String launchId) {
-				rq.setLaunchId(launchId);
+			public Maybe<String> apply(String launchUuid) {
+				rq.setLaunchUuid(launchUuid);
 				return rpClient.startTestItem(rq).doOnSuccess(logCreated("item")).map(TO_ID);
 
 			}
@@ -214,11 +214,11 @@ public class LaunchImpl extends Launch {
 		}
 		final Maybe<String> itemId = this.launch.flatMap(new Function<String, Maybe<String>>() {
 			@Override
-			public Maybe<String> apply(final String launchId) {
+			public Maybe<String> apply(final String launchUuid) {
 				return parentId.flatMap(new Function<String, MaybeSource<String>>() {
 					@Override
 					public MaybeSource<String> apply(String parentId) {
-						rq.setLaunchId(launchId);
+						rq.setLaunchUuid(launchUuid);
 						LOGGER.debug("Starting test item..." + Thread.currentThread().getName());
 						return rpClient.startTestItem(parentId, rq).doOnSuccess(logCreated("item")).map(TO_ID);
 					}

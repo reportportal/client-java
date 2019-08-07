@@ -183,11 +183,11 @@ public class ReportPortal {
 	private static Function<String, SaveLogRQ> getLogSupplier(final String message, final String level, final Date time) {
 		return new Function<String, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(String itemId) {
+			public SaveLogRQ apply(String itemUuid) {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
-				rq.setItemId(itemId);
+				rq.setItemUuid(itemUuid);
 				rq.setMessage(message);
 				return rq;
 			}
@@ -205,11 +205,11 @@ public class ReportPortal {
 	private static Function<String, SaveLogRQ> getLogSupplier(final String message, final String level, final Date time, final File file) {
 		return new Function<String, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(String itemId) {
+			public SaveLogRQ apply(String itemUuid) {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
-				rq.setItemId(itemId);
+				rq.setItemUuid(itemUuid);
 				rq.setMessage(message);
 
 				try {
@@ -240,11 +240,11 @@ public class ReportPortal {
 	private static Function<String, SaveLogRQ> getLogSupplier(final ReportPortalMessage message, final String level, final Date time) {
 		return new Function<String, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(String itemId) {
+			public SaveLogRQ apply(String itemUuid) {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
-				rq.setItemId(itemId);
+				rq.setItemUuid(itemUuid);
 				rq.setMessage(message.getMessage());
 				try {
 					final TypeAwareByteSource data = message.getData();
@@ -323,10 +323,16 @@ public class ReportPortal {
 			String project = parameters.getProjectName();
 
 			final JacksonSerializer jacksonSerializer = new JacksonSerializer(om);
-			return new HttpClientRestEndpoint(client, new LinkedList<Serializer>() {{
-				add(jacksonSerializer);
-				add(new ByteArraySerializer());
-			}}, new ReportPortalErrorHandler(jacksonSerializer), buildEndpointUrl(baseUrl, project, parameters.isAsyncReporting()), executorService);
+			return new HttpClientRestEndpoint(
+					client,
+					new LinkedList<Serializer>() {{
+						add(jacksonSerializer);
+						add(new ByteArraySerializer());
+					}},
+					new ReportPortalErrorHandler(jacksonSerializer),
+					buildEndpointUrl(baseUrl, project, parameters.isAsyncReporting()),
+					executorService
+			);
 		}
 
 		protected String buildEndpointUrl(String baseUrl, String project, boolean asyncReporting) {
