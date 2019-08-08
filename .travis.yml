@@ -1,10 +1,11 @@
 sudo: false
 language: java
+dist: trusty
 
 script: ./gradlew build
 
 jdk:
-    - oraclejdk8
+  - oraclejdk8
 
 notifications:
   slack: reportportal:fl6xWHVQp1jvsMmCJxYW9YKP
