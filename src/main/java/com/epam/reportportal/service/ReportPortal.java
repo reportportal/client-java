@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -301,9 +302,11 @@ public class ReportPortal {
 
 		public <T extends ReportPortalClient> T buildClient(Class<T> clientType, ListenerParameters params) {
 			try {
+
+				String apiKey = StringUtils.isEmpty(params.getApiKey()) ? params.getUuid() : params.getApiKey();
 				HttpClient client = null == this.httpClient ?
 						defaultClient(params) :
-						this.httpClient.addInterceptorLast(new BearerAuthInterceptor(params.getUuid())).build();
+						this.httpClient.addInterceptorLast(new BearerAuthInterceptor(apiKey)).build();
 
 				return RestEndpoints.forInterface(clientType, buildRestEndpoint(params, client));
 			} catch (Exception e) {
@@ -323,8 +326,7 @@ public class ReportPortal {
 			String project = parameters.getProjectName();
 
 			final JacksonSerializer jacksonSerializer = new JacksonSerializer(om);
-			return new HttpClientRestEndpoint(
-					client,
+			return new HttpClientRestEndpoint(client,
 					new LinkedList<Serializer>() {{
 						add(jacksonSerializer);
 						add(new ByteArraySerializer());
@@ -344,7 +346,7 @@ public class ReportPortal {
 			String baseUrl = parameters.getBaseUrl();
 			String keyStore = parameters.getKeystore();
 			String keyStorePassword = parameters.getKeystorePassword();
-			final String uuid = parameters.getUuid();
+			String apiKey = StringUtils.isEmpty(parameters.getApiKey()) ? parameters.getUuid() : parameters.getApiKey();
 
 			final HttpClientBuilder builder = HttpClients.custom();
 			if (HTTPS.equals(new URL(baseUrl).getProtocol()) && keyStore != null) {
@@ -368,7 +370,7 @@ public class ReportPortal {
 					.setMaxConnPerRoute(parameters.getMaxConnectionsPerRoute())
 					.setMaxConnTotal(parameters.getMaxConnectionsTotal())
 					.evictExpiredConnections();
-			return builder.addInterceptorLast(new BearerAuthInterceptor(uuid)).build();
+			return builder.addInterceptorLast(new BearerAuthInterceptor(apiKey)).build();
 
 		}
 

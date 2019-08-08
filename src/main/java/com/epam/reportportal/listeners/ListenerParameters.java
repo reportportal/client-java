@@ -43,6 +43,7 @@ public class ListenerParameters {
 	private static final boolean DEFAULT_ASYNC_REPORTING = false;
 
 	private String description;
+	private String apiKey;
 	private String uuid;
 	private String baseUrl;
 	private String projectName;
@@ -84,6 +85,7 @@ public class ListenerParameters {
 
 	public ListenerParameters(PropertiesLoader properties) {
 		this.description = properties.getProperty(DESCRIPTION);
+		this.apiKey = properties.getProperty(API_KEY, "");
 		this.uuid = properties.getProperty(UUID);
 		this.baseUrl = properties.getProperty(BASE_URL);
 		this.projectName = properties.getProperty(PROJECT_NAME);
@@ -115,6 +117,14 @@ public class ListenerParameters {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public String getApiKey() {
+		return apiKey;
+	}
+
+	public void setApiKey(String apiKey) {
+		this.apiKey = apiKey;
 	}
 
 	public String getUuid() {
@@ -278,6 +288,7 @@ public class ListenerParameters {
 	public String toString() {
 		final StringBuilder sb = new StringBuilder("ListenerParameters{");
 		sb.append("description='").append(description).append('\'');
+		sb.append(", apiKey='").append(apiKey).append('\'');
 		sb.append(", uuid='").append(uuid).append('\'');
 		sb.append(", baseUrl='").append(baseUrl).append('\'');
 		sb.append(", projectName='").append(projectName).append('\'');
