@@ -26,6 +26,7 @@ import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
+import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
@@ -52,7 +53,7 @@ import static com.google.common.io.ByteSource.wrap;
  * to batch incoming log messages into one request
  *
  * @author Andrei Varabyeu
- * @see #init(Maybe, ReportPortalClient)
+ * @see #init(Maybe, Maybe, ReportPortalClient)
  */
 public class LoggingContext {
 
@@ -73,8 +74,8 @@ public class LoggingContext {
 	 * @param client Client of ReportPortal
 	 * @return New Logging Context
 	 */
-	public static LoggingContext init(Maybe<String> itemId, final ReportPortalClient client) {
-		return init(itemId, client, DEFAULT_BUFFER_SIZE, false);
+	public static LoggingContext init(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client) {
+		return init(launchId, itemId, client, DEFAULT_BUFFER_SIZE, false);
 	}
 
 	/**
@@ -86,8 +87,8 @@ public class LoggingContext {
 	 * @param convertImages Whether Image should be converted to BlackAndWhite
 	 * @return New Logging Context
 	 */
-	public static LoggingContext init(Maybe<String> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
-		LoggingContext context = new LoggingContext(itemId, client, bufferSize, convertImages);
+	public static LoggingContext init(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
+		LoggingContext context = new LoggingContext(launchId, itemId, client, bufferSize, convertImages);
 		CONTEXT_THREAD_LOCAL.get().push(context);
 		return context;
 	}
@@ -108,12 +109,15 @@ public class LoggingContext {
 
 	/* Log emitter */
 	private final PublishSubject<Maybe<SaveLogRQ>> emitter;
+	/* ID of Launch in ReportPortal */
+	private final Maybe<String> launchId;
 	/* ID of TestItem in ReportPortal */
 	private final Maybe<String> itemId;
 	/* Whether Image should be converted to BlackAndWhite */
 	private final boolean convertImages;
 
-	LoggingContext(Maybe<String> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
+	LoggingContext(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
+		this.launchId = launchId;
 		this.itemId = itemId;
 		this.emitter = PublishSubject.create();
 		this.convertImages = convertImages;
@@ -164,10 +168,11 @@ public class LoggingContext {
 	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
 	 */
 	public void emit(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
-		emitter.onNext(itemId.map(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String input) throws Exception {
-				final SaveLogRQ rq = logSupplier.apply(input);
+		emitter.onNext(launchId.zipWith(itemId, new BiFunction<String, String, SaveLogRQ>() {
+				@Override
+			public SaveLogRQ apply(String launchId, String itemId) throws Exception {
+				final SaveLogRQ rq = logSupplier.apply(itemId);
+				rq.setLaunchId(launchId);
 				SaveLogRQ.File file = rq.getFile();
 				if (convertImages && null != file && isImage(file.getContentType())) {
 					final TypeAwareByteSource source = convert(wrap(file.getContent()));
