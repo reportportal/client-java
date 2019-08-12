@@ -189,7 +189,7 @@ public class LaunchImpl extends Launch {
 		}).cache();
 		testItem.subscribeOn(Schedulers.computation()).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(testItem).addToQueue(testItem.ignoreElement());
-		LoggingContext.init(testItem, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
+		LoggingContext.init(this.launch, testItem, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
 		return testItem;
 	}
 
@@ -227,7 +227,7 @@ public class LaunchImpl extends Launch {
 		}).cache();
 		itemId.subscribeOn(Schedulers.computation()).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement());
-		LoggingContext.init(itemId, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
+		LoggingContext.init(this.launch, itemId, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
 		return itemId;
 	}
 
@@ -257,9 +257,12 @@ public class LaunchImpl extends Launch {
 
 		//wait for the children to complete
 		final Completable finishCompletion = Completable.concat(treeItem.getChildren())
-				.andThen(itemId.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
+				.andThen(this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
+					@Override
+					public Maybe<OperationCompletionRS> apply(final String launchId) {return itemId.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
 					@Override
 					public Maybe<OperationCompletionRS> apply(String itemId) {
+						rq.setLaunchId(launchId);
 						return rpClient.finishTestItem(itemId, rq)
 								.retry(new RetryWithDelay(new Predicate<Throwable>() {
 									@Override
@@ -272,7 +275,7 @@ public class LaunchImpl extends Launch {
 								.doOnSuccess(LOG_SUCCESS)
 								.doOnError(LOG_ERROR);
 					}
-				}))
+				});}}))
 				.doAfterSuccess(new Consumer<OperationCompletionRS>() {
 					@Override
 					public void accept(OperationCompletionRS operationCompletionRS) {
