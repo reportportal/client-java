@@ -173,16 +173,7 @@ public class ReportPortal {
 	 * @return true if log has been emitted
 	 */
 	public static boolean emitLog(final String message, final String level, final Date time) {
-		return emitLog(getLogSupplier(message, level, time));
-
-	}
-
-	public static boolean emitLaunchLog(final String message, String level, Date time) {
-		return emitLaunchLog(getLogSupplier(message, level, time));
-	}
-
-	private static Function<String, SaveLogRQ> getLogSupplier(final String message, final String level, final Date time) {
-		return new Function<String, SaveLogRQ>() {
+		return emitLog(new Function<String, SaveLogRQ>() {
 			@Override
 			public SaveLogRQ apply(String itemUuid) {
 				SaveLogRQ rq = new SaveLogRQ();
@@ -192,19 +183,26 @@ public class ReportPortal {
 				rq.setMessage(message);
 				return rq;
 			}
-		};
+		});
+
+	}
+
+	public static boolean emitLaunchLog(final String message, final String level, final Date time) {
+		return emitLaunchLog(new Function<String, SaveLogRQ>() {
+			@Override
+			public SaveLogRQ apply(String launchUuid) {
+				SaveLogRQ rq = new SaveLogRQ();
+				rq.setLevel(level);
+				rq.setLogTime(time);
+				rq.setLaunchUuid(launchUuid);
+				rq.setMessage(message);
+				return rq;
+			}
+		});
 	}
 
 	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
-		return emitLog(getLogSupplier(message, level, time, file));
-	}
-
-	public static boolean emitLaunchLog(final String message, final String level, final Date time, final File file) {
-		return emitLaunchLog(getLogSupplier(message, level, time, file));
-	}
-
-	private static Function<String, SaveLogRQ> getLogSupplier(final String message, final String level, final Date time, final File file) {
-		return new Function<String, SaveLogRQ>() {
+		return emitLog(new Function<String, SaveLogRQ>() {
 			@Override
 			public SaveLogRQ apply(String itemUuid) {
 				SaveLogRQ rq = new SaveLogRQ();
@@ -227,19 +225,11 @@ public class ReportPortal {
 
 				return rq;
 			}
-		};
+		});
 	}
 
 	public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLog(getLogSupplier(message, level, time));
-	}
-
-	public static boolean emitLaunchLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLaunchLog(getLogSupplier(message, level, time));
-	}
-
-	private static Function<String, SaveLogRQ> getLogSupplier(final ReportPortalMessage message, final String level, final Date time) {
-		return new Function<String, SaveLogRQ>() {
+		return emitLog(new Function<String, SaveLogRQ>() {
 			@Override
 			public SaveLogRQ apply(String itemUuid) {
 				SaveLogRQ rq = new SaveLogRQ();
@@ -263,7 +253,35 @@ public class ReportPortal {
 
 				return rq;
 			}
-		};
+		});
+	}
+
+	public static boolean emitLaunchLog(final ReportPortalMessage message, final String level, final Date time) {
+		return emitLaunchLog(new Function<String, SaveLogRQ>() {
+			@Override
+			public SaveLogRQ apply(String launchUuid) {
+				SaveLogRQ rq = new SaveLogRQ();
+				rq.setLevel(level);
+				rq.setLogTime(time);
+				rq.setLaunchUuid(launchUuid);
+				rq.setMessage(message.getMessage());
+				try {
+					final TypeAwareByteSource data = message.getData();
+					SaveLogRQ.File file = new SaveLogRQ.File();
+					file.setContent(data.read());
+
+					file.setContentType(data.getMediaType());
+					file.setName(UUID.randomUUID().toString());
+					rq.setFile(file);
+
+				} catch (Exception e) {
+					// seems like there is some problem. Do not report an file
+					LOGGER.error("Cannot send file to ReportPortal", e);
+				}
+
+				return rq;
+			}
+		});
 	}
 
 	public static class Builder {

@@ -262,7 +262,7 @@ public class LaunchImpl extends Launch {
 					public Maybe<OperationCompletionRS> apply(final String launchId) {return itemId.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
 					@Override
 					public Maybe<OperationCompletionRS> apply(String itemId) {
-						rq.setLaunchId(launchId);
+						rq.setLaunchUuid(launchId);
 						return rpClient.finishTestItem(itemId, rq)
 								.retry(new RetryWithDelay(new Predicate<Throwable>() {
 									@Override

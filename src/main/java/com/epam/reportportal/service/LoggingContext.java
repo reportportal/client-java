@@ -87,7 +87,8 @@ public class LoggingContext {
 	 * @param convertImages Whether Image should be converted to BlackAndWhite
 	 * @return New Logging Context
 	 */
-	public static LoggingContext init(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
+	public static LoggingContext init(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, int bufferSize,
+			boolean convertImages) {
 		LoggingContext context = new LoggingContext(launchId, itemId, client, bufferSize, convertImages);
 		CONTEXT_THREAD_LOCAL.get().push(context);
 		return context;
@@ -121,44 +122,37 @@ public class LoggingContext {
 		this.itemId = itemId;
 		this.emitter = PublishSubject.create();
 		this.convertImages = convertImages;
-		emitter.toFlowable(BackpressureStrategy.BUFFER)
-				.flatMap(new Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>() {
-					@Override
-					public Publisher<SaveLogRQ> apply(Maybe<SaveLogRQ> rq) throws Exception {
-						return rq.toFlowable();
-					}
-				})
-				.buffer(bufferSize)
-				.flatMap(new Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>() {
-					@Override
-					public Flowable<BatchSaveOperatingRS> apply(List<SaveLogRQ> rqs) throws Exception {
-						MultiPartRequest.Builder builder = new MultiPartRequest.Builder();
+		emitter.toFlowable(BackpressureStrategy.BUFFER).flatMap(new Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>() {
+			@Override
+			public Publisher<SaveLogRQ> apply(Maybe<SaveLogRQ> rq) throws Exception {
+				return rq.toFlowable();
+			}
+		}).buffer(bufferSize).flatMap(new Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>() {
+			@Override
+			public Flowable<BatchSaveOperatingRS> apply(List<SaveLogRQ> rqs) throws Exception {
+				MultiPartRequest.Builder builder = new MultiPartRequest.Builder();
 
-						builder.addSerializedPart(Constants.LOG_REQUEST_JSON_PART, rqs);
+				builder.addSerializedPart(Constants.LOG_REQUEST_JSON_PART, rqs);
 
-						for (SaveLogRQ rq : rqs) {
-							final SaveLogRQ.File file = rq.getFile();
-							if (null != file) {
-								builder.addBinaryPart(Constants.LOG_REQUEST_BINARY_PART,
-										file.getName(),
-										Strings.isNullOrEmpty(file.getContentType()) ?
-												MediaType.OCTET_STREAM.toString() :
-												file.getContentType(),
-										wrap(file.getContent())
-								);
-							}
-						}
-						return client.log(builder.build()).toFlowable();
+				for (SaveLogRQ rq : rqs) {
+					final SaveLogRQ.File file = rq.getFile();
+					if (null != file) {
+						builder.addBinaryPart(
+								Constants.LOG_REQUEST_BINARY_PART,
+								file.getName(),
+								Strings.isNullOrEmpty(file.getContentType()) ? MediaType.OCTET_STREAM.toString() : file.getContentType(),
+								wrap(file.getContent())
+						);
 					}
-				})
-				.doOnError(new Consumer<Throwable>() {
-					@Override
-					public void accept(Throwable throwable) throws Exception {
-						throwable.printStackTrace();
-					}
-				})
-				.observeOn(Schedulers.computation())
-				.subscribe(logFlowableResults("Logging context"));
+				}
+				return client.log(builder.build()).toFlowable();
+			}
+		}).doOnError(new Consumer<Throwable>() {
+			@Override
+			public void accept(Throwable throwable) throws Exception {
+				throwable.printStackTrace();
+			}
+		}).observeOn(Schedulers.computation()).subscribe(logFlowableResults("Logging context"));
 
 	}
 
@@ -169,10 +163,10 @@ public class LoggingContext {
 	 */
 	public void emit(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
 		emitter.onNext(launchId.zipWith(itemId, new BiFunction<String, String, SaveLogRQ>() {
-				@Override
-			public SaveLogRQ apply(String launchId, String itemId) throws Exception {
-				final SaveLogRQ rq = logSupplier.apply(itemId);
-				rq.setLaunchId(launchId);
+			@Override
+			public SaveLogRQ apply(String launchUuid, String itemUuid) throws Exception {
+				final SaveLogRQ rq = logSupplier.apply(itemUuid);
+				rq.setLaunchUuid(launchUuid);
 				SaveLogRQ.File file = rq.getFile();
 				if (convertImages && null != file && isImage(file.getContentType())) {
 					final TypeAwareByteSource source = convert(wrap(file.getContent()));
