@@ -228,6 +228,33 @@ public class ReportPortal {
 		});
 	}
 
+	public static boolean emitLaunchLog(final String message, final String level, final Date time, final File file) {
+		return emitLaunchLog(new Function<String, SaveLogRQ>() {
+			@Override
+			public SaveLogRQ apply(String launchUuid) {
+				SaveLogRQ rq = new SaveLogRQ();
+				rq.setLevel(level);
+				rq.setLogTime(time);
+				rq.setLaunchUuid(launchUuid);
+				rq.setMessage(message);
+
+				try {
+					SaveLogRQ.File f = new SaveLogRQ.File();
+					f.setContentType(detect(file));
+					f.setContent(toByteArray(file));
+
+					f.setName(UUID.randomUUID().toString());
+					rq.setFile(f);
+				} catch (IOException e) {
+					// seems like there is some problem. Do not report an file
+					LOGGER.error("Cannot send file to ReportPortal", e);
+				}
+
+				return rq;
+			}
+		});
+	}
+
 	public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
 		return emitLog(new Function<String, SaveLogRQ>() {
 			@Override
