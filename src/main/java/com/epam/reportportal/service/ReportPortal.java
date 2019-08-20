@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -88,7 +89,7 @@ public class ReportPortal {
 	 * @return Launch
 	 */
 	public Launch newLaunch(StartLaunchRQ rq) {
-		if (Boolean.TRUE != parameters.getEnable()) {
+		if (BooleanUtils.isNotTrue(parameters.getEnable())) {
 			return Launch.NOOP_LAUNCH;
 		}
 
@@ -187,7 +188,7 @@ public class ReportPortal {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
-				rq.setItemId(itemId);
+				rq.setItemUuid(itemId);
 				rq.setMessage(message);
 				return rq;
 			}
@@ -209,7 +210,7 @@ public class ReportPortal {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
-				rq.setItemId(itemId);
+				rq.setItemUuid(itemId);
 				rq.setMessage(message);
 
 				try {
@@ -244,7 +245,7 @@ public class ReportPortal {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
-				rq.setItemId(itemId);
+				rq.setItemUuid(itemId);
 				rq.setMessage(message.getMessage());
 				try {
 					final TypeAwareByteSource data = message.getData();
@@ -323,10 +324,16 @@ public class ReportPortal {
 			String project = parameters.getProjectName();
 
 			final JacksonSerializer jacksonSerializer = new JacksonSerializer(om);
-			return new HttpClientRestEndpoint(client, new LinkedList<Serializer>() {{
-				add(jacksonSerializer);
-				add(new ByteArraySerializer());
-			}}, new ReportPortalErrorHandler(jacksonSerializer), buildEndpointUrl(baseUrl, project, parameters.isAsyncReporting()), executorService);
+			return new HttpClientRestEndpoint(
+					client,
+					new LinkedList<Serializer>() {{
+						add(jacksonSerializer);
+						add(new ByteArraySerializer());
+					}},
+					new ReportPortalErrorHandler(jacksonSerializer),
+					buildEndpointUrl(baseUrl, project, parameters.isAsyncReporting()),
+					executorService
+			);
 		}
 
 		protected String buildEndpointUrl(String baseUrl, String project, boolean asyncReporting) {

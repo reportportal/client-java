@@ -74,7 +74,7 @@ public class LaunchFile {
 			Matcher m = FILENAME_PATTERN.matcher(file);
 			if (m.find()) {
 				StartLaunchRS startLaunchRS = new StartLaunchRS();
-				startLaunchRS.setUuid(m.group(3));
+				startLaunchRS.setId(m.group(3));
 				Date date = new Date(Long.parseLong(m.group(2)));
 				responses.put(date, startLaunchRS);
 			} else {
@@ -82,7 +82,7 @@ public class LaunchFile {
 			}
 		}
 
-		return Maybe.just(responses.values().iterator().next().getUuid());
+		return Maybe.just(responses.values().iterator().next().getId());
 	}
 
 	public static Maybe<LaunchFile> create(final String name, Maybe<StartLaunchRS> id) {
@@ -96,7 +96,7 @@ public class LaunchFile {
 							FILE_PREFIX,
 							normalizeLaunchName(name),
 							Calendar.getInstance().getTimeInMillis(),
-							response.getUuid()
+							response.getId()
 					));
 					if (file.createNewFile()) {
 						LOGGER.debug("ReportPortal's temp file '{}' is created", file.getAbsolutePath());

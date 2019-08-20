@@ -172,7 +172,7 @@ public class LoggingContext {
 				@Override
 			public SaveLogRQ apply(String launchId, String itemId) throws Exception {
 				final SaveLogRQ rq = logSupplier.apply(itemId);
-				rq.setLaunchId(launchId);
+				rq.setLaunchUuid(launchId);
 				SaveLogRQ.File file = rq.getFile();
 				if (convertImages && null != file && isImage(file.getContentType())) {
 					final TypeAwareByteSource source = convert(wrap(file.getContent()));
