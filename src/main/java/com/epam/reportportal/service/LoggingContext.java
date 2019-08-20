@@ -37,6 +37,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 
+import static com.epam.reportportal.service.LoggingCallback.LOG_ERROR;
 import static com.epam.reportportal.utils.SubscriptionUtils.logFlowableResults;
 import static com.epam.reportportal.utils.files.ImageConverter.convert;
 import static com.epam.reportportal.utils.files.ImageConverter.isImage;
@@ -150,7 +151,7 @@ public class LoggingContext {
 		}).doOnError(new Consumer<Throwable>() {
 			@Override
 			public void accept(Throwable throwable) throws Exception {
-				throwable.printStackTrace();
+				LOG_ERROR.accept(throwable);
 			}
 		}).observeOn(Schedulers.computation()).subscribe(logFlowableResults("Logging context"));
 
