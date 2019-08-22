@@ -88,8 +88,7 @@ public class LoggingContext {
 	 * @param convertImages Whether Image should be converted to BlackAndWhite
 	 * @return New Logging Context
 	 */
-	public static LoggingContext init(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, int bufferSize,
-			boolean convertImages) {
+	public static LoggingContext init(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
 		LoggingContext context = new LoggingContext(launchId, itemId, client, bufferSize, convertImages);
 		CONTEXT_THREAD_LOCAL.get().push(context);
 		return context;
@@ -164,10 +163,10 @@ public class LoggingContext {
 	 */
 	public void emit(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
 		emitter.onNext(launchId.zipWith(itemId, new BiFunction<String, String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String launchUuid, String itemUuid) throws Exception {
-				final SaveLogRQ rq = logSupplier.apply(itemUuid);
-				rq.setLaunchUuid(launchUuid);
+				@Override
+			public SaveLogRQ apply(String launchId, String itemId) throws Exception {
+				final SaveLogRQ rq = logSupplier.apply(itemId);
+				rq.setLaunchUuid(launchId);
 				SaveLogRQ.File file = rq.getFile();
 				if (convertImages && null != file && isImage(file.getContentType())) {
 					final TypeAwareByteSource source = convert(wrap(file.getContent()));

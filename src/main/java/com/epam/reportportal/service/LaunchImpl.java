@@ -53,14 +53,14 @@ public class LaunchImpl extends Launch {
 	private static final Function<ItemCreatedRS, String> TO_ID = new Function<ItemCreatedRS, String>() {
 		@Override
 		public String apply(ItemCreatedRS rs) {
-			return rs.getUuid();
+			return rs.getId();
 		}
 	};
 	private static final Consumer<StartLaunchRS> LAUNCH_SUCCESS_CONSUMER = new Consumer<StartLaunchRS>() {
 		@Override
 		public void accept(StartLaunchRS rs) throws Exception {
 			logCreated("launch").accept(rs);
-			System.setProperty("rp.launch.id", String.valueOf(rs.getUuid()));
+			System.setProperty("rp.launch.id", String.valueOf(rs.getId()));
 		}
 	};
 	private static final int ITEM_FINISH_MAX_RETRIES = 10;
@@ -106,7 +106,7 @@ public class LaunchImpl extends Launch {
 				launchPromise.subscribe(new Consumer<StartLaunchRS>() {
 					@Override
 					public void accept(StartLaunchRS startLaunchRS) throws Exception {
-						emitter.onSuccess(startLaunchRS.getUuid());
+						emitter.onSuccess(startLaunchRS.getId());
 					}
 				}, new Consumer<Throwable>() {
 					@Override
@@ -181,8 +181,8 @@ public class LaunchImpl extends Launch {
 
 		final Maybe<String> testItem = this.launch.flatMap(new Function<String, Maybe<String>>() {
 			@Override
-			public Maybe<String> apply(String launchUuid) {
-				rq.setLaunchUuid(launchUuid);
+			public Maybe<String> apply(String launchId) {
+				rq.setLaunchUuid(launchId);
 				return rpClient.startTestItem(rq).doOnSuccess(logCreated("item")).map(TO_ID);
 
 			}
@@ -214,11 +214,11 @@ public class LaunchImpl extends Launch {
 		}
 		final Maybe<String> itemId = this.launch.flatMap(new Function<String, Maybe<String>>() {
 			@Override
-			public Maybe<String> apply(final String launchUuid) {
+			public Maybe<String> apply(final String launchId) {
 				return parentId.flatMap(new Function<String, MaybeSource<String>>() {
 					@Override
 					public MaybeSource<String> apply(String parentId) {
-						rq.setLaunchUuid(launchUuid);
+						rq.setLaunchUuid(launchId);
 						LOGGER.debug("Starting test item..." + Thread.currentThread().getName());
 						return rpClient.startTestItem(parentId, rq).doOnSuccess(logCreated("item")).map(TO_ID);
 					}

@@ -63,7 +63,7 @@ final class LoggingCallback {
 		return new Consumer<EntryCreatedAsyncRS>() {
 			@Override
 			public void accept(EntryCreatedAsyncRS rs) {
-				LOGGER.debug("ReportPortal {} with ID '{}' has been created", entry, rs.getUuid());
+				LOGGER.debug("ReportPortal {} with ID '{}' has been created", entry, rs.getId());
 			}
 		};
 	}

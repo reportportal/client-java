@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -88,7 +89,7 @@ public class ReportPortal {
 	 * @return Launch
 	 */
 	public Launch newLaunch(StartLaunchRQ rq) {
-		if (Boolean.TRUE != parameters.getEnable()) {
+		if (BooleanUtils.isNotTrue(parameters.getEnable())) {
 			return Launch.NOOP_LAUNCH;
 		}
 
@@ -346,7 +347,6 @@ public class ReportPortal {
 
 		public <T extends ReportPortalClient> T buildClient(Class<T> clientType, ListenerParameters params) {
 			try {
-
 				HttpClient client = null == this.httpClient ?
 						defaultClient(params) :
 						this.httpClient.addInterceptorLast(new BearerAuthInterceptor(params.getApiKey())).build();
