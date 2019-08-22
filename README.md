@@ -1,4 +1,4 @@
-# client-java-core
+# client-java
  [ ![Download](https://api.bintray.com/packages/epam/reportportal/client-java/images/download.svg) ](https://bintray.com/epam/reportportal/client-java/_latestVersion)
  
 [![Join Slack chat!](https://reportportal-slack-auto.herokuapp.com/badge.svg)](https://reportportal-slack-auto.herokuapp.com)
