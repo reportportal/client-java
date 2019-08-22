@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 EPAM Systems
+ * Copyright 2019 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,10 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Function;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -53,6 +55,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static com.epam.reportportal.service.LaunchLoggingContext.DEFAULT_LAUNCH_KEY;
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
 import static com.google.common.io.Files.toByteArray;
 
@@ -86,12 +89,11 @@ public class ReportPortal {
 	 * @return Launch
 	 */
 	public Launch newLaunch(StartLaunchRQ rq) {
-		if (Boolean.TRUE != parameters.getEnable()) {
+		if (BooleanUtils.isNotTrue(parameters.getEnable())) {
 			return Launch.NOOP_LAUNCH;
 		}
 
-		LaunchImpl service = new LaunchImpl(rpClient, parameters, rq);
-		return service;
+		return new LaunchImpl(rpClient, parameters, rq);
 	}
 
 	/**
@@ -130,6 +132,8 @@ public class ReportPortal {
 	/**
 	 * Creates new ReportPortal based on already built dependencies
 	 *
+	 * @param client Report Portal Client
+	 * @param params {@link ListenerParameters}
 	 * @return builder for {@link ReportPortal}
 	 */
 	public static ReportPortal create(ReportPortalClient client, ListenerParameters params) {
@@ -140,9 +144,10 @@ public class ReportPortal {
 	 * Emits log message if there is any active context attached to the current thread
 	 *
 	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
+	 * @return true if log has been emitted
 	 */
 	public static boolean emitLog(com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
-		final LoggingContext loggingContext = LoggingContext.CONTEXT_THREAD_LOCAL.get();
+		final LoggingContext loggingContext = LoggingContext.CONTEXT_THREAD_LOCAL.get().peek();
 		if (null != loggingContext) {
 			loggingContext.emit(logSupplier);
 			return true;
@@ -150,17 +155,31 @@ public class ReportPortal {
 		return false;
 	}
 
+	public static boolean emitLaunchLog(Function<String, SaveLogRQ> logSupplier) {
+		final LaunchLoggingContext launchLoggingContext = LaunchLoggingContext.loggingContextMap.get(DEFAULT_LAUNCH_KEY);
+		if (null != launchLoggingContext) {
+			launchLoggingContext.emit(logSupplier);
+			return true;
+		}
+		return false;
+	}
+
 	/**
 	 * Emits log message if there is any active context attached to the current thread
+	 *
+	 * @param message Log message
+	 * @param level   Log level
+	 * @param time    Log time
+	 * @return true if log has been emitted
 	 */
 	public static boolean emitLog(final String message, final String level, final Date time) {
-		return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
+		return emitLog(new Function<String, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(String id) {
+			public SaveLogRQ apply(String itemUuid) {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
-				rq.setTestItemId(id);
+				rq.setItemUuid(itemUuid);
 				rq.setMessage(message);
 				return rq;
 			}
@@ -168,14 +187,55 @@ public class ReportPortal {
 
 	}
 
-	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
-		return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
+	public static boolean emitLaunchLog(final String message, final String level, final Date time) {
+		return emitLaunchLog(new Function<String, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(String id) {
+			public SaveLogRQ apply(String launchUuid) {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
-				rq.setTestItemId(id);
+				rq.setLaunchUuid(launchUuid);
+				rq.setMessage(message);
+				return rq;
+			}
+		});
+	}
+
+	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
+		return emitLog(new Function<String, SaveLogRQ>() {
+			@Override
+			public SaveLogRQ apply(String itemUuid) {
+				SaveLogRQ rq = new SaveLogRQ();
+				rq.setLevel(level);
+				rq.setLogTime(time);
+				rq.setItemUuid(itemUuid);
+				rq.setMessage(message);
+
+				try {
+					SaveLogRQ.File f = new SaveLogRQ.File();
+					f.setContentType(detect(file));
+					f.setContent(toByteArray(file));
+
+					f.setName(UUID.randomUUID().toString());
+					rq.setFile(f);
+				} catch (IOException e) {
+					// seems like there is some problem. Do not report an file
+					LOGGER.error("Cannot send file to ReportPortal", e);
+				}
+
+				return rq;
+			}
+		});
+	}
+
+	public static boolean emitLaunchLog(final String message, final String level, final Date time, final File file) {
+		return emitLaunchLog(new Function<String, SaveLogRQ>() {
+			@Override
+			public SaveLogRQ apply(String launchUuid) {
+				SaveLogRQ rq = new SaveLogRQ();
+				rq.setLevel(level);
+				rq.setLogTime(time);
+				rq.setLaunchUuid(launchUuid);
 				rq.setMessage(message);
 
 				try {
@@ -196,13 +256,41 @@ public class ReportPortal {
 	}
 
 	public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLog(new com.google.common.base.Function<String, SaveLogRQ>() {
+		return emitLog(new Function<String, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(String id) {
+			public SaveLogRQ apply(String itemUuid) {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
-				rq.setTestItemId(id);
+				rq.setItemUuid(itemUuid);
+				rq.setMessage(message.getMessage());
+				try {
+					final TypeAwareByteSource data = message.getData();
+					SaveLogRQ.File file = new SaveLogRQ.File();
+					file.setContent(data.read());
+
+					file.setContentType(data.getMediaType());
+					file.setName(UUID.randomUUID().toString());
+					rq.setFile(file);
+
+				} catch (Exception e) {
+					// seems like there is some problem. Do not report an file
+					LOGGER.error("Cannot send file to ReportPortal", e);
+				}
+
+				return rq;
+			}
+		});
+	}
+
+	public static boolean emitLaunchLog(final ReportPortalMessage message, final String level, final Date time) {
+		return emitLaunchLog(new Function<String, SaveLogRQ>() {
+			@Override
+			public SaveLogRQ apply(String launchUuid) {
+				SaveLogRQ rq = new SaveLogRQ();
+				rq.setLevel(level);
+				rq.setLogTime(time);
+				rq.setLaunchUuid(launchUuid);
 				rq.setMessage(message.getMessage());
 				try {
 					final TypeAwareByteSource data = message.getData();
@@ -224,11 +312,13 @@ public class ReportPortal {
 	}
 
 	public static class Builder {
-		public static final String API_BASE = "/api/v1";
+		static final String API_V1_BASE = "/api/v1";
+		static final String API_V2_BASE = "/api/v2";
 		private static final String HTTPS = "https";
 
 		private HttpClientBuilder httpClient;
 		private ListenerParameters parameters;
+		private ExecutorService executorService;
 
 		public Builder withHttpClient(HttpClientBuilder client) {
 			this.httpClient = client;
@@ -243,6 +333,9 @@ public class ReportPortal {
 		public ReportPortal build() {
 			try {
 				ListenerParameters params = null == this.parameters ? new ListenerParameters(defaultPropertiesLoader()) : this.parameters;
+				executorService = Executors.newFixedThreadPool(params.getIoPoolSize(),
+						new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build()
+				);
 				return new ReportPortal(buildClient(ReportPortalClient.class, params), params);
 			} catch (Exception e) {
 				String errMsg = "Cannot build ReportPortal client";
@@ -252,12 +345,11 @@ public class ReportPortal {
 
 		}
 
-
 		public <T extends ReportPortalClient> T buildClient(Class<T> clientType, ListenerParameters params) {
 			try {
 				HttpClient client = null == this.httpClient ?
 						defaultClient(params) :
-						this.httpClient.addInterceptorLast(new BearerAuthInterceptor(params.getUuid())).build();
+						this.httpClient.addInterceptorLast(new BearerAuthInterceptor(params.getApiKey())).build();
 
 				return RestEndpoints.forInterface(clientType, buildRestEndpoint(params, client));
 			} catch (Exception e) {
@@ -277,21 +369,26 @@ public class ReportPortal {
 			String project = parameters.getProjectName();
 
 			final JacksonSerializer jacksonSerializer = new JacksonSerializer(om);
-			return new HttpClientRestEndpoint(client, new LinkedList<Serializer>() {{
-				add(jacksonSerializer);
-				add(new ByteArraySerializer());
-			}}, new ReportPortalErrorHandler(jacksonSerializer), buildEndpointUrl(baseUrl, project), buildExecutorService(parameters));
+			return new HttpClientRestEndpoint(client,
+					new LinkedList<Serializer>() {{
+						add(jacksonSerializer);
+						add(new ByteArraySerializer());
+					}},
+					new ReportPortalErrorHandler(jacksonSerializer),
+					buildEndpointUrl(baseUrl, project, parameters.isAsyncReporting()),
+					executorService
+			);
 		}
 
-		protected String buildEndpointUrl(String baseUrl, String project) {
-			return baseUrl + API_BASE + "/" + project;
+		protected String buildEndpointUrl(String baseUrl, String project, boolean asyncReporting) {
+			String apiBase = asyncReporting ? API_V2_BASE : API_V1_BASE;
+			return baseUrl + apiBase + "/" + project;
 		}
 
 		protected HttpClient defaultClient(ListenerParameters parameters) throws MalformedURLException {
 			String baseUrl = parameters.getBaseUrl();
 			String keyStore = parameters.getKeystore();
 			String keyStorePassword = parameters.getKeystorePassword();
-			final String uuid = parameters.getUuid();
 
 			final HttpClientBuilder builder = HttpClients.custom();
 			if (HTTPS.equals(new URL(baseUrl).getProtocol()) && keyStore != null) {
@@ -315,20 +412,13 @@ public class ReportPortal {
 					.setMaxConnPerRoute(parameters.getMaxConnectionsPerRoute())
 					.setMaxConnTotal(parameters.getMaxConnectionsTotal())
 					.evictExpiredConnections();
-			return builder.addInterceptorLast(new BearerAuthInterceptor(uuid)).build();
+			return builder.addInterceptorLast(new BearerAuthInterceptor(parameters.getApiKey())).build();
 
 		}
 
 		protected PropertiesLoader defaultPropertiesLoader() {
 			return PropertiesLoader.load();
 		}
-
-		protected ExecutorService buildExecutorService(ListenerParameters params){
-			return Executors.newFixedThreadPool(params.getIoPoolSize(),
-					new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build()
-			);
-		}
-
 	}
 
 }

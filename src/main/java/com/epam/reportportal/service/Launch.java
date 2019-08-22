@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 EPAM Systems
+ * Copyright 2019 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,7 @@ public abstract class Launch {
 	 * Starts new test item in ReportPortal asynchronously (non-blocking)
 	 *
 	 * @param rq Start RQ
+	 * @param parentId Parent ID
 	 * @return Test Item ID promise
 	 */
 	abstract public Maybe<String> startTestItem(final Maybe<String> parentId, final StartTestItemRQ rq);

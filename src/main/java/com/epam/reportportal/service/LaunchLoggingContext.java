@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.message.TypeAwareByteSource;
@@ -26,100 +27,49 @@ import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
-import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.PublishSubject;
 import org.reactivestreams.Publisher;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
-import static com.epam.reportportal.service.LoggingCallback.LOG_ERROR;
 import static com.epam.reportportal.utils.SubscriptionUtils.logFlowableResults;
 import static com.epam.reportportal.utils.files.ImageConverter.convert;
 import static com.epam.reportportal.utils.files.ImageConverter.isImage;
 import static com.google.common.io.ByteSource.wrap;
 
 /**
- * Logging context holds thread-local context for logging and converts
+ * Logging context holds {@link ConcurrentHashMap} context for launch logging and converts
  * {@link SaveLogRQ} to multipart HTTP request to ReportPortal
  * Basic flow:
- * After start some test item (suite/test/step) context should be initialized with observable of
- * item ID and ReportPortal client.
- * Before actual finish of test item, context should be closed/completed.
+ * After start some launch context should be initialized with observable of
+ * launch ID and ReportPortal client.
+ * Before actual finish of launch, context should be closed/completed.
  * Context consists of {@link Flowable} with buffering back-pressure strategy to be able
  * to batch incoming log messages into one request
  *
- * @author Andrei Varabyeu
- * @see #init(Maybe, Maybe, ReportPortalClient)
+ * @author <a href="mailto:ihar_kahadouski@epam.com">Ihar Kahadouski</a>
+ * @see #init(Maybe, ReportPortalClient)
  */
-public class LoggingContext {
+class LaunchLoggingContext {
 
 	/* default back-pressure buffer size */
-	public static final int DEFAULT_BUFFER_SIZE = 10;
+	private static final int DEFAULT_BUFFER_SIZE = 10;
+	static final String DEFAULT_LAUNCH_KEY = "default";
 
-	static final ThreadLocal<Deque<LoggingContext>> CONTEXT_THREAD_LOCAL = new ThreadLocal<Deque<LoggingContext>>() {
-		@Override
-		protected Deque<LoggingContext> initialValue() {
-			return new ArrayDeque<LoggingContext>();
-		}
-	};
-
-	/**
-	 * Initializes new logging context and attaches it to current thread
-	 *
-	 * @param itemId Test Item ID
-	 * @param client Client of ReportPortal
-	 * @return New Logging Context
-	 */
-	public static LoggingContext init(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client) {
-		return init(launchId, itemId, client, DEFAULT_BUFFER_SIZE, false);
-	}
-
-	/**
-	 * Initializes new logging context and attaches it to current thread
-	 *
-	 * @param itemId        Test Item ID
-	 * @param client        Client of ReportPortal
-	 * @param bufferSize    Size of back-pressure buffer
-	 * @param convertImages Whether Image should be converted to BlackAndWhite
-	 * @return New Logging Context
-	 */
-	public static LoggingContext init(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
-		LoggingContext context = new LoggingContext(launchId, itemId, client, bufferSize, convertImages);
-		CONTEXT_THREAD_LOCAL.get().push(context);
-		return context;
-	}
-
-	/**
-	 * Completes context attached to the current thread
-	 *
-	 * @return Waiting queue to be able to track request sending completion
-	 */
-	public static Completable complete() {
-		final LoggingContext loggingContext = CONTEXT_THREAD_LOCAL.get().poll();
-		if (null != loggingContext) {
-			return loggingContext.completed();
-		} else {
-			return Maybe.empty().ignoreElement();
-		}
-	}
-
+	static ConcurrentHashMap<String, LaunchLoggingContext> loggingContextMap = new ConcurrentHashMap<String, LaunchLoggingContext>();
 	/* Log emitter */
 	private final PublishSubject<Maybe<SaveLogRQ>> emitter;
 	/* ID of Launch in ReportPortal */
 	private final Maybe<String> launchId;
-	/* ID of TestItem in ReportPortal */
-	private final Maybe<String> itemId;
 	/* Whether Image should be converted to BlackAndWhite */
 	private final boolean convertImages;
 
-	LoggingContext(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
+	private LaunchLoggingContext(Maybe<String> launchId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
 		this.launchId = launchId;
-		this.itemId = itemId;
 		this.emitter = PublishSubject.create();
 		this.convertImages = convertImages;
 		emitter.toFlowable(BackpressureStrategy.BUFFER).flatMap(new Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>() {
@@ -150,10 +100,50 @@ public class LoggingContext {
 		}).doOnError(new Consumer<Throwable>() {
 			@Override
 			public void accept(Throwable throwable) throws Exception {
-				LOG_ERROR.accept(throwable);
+				throwable.printStackTrace();
 			}
-		}).observeOn(Schedulers.computation()).subscribe(logFlowableResults("Logging context"));
+		}).observeOn(Schedulers.computation()).subscribe(logFlowableResults("Launch logging context"));
 
+	}
+
+	/**
+	 * Initializes new logging context and attaches it to current thread
+	 *
+	 * @param launchId Launch ID
+	 * @param client   Client of ReportPortal
+	 * @return New Logging Context
+	 */
+	static LaunchLoggingContext init(Maybe<String> launchId, final ReportPortalClient client) {
+		return init(launchId, client, DEFAULT_BUFFER_SIZE, false);
+	}
+
+	/**
+	 * Initializes new logging context and attaches it to current thread
+	 *
+	 * @param launchId      Launch ID
+	 * @param client        Client of ReportPortal
+	 * @param bufferSize    Size of back-pressure buffer
+	 * @param convertImages Whether Image should be converted to BlackAndWhite
+	 * @return New Logging Context
+	 */
+	static LaunchLoggingContext init(Maybe<String> launchId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
+		LaunchLoggingContext context = new LaunchLoggingContext(launchId, client, bufferSize, convertImages);
+		loggingContextMap.put(DEFAULT_LAUNCH_KEY, context);
+		return context;
+	}
+
+	/**
+	 * Completes context attached to the current thread
+	 *
+	 * @return Waiting queue to be able to track request sending completion
+	 */
+	static Completable complete() {
+		final LaunchLoggingContext loggingContext = loggingContextMap.get(DEFAULT_LAUNCH_KEY);
+		if (null != loggingContext) {
+			return loggingContext.completed();
+		} else {
+			return Maybe.empty().ignoreElement();
+		}
 	}
 
 	/**
@@ -161,12 +151,11 @@ public class LoggingContext {
 	 *
 	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
 	 */
-	public void emit(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
-		emitter.onNext(launchId.zipWith(itemId, new BiFunction<String, String, SaveLogRQ>() {
-				@Override
-			public SaveLogRQ apply(String launchId, String itemId) throws Exception {
-				final SaveLogRQ rq = logSupplier.apply(itemId);
-				rq.setLaunchUuid(launchId);
+	void emit(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
+		emitter.onNext(launchId.map(new Function<String, SaveLogRQ>() {
+			@Override
+			public SaveLogRQ apply(String input) throws Exception {
+				final SaveLogRQ rq = logSupplier.apply(input);
 				SaveLogRQ.File file = rq.getFile();
 				if (convertImages && null != file && isImage(file.getContentType())) {
 					final TypeAwareByteSource source = convert(wrap(file.getContent()));
@@ -184,9 +173,8 @@ public class LoggingContext {
 	 *
 	 * @return {@link Completable}
 	 */
-	public Completable completed() {
+	private Completable completed() {
 		emitter.onComplete();
 		return emitter.ignoreElements();
 	}
-
 }

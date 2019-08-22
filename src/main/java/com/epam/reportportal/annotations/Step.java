@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.epam.reportportal.annotations;
 
 import java.lang.annotation.ElementType;
@@ -21,23 +22,22 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Used in parametrized tests. Report portal waiting test parameters
- * in <b>key - value</b> style. Using the annotation for method parameter
- * the specific <b>key</b> can be provided.
+ * Annotation-marker for methods that are invoked during the test execution. Methods that are marked by this annotation
+ * are represented in Report Portal as 'Nested Steps' with {@link com.epam.ta.reportportal.ws.model.StartTestItemRQ#hasStats} equal to 'false'
+ * Methods marked with this annotation can be nested in other methods and will be attached (reported as a child)
+ * to the 'closest' wrapper (either test method or another method marked with this annotation)
  *
- * @author Pavel Bortnik
- * @since Report Portal Api v3.1.0
+ * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
-
+@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.PARAMETER })
-public @interface ParameterKey {
+public @interface Step {
 
-	/**
-	 * Returns parameter key value
-	 *
-	 * @return key value
-	 */
 	String value() default "";
 
+	String description() default "";
+
+	boolean isIgnored() default false;
+
+	StepTemplateConfig templateConfig() default @StepTemplateConfig;
 }

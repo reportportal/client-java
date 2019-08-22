@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 EPAM Systems
+ * Copyright 2019 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,10 @@ public enum ListenerProperty {
     BASE_URL("rp.endpoint", true),
     PROJECT_NAME("rp.project", true),
     LAUNCH_NAME("rp.launch", true),
-    UUID("rp.uuid", true),
+    UUID("rp.uuid", false),
+    API_KEY("rp.api.key", true),
     BATCH_SIZE_LOGS("rp.batch.size.logs", false),
-    LAUNCH_TAGS("rp.tags", false),
+    LAUNCH_ATTRIBUTES("rp.attributes", false),
     DESCRIPTION("rp.description", false),
     IS_CONVERT_IMAGE("rp.convertimage", false),
     KEYSTORE_RESOURCE("rp.keystore.resource", false),
@@ -35,6 +36,8 @@ public enum ListenerProperty {
     MODE("rp.mode", false),
     ENABLE("rp.enable", false),
     RERUN("rp.rerun", false),
+    RERUN_OF("rp.rerun.of", false),
+    ASYNC_REPORTING("rp.reporting.async", false),
     SKIPPED_AS_ISSUE("rp.skipped.issue", false),
     IO_POOL_SIZE("rp.io.pool.size", false),
     MAX_CONNECTIONS_PER_ROUTE("rp.max.connections.per.route", false),
