@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.reportportal.aspect.util;
+package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.StepTemplateConfig;
@@ -33,17 +33,17 @@ import java.util.regex.Pattern;
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
-public class StepNameUtils {
+class StepNameUtils {
 
-	public static final Logger LOGGER = LoggerFactory.getLogger(StepNameUtils.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(StepNameUtils.class);
 
-	public static final String STEP_GROUP = "\\{([\\w$]+(\\.[\\w$]+)*)}";
+	private static final String STEP_GROUP = "\\{([\\w$]+(\\.[\\w$]+)*)}";
 
 	private StepNameUtils() {
 		//static only
 	}
 
-	public static String getStepName(Step step, MethodSignature signature, JoinPoint joinPoint) {
+	static String getStepName(Step step, MethodSignature signature, JoinPoint joinPoint) {
 		String nameTemplate = step.value();
 		if (nameTemplate.trim().isEmpty()) {
 			return signature.getMethod().getName();

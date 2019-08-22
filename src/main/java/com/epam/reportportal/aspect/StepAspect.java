@@ -17,7 +17,6 @@
 package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
-import com.epam.reportportal.aspect.util.StepRequestUtils;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;

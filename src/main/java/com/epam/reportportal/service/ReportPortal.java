@@ -312,8 +312,8 @@ public class ReportPortal {
 	}
 
 	public static class Builder {
-		public static final String API_V1_BASE = "/api/v1";
-		public static final String API_V2_BASE = "/api/v2";
+		static final String API_V1_BASE = "/api/v1";
+		static final String API_V2_BASE = "/api/v2";
 		private static final String HTTPS = "https";
 
 		private HttpClientBuilder httpClient;

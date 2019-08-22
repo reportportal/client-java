@@ -54,11 +54,11 @@ import static com.google.common.io.ByteSource.wrap;
  * @author <a href="mailto:ihar_kahadouski@epam.com">Ihar Kahadouski</a>
  * @see #init(Maybe, ReportPortalClient)
  */
-public class LaunchLoggingContext {
+class LaunchLoggingContext {
 
 	/* default back-pressure buffer size */
-	public static final int DEFAULT_BUFFER_SIZE = 10;
-	public static final String DEFAULT_LAUNCH_KEY = "default";
+	private static final int DEFAULT_BUFFER_SIZE = 10;
+	static final String DEFAULT_LAUNCH_KEY = "default";
 
 	static ConcurrentHashMap<String, LaunchLoggingContext> loggingContextMap = new ConcurrentHashMap<String, LaunchLoggingContext>();
 	/* Log emitter */
@@ -68,7 +68,7 @@ public class LaunchLoggingContext {
 	/* Whether Image should be converted to BlackAndWhite */
 	private final boolean convertImages;
 
-	LaunchLoggingContext(Maybe<String> launchId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
+	private LaunchLoggingContext(Maybe<String> launchId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
 		this.launchId = launchId;
 		this.emitter = PublishSubject.create();
 		this.convertImages = convertImages;
@@ -113,7 +113,7 @@ public class LaunchLoggingContext {
 	 * @param client   Client of ReportPortal
 	 * @return New Logging Context
 	 */
-	public static LaunchLoggingContext init(Maybe<String> launchId, final ReportPortalClient client) {
+	static LaunchLoggingContext init(Maybe<String> launchId, final ReportPortalClient client) {
 		return init(launchId, client, DEFAULT_BUFFER_SIZE, false);
 	}
 
@@ -126,8 +126,7 @@ public class LaunchLoggingContext {
 	 * @param convertImages Whether Image should be converted to BlackAndWhite
 	 * @return New Logging Context
 	 */
-	public static LaunchLoggingContext init(Maybe<String> launchId, final ReportPortalClient client, int bufferSize,
-			boolean convertImages) {
+	static LaunchLoggingContext init(Maybe<String> launchId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
 		LaunchLoggingContext context = new LaunchLoggingContext(launchId, client, bufferSize, convertImages);
 		loggingContextMap.put(DEFAULT_LAUNCH_KEY, context);
 		return context;
@@ -138,7 +137,7 @@ public class LaunchLoggingContext {
 	 *
 	 * @return Waiting queue to be able to track request sending completion
 	 */
-	public static Completable complete() {
+	static Completable complete() {
 		final LaunchLoggingContext loggingContext = loggingContextMap.get(DEFAULT_LAUNCH_KEY);
 		if (null != loggingContext) {
 			return loggingContext.completed();
@@ -152,7 +151,7 @@ public class LaunchLoggingContext {
 	 *
 	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
 	 */
-	public void emit(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
+	void emit(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
 		emitter.onNext(launchId.map(new Function<String, SaveLogRQ>() {
 			@Override
 			public SaveLogRQ apply(String input) throws Exception {
@@ -174,7 +173,7 @@ public class LaunchLoggingContext {
 	 *
 	 * @return {@link Completable}
 	 */
-	public Completable completed() {
+	private Completable completed() {
 		emitter.onComplete();
 		return emitter.ignoreElements();
 	}

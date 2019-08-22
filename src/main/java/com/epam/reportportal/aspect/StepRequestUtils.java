@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.epam.reportportal.aspect.util;
+package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.UniqueID;
+import com.epam.reportportal.aspect.StepNameUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import org.aspectj.lang.JoinPoint;
@@ -29,13 +30,13 @@ import java.util.Date;
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
-public class StepRequestUtils {
+class StepRequestUtils {
 
 	private StepRequestUtils() {
 		//static only
 	}
 
-	public static StartTestItemRQ buildStartStepRequest(MethodSignature signature, Step step, JoinPoint joinPoint) {
+	static StartTestItemRQ buildStartStepRequest(MethodSignature signature, Step step, JoinPoint joinPoint) {
 		UniqueID uniqueIdAnnotation = signature.getMethod().getAnnotation(UniqueID.class);
 		String uniqueId = uniqueIdAnnotation != null ? uniqueIdAnnotation.value() : null;
 		String name = StepNameUtils.getStepName(step, signature, joinPoint);
@@ -55,7 +56,7 @@ public class StepRequestUtils {
 		return request;
 	}
 
-	public static FinishTestItemRQ buildFinishStepRequest(String status, Date endTime) {
+	static FinishTestItemRQ buildFinishStepRequest(String status, Date endTime) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(endTime);
 		rq.setStatus(status);
