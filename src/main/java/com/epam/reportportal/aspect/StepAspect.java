@@ -115,9 +115,9 @@ public class StepAspect {
 
 			ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
 				@Override
-				public SaveLogRQ apply(String itemId) {
+				public SaveLogRQ apply(String itemUuid) {
 					SaveLogRQ rq = new SaveLogRQ();
-					rq.setItemId(itemId);
+					rq.setItemUuid(itemUuid);
 					rq.setLevel("ERROR");
 					rq.setLogTime(Calendar.getInstance().getTime());
 					if (throwable != null) {

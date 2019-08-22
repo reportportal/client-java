@@ -172,44 +172,42 @@ public class ReportPortal {
 	 * @return true if log has been emitted
 	 */
 	public static boolean emitLog(final String message, final String level, final Date time) {
-		return emitLog(getLogSupplier(message, level, time));
-
-	}
-
-	public static boolean emitLaunchLog(final String message, String level, Date time) {
-		return emitLaunchLog(getLogSupplier(message, level, time));
-	}
-
-	private static Function<String, SaveLogRQ> getLogSupplier(final String message, final String level, final Date time) {
-		return new Function<String, SaveLogRQ>() {
+		return emitLog(new Function<String, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(String itemId) {
+			public SaveLogRQ apply(String itemUuid) {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
-				rq.setItemId(itemId);
+				rq.setItemUuid(itemUuid);
 				rq.setMessage(message);
 				return rq;
 			}
-		};
+		});
+
 	}
 
-	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
-		return emitLog(getLogSupplier(message, level, time, file));
-	}
-
-	public static boolean emitLaunchLog(final String message, final String level, final Date time, final File file) {
-		return emitLaunchLog(getLogSupplier(message, level, time, file));
-	}
-
-	private static Function<String, SaveLogRQ> getLogSupplier(final String message, final String level, final Date time, final File file) {
-		return new Function<String, SaveLogRQ>() {
+	public static boolean emitLaunchLog(final String message, final String level, final Date time) {
+		return emitLaunchLog(new Function<String, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(String itemId) {
+			public SaveLogRQ apply(String launchUuid) {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
-				rq.setItemId(itemId);
+				rq.setLaunchUuid(launchUuid);
+				rq.setMessage(message);
+				return rq;
+			}
+		});
+	}
+
+	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
+		return emitLog(new Function<String, SaveLogRQ>() {
+			@Override
+			public SaveLogRQ apply(String itemUuid) {
+				SaveLogRQ rq = new SaveLogRQ();
+				rq.setLevel(level);
+				rq.setLogTime(time);
+				rq.setItemUuid(itemUuid);
 				rq.setMessage(message);
 
 				try {
@@ -226,25 +224,44 @@ public class ReportPortal {
 
 				return rq;
 			}
-		};
+		});
 	}
 
-	public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLog(getLogSupplier(message, level, time));
-	}
-
-	public static boolean emitLaunchLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLaunchLog(getLogSupplier(message, level, time));
-	}
-
-	private static Function<String, SaveLogRQ> getLogSupplier(final ReportPortalMessage message, final String level, final Date time) {
-		return new Function<String, SaveLogRQ>() {
+	public static boolean emitLaunchLog(final String message, final String level, final Date time, final File file) {
+		return emitLaunchLog(new Function<String, SaveLogRQ>() {
 			@Override
-			public SaveLogRQ apply(String itemId) {
+			public SaveLogRQ apply(String launchUuid) {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setLevel(level);
 				rq.setLogTime(time);
-				rq.setItemId(itemId);
+				rq.setLaunchUuid(launchUuid);
+				rq.setMessage(message);
+
+				try {
+					SaveLogRQ.File f = new SaveLogRQ.File();
+					f.setContentType(detect(file));
+					f.setContent(toByteArray(file));
+
+					f.setName(UUID.randomUUID().toString());
+					rq.setFile(f);
+				} catch (IOException e) {
+					// seems like there is some problem. Do not report an file
+					LOGGER.error("Cannot send file to ReportPortal", e);
+				}
+
+				return rq;
+			}
+		});
+	}
+
+	public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
+		return emitLog(new Function<String, SaveLogRQ>() {
+			@Override
+			public SaveLogRQ apply(String itemUuid) {
+				SaveLogRQ rq = new SaveLogRQ();
+				rq.setLevel(level);
+				rq.setLogTime(time);
+				rq.setItemUuid(itemUuid);
 				rq.setMessage(message.getMessage());
 				try {
 					final TypeAwareByteSource data = message.getData();
@@ -262,7 +279,35 @@ public class ReportPortal {
 
 				return rq;
 			}
-		};
+		});
+	}
+
+	public static boolean emitLaunchLog(final ReportPortalMessage message, final String level, final Date time) {
+		return emitLaunchLog(new Function<String, SaveLogRQ>() {
+			@Override
+			public SaveLogRQ apply(String launchUuid) {
+				SaveLogRQ rq = new SaveLogRQ();
+				rq.setLevel(level);
+				rq.setLogTime(time);
+				rq.setLaunchUuid(launchUuid);
+				rq.setMessage(message.getMessage());
+				try {
+					final TypeAwareByteSource data = message.getData();
+					SaveLogRQ.File file = new SaveLogRQ.File();
+					file.setContent(data.read());
+
+					file.setContentType(data.getMediaType());
+					file.setName(UUID.randomUUID().toString());
+					rq.setFile(file);
+
+				} catch (Exception e) {
+					// seems like there is some problem. Do not report an file
+					LOGGER.error("Cannot send file to ReportPortal", e);
+				}
+
+				return rq;
+			}
+		});
 	}
 
 	public static class Builder {
@@ -301,9 +346,10 @@ public class ReportPortal {
 
 		public <T extends ReportPortalClient> T buildClient(Class<T> clientType, ListenerParameters params) {
 			try {
+
 				HttpClient client = null == this.httpClient ?
 						defaultClient(params) :
-						this.httpClient.addInterceptorLast(new BearerAuthInterceptor(params.getUuid())).build();
+						this.httpClient.addInterceptorLast(new BearerAuthInterceptor(params.getApiKey())).build();
 
 				return RestEndpoints.forInterface(clientType, buildRestEndpoint(params, client));
 			} catch (Exception e) {
@@ -323,10 +369,15 @@ public class ReportPortal {
 			String project = parameters.getProjectName();
 
 			final JacksonSerializer jacksonSerializer = new JacksonSerializer(om);
-			return new HttpClientRestEndpoint(client, new LinkedList<Serializer>() {{
-				add(jacksonSerializer);
-				add(new ByteArraySerializer());
-			}}, new ReportPortalErrorHandler(jacksonSerializer), buildEndpointUrl(baseUrl, project, parameters.isAsyncReporting()), executorService);
+			return new HttpClientRestEndpoint(client,
+					new LinkedList<Serializer>() {{
+						add(jacksonSerializer);
+						add(new ByteArraySerializer());
+					}},
+					new ReportPortalErrorHandler(jacksonSerializer),
+					buildEndpointUrl(baseUrl, project, parameters.isAsyncReporting()),
+					executorService
+			);
 		}
 
 		protected String buildEndpointUrl(String baseUrl, String project, boolean asyncReporting) {
@@ -338,7 +389,6 @@ public class ReportPortal {
 			String baseUrl = parameters.getBaseUrl();
 			String keyStore = parameters.getKeystore();
 			String keyStorePassword = parameters.getKeystorePassword();
-			final String uuid = parameters.getUuid();
 
 			final HttpClientBuilder builder = HttpClients.custom();
 			if (HTTPS.equals(new URL(baseUrl).getProtocol()) && keyStore != null) {
@@ -362,7 +412,7 @@ public class ReportPortal {
 					.setMaxConnPerRoute(parameters.getMaxConnectionsPerRoute())
 					.setMaxConnTotal(parameters.getMaxConnectionsTotal())
 					.evictExpiredConnections();
-			return builder.addInterceptorLast(new BearerAuthInterceptor(uuid)).build();
+			return builder.addInterceptorLast(new BearerAuthInterceptor(parameters.getApiKey())).build();
 
 		}
 
