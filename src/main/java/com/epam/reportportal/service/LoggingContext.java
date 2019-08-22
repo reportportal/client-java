@@ -37,6 +37,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 
+import static com.epam.reportportal.service.LoggingCallback.LOG_ERROR;
 import static com.epam.reportportal.utils.SubscriptionUtils.logFlowableResults;
 import static com.epam.reportportal.utils.files.ImageConverter.convert;
 import static com.epam.reportportal.utils.files.ImageConverter.isImage;
@@ -121,44 +122,37 @@ public class LoggingContext {
 		this.itemId = itemId;
 		this.emitter = PublishSubject.create();
 		this.convertImages = convertImages;
-		emitter.toFlowable(BackpressureStrategy.BUFFER)
-				.flatMap(new Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>() {
-					@Override
-					public Publisher<SaveLogRQ> apply(Maybe<SaveLogRQ> rq) throws Exception {
-						return rq.toFlowable();
-					}
-				})
-				.buffer(bufferSize)
-				.flatMap(new Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>() {
-					@Override
-					public Flowable<BatchSaveOperatingRS> apply(List<SaveLogRQ> rqs) throws Exception {
-						MultiPartRequest.Builder builder = new MultiPartRequest.Builder();
+		emitter.toFlowable(BackpressureStrategy.BUFFER).flatMap(new Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>() {
+			@Override
+			public Publisher<SaveLogRQ> apply(Maybe<SaveLogRQ> rq) throws Exception {
+				return rq.toFlowable();
+			}
+		}).buffer(bufferSize).flatMap(new Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>() {
+			@Override
+			public Flowable<BatchSaveOperatingRS> apply(List<SaveLogRQ> rqs) throws Exception {
+				MultiPartRequest.Builder builder = new MultiPartRequest.Builder();
 
-						builder.addSerializedPart(Constants.LOG_REQUEST_JSON_PART, rqs);
+				builder.addSerializedPart(Constants.LOG_REQUEST_JSON_PART, rqs);
 
-						for (SaveLogRQ rq : rqs) {
-							final SaveLogRQ.File file = rq.getFile();
-							if (null != file) {
-								builder.addBinaryPart(Constants.LOG_REQUEST_BINARY_PART,
-										file.getName(),
-										Strings.isNullOrEmpty(file.getContentType()) ?
-												MediaType.OCTET_STREAM.toString() :
-												file.getContentType(),
-										wrap(file.getContent())
-								);
-							}
-						}
-						return client.log(builder.build()).toFlowable();
+				for (SaveLogRQ rq : rqs) {
+					final SaveLogRQ.File file = rq.getFile();
+					if (null != file) {
+						builder.addBinaryPart(
+								Constants.LOG_REQUEST_BINARY_PART,
+								file.getName(),
+								Strings.isNullOrEmpty(file.getContentType()) ? MediaType.OCTET_STREAM.toString() : file.getContentType(),
+								wrap(file.getContent())
+						);
 					}
-				})
-				.doOnError(new Consumer<Throwable>() {
-					@Override
-					public void accept(Throwable throwable) throws Exception {
-						throwable.printStackTrace();
-					}
-				})
-				.observeOn(Schedulers.computation())
-				.subscribe(logFlowableResults("Logging context"));
+				}
+				return client.log(builder.build()).toFlowable();
+			}
+		}).doOnError(new Consumer<Throwable>() {
+			@Override
+			public void accept(Throwable throwable) throws Exception {
+				LOG_ERROR.accept(throwable);
+			}
+		}).observeOn(Schedulers.computation()).subscribe(logFlowableResults("Logging context"));
 
 	}
 

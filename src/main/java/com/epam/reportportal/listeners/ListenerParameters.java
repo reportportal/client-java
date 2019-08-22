@@ -43,7 +43,7 @@ public class ListenerParameters {
 	private static final boolean DEFAULT_ASYNC_REPORTING = false;
 
 	private String description;
-	private String uuid;
+	private String apiKey;
 	private String baseUrl;
 	private String projectName;
 	private String launchName;
@@ -84,7 +84,7 @@ public class ListenerParameters {
 
 	public ListenerParameters(PropertiesLoader properties) {
 		this.description = properties.getProperty(DESCRIPTION);
-		this.uuid = properties.getProperty(UUID);
+		this.apiKey = properties.getProperty(API_KEY, properties.getProperty(UUID));
 		this.baseUrl = properties.getProperty(BASE_URL);
 		this.projectName = properties.getProperty(PROJECT_NAME);
 		this.launchName = properties.getProperty(LAUNCH_NAME);
@@ -117,12 +117,12 @@ public class ListenerParameters {
 		this.description = description;
 	}
 
-	public String getUuid() {
-		return uuid;
+	public String getApiKey() {
+		return apiKey;
 	}
 
-	public void setUuid(String uuid) {
-		this.uuid = uuid;
+	public void setApiKey(String apiKey) {
+		this.apiKey = apiKey;
 	}
 
 	public String getBaseUrl() {
@@ -278,7 +278,7 @@ public class ListenerParameters {
 	public String toString() {
 		final StringBuilder sb = new StringBuilder("ListenerParameters{");
 		sb.append("description='").append(description).append('\'');
-		sb.append(", uuid='").append(uuid).append('\'');
+		sb.append(", apiKey='").append(apiKey).append('\'');
 		sb.append(", baseUrl='").append(baseUrl).append('\'');
 		sb.append(", projectName='").append(projectName).append('\'');
 		sb.append(", launchName='").append(launchName).append('\'');
