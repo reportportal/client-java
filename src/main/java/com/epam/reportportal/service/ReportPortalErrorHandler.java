@@ -124,14 +124,19 @@ public class ReportPortalErrorHandler extends DefaultErrorHandler {
 
 		boolean result = true;
 
-		Collection<String> contentTypes = rs.getHeaders().get(HttpHeaders.CONTENT_TYPE.toLowerCase());
+		Collection<String> contentTypes = rs.getHeaders().get(HttpHeaders.CONTENT_TYPE);
+		if (contentTypes.isEmpty() && rs.getHeaders().containsKey(HttpHeaders.CONTENT_TYPE.toLowerCase())) {
+			contentTypes = rs.getHeaders().get(HttpHeaders.CONTENT_TYPE.toLowerCase());
+		}
 
-		for (String contentType : contentTypes) {
+		if (null != contentTypes) {
+			for (String contentType : contentTypes) {
 
-			boolean isJson = contentType.contains(ContentType.APPLICATION_JSON.getMimeType());
-			if (isJson) {
-				result = false;
-				break;
+				boolean isJson = contentType.contains(ContentType.APPLICATION_JSON.getMimeType());
+				if (isJson) {
+					result = false;
+					break;
+				}
 			}
 		}
 
