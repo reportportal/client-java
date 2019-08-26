@@ -125,8 +125,8 @@ public class ReportPortalErrorHandler extends DefaultErrorHandler {
 		boolean result = true;
 
 		Collection<String> contentTypes = rs.getHeaders().get(HttpHeaders.CONTENT_TYPE);
-		if (null == contentTypes && rs.getHeaders().containsKey(HttpHeaders.CONTENT_TYPE.toLowerCase())) {
-			contentTypes = rs.getHeaders( ).get(HttpHeaders.CONTENT_TYPE.toLowerCase());
+		if (contentTypes.isEmpty() && rs.getHeaders().containsKey(HttpHeaders.CONTENT_TYPE.toLowerCase())) {
+			contentTypes = rs.getHeaders().get(HttpHeaders.CONTENT_TYPE.toLowerCase());
 		}
 
 		if (null != contentTypes) {

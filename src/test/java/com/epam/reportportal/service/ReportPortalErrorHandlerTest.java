@@ -62,6 +62,42 @@ public class ReportPortalErrorHandlerTest {
 		reportPortalErrorHandler.handle(invalidResponse);
 	}
 
+	@Test(expected = InternalReportPortalClientException.class)
+	public void handle_not_json_lowercase() throws Exception {
+		//  given:
+		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
+		invalidHeaders.put(HttpHeaders.CONTENT_TYPE.toLowerCase(), ContentType.TEXT_HTML.getMimeType());
+
+		Response<ByteSource> invalidResponse = createFakeResponse(200, invalidHeaders);
+
+		//  when:
+		reportPortalErrorHandler.handle(invalidResponse);
+	}
+
+	@Test
+	public void handle_json() throws Exception {
+		//  given:
+		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
+		invalidHeaders.put(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
+
+		Response<ByteSource> invalidResponse = createFakeResponse(201, invalidHeaders);
+
+		//  when:
+		reportPortalErrorHandler.handle(invalidResponse);
+	}
+
+	@Test
+	public void handle_json_lowercase() throws Exception {
+		//  given:
+		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
+		invalidHeaders.put(HttpHeaders.CONTENT_TYPE.toLowerCase(), ContentType.APPLICATION_JSON.getMimeType());
+
+		Response<ByteSource> invalidResponse = createFakeResponse(200, invalidHeaders);
+
+		//  when:
+		reportPortalErrorHandler.handle(invalidResponse);
+	}
+
 	@Test(expected = GeneralReportPortalException.class)
 	public void handle_error_code() throws Exception {
 		//  given:
