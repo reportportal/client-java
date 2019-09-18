@@ -18,21 +18,17 @@ package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.UniqueID;
-import com.epam.reportportal.annotations.attribute.Attribute;
 import com.epam.reportportal.annotations.attribute.Attributes;
-import com.epam.reportportal.annotations.attribute.MultiKeyAttribute;
-import com.epam.reportportal.annotations.attribute.MultiValueAttribute;
+import com.epam.reportportal.utils.AttributeParser;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 
-import java.util.*;
-
-import static com.epam.reportportal.annotations.attribute.AttributeConstants.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Set;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -74,64 +70,8 @@ class StepRequestUtils {
 	private static Set<ItemAttributesRQ> createStepAttributes(MethodSignature methodSignature) {
 		Attributes attributesAnnotation = methodSignature.getMethod().getAnnotation(Attributes.class);
 		if (attributesAnnotation != null) {
-			return retrieveAttributes(attributesAnnotation);
+			return AttributeParser.retrieveAttributes(attributesAnnotation);
 		}
 		return null;
-	}
-
-	public static Set<ItemAttributesRQ> retrieveAttributes(Attributes attributesAnnotation) {
-		Set<ItemAttributesRQ> itemAttributes = Sets.newLinkedHashSet();
-		itemAttributes.addAll(createItemAttributes(COMPONENT_KEY, attributesAnnotation.component(), false, false));
-		itemAttributes.addAll(createItemAttributes(E2E_KEY, attributesAnnotation.e2e(), false, false));
-		itemAttributes.addAll(createItemAttributes(PERSONA_KEY, attributesAnnotation.persona(), false, false));
-		itemAttributes.addAll(createItemAttributes(PRODUCT_KEY, attributesAnnotation.product(), false, false));
-		itemAttributes.addAll(createItemAttributes(VERTICAL_KEY, attributesAnnotation.vertical(), false, false));
-		for (Attribute attribute : attributesAnnotation.attributes()) {
-			if (!attribute.value().trim().isEmpty()) {
-				itemAttributes.add(createItemAttribute(attribute.key(), attribute.value(), attribute.isSystem(), attribute.isNullKey()));
-			}
-		}
-		for (MultiKeyAttribute attribute : attributesAnnotation.multiKeyAttributes()) {
-			itemAttributes.addAll(createItemAttributes(attribute.keys(), attribute.value(), attribute.isSystem(), attribute.isNullKey()));
-		}
-		for (MultiValueAttribute attribute : attributesAnnotation.multiValueAttributes()) {
-			itemAttributes.addAll(createItemAttributes(attribute.key(), attribute.values(), attribute.isSystem(), attribute.isNullKey()));
-		}
-
-		return itemAttributes;
-	}
-
-	public static List<ItemAttributesRQ> createItemAttributes(String[] keys, String value, boolean isSystem, boolean isNullKey) {
-		if (value == null || value.trim().isEmpty()) {
-			return Collections.emptyList();
-		}
-		if (keys == null || keys.length < 1) {
-			return Collections.singletonList(createItemAttribute(null, value, isSystem, isNullKey));
-		}
-
-		List<ItemAttributesRQ> itemAttributes = Lists.newArrayListWithExpectedSize(keys.length);
-		for (String key : keys) {
-			itemAttributes.add(createItemAttribute(key, value, isSystem, isNullKey));
-		}
-		return itemAttributes;
-	}
-
-	public static List<ItemAttributesRQ> createItemAttributes(String key, String[] values, boolean isSystem, boolean isNullKey) {
-		if (values != null && values.length > 0) {
-			List<ItemAttributesRQ> attributes = Lists.newArrayListWithExpectedSize(values.length);
-			for (String value : values) {
-				if (value != null && !value.trim().isEmpty()) {
-					attributes.add(createItemAttribute(key, value, isSystem, isNullKey));
-				}
-			}
-
-			return attributes;
-		}
-
-		return Collections.emptyList();
-	}
-
-	public static ItemAttributesRQ createItemAttribute(String key, String value, boolean isSystem, boolean isNullKey) {
-		return new ItemAttributesRQ(isNullKey ? null : key, value, isSystem);
 	}
 }
