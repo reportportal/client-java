@@ -38,6 +38,7 @@ import io.reactivex.Maybe;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
+import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.SSLContextBuilder;
@@ -408,7 +409,7 @@ public class ReportPortal {
 
 			}
 
-			builder.disableAutomaticRetries()
+			builder.setRetryHandler(new DefaultHttpRequestRetryHandler(3, false))
 					.setMaxConnPerRoute(parameters.getMaxConnectionsPerRoute())
 					.setMaxConnTotal(parameters.getMaxConnectionsTotal())
 					.evictExpiredConnections();
