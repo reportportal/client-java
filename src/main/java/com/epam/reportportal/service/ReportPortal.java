@@ -55,6 +55,7 @@ import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.service.LaunchLoggingContext.DEFAULT_LAUNCH_KEY;
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
@@ -412,6 +413,7 @@ public class ReportPortal {
 			builder.setRetryHandler(new DefaultHttpRequestRetryHandler(3, false))
 					.setMaxConnPerRoute(parameters.getMaxConnectionsPerRoute())
 					.setMaxConnTotal(parameters.getMaxConnectionsTotal())
+					.setConnectionTimeToLive(29990, TimeUnit.MILLISECONDS) // By default TTL for service-api is set to 30000 ms.
 					.evictExpiredConnections();
 			return builder.addInterceptorLast(new BearerAuthInterceptor(parameters.getApiKey())).build();
 
