@@ -55,13 +55,13 @@ public class TestItemTree {
 		private final Maybe<String> itemId;
 		private final Map<String, TestItemLeaf> childItems;
 
-		private TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId, Map<String, TestItemLeaf> childItems) {
+		public TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId, Map<String, TestItemLeaf> childItems) {
 			this.parentId = parentId;
 			this.itemId = itemId;
 			this.childItems = childItems;
 		}
 
-		private TestItemLeaf(Maybe<String> itemId, Map<String, TestItemLeaf> childItems) {
+		public TestItemLeaf(Maybe<String> itemId, Map<String, TestItemLeaf> childItems) {
 			this.itemId = itemId;
 			this.childItems = childItems;
 		}
