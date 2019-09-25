@@ -19,8 +19,8 @@ package com.epam.reportportal.service.tree;
 import io.reactivex.Maybe;
 import io.reactivex.annotations.Nullable;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -34,10 +34,10 @@ public class TestItemTree {
 		this.testItems = new InheritableThreadLocal<Map<String, TestItemLeaf>>() {
 			@Override
 			protected Map<String, TestItemLeaf> initialValue() {
-				return new HashMap<String, TestItemLeaf>();
+				return new ConcurrentHashMap<String, TestItemLeaf>();
 			}
 		};
-		this.defaultMap = new HashMap<String, TestItemLeaf>();
+		this.defaultMap = new ConcurrentHashMap<String, TestItemLeaf>();
 	}
 
 	public Map<String, TestItemLeaf> getTestItems() {
