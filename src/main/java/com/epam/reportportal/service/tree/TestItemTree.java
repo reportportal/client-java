@@ -27,12 +27,10 @@ import java.util.Map;
  */
 public class TestItemTree {
 
-	private final Maybe<String> launchId;
 	private final ThreadLocal<Map<String, TestItemLeaf>> testItems;
 	private final Map<String, TestItemLeaf> defaultMap;
 
-	public TestItemTree(Maybe<String> launchId, final Map<String, TestItemLeaf> testItems) {
-		this.launchId = launchId;
+	public TestItemTree(final Map<String, TestItemLeaf> testItems) {
 		this.testItems = new InheritableThreadLocal<Map<String, TestItemLeaf>>() {
 			@Override
 			protected Map<String, TestItemLeaf> initialValue() {
@@ -40,10 +38,6 @@ public class TestItemTree {
 			}
 		};
 		this.defaultMap = new HashMap<String, TestItemLeaf>();
-	}
-
-	public Maybe<String> getLaunchId() {
-		return launchId;
 	}
 
 	public Map<String, TestItemLeaf> getTestItems() {
