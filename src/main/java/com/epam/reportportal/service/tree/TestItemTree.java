@@ -30,11 +30,11 @@ public class TestItemTree {
 	private final ThreadLocal<Map<String, TestItemLeaf>> testItems;
 	private final Map<String, TestItemLeaf> defaultMap;
 
-	public TestItemTree(final Map<String, TestItemLeaf> testItems) {
+	public TestItemTree() {
 		this.testItems = new InheritableThreadLocal<Map<String, TestItemLeaf>>() {
 			@Override
 			protected Map<String, TestItemLeaf> initialValue() {
-				return testItems;
+				return new HashMap<String, TestItemLeaf>();
 			}
 		};
 		this.defaultMap = new HashMap<String, TestItemLeaf>();
@@ -48,7 +48,7 @@ public class TestItemTree {
 		return defaultMap;
 	}
 
-	private static class TestItemLeaf {
+	public static class TestItemLeaf {
 
 		@Nullable
 		private Maybe<String> parentId;
