@@ -413,8 +413,7 @@ public class ReportPortal {
 			builder.setRetryHandler(new DefaultHttpRequestRetryHandler(3, false))
 					.setMaxConnPerRoute(parameters.getMaxConnectionsPerRoute())
 					.setMaxConnTotal(parameters.getMaxConnectionsTotal())
-					.setConnectionTimeToLive(29990, TimeUnit.MILLISECONDS) // By default TTL for service-api is set to 30000 ms.
-					.evictExpiredConnections();
+					.evictIdleConnections(5, TimeUnit.SECONDS);
 			return builder.addInterceptorLast(new BearerAuthInterceptor(parameters.getApiKey())).build();
 
 		}
