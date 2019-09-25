@@ -410,9 +410,10 @@ public class ReportPortal {
 
 			}
 
-			builder.setRetryHandler(new DefaultHttpRequestRetryHandler(3, false))
+			builder.setRetryHandler(new DefaultHttpRequestRetryHandler(3, true))
 					.setMaxConnPerRoute(parameters.getMaxConnectionsPerRoute())
 					.setMaxConnTotal(parameters.getMaxConnectionsTotal())
+					.setConnectionTimeToLive(60, TimeUnit.SECONDS)
 					.evictIdleConnections(5, TimeUnit.SECONDS);
 			return builder.addInterceptorLast(new BearerAuthInterceptor(parameters.getApiKey())).build();
 
