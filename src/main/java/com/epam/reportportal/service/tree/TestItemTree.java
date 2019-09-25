@@ -19,7 +19,6 @@ package com.epam.reportportal.service.tree;
 import io.reactivex.Maybe;
 import io.reactivex.annotations.Nullable;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -28,10 +27,11 @@ import java.util.Map;
 public class TestItemTree {
 
 	private final Maybe<String> launchId;
-	private final Map<String, TestItemLeaf> testItems = new HashMap<String, TestItemLeaf>();
+	private final Map<String, TestItemLeaf> testItems;
 
-	public TestItemTree(Maybe<String> launchId) {
+	public TestItemTree(Maybe<String> launchId, Map<String, TestItemLeaf> testItems) {
 		this.launchId = launchId;
+		this.testItems = testItems;
 	}
 
 	public Maybe<String> getLaunchId() {
@@ -47,15 +47,17 @@ public class TestItemTree {
 		@Nullable
 		private Maybe<String> parentId;
 		private final Maybe<String> itemId;
-		private final Map<String, TestItemLeaf> childItems = new HashMap<String, TestItemLeaf>();
+		private final Map<String, TestItemLeaf> childItems;
 
-		private TestItemLeaf(Maybe<String> itemId) {
-			this.itemId = itemId;
-		}
-
-		private TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId) {
+		private TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId, Map<String, TestItemLeaf> childItems) {
 			this.parentId = parentId;
 			this.itemId = itemId;
+			this.childItems = childItems;
+		}
+
+		private TestItemLeaf(Maybe<String> itemId, Map<String, TestItemLeaf> childItems) {
+			this.itemId = itemId;
+			this.childItems = childItems;
 		}
 
 		@Nullable
