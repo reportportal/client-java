@@ -19,6 +19,7 @@ package com.epam.reportportal.service.tree;
 import io.reactivex.Maybe;
 import io.reactivex.annotations.Nullable;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -27,11 +28,18 @@ import java.util.Map;
 public class TestItemTree {
 
 	private final Maybe<String> launchId;
-	private final Map<String, TestItemLeaf> testItems;
+	private final ThreadLocal<Map<String, TestItemLeaf>> testItems;
+	private final Map<String, TestItemLeaf> defaultMap;
 
-	public TestItemTree(Maybe<String> launchId, Map<String, TestItemLeaf> testItems) {
+	public TestItemTree(Maybe<String> launchId, final Map<String, TestItemLeaf> testItems) {
 		this.launchId = launchId;
-		this.testItems = testItems;
+		this.testItems = new InheritableThreadLocal<Map<String, TestItemLeaf>>() {
+			@Override
+			protected Map<String, TestItemLeaf> initialValue() {
+				return testItems;
+			}
+		};
+		this.defaultMap = new HashMap<String, TestItemLeaf>();
 	}
 
 	public Maybe<String> getLaunchId() {
@@ -39,7 +47,11 @@ public class TestItemTree {
 	}
 
 	public Map<String, TestItemLeaf> getTestItems() {
-		return testItems;
+		return testItems.get();
+	}
+
+	public Map<String, TestItemLeaf> getDefaultMap() {
+		return defaultMap;
 	}
 
 	private static class TestItemLeaf {
