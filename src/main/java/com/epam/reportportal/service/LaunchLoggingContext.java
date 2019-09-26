@@ -17,12 +17,9 @@
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.message.TypeAwareByteSource;
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
+import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
-import com.epam.ta.reportportal.ws.model.Constants;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import com.google.common.base.Strings;
-import com.google.common.net.MediaType;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
@@ -80,22 +77,7 @@ class LaunchLoggingContext {
 		}).buffer(bufferSize).flatMap(new Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>() {
 			@Override
 			public Flowable<BatchSaveOperatingRS> apply(List<SaveLogRQ> rqs) throws Exception {
-				MultiPartRequest.Builder builder = new MultiPartRequest.Builder();
-
-				builder.addSerializedPart(Constants.LOG_REQUEST_JSON_PART, rqs);
-
-				for (SaveLogRQ rq : rqs) {
-					final SaveLogRQ.File file = rq.getFile();
-					if (null != file) {
-						builder.addBinaryPart(
-								Constants.LOG_REQUEST_BINARY_PART,
-								file.getName(),
-								Strings.isNullOrEmpty(file.getContentType()) ? MediaType.OCTET_STREAM.toString() : file.getContentType(),
-								wrap(file.getContent())
-						);
-					}
-				}
-				return client.log(builder.build()).toFlowable();
+				return client.log(HttpRequestUtils.buildLogMultiPartRequest(rqs)).toFlowable();
 			}
 		}).doOnError(new Consumer<Throwable>() {
 			@Override
