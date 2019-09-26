@@ -55,7 +55,7 @@ public class TestItemTree {
 
 		public TestItemLeaf(Maybe<String> itemId, int expectedChildrenCount) {
 			this.itemId = itemId;
-			this.childItems = new ConcurrentHashMap<String, TestItemLeaf>();
+			this.childItems = new ConcurrentHashMap<String, TestItemLeaf>(expectedChildrenCount);
 		}
 
 		public TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId, int expectedChildrenCount) {
