@@ -37,6 +37,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Date;
 
+import static com.epam.reportportal.utils.SubscriptionUtils.logMaybeResults;
+
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
@@ -82,7 +84,7 @@ public class ItemTreeReporter {
 					finishTestItemRQ.setLaunchUuid(launchId);
 					return reportPortalClient.finishTestItem(itemId, finishTestItemRQ);
 				}
-			}).observeOn(Schedulers.computation()).subscribe();
+			}).observeOn(Schedulers.computation()).subscribe(logMaybeResults("Finish test item callback"));
 			return true;
 		} else {
 			return false;
