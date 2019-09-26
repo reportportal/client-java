@@ -28,7 +28,6 @@ import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
-import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
@@ -76,13 +75,18 @@ public class ItemTreeReporter {
 
 	public static boolean finishItem(final ReportPortalClient reportPortalClient, final FinishTestItemRQ finishTestItemRQ,
 			final Maybe<String> launchId, TestItemTree.TestItemLeaf testItemLeaf) {
-		Maybe<String> item = testItemLeaf.getItemId();
-		if (item != null) {
-			launchId.zipWith(item, new BiFunction<String, String, Maybe<OperationCompletionRS>>() {
+		final Maybe<String> item = testItemLeaf.getItemId();
+		if (item != null && launchId != null) {
+			launchId.flatMap(new Function<String, MaybeSource<OperationCompletionRS>>() {
 				@Override
-				public Maybe<OperationCompletionRS> apply(String launchId, String itemId) {
-					finishTestItemRQ.setLaunchUuid(launchId);
-					return reportPortalClient.finishTestItem(itemId, finishTestItemRQ);
+				public MaybeSource<OperationCompletionRS> apply(final String launchId) {
+					return item.flatMap(new Function<String, MaybeSource<OperationCompletionRS>>() {
+						@Override
+						public MaybeSource<OperationCompletionRS> apply(String itemId) {
+							finishTestItemRQ.setLaunchUuid(launchId);
+							return reportPortalClient.finishTestItem(itemId, finishTestItemRQ);
+						}
+					});
 				}
 			}).observeOn(Schedulers.computation()).subscribe(logMaybeResults("Finish test item callback"));
 			return true;
