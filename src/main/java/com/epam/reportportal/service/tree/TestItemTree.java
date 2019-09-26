@@ -27,25 +27,23 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class TestItemTree {
 
-	private final ThreadLocal<Map<String, TestItemLeaf>> testItems;
-	private final Map<String, TestItemLeaf> defaultMap;
+	private Maybe<String> launchId;
+	private final Map<String, TestItemLeaf> testItems;
 
 	public TestItemTree() {
-		this.testItems = new InheritableThreadLocal<Map<String, TestItemLeaf>>() {
-			@Override
-			protected Map<String, TestItemLeaf> initialValue() {
-				return new ConcurrentHashMap<String, TestItemLeaf>();
-			}
-		};
-		this.defaultMap = new ConcurrentHashMap<String, TestItemLeaf>();
+		this.testItems = new ConcurrentHashMap<String, TestItemLeaf>();
+	}
+
+	public Maybe<String> getLaunchId() {
+		return launchId;
+	}
+
+	public void setLaunchId(Maybe<String> launchId) {
+		this.launchId = launchId;
 	}
 
 	public Map<String, TestItemLeaf> getTestItems() {
-		return testItems.get();
-	}
-
-	public Map<String, TestItemLeaf> getDefaultMap() {
-		return defaultMap;
+		return testItems;
 	}
 
 	public static class TestItemLeaf {
@@ -55,15 +53,24 @@ public class TestItemTree {
 		private final Maybe<String> itemId;
 		private final Map<String, TestItemLeaf> childItems;
 
-		public TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId, Map<String, TestItemLeaf> childItems) {
+		public TestItemLeaf(Maybe<String> itemId, int expectedChildrenCount) {
+			this.itemId = itemId;
+			this.childItems = new ConcurrentHashMap<String, TestItemLeaf>();
+		}
+
+		public TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId, int expectedChildrenCount) {
+			this(itemId, expectedChildrenCount);
 			this.parentId = parentId;
+		}
+
+		public TestItemLeaf(Maybe<String> itemId, ConcurrentHashMap<String, TestItemLeaf> childItems) {
 			this.itemId = itemId;
 			this.childItems = childItems;
 		}
 
-		public TestItemLeaf(Maybe<String> itemId, Map<String, TestItemLeaf> childItems) {
-			this.itemId = itemId;
-			this.childItems = childItems;
+		public TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId, ConcurrentHashMap<String, TestItemLeaf> childItems) {
+			this(itemId, childItems);
+			this.parentId = parentId;
 		}
 
 		@Nullable
