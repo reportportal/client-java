@@ -52,7 +52,7 @@ public class ItemTreeReporter {
 		final Maybe<String> parent = testItemLeaf.getParentId();
 		if (parent != null && launchId != null) {
 			Maybe<String> itemId = sendStartItemRequest(reportPortalClient, launchId, parent, startTestItemRQ);
-			itemId.observeOn(Schedulers.computation()).subscribe();
+			itemId.subscribeOn(Schedulers.computation()).subscribe();
 			return itemId;
 		} else {
 			return Maybe.empty();
@@ -65,7 +65,7 @@ public class ItemTreeReporter {
 		final Maybe<String> parent = testItemLeaf.getParentId();
 		if (parent != null && launchId != null) {
 			Maybe<String> itemId = sendStartItemRequest(reportPortalClient, launchId, parent, startTestItemRQ);
-			itemId.observeOn(Schedulers.computation()).subscribe(resultConsumer);
+			itemId.subscribeOn(Schedulers.computation()).subscribe(resultConsumer);
 			return itemId;
 		} else {
 			return Maybe.empty();
@@ -88,7 +88,7 @@ public class ItemTreeReporter {
 						}
 					});
 				}
-			}).observeOn(Schedulers.computation()).subscribe(logMaybeResults("Finish test item callback"));
+			}).subscribeOn(Schedulers.computation()).subscribe(logMaybeResults("Finish test item callback"));
 			return true;
 		} else {
 			return false;
