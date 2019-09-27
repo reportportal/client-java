@@ -20,7 +20,6 @@ import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import io.reactivex.Maybe;
 import io.reactivex.annotations.Nullable;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -45,7 +44,7 @@ public class TestItemTree {
 	}
 
 	public Map<String, TestItemLeaf> getTestItems() {
-		return new HashMap<String, TestItemLeaf>(testItems);
+		return testItems;
 	}
 
 	public static class TestItemLeaf {
@@ -100,7 +99,7 @@ public class TestItemTree {
 		}
 
 		public Map<String, TestItemLeaf> getChildItems() {
-			return new HashMap<String, TestItemLeaf>(childItems);
+			return childItems;
 		}
 	}
 }
