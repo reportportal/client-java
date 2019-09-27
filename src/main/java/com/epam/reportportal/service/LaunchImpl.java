@@ -233,11 +233,11 @@ public class LaunchImpl extends Launch {
 
 	/**
 	 * Finishes Test Item in ReportPortal. Non-blocking. Schedules finish after success of all child items
-	 *
-	 * @param itemId Item ID promise
+	 *  @param itemId Item ID promise
 	 * @param rq     Finish request
+	 * @return
 	 */
-	public void finishTestItem(final Maybe<String> itemId, final FinishTestItemRQ rq) {
+	public Maybe<OperationCompletionRS> finishTestItem(final Maybe<String> itemId, final FinishTestItemRQ rq) {
 
 		Preconditions.checkArgument(null != itemId, "ItemID should not be null");
 
@@ -256,10 +256,10 @@ public class LaunchImpl extends Launch {
 		}
 
 		//wait for the children to complete
-		final Completable finishCompletion = Completable.concat(treeItem.getChildren())
-				.andThen(this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
-					@Override
-					public Maybe<OperationCompletionRS> apply(final String launchId) {return itemId.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
+		Maybe<OperationCompletionRS> finishResponse = this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
+			@Override
+			public Maybe<OperationCompletionRS> apply(final String launchId) {
+				return itemId.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
 					@Override
 					public Maybe<OperationCompletionRS> apply(String itemId) {
 						rq.setLaunchUuid(launchId);
@@ -275,7 +275,11 @@ public class LaunchImpl extends Launch {
 								.doOnSuccess(LOG_SUCCESS)
 								.doOnError(LOG_ERROR);
 					}
-				});}}))
+				});
+			}
+		});
+		final Completable finishCompletion = Completable.concat(treeItem.getChildren())
+				.andThen(finishResponse)
 				.doAfterSuccess(new Consumer<OperationCompletionRS>() {
 					@Override
 					public void accept(OperationCompletionRS operationCompletionRS) {
@@ -294,6 +298,8 @@ public class LaunchImpl extends Launch {
 			//seems like this is root item
 			QUEUE.getUnchecked(this.launch).addToQueue(finishCompletion);
 		}
+
+		return finishResponse;
 
 	}
 

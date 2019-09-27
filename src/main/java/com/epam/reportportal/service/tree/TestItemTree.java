@@ -16,9 +16,11 @@
 
 package com.epam.reportportal.service.tree;
 
+import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import io.reactivex.Maybe;
 import io.reactivex.annotations.Nullable;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -43,13 +45,15 @@ public class TestItemTree {
 	}
 
 	public Map<String, TestItemLeaf> getTestItems() {
-		return testItems;
+		return new HashMap<String, TestItemLeaf>(testItems);
 	}
 
 	public static class TestItemLeaf {
 
 		@Nullable
 		private Maybe<String> parentId;
+		@Nullable
+		private Maybe<OperationCompletionRS> finishResponse;
 		private final Maybe<String> itemId;
 		private final Map<String, TestItemLeaf> childItems;
 
@@ -82,12 +86,21 @@ public class TestItemTree {
 			this.parentId = parentId;
 		}
 
+		@Nullable
+		public Maybe<OperationCompletionRS> getFinishResponse() {
+			return finishResponse;
+		}
+
+		public void setFinishResponse(@Nullable Maybe<OperationCompletionRS> finishResponse) {
+			this.finishResponse = finishResponse;
+		}
+
 		public Maybe<String> getItemId() {
 			return itemId;
 		}
 
 		public Map<String, TestItemLeaf> getChildItems() {
-			return childItems;
+			return new HashMap<String, TestItemLeaf>(childItems);
 		}
 	}
 }
