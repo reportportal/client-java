@@ -74,7 +74,7 @@ public class ItemTreeReporter {
 	}
 
 	public static boolean finishItem(final ReportPortalClient reportPortalClient, final FinishTestItemRQ finishTestItemRQ,
-			final Maybe<String> launchId, TestItemTree.TestItemLeaf testItemLeaf) {
+			final Maybe<String> launchId, final TestItemTree.TestItemLeaf testItemLeaf) {
 		final Maybe<String> item = testItemLeaf.getItemId();
 		if (item != null && launchId != null) {
 			launchId.flatMap(new Function<String, MaybeSource<OperationCompletionRS>>() {
@@ -82,9 +82,20 @@ public class ItemTreeReporter {
 				public MaybeSource<OperationCompletionRS> apply(final String launchId) {
 					return item.flatMap(new Function<String, MaybeSource<OperationCompletionRS>>() {
 						@Override
-						public MaybeSource<OperationCompletionRS> apply(String itemId) {
+						public MaybeSource<OperationCompletionRS> apply(final String itemId) {
 							finishTestItemRQ.setLaunchUuid(launchId);
-							return reportPortalClient.finishTestItem(itemId, finishTestItemRQ);
+							Maybe<OperationCompletionRS> finishResponse = testItemLeaf.getFinishResponse();
+							if (finishResponse != null) {
+								return finishResponse.flatMap(new Function<OperationCompletionRS, MaybeSource<OperationCompletionRS>>() {
+									@Override
+									public MaybeSource<OperationCompletionRS> apply(OperationCompletionRS operationCompletionRS) {
+										return reportPortalClient.finishTestItem(itemId, finishTestItemRQ);
+									}
+								});
+							} else {
+								return reportPortalClient.finishTestItem(itemId, finishTestItemRQ);
+							}
+
 						}
 					});
 				}
