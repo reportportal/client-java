@@ -29,10 +29,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TestItemTree {
 
 	private Maybe<String> launchId;
-	private final Map<String, TestItemLeaf> testItems;
+	private final Map<ItemTreeKey, TestItemLeaf> testItems;
 
 	public TestItemTree() {
-		this.testItems = new ConcurrentHashMap<String, TestItemLeaf>();
+		this.testItems = new ConcurrentHashMap<ItemTreeKey, TestItemLeaf>();
 	}
 
 	public Maybe<String> getLaunchId() {
@@ -43,7 +43,7 @@ public class TestItemTree {
 		this.launchId = launchId;
 	}
 
-	public Map<String, TestItemLeaf> getTestItems() {
+	public Map<ItemTreeKey, TestItemLeaf> getTestItems() {
 		return testItems;
 	}
 
@@ -54,11 +54,11 @@ public class TestItemTree {
 		@Nullable
 		private Maybe<OperationCompletionRS> finishResponse;
 		private final Maybe<String> itemId;
-		private final Map<String, TestItemLeaf> childItems;
+		private final Map<ItemTreeKey, TestItemLeaf> childItems;
 
 		public TestItemLeaf(Maybe<String> itemId, int expectedChildrenCount) {
 			this.itemId = itemId;
-			this.childItems = new ConcurrentHashMap<String, TestItemLeaf>(expectedChildrenCount);
+			this.childItems = new ConcurrentHashMap<ItemTreeKey, TestItemLeaf>(expectedChildrenCount);
 		}
 
 		public TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId, int expectedChildrenCount) {
@@ -66,12 +66,13 @@ public class TestItemTree {
 			this.parentId = parentId;
 		}
 
-		public TestItemLeaf(Maybe<String> itemId, ConcurrentHashMap<String, TestItemLeaf> childItems) {
+		public TestItemLeaf(Maybe<String> itemId, ConcurrentHashMap<ItemTreeKey, TestItemLeaf> childItems) {
 			this.itemId = itemId;
 			this.childItems = childItems;
 		}
 
-		public TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId, ConcurrentHashMap<String, TestItemLeaf> childItems) {
+		public TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId,
+				ConcurrentHashMap<ItemTreeKey, TestItemLeaf> childItems) {
 			this(itemId, childItems);
 			this.parentId = parentId;
 		}
@@ -98,7 +99,7 @@ public class TestItemTree {
 			return itemId;
 		}
 
-		public Map<String, TestItemLeaf> getChildItems() {
+		public Map<ItemTreeKey, TestItemLeaf> getChildItems() {
 			return childItems;
 		}
 	}
