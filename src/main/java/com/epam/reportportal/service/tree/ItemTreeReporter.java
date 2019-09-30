@@ -77,15 +77,15 @@ public class ItemTreeReporter {
 			final Maybe<String> launchId, final TestItemTree.TestItemLeaf testItemLeaf) {
 		final Maybe<String> item = testItemLeaf.getItemId();
 		if (item != null && launchId != null) {
-			launchId.flatMap(new Function<String, MaybeSource<OperationCompletionRS>>() {
+			launchId.flatMap(new Function<String, MaybeSource<String>>() {
 				@Override
-				public MaybeSource<OperationCompletionRS> apply(final String launchId) {
+				public MaybeSource<String> apply(final String launchId) {
 					finishTestItemRQ.setLaunchUuid(launchId);
 					Maybe<OperationCompletionRS> finishResponse = testItemLeaf.getFinishResponse();
 					if (finishResponse != null) {
-						return finishResponse.flatMap(new Function<OperationCompletionRS, MaybeSource<OperationCompletionRS>>() {
+						return finishResponse.flatMap(new Function<OperationCompletionRS, MaybeSource<String>>() {
 							@Override
-							public MaybeSource<OperationCompletionRS> apply(OperationCompletionRS operationCompletionRS) {
+							public MaybeSource<String> apply(OperationCompletionRS operationCompletionRS) {
 								return sendFinishItemRequest(item, finishTestItemRQ, reportPortalClient);
 							}
 						});
@@ -165,12 +165,12 @@ public class ItemTreeReporter {
 		}).cache();
 	}
 
-	private static Maybe<OperationCompletionRS> sendFinishItemRequest(Maybe<String> item, final FinishTestItemRQ finishTestItemRQ,
+	private static Maybe<String> sendFinishItemRequest(Maybe<String> item, final FinishTestItemRQ finishTestItemRQ,
 			final ReportPortalClient reportPortalClient) {
-		return item.flatMap(new Function<String, MaybeSource<OperationCompletionRS>>() {
+		return item.doOnSuccess(new Consumer<String>() {
 			@Override
-			public MaybeSource<OperationCompletionRS> apply(final String itemId) {
-				return reportPortalClient.finishTestItem(itemId, finishTestItemRQ);
+			public void accept(final String itemId) {
+				reportPortalClient.finishTestItem(itemId, finishTestItemRQ);
 			}
 		});
 	}
