@@ -24,6 +24,11 @@ public final class ItemTreeKey {
 	private final String name;
 	private final int hash;
 
+	private ItemTreeKey(String name) {
+		this.name = name;
+		this.hash = name != null ? name.hashCode() : 0;
+	}
+
 	private ItemTreeKey(String name, int hash) {
 		this.name = name;
 		this.hash = hash;
@@ -35,6 +40,10 @@ public final class ItemTreeKey {
 
 	public int getHash() {
 		return hash;
+	}
+
+	public static ItemTreeKey of(String name) {
+		return new ItemTreeKey(name);
 	}
 
 	public static ItemTreeKey of(String name, int hash) {
