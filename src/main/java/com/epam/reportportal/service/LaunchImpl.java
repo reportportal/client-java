@@ -277,7 +277,7 @@ public class LaunchImpl extends Launch {
 					}
 				});
 			}
-		});
+		}).cache();
 		final Completable finishCompletion = Completable.concat(treeItem.getChildren())
 				.andThen(finishResponse)
 				.doAfterSuccess(new Consumer<OperationCompletionRS>() {
@@ -299,7 +299,7 @@ public class LaunchImpl extends Launch {
 			QUEUE.getUnchecked(this.launch).addToQueue(finishCompletion);
 		}
 
-		return finishResponse.cache();
+		return finishResponse;
 
 	}
 
