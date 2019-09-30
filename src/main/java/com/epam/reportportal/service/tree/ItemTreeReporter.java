@@ -26,6 +26,7 @@ import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
+import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
 import io.reactivex.functions.Consumer;
@@ -35,8 +36,6 @@ import io.reactivex.schedulers.Schedulers;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
-
-import static com.epam.reportportal.utils.SubscriptionUtils.logMaybeResults;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -73,11 +72,11 @@ public class ItemTreeReporter {
 
 	}
 
-	public static boolean finishItem(final ReportPortalClient reportPortalClient, final FinishTestItemRQ finishTestItemRQ,
+	public static Completable finishItem(final ReportPortalClient reportPortalClient, final FinishTestItemRQ finishTestItemRQ,
 			final Maybe<String> launchId, final TestItemTree.TestItemLeaf testItemLeaf) {
 		final Maybe<String> item = testItemLeaf.getItemId();
 		if (item != null && launchId != null) {
-			launchId.flatMap(new Function<String, MaybeSource<OperationCompletionRS>>() {
+			return launchId.flatMap(new Function<String, MaybeSource<OperationCompletionRS>>() {
 				@Override
 				public MaybeSource<OperationCompletionRS> apply(final String launchId) {
 					finishTestItemRQ.setLaunchUuid(launchId);
@@ -93,10 +92,9 @@ public class ItemTreeReporter {
 						return sendFinishItemRequest(item, finishTestItemRQ, reportPortalClient);
 					}
 				}
-			}).subscribeOn(Schedulers.computation()).subscribe(logMaybeResults("Finish test item callback"));
-			return true;
+			}).subscribeOn(Schedulers.computation()).ignoreElement().cache();
 		} else {
-			return false;
+			return Completable.complete();
 		}
 
 	}
