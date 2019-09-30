@@ -299,7 +299,7 @@ public class LaunchImpl extends Launch {
 			QUEUE.getUnchecked(this.launch).addToQueue(finishCompletion);
 		}
 
-		return finishResponse;
+		return finishResponse.cache();
 
 	}
 
