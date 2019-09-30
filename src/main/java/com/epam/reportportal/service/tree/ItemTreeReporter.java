@@ -26,7 +26,6 @@ import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
-import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
 import io.reactivex.functions.Consumer;
@@ -72,8 +71,8 @@ public class ItemTreeReporter {
 
 	}
 
-	public static Completable finishItem(final ReportPortalClient reportPortalClient, final FinishTestItemRQ finishTestItemRQ,
-			final Maybe<String> launchId, final TestItemTree.TestItemLeaf testItemLeaf) {
+	public static Maybe<OperationCompletionRS> finishItem(final ReportPortalClient reportPortalClient,
+			final FinishTestItemRQ finishTestItemRQ, final Maybe<String> launchId, final TestItemTree.TestItemLeaf testItemLeaf) {
 		final Maybe<String> item = testItemLeaf.getItemId();
 		if (item != null && launchId != null) {
 			return launchId.flatMap(new Function<String, MaybeSource<OperationCompletionRS>>() {
@@ -92,9 +91,9 @@ public class ItemTreeReporter {
 						return sendFinishItemRequest(item, finishTestItemRQ, reportPortalClient);
 					}
 				}
-			}).subscribeOn(Schedulers.computation()).ignoreElement().cache();
+			}).subscribeOn(Schedulers.computation());
 		} else {
-			return Completable.complete();
+			return Maybe.empty();
 		}
 
 	}
