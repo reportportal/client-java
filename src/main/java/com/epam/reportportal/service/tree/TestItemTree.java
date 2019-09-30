@@ -47,6 +47,62 @@ public class TestItemTree {
 		return testItems;
 	}
 
+	public static final class ItemTreeKey {
+
+		private final String name;
+		private final int hash;
+
+		private ItemTreeKey(String name) {
+			this.name = name;
+			this.hash = name != null ? name.hashCode() : 0;
+		}
+
+		private ItemTreeKey(String name, int hash) {
+			this.name = name;
+			this.hash = hash;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public int getHash() {
+			return hash;
+		}
+
+		public static ItemTreeKey of(String name) {
+			return new ItemTreeKey(name);
+		}
+
+		public static ItemTreeKey of(String name, int hash) {
+			return new ItemTreeKey(name, hash);
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+
+			ItemTreeKey that = (ItemTreeKey) o;
+
+			if (hash != that.hash) {
+				return false;
+			}
+			return name != null ? name.equals(that.name) : that.name == null;
+		}
+
+		@Override
+		public int hashCode() {
+			int result = name != null ? name.hashCode() : 0;
+			result = 31 * result + hash;
+			return result;
+		}
+	}
+
 	public static class TestItemLeaf {
 
 		@Nullable
