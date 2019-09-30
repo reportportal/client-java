@@ -80,24 +80,18 @@ public class ItemTreeReporter {
 			launchId.flatMap(new Function<String, MaybeSource<OperationCompletionRS>>() {
 				@Override
 				public MaybeSource<OperationCompletionRS> apply(final String launchId) {
-					return item.flatMap(new Function<String, MaybeSource<OperationCompletionRS>>() {
-						@Override
-						public MaybeSource<OperationCompletionRS> apply(final String itemId) {
-							finishTestItemRQ.setLaunchUuid(launchId);
-							Maybe<OperationCompletionRS> finishResponse = testItemLeaf.getFinishResponse();
-							if (finishResponse != null) {
-								return finishResponse.flatMap(new Function<OperationCompletionRS, MaybeSource<OperationCompletionRS>>() {
-									@Override
-									public MaybeSource<OperationCompletionRS> apply(OperationCompletionRS operationCompletionRS) {
-										return reportPortalClient.finishTestItem(itemId, finishTestItemRQ);
-									}
-								});
-							} else {
-								return reportPortalClient.finishTestItem(itemId, finishTestItemRQ);
+					finishTestItemRQ.setLaunchUuid(launchId);
+					Maybe<OperationCompletionRS> finishResponse = testItemLeaf.getFinishResponse();
+					if (finishResponse != null) {
+						return finishResponse.flatMap(new Function<OperationCompletionRS, MaybeSource<OperationCompletionRS>>() {
+							@Override
+							public MaybeSource<OperationCompletionRS> apply(OperationCompletionRS operationCompletionRS) {
+								return sendFinishItemRequest(item, finishTestItemRQ, reportPortalClient);
 							}
-
-						}
-					});
+						});
+					} else {
+						return sendFinishItemRequest(item, finishTestItemRQ, reportPortalClient);
+					}
 				}
 			}).subscribeOn(Schedulers.computation()).subscribe(logMaybeResults("Finish test item callback"));
 			return true;
@@ -169,6 +163,16 @@ public class ItemTreeReporter {
 				});
 			}
 		}).cache();
+	}
+
+	private static Maybe<OperationCompletionRS> sendFinishItemRequest(Maybe<String> item, final FinishTestItemRQ finishTestItemRQ,
+			final ReportPortalClient reportPortalClient) {
+		return item.flatMap(new Function<String, MaybeSource<OperationCompletionRS>>() {
+			@Override
+			public MaybeSource<OperationCompletionRS> apply(final String itemId) {
+				return reportPortalClient.finishTestItem(itemId, finishTestItemRQ);
+			}
+		});
 	}
 
 	private static Maybe<EntryCreatedAsyncRS> sendLogRequest(final ReportPortalClient reportPortalClient, Maybe<String> itemId,
