@@ -35,6 +35,24 @@ public class TestItemTree {
 		this.testItems = new ConcurrentHashMap<ItemTreeKey, TestItemLeaf>();
 	}
 
+	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> itemId, int expectedChildrenCount) {
+		return new TestItemTree.TestItemLeaf(itemId, expectedChildrenCount);
+	}
+
+	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> parentId, Maybe<String> itemId, int expectedChildrenCount) {
+		return new TestItemTree.TestItemLeaf(parentId, itemId, expectedChildrenCount);
+	}
+
+	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> itemId,
+			ConcurrentHashMap<ItemTreeKey, TestItemLeaf> childItems) {
+		return new TestItemTree.TestItemLeaf(itemId, childItems);
+	}
+
+	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> parentId, Maybe<String> itemId,
+			ConcurrentHashMap<ItemTreeKey, TestItemLeaf> childItems) {
+		return new TestItemTree.TestItemLeaf(parentId, itemId, childItems);
+	}
+
 	public Maybe<String> getLaunchId() {
 		return launchId;
 	}
@@ -112,22 +130,22 @@ public class TestItemTree {
 		private final Maybe<String> itemId;
 		private final Map<ItemTreeKey, TestItemLeaf> childItems;
 
-		public TestItemLeaf(Maybe<String> itemId, int expectedChildrenCount) {
+		private TestItemLeaf(Maybe<String> itemId, int expectedChildrenCount) {
 			this.itemId = itemId;
 			this.childItems = new ConcurrentHashMap<ItemTreeKey, TestItemLeaf>(expectedChildrenCount);
 		}
 
-		public TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId, int expectedChildrenCount) {
-			this(itemId, expectedChildrenCount);
-			this.parentId = parentId;
-		}
-
-		public TestItemLeaf(Maybe<String> itemId, ConcurrentHashMap<ItemTreeKey, TestItemLeaf> childItems) {
+		private TestItemLeaf(Maybe<String> itemId, ConcurrentHashMap<ItemTreeKey, TestItemLeaf> childItems) {
 			this.itemId = itemId;
 			this.childItems = childItems;
 		}
 
-		public TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId,
+		private TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId, int expectedChildrenCount) {
+			this(itemId, expectedChildrenCount);
+			this.parentId = parentId;
+		}
+
+		private TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId,
 				ConcurrentHashMap<ItemTreeKey, TestItemLeaf> childItems) {
 			this(itemId, childItems);
 			this.parentId = parentId;
