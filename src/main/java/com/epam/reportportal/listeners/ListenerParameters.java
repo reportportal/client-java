@@ -24,6 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.*;
 
@@ -45,6 +46,10 @@ public class ListenerParameters {
 	private static final int DEFAULT_MAX_CONNECTION_TIME_TO_LIVE_MS = 29900;
 	private static final int DEFAULT_MAX_CONNECTION_IDLE_TIME_MS = 5 * 1000;
 	private static final int DEFAULT_TRANSFER_RETRY_COUNT = 5;
+	private static final boolean DEFAULT_CLIENT_JOIN_MODE = true;
+	private static final String DEFAULT_LOCK_FILE_NAME = "reportportal.lock";
+	private static final String DEFAULT_SYNC_FILE_NAME = "reportportal.sync";
+	private static final long DEFAULT_FILE_WAIT_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
 
 	private String description;
 	private String apiKey;
@@ -72,6 +77,11 @@ public class ListenerParameters {
 	private Integer maxConnectionIdleTtlMs;
 	private Integer transferRetries;
 
+	private boolean clientJoin;
+	private String lockFileName;
+	private String syncFileName;
+	private long fileWaitTimeout;
+
 	public ListenerParameters() {
 
 		this.isSkippedAnIssue = DEFAULT_SKIP_ISSUE;
@@ -94,13 +104,18 @@ public class ListenerParameters {
 		this.maxConnectionTtlMs = DEFAULT_MAX_CONNECTION_TIME_TO_LIVE_MS;
 		this.maxConnectionIdleTtlMs = DEFAULT_MAX_CONNECTION_IDLE_TIME_MS;
 		this.transferRetries = DEFAULT_TRANSFER_RETRY_COUNT;
+
+		this.clientJoin = DEFAULT_CLIENT_JOIN_MODE;
+		this.lockFileName = DEFAULT_LOCK_FILE_NAME;
+		this.syncFileName = DEFAULT_SYNC_FILE_NAME;
+		this.fileWaitTimeout = DEFAULT_FILE_WAIT_TIMEOUT_MS;
 	}
 
 	public ListenerParameters(PropertiesLoader properties) {
 		this.description = properties.getProperty(DESCRIPTION);
-		this.apiKey = properties.getProperty(API_KEY, properties.getProperty(UUID));
-		this.baseUrl = properties.getProperty(BASE_URL);
-		this.projectName = properties.getProperty(PROJECT_NAME);
+		this.apiKey = properties.getProperty(API_KEY, properties.getProperty(UUID)).trim();
+		this.baseUrl = properties.getProperty(BASE_URL).trim();
+		this.projectName = properties.getProperty(PROJECT_NAME).trim();
 		this.launchName = properties.getProperty(LAUNCH_NAME);
 		this.attributes = AttributeParser.parseAsSet(properties.getProperty(LAUNCH_ATTRIBUTES));
 		this.launchRunningMode = parseLaunchMode(properties.getProperty(MODE));
@@ -126,6 +141,11 @@ public class ListenerParameters {
 		this.maxConnectionTtlMs = properties.getPropertyAsInt(MAX_CONNECTION_TIME_TO_LIVE, DEFAULT_MAX_CONNECTION_TIME_TO_LIVE_MS);
 		this.maxConnectionIdleTtlMs = properties.getPropertyAsInt(MAX_CONNECTION_IDLE_TIME, DEFAULT_MAX_CONNECTION_IDLE_TIME_MS);
 		this.transferRetries = properties.getPropertyAsInt(MAX_TRANSFER_RETRY_COUNT, DEFAULT_TRANSFER_RETRY_COUNT);
+
+		this.clientJoin = properties.getPropertyAsBoolean(CLIENT_JOIN_MODE, DEFAULT_CLIENT_JOIN_MODE);
+		this.lockFileName = properties.getProperty(LOCK_FILE_NAME, DEFAULT_LOCK_FILE_NAME);
+		this.syncFileName = properties.getProperty(SYNC_FILE_NAME, DEFAULT_SYNC_FILE_NAME);
+		this.fileWaitTimeout = properties.getPropertyAsInt(FILE_WAIT_TIMEOUT_MS, (int) DEFAULT_FILE_WAIT_TIMEOUT_MS);
 	}
 
 	public String getDescription() {
@@ -320,6 +340,38 @@ public class ListenerParameters {
 		this.transferRetries = transferRetries;
 	}
 
+	public boolean getClientJoin() {
+		return clientJoin;
+	}
+
+	public void setClientJoin(boolean mode) {
+		this.clientJoin = mode;
+	}
+
+	public String getLockFileName() {
+		return lockFileName;
+	}
+
+	public void setLockFileName(String fileName) {
+		this.lockFileName = fileName;
+	}
+
+	public String getSyncFileName() {
+		return syncFileName;
+	}
+
+	public void setSyncFileName(String fileName) {
+		this.syncFileName = fileName;
+	}
+
+	public long getFileWaitTimeout() {
+		return fileWaitTimeout;
+	}
+
+	public void setFileWaitTimeout(long timeout) {
+		this.fileWaitTimeout = timeout;
+	}
+
 	@VisibleForTesting
 	Mode parseLaunchMode(String mode) {
 		return Mode.isExists(mode) ? Mode.valueOf(mode.toUpperCase()) : Mode.DEFAULT;
@@ -352,6 +404,10 @@ public class ListenerParameters {
 		sb.append(", maxConnectionTtlMs=").append(maxConnectionTtlMs);
 		sb.append(", maxConnectionIdleTtlMs=").append(maxConnectionIdleTtlMs);
 		sb.append(", transferRetries=").append(transferRetries);
+		sb.append(", clientJoin=").append(clientJoin);
+		sb.append(", lockFileName=").append(lockFileName);
+		sb.append(", syncFileName=").append(syncFileName);
+		sb.append(", fileWaitTimeout=").append(fileWaitTimeout);
 		sb.append('}');
 		return sb.toString();
 	}
