@@ -24,7 +24,7 @@ import java.lang.annotation.Target;
 /**
  * Annotation used to declare the uniqueness of the test method/class.
  * If value is not provided it will be generated on the Report Portal
- * back-end side by the same rules as {@link UniqueID}
+ * back-end side as hash of the generated {@link UniqueID}
  *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
@@ -32,5 +32,5 @@ import java.lang.annotation.Target;
 @Target({ ElementType.TYPE, ElementType.METHOD })
 public @interface TestCaseId {
 
-	String value() default "";
+	int value();
 }
