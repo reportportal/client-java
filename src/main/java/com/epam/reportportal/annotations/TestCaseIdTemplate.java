@@ -29,4 +29,6 @@ import java.lang.annotation.Target;
 public @interface TestCaseIdTemplate {
 
 	String value();
+
+	boolean isInteger();
 }

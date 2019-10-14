@@ -51,7 +51,15 @@ public class TestCaseIdUtils {
 		if (testCaseIdTemplate.value().equalsIgnoreCase(pattern)) {
 			Object testCaseIdParam = parameters[paramIndex];
 			if (testCaseIdParam != null) {
-				return testCaseIdParam.hashCode();
+				if (testCaseIdTemplate.isInteger()) {
+					try {
+						return Integer.parseInt(String.valueOf(testCaseIdParam));
+					} catch (NumberFormatException e) {
+						return testCaseIdParam.hashCode();
+					}
+				} else {
+					return testCaseIdParam.hashCode();
+				}
 			}
 		}
 		return null;

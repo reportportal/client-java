@@ -29,14 +29,14 @@ import java.lang.reflect.Method;
 public class TestCaseIdUtilsTest {
 
 	@TestCaseId(pattern = "id")
-	public void testCaseAnnotationTest(String firstParam, @TestCaseIdTemplate("id") int id) {
+	public void testCaseAnnotationTest(String firstParam, @TestCaseIdTemplate(value = "id", isInteger = true) String id) {
 
 	}
 
 	@Test
 	public void shouldEvaluateHashCode() throws NoSuchMethodException {
-		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("testCaseAnnotationTest", String.class, int.class);
-		int expectedTestCaseId = 5;
+		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("testCaseAnnotationTest", String.class, String.class);
+		String expectedTestCaseId = "5";
 		Integer testCaseId = TestCaseIdUtils.getTestCaseId(method.getAnnotation(TestCaseId.class),
 				method,
 				"firstParam",
@@ -44,7 +44,7 @@ public class TestCaseIdUtilsTest {
 		);
 
 		Assert.assertNotNull(testCaseId);
-		Assert.assertEquals(expectedTestCaseId, (int) testCaseId);
+		Assert.assertEquals(Integer.parseInt(expectedTestCaseId), (int) testCaseId);
 	}
 
 }
