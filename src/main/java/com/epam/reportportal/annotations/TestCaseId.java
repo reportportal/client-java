@@ -33,4 +33,8 @@ import java.lang.annotation.Target;
 public @interface TestCaseId {
 
 	int value();
+
+	String pattern() default "";
+
+	boolean isParameterized() default false;
 }
