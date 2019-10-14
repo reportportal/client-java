@@ -32,7 +32,7 @@ import java.lang.annotation.Target;
 @Target({ ElementType.TYPE, ElementType.METHOD })
 public @interface TestCaseId {
 
-	int value();
+	int value() default 0;
 
 	String pattern() default "";
 
