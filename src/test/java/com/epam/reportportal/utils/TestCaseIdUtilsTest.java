@@ -17,7 +17,7 @@
 package com.epam.reportportal.utils;
 
 import com.epam.reportportal.annotations.TestCaseId;
-import com.epam.reportportal.annotations.TestCaseIdTemplate;
+import com.epam.reportportal.annotations.TestCaseIdKey;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -28,8 +28,8 @@ import java.lang.reflect.Method;
  */
 public class TestCaseIdUtilsTest {
 
-	@TestCaseId(pattern = "id")
-	public void testCaseAnnotationTest(String firstParam, @TestCaseIdTemplate(value = "id", isInteger = true) String id) {
+	@TestCaseId
+	public void testCaseAnnotationTest(String firstParam, @TestCaseIdKey(isInteger = true) String id) {
 
 	}
 
@@ -37,11 +37,7 @@ public class TestCaseIdUtilsTest {
 	public void shouldEvaluateHashCode() throws NoSuchMethodException {
 		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("testCaseAnnotationTest", String.class, String.class);
 		String expectedTestCaseId = "5";
-		Integer testCaseId = TestCaseIdUtils.getTestCaseId(method.getAnnotation(TestCaseId.class),
-				method,
-				"firstParam",
-				expectedTestCaseId
-		);
+		Integer testCaseId = TestCaseIdUtils.getParameterizedTestCaseId(method, "firstParam", expectedTestCaseId);
 
 		Assert.assertNotNull(testCaseId);
 		Assert.assertEquals(Integer.parseInt(expectedTestCaseId), (int) testCaseId);

@@ -34,7 +34,5 @@ public @interface TestCaseId {
 
 	int value() default 0;
 
-	String pattern() default "";
-
 	boolean isParameterized() default false;
 }

@@ -25,10 +25,8 @@ import java.lang.annotation.Target;
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.PARAMETER })
-public @interface TestCaseIdTemplate {
-
-	String value();
+@Target({ ElementType.FIELD, ElementType.PARAMETER })
+public @interface TestCaseIdKey {
 
 	boolean isInteger();
 }

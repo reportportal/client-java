@@ -16,8 +16,7 @@
 
 package com.epam.reportportal.utils;
 
-import com.epam.reportportal.annotations.TestCaseId;
-import com.epam.reportportal.annotations.TestCaseIdTemplate;
+import com.epam.reportportal.annotations.TestCaseIdKey;
 import io.reactivex.annotations.Nullable;
 
 import java.lang.annotation.Annotation;
@@ -33,13 +32,13 @@ public class TestCaseIdUtils {
 	}
 
 	@Nullable
-	public static Integer getTestCaseId(TestCaseId testCaseId, Method method, Object... parameters) {
+	public static Integer getParameterizedTestCaseId(Method method, Object... parameters) {
 		Annotation[][] parameterAnnotations = method.getParameterAnnotations();
 		for (int paramIndex = 0; paramIndex < parameterAnnotations.length; paramIndex++) {
 			for (int annotationIndex = 0; annotationIndex < parameterAnnotations[paramIndex].length; annotationIndex++) {
 				Annotation testCaseIdAnnotation = parameterAnnotations[paramIndex][annotationIndex];
-				if (testCaseIdAnnotation.annotationType() == TestCaseIdTemplate.class) {
-					return getTestCaseId((TestCaseIdTemplate) testCaseIdAnnotation, testCaseId.pattern(), paramIndex, parameters);
+				if (testCaseIdAnnotation.annotationType() == TestCaseIdKey.class) {
+					return getTestCaseId((TestCaseIdKey) testCaseIdAnnotation, paramIndex, parameters);
 				}
 			}
 		}
@@ -47,21 +46,20 @@ public class TestCaseIdUtils {
 	}
 
 	@Nullable
-	private static Integer getTestCaseId(TestCaseIdTemplate testCaseIdTemplate, String pattern, int paramIndex, Object... parameters) {
-		if (testCaseIdTemplate.value().equalsIgnoreCase(pattern)) {
-			Object testCaseIdParam = parameters[paramIndex];
-			if (testCaseIdParam != null) {
-				if (testCaseIdTemplate.isInteger()) {
-					try {
-						return Integer.parseInt(String.valueOf(testCaseIdParam));
-					} catch (NumberFormatException e) {
-						return testCaseIdParam.hashCode();
-					}
-				} else {
+	private static Integer getTestCaseId(TestCaseIdKey testCaseIdKey, int paramIndex, Object... parameters) {
+		Object testCaseIdParam = parameters[paramIndex];
+		if (testCaseIdParam != null) {
+			if (testCaseIdKey.isInteger()) {
+				try {
+					return Integer.parseInt(String.valueOf(testCaseIdParam));
+				} catch (NumberFormatException e) {
 					return testCaseIdParam.hashCode();
 				}
+			} else {
+				return testCaseIdParam.hashCode();
 			}
 		}
+
 		return null;
 	}
 }
