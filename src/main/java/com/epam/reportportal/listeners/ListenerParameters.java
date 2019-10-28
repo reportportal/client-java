@@ -24,6 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.*;
 
@@ -42,6 +43,9 @@ public class ListenerParameters {
 	private static final boolean DEFAULT_RETURN = false;
 	private static final boolean DEFAULT_ASYNC_REPORTING = false;
 	private static final boolean DEFAULT_CALLBACK_REPORTING_ENABLED = false;
+	private static final int DEFAULT_MAX_CONNECTION_TIME_TO_LIVE_MS = 29900;
+	private static final int DEFAULT_MAX_CONNECTION_IDLE_TIME_MS = 5 * 1000;
+	private static final int DEFAULT_TRANSFER_RETRY_COUNT = 5;
 
 	private String description;
 	private String apiKey;
@@ -65,6 +69,10 @@ public class ListenerParameters {
 	private Integer maxConnectionsPerRoute;
 	private Integer maxConnectionsTotal;
 
+	private Integer maxConnectionTtlMs;
+	private Integer maxConnectionIdleTtlMs;
+	private Integer transferRetries;
+
 	public ListenerParameters() {
 
 		this.isSkippedAnIssue = DEFAULT_SKIP_ISSUE;
@@ -83,6 +91,10 @@ public class ListenerParameters {
 		this.ioPoolSize = DEFAULT_IO_POOL_SIZE;
 		this.maxConnectionsPerRoute = DEFAULT_MAX_CONNECTIONS_PER_ROUTE;
 		this.maxConnectionsTotal = DEFAULT_MAX_CONNECTIONS_TOTAL;
+
+		this.maxConnectionTtlMs = DEFAULT_MAX_CONNECTION_TIME_TO_LIVE_MS;
+		this.maxConnectionIdleTtlMs = DEFAULT_MAX_CONNECTION_IDLE_TIME_MS;
+		this.transferRetries = DEFAULT_TRANSFER_RETRY_COUNT;
 	}
 
 	public ListenerParameters(PropertiesLoader properties) {
@@ -111,6 +123,10 @@ public class ListenerParameters {
 		this.ioPoolSize = properties.getPropertyAsInt(IO_POOL_SIZE, DEFAULT_IO_POOL_SIZE);
 		this.maxConnectionsPerRoute = properties.getPropertyAsInt(MAX_CONNECTIONS_PER_ROUTE, DEFAULT_MAX_CONNECTIONS_PER_ROUTE);
 		this.maxConnectionsTotal = properties.getPropertyAsInt(MAX_CONNECTIONS_TOTAL, DEFAULT_MAX_CONNECTIONS_TOTAL);
+
+		this.maxConnectionTtlMs = properties.getPropertyAsInt(MAX_CONNECTION_TIME_TO_LIVE, DEFAULT_MAX_CONNECTION_TIME_TO_LIVE_MS);
+		this.maxConnectionIdleTtlMs = properties.getPropertyAsInt(MAX_CONNECTION_IDLE_TIME, DEFAULT_MAX_CONNECTION_IDLE_TIME_MS);
+		this.transferRetries = properties.getPropertyAsInt(MAX_TRANSFER_RETRY_COUNT, DEFAULT_TRANSFER_RETRY_COUNT);
 	}
 
 	public String getDescription() {
@@ -281,6 +297,30 @@ public class ListenerParameters {
 		this.maxConnectionsTotal = maxConnectionsTotal;
 	}
 
+	public Integer getMaxConnectionTtlMs() {
+		return maxConnectionTtlMs;
+	}
+
+	public void setMaxConnectionTtlMs(Integer maxConnectionTtlMs) {
+		this.maxConnectionTtlMs = maxConnectionTtlMs;
+	}
+
+	public Integer getMaxConnectionIdleTtlMs() {
+		return maxConnectionIdleTtlMs;
+	}
+
+	public void setMaxConnectionIdleTtlMs(Integer maxConnectionIdleTtlMs) {
+		this.maxConnectionIdleTtlMs = maxConnectionIdleTtlMs;
+	}
+
+	public Integer getTransferRetries() {
+		return transferRetries;
+	}
+
+	public void setTransferRetries(Integer transferRetries) {
+		this.transferRetries = transferRetries;
+	}
+
 	@VisibleForTesting
 	Mode parseLaunchMode(String mode) {
 		return Mode.isExists(mode) ? Mode.valueOf(mode.toUpperCase()) : Mode.DEFAULT;
@@ -307,8 +347,12 @@ public class ListenerParameters {
 		sb.append(", rerunOf='").append(rerunOf).append('\'');
 		sb.append(", asyncReporting=").append(asyncReporting);
 		sb.append(", ioPoolSize=").append(ioPoolSize);
+    sb.append(", callbackReportingEnabled=").append(callbackReportingEnabled);
 		sb.append(", maxConnectionsPerRoute=").append(maxConnectionsPerRoute);
 		sb.append(", maxConnectionsTotal=").append(maxConnectionsTotal);
+		sb.append(", maxConnectionTtlMs=").append(maxConnectionTtlMs);
+		sb.append(", maxConnectionIdleTtlMs=").append(maxConnectionIdleTtlMs);
+		sb.append(", transferRetries=").append(transferRetries);
 		sb.append('}');
 		return sb.toString();
 	}

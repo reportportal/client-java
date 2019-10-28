@@ -42,7 +42,22 @@ public enum ListenerProperty {
     SKIPPED_AS_ISSUE("rp.skipped.issue", false),
     IO_POOL_SIZE("rp.io.pool.size", false),
     MAX_CONNECTIONS_PER_ROUTE("rp.max.connections.per.route", false),
-    MAX_CONNECTIONS_TOTAL("rp.max.connections.total", false);
+    MAX_CONNECTIONS_TOTAL("rp.max.connections.total", false),
+
+    /**
+     * The property regulates maximum time in milliseconds after which a connection will be closed and thrown away.
+     */
+    MAX_CONNECTION_TIME_TO_LIVE("rp.transport.connections.general.ttl.milliseconds", false),
+
+    /**
+     * The property regulates maximum idle (no any transfer) time in milliseconds after which a connection will be closed and thrown away.
+     */
+    MAX_CONNECTION_IDLE_TIME("rp.transport.connections.idle.ttl.milliseconds", false),
+
+    /**
+     * Maximum number of deliver attempts on transport layer. Retries IO and connection exceptions.
+     */
+    MAX_TRANSFER_RETRY_COUNT("rp.transport.connections.retry.count", false);
     //formatter:on
 
     private String propertyName;
