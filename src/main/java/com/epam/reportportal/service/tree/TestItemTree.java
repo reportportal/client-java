@@ -24,6 +24,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * Tree for holding test items structure to provide {@link TestItemLeaf} retrieving by {@link ItemTreeKey}
+ * for API calls using {@link ItemTreeReporter}.
+ *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
 public class TestItemTree {
@@ -65,6 +68,9 @@ public class TestItemTree {
 		return testItems;
 	}
 
+	/**
+	 * Key for test items structure storing in the {@link TestItemTree}
+	 */
 	public static final class ItemTreeKey {
 
 		private final String name;
@@ -121,6 +127,13 @@ public class TestItemTree {
 		}
 	}
 
+	/**
+	 * Class represents test item with links on parent and descendants. Contains item id and finish response promises for reporting
+	 * using {@link ItemTreeReporter}.
+	 * Finish response is required to provide correct request ordering:
+	 * 1) default finish response from agent
+	 * 2) callback requests that will be sent only after default finish response is returned or if it's NULL
+	 */
 	public static class TestItemLeaf {
 
 		@Nullable

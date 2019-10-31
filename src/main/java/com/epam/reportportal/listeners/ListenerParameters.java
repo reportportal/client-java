@@ -24,7 +24,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.*;
 
@@ -347,7 +346,7 @@ public class ListenerParameters {
 		sb.append(", rerunOf='").append(rerunOf).append('\'');
 		sb.append(", asyncReporting=").append(asyncReporting);
 		sb.append(", ioPoolSize=").append(ioPoolSize);
-    sb.append(", callbackReportingEnabled=").append(callbackReportingEnabled);
+		sb.append(", callbackReportingEnabled=").append(callbackReportingEnabled);
 		sb.append(", maxConnectionsPerRoute=").append(maxConnectionsPerRoute);
 		sb.append(", maxConnectionsTotal=").append(maxConnectionsTotal);
 		sb.append(", maxConnectionTtlMs=").append(maxConnectionTtlMs);

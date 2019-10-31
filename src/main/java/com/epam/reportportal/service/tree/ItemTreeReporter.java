@@ -37,6 +37,13 @@ import java.io.IOException;
 import java.util.Date;
 
 /**
+ * This class provides methods for sending requests to the Report Portal instance, using {@link ReportPortalClient}
+ * and {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}.
+ * Provided requests:
+ * - start test item
+ * - finish test item
+ * - send log
+ *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
 public class ItemTreeReporter {
@@ -45,6 +52,13 @@ public class ItemTreeReporter {
 		//static only
 	}
 
+	/**
+	 * @param reportPortalClient {@link ReportPortalClient}
+	 * @param startTestItemRQ    {@link StartTestItemRQ}
+	 * @param launchId           Launch id
+	 * @param testItemLeaf       {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
+	 * @return {@link Maybe} containing item id
+	 */
 	public static Maybe<String> startItem(ReportPortalClient reportPortalClient, final StartTestItemRQ startTestItemRQ,
 			final Maybe<String> launchId, final TestItemTree.TestItemLeaf testItemLeaf) {
 		final Maybe<String> parent = testItemLeaf.getParentId();
@@ -58,6 +72,14 @@ public class ItemTreeReporter {
 
 	}
 
+	/**
+	 * @param reportPortalClient {@link ReportPortalClient}
+	 * @param startTestItemRQ    {@link StartTestItemRQ}
+	 * @param launchId           Launch id
+	 * @param testItemLeaf       {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
+	 * @param resultConsumer     Returned item id consumer
+	 * @return {@link Maybe} containing item id
+	 */
 	public static Maybe<String> startItem(final ReportPortalClient reportPortalClient, final StartTestItemRQ startTestItemRQ,
 			final Maybe<String> launchId, final TestItemTree.TestItemLeaf testItemLeaf, Consumer<String> resultConsumer) {
 		final Maybe<String> parent = testItemLeaf.getParentId();
@@ -71,6 +93,13 @@ public class ItemTreeReporter {
 
 	}
 
+	/**
+	 * @param reportPortalClient {@link ReportPortalClient}
+	 * @param finishTestItemRQ   {@link FinishTestItemRQ}
+	 * @param launchId           Launch id
+	 * @param testItemLeaf       {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
+	 * @return {@link Maybe} containing item id
+	 */
 	public static Maybe<OperationCompletionRS> finishItem(final ReportPortalClient reportPortalClient,
 			final FinishTestItemRQ finishTestItemRQ, final Maybe<String> launchId, final TestItemTree.TestItemLeaf testItemLeaf) {
 		final Maybe<String> item = testItemLeaf.getItemId();
@@ -98,6 +127,14 @@ public class ItemTreeReporter {
 
 	}
 
+	/**
+	 * @param reportPortalClient {@link com.epam.reportportal.service.ReportPortal}
+	 * @param level              Log level
+	 * @param message            Log message
+	 * @param logTime            Log time
+	 * @param testItemLeaf       {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
+	 * @return True if request is sent otherwise false
+	 */
 	public static boolean sendLog(final ReportPortalClient reportPortalClient, final String level, final String message, final Date logTime,
 			TestItemTree.TestItemLeaf testItemLeaf) {
 		Maybe<String> itemId = testItemLeaf.getItemId();
@@ -109,6 +146,15 @@ public class ItemTreeReporter {
 		}
 	}
 
+	/**
+	 * @param reportPortalClient           {@link com.epam.reportportal.service.ReportPortal}
+	 * @param level                        Log level
+	 * @param message                      Log message
+	 * @param logTime                      Log time
+	 * @param testItemLeaf                 {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
+	 * @param batchSaveOperatingRSConsumer Returned response consumer
+	 * @return True if request is sent otherwise false
+	 */
 	public static boolean sendLog(final ReportPortalClient reportPortalClient, final String level, final String message, final Date logTime,
 			TestItemTree.TestItemLeaf testItemLeaf, Consumer<EntryCreatedAsyncRS> batchSaveOperatingRSConsumer) {
 		Maybe<String> itemId = testItemLeaf.getItemId();
@@ -120,6 +166,14 @@ public class ItemTreeReporter {
 		}
 	}
 
+	/**
+	 * @param reportPortalClient {@link com.epam.reportportal.service.ReportPortal}
+	 * @param level              Log level
+	 * @param message            Log message
+	 * @param logTime            Log time
+	 * @param testItemLeaf       {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
+	 * @return True if request is sent otherwise false
+	 */
 	public static boolean sendLog(final ReportPortalClient reportPortalClient, final String level, final String message, final Date logTime,
 			final File file, TestItemTree.TestItemLeaf testItemLeaf) {
 		Maybe<String> itemId = testItemLeaf.getItemId();
@@ -131,6 +185,16 @@ public class ItemTreeReporter {
 		}
 	}
 
+	/**
+	 * @param reportPortalClient           {@link com.epam.reportportal.service.ReportPortal}
+	 * @param level                        Log level
+	 * @param message                      Log message
+	 * @param logTime                      Log time
+	 * @param file                         Log attachment
+	 * @param testItemLeaf                 {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
+	 * @param batchSaveOperatingRSConsumer Returned response consumer
+	 * @return True if request is sent otherwise false
+	 */
 	public static boolean sendLog(final ReportPortalClient reportPortalClient, final String level, final String message, final Date logTime,
 			final File file, TestItemTree.TestItemLeaf testItemLeaf, Consumer<BatchSaveOperatingRS> batchSaveOperatingRSConsumer) {
 		Maybe<String> itemId = testItemLeaf.getItemId();
