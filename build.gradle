@@ -149,3 +149,12 @@ bintray {
     }
 }
 afterReleaseBuild.dependsOn bintrayUpload
+
+release {
+    scmAdapters = [
+            net.researchgate.release.GitAdapter
+    ]
+    git {
+        requireBranch = 'v4-hotfix'
+    }
+}
