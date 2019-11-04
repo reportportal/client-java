@@ -52,6 +52,7 @@ shadowJar {
     classifier = null
     relocate 'org.apache.http', 'rp.org.apache.http'
     relocate 'com.google.common', 'rp.com.google.common'
+    relocate 'com.google.thirdparty', 'rp.com.google.thirdparty'
     relocate 'org.apache.commons.logging', 'rp.org.apache.commons.logging'
 }
 
