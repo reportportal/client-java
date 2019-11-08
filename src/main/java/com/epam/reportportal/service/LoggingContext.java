@@ -61,7 +61,7 @@ public class LoggingContext {
 	/* default back-pressure buffer size */
 	public static final int DEFAULT_BUFFER_SIZE = 10;
 
-	static final ThreadLocal<Deque<LoggingContext>> CONTEXT_THREAD_LOCAL = new ThreadLocal<Deque<LoggingContext>>() {
+	static final ThreadLocal<Deque<LoggingContext>> CONTEXT_THREAD_LOCAL = new InheritableThreadLocal<Deque<LoggingContext>>() {
 		@Override
 		protected Deque<LoggingContext> initialValue() {
 			return new ArrayDeque<LoggingContext>();
