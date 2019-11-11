@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 EPAM Systems
+ * Copyright 2019 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,15 @@
 package com.epam.reportportal.listeners;
 
 import com.epam.reportportal.service.LoggingContext;
-import com.epam.reportportal.utils.TagsParser;
+import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
+import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.Mode;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Sets;
 
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.*;
 
@@ -38,14 +41,18 @@ public class ListenerParameters {
 	private static final boolean DEFAULT_SKIP_ISSUE = true;
 	private static final boolean DEFAULT_CONVERT_IMAGE = false;
 	private static final boolean DEFAULT_RETURN = false;
+	private static final boolean DEFAULT_ASYNC_REPORTING = false;
+	private static final int DEFAULT_MAX_CONNECTION_TIME_TO_LIVE_MS = 29900;
+	private static final int DEFAULT_MAX_CONNECTION_IDLE_TIME_MS = 5 * 1000;
+	private static final int DEFAULT_TRANSFER_RETRY_COUNT = 5;
 
 	private String description;
-	private String uuid;
+	private String apiKey;
 	private String baseUrl;
 	private String projectName;
 	private String launchName;
 	private Mode launchRunningMode;
-	private Set<String> tags;
+	private Set<ItemAttributesRQ> attributes;
 	private Boolean enable;
 	private Boolean isSkippedAnIssue;
 	private Integer batchLogsSize;
@@ -54,9 +61,15 @@ public class ListenerParameters {
 	private String keystore;
 	private String keystorePassword;
 	private boolean rerun;
+	private String rerunOf;
+	private boolean asyncReporting;
 	private Integer ioPoolSize;
 	private Integer maxConnectionsPerRoute;
 	private Integer maxConnectionsTotal;
+
+	private Integer maxConnectionTtlMs;
+	private Integer maxConnectionIdleTtlMs;
+	private Integer transferRetries;
 
 	public ListenerParameters() {
 
@@ -66,20 +79,28 @@ public class ListenerParameters {
 		this.convertImage = DEFAULT_CONVERT_IMAGE;
 		this.reportingTimeout = DEFAULT_REPORTING_TIMEOUT;
 
+		this.attributes = Sets.newHashSet();
+
 		this.rerun = DEFAULT_RETURN;
+
+		this.asyncReporting = DEFAULT_ASYNC_REPORTING;
 
 		this.ioPoolSize = DEFAULT_IO_POOL_SIZE;
 		this.maxConnectionsPerRoute = DEFAULT_MAX_CONNECTIONS_PER_ROUTE;
 		this.maxConnectionsTotal = DEFAULT_MAX_CONNECTIONS_TOTAL;
+
+		this.maxConnectionTtlMs = DEFAULT_MAX_CONNECTION_TIME_TO_LIVE_MS;
+		this.maxConnectionIdleTtlMs = DEFAULT_MAX_CONNECTION_IDLE_TIME_MS;
+		this.transferRetries = DEFAULT_TRANSFER_RETRY_COUNT;
 	}
 
 	public ListenerParameters(PropertiesLoader properties) {
 		this.description = properties.getProperty(DESCRIPTION);
-		this.uuid = properties.getProperty(UUID);
+		this.apiKey = properties.getProperty(API_KEY, properties.getProperty(UUID));
 		this.baseUrl = properties.getProperty(BASE_URL);
 		this.projectName = properties.getProperty(PROJECT_NAME);
 		this.launchName = properties.getProperty(LAUNCH_NAME);
-		this.tags = TagsParser.parseAsSet(properties.getProperty(LAUNCH_TAGS));
+		this.attributes = AttributeParser.parseAsSet(properties.getProperty(LAUNCH_ATTRIBUTES));
 		this.launchRunningMode = parseLaunchMode(properties.getProperty(MODE));
 		this.enable = properties.getPropertyAsBoolean(ENABLE, DEFAULT_ENABLE);
 		this.isSkippedAnIssue = properties.getPropertyAsBoolean(SKIPPED_AS_ISSUE, DEFAULT_SKIP_ISSUE);
@@ -91,10 +112,17 @@ public class ListenerParameters {
 		this.keystore = properties.getProperty(KEYSTORE_RESOURCE);
 		this.keystorePassword = properties.getProperty(KEYSTORE_PASSWORD);
 		this.rerun = properties.getPropertyAsBoolean(RERUN, DEFAULT_RETURN);
+		this.rerunOf = properties.getProperty(RERUN_OF);
+
+		this.asyncReporting = properties.getPropertyAsBoolean(ASYNC_REPORTING, DEFAULT_ASYNC_REPORTING);
 
 		this.ioPoolSize = properties.getPropertyAsInt(IO_POOL_SIZE, DEFAULT_IO_POOL_SIZE);
 		this.maxConnectionsPerRoute = properties.getPropertyAsInt(MAX_CONNECTIONS_PER_ROUTE, DEFAULT_MAX_CONNECTIONS_PER_ROUTE);
 		this.maxConnectionsTotal = properties.getPropertyAsInt(MAX_CONNECTIONS_TOTAL, DEFAULT_MAX_CONNECTIONS_TOTAL);
+
+		this.maxConnectionTtlMs = properties.getPropertyAsInt(MAX_CONNECTION_TIME_TO_LIVE, DEFAULT_MAX_CONNECTION_TIME_TO_LIVE_MS);
+		this.maxConnectionIdleTtlMs = properties.getPropertyAsInt(MAX_CONNECTION_IDLE_TIME, DEFAULT_MAX_CONNECTION_IDLE_TIME_MS);
+		this.transferRetries = properties.getPropertyAsInt(MAX_TRANSFER_RETRY_COUNT, DEFAULT_TRANSFER_RETRY_COUNT);
 	}
 
 	public String getDescription() {
@@ -105,12 +133,12 @@ public class ListenerParameters {
 		this.description = description;
 	}
 
-	public String getUuid() {
-		return uuid;
+	public String getApiKey() {
+		return apiKey;
 	}
 
-	public void setUuid(String uuid) {
-		this.uuid = uuid;
+	public void setApiKey(String apiKey) {
+		this.apiKey = apiKey;
 	}
 
 	public String getBaseUrl() {
@@ -145,12 +173,12 @@ public class ListenerParameters {
 		this.launchRunningMode = launchRunningMode;
 	}
 
-	public Set<String> getTags() {
-		return tags;
+	public Set<ItemAttributesRQ> getAttributes() {
+		return attributes;
 	}
 
-	public void setTags(Set<String> tags) {
-		this.tags = tags;
+	public void setAttributes(Set<ItemAttributesRQ> attributes) {
+		this.attributes = attributes;
 	}
 
 	public Boolean getEnable() {
@@ -213,8 +241,24 @@ public class ListenerParameters {
 		return rerun;
 	}
 
+	public boolean isAsyncReporting() {
+		return asyncReporting;
+	}
+
+	public void setAsyncReporting(boolean asyncReporting) {
+		this.asyncReporting = asyncReporting;
+	}
+
 	public void setRerun(boolean rerun) {
 		this.rerun = rerun;
+	}
+
+	public String getRerunOf() {
+		return rerunOf;
+	}
+
+	public void setRerunOf(String rerunOf) {
+		this.rerunOf = rerunOf;
 	}
 
 	public Integer getIoPoolSize() {
@@ -241,6 +285,30 @@ public class ListenerParameters {
 		this.maxConnectionsTotal = maxConnectionsTotal;
 	}
 
+	public Integer getMaxConnectionTtlMs() {
+		return maxConnectionTtlMs;
+	}
+
+	public void setMaxConnectionTtlMs(Integer maxConnectionTtlMs) {
+		this.maxConnectionTtlMs = maxConnectionTtlMs;
+	}
+
+	public Integer getMaxConnectionIdleTtlMs() {
+		return maxConnectionIdleTtlMs;
+	}
+
+	public void setMaxConnectionIdleTtlMs(Integer maxConnectionIdleTtlMs) {
+		this.maxConnectionIdleTtlMs = maxConnectionIdleTtlMs;
+	}
+
+	public Integer getTransferRetries() {
+		return transferRetries;
+	}
+
+	public void setTransferRetries(Integer transferRetries) {
+		this.transferRetries = transferRetries;
+	}
+
 	@VisibleForTesting
 	Mode parseLaunchMode(String mode) {
 		return Mode.isExists(mode) ? Mode.valueOf(mode.toUpperCase()) : Mode.DEFAULT;
@@ -250,12 +318,12 @@ public class ListenerParameters {
 	public String toString() {
 		final StringBuilder sb = new StringBuilder("ListenerParameters{");
 		sb.append("description='").append(description).append('\'');
-		sb.append(", uuid='").append(uuid).append('\'');
+		sb.append(", apiKey='").append(apiKey).append('\'');
 		sb.append(", baseUrl='").append(baseUrl).append('\'');
 		sb.append(", projectName='").append(projectName).append('\'');
 		sb.append(", launchName='").append(launchName).append('\'');
 		sb.append(", launchRunningMode=").append(launchRunningMode);
-		sb.append(", tags=").append(tags);
+		sb.append(", attributes=").append(attributes);
 		sb.append(", enable=").append(enable);
 		sb.append(", isSkippedAnIssue=").append(isSkippedAnIssue);
 		sb.append(", batchLogsSize=").append(batchLogsSize);
@@ -264,9 +332,14 @@ public class ListenerParameters {
 		sb.append(", keystore='").append(keystore).append('\'');
 		sb.append(", keystorePassword='").append(keystorePassword).append('\'');
 		sb.append(", rerun=").append(rerun);
+		sb.append(", rerunOf='").append(rerunOf).append('\'');
+		sb.append(", asyncReporting=").append(asyncReporting);
 		sb.append(", ioPoolSize=").append(ioPoolSize);
 		sb.append(", maxConnectionsPerRoute=").append(maxConnectionsPerRoute);
 		sb.append(", maxConnectionsTotal=").append(maxConnectionsTotal);
+		sb.append(", maxConnectionTtlMs=").append(maxConnectionTtlMs);
+		sb.append(", maxConnectionIdleTtlMs=").append(maxConnectionIdleTtlMs);
+		sb.append(", transferRetries=").append(transferRetries);
 		sb.append('}');
 		return sb.toString();
 	}

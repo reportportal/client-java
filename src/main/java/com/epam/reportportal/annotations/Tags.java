@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 EPAM Systems
+ * Copyright (C) 2018 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,23 +21,18 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Used in parametrized tests. Report portal waiting test parameters
- * in <b>key - value</b> style. Using the annotation for method parameter
- * the specific <b>key</b> can be provided.
+ * This annotation provides to mark test steps or test context with specific tags.
  *
- * @author Pavel Bortnik
- * @since Report Portal Api v3.1.0
+ * @author Ilya_Koshaleu
  */
-
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.PARAMETER })
-public @interface ParameterKey {
+@Target({ElementType.METHOD, ElementType.TYPE})
+public @interface Tags {
 
-	/**
-	 * Returns parameter key value
-	 *
-	 * @return key value
-	 */
-	String value() default "";
-
+    /**
+     * Returns an array of tags of specific test context.
+     *
+     * @return array of test step tags
+     */
+    String[] value() default {};
 }

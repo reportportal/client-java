@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 EPAM Systems
+ * Copyright 2019 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@ public interface ReportPortalClient {
 	@Request(method = POST, url = "/launch")
 	Maybe<StartLaunchRS> startLaunch(@Body StartLaunchRQ rq);
 
-    @Request(method = POST, url = "/launch/merge")
-    Maybe<LaunchResource> mergeLaunches(@Body MergeLaunchesRQ rq);
+	@Request(method = POST, url = "/launch/merge")
+	Maybe<LaunchResource> mergeLaunches(@Body MergeLaunchesRQ rq);
 
 	@Request(method = PUT, url = "/launch/{launchId}/finish")
 	Maybe<OperationCompletionRS> finishLaunch(@Path("launchId") String launch, @Body FinishExecutionRQ rq);
@@ -53,7 +53,7 @@ public interface ReportPortalClient {
 	Maybe<OperationCompletionRS> finishTestItem(@Path("itemId") String itemId, @Body FinishTestItemRQ rq);
 
 	@Request(method = POST, url = "/log/")
-	Maybe<EntryCreatedRS> log(@Body SaveLogRQ rq);
+	Maybe<EntryCreatedAsyncRS> log(@Body SaveLogRQ rq);
 
 	@Request(method = POST, url = "/log/")
 	Maybe<BatchSaveOperatingRS> log(@Body @Multipart MultiPartRequest rq);

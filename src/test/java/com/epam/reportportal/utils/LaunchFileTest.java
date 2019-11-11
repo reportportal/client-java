@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 EPAM Systems
+ * Copyright 2019 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,15 +25,15 @@ public class LaunchFileTest {
 	@Test
 	public void find() throws Exception {
 		File tmpDir = LaunchFile.getTempDir();
-		File f1 = new File(tmpDir, "rplaunch-xxxx-#1-id11.tmp");
+		File f1 = new File(tmpDir, "rplaunch-xxxx-#1-11.tmp");
 		f1.createNewFile();
 		f1.deleteOnExit();
 
-		File f2 = new File(tmpDir, "rplaunch-xxxx-#3-id13.tmp");
+		File f2 = new File(tmpDir, "rplaunch-xxxx-#3-13.tmp");
 		f2.createNewFile();
 		f2.deleteOnExit();
 
-		Assert.assertEquals("id13", LaunchFile.find("xxxx").blockingGet());
+		Assert.assertEquals("13", LaunchFile.find("xxxx").blockingGet());
 	}
 
 }

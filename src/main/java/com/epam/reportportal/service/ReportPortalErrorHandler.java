@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 EPAM Systems
+ * Copyright 2019 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,13 +125,18 @@ public class ReportPortalErrorHandler extends DefaultErrorHandler {
 		boolean result = true;
 
 		Collection<String> contentTypes = rs.getHeaders().get(HttpHeaders.CONTENT_TYPE);
+		if (contentTypes.isEmpty() && rs.getHeaders().containsKey(HttpHeaders.CONTENT_TYPE.toLowerCase())) {
+			contentTypes = rs.getHeaders().get(HttpHeaders.CONTENT_TYPE.toLowerCase());
+		}
 
-		for (String contentType : contentTypes) {
+		if (null != contentTypes) {
+			for (String contentType : contentTypes) {
 
-			boolean isJson = contentType.contains(ContentType.APPLICATION_JSON.getMimeType());
-			if (isJson) {
-				result = false;
-				break;
+				boolean isJson = contentType.contains(ContentType.APPLICATION_JSON.getMimeType());
+				if (isJson) {
+					result = false;
+					break;
+				}
 			}
 		}
 

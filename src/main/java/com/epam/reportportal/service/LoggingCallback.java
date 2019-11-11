@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 EPAM Systems
+ * Copyright 2019 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,9 @@
  */
 package com.epam.reportportal.service;
 
-import com.epam.ta.reportportal.ws.model.EntryCreatedRS;
+import com.epam.ta.reportportal.ws.model.EntryCreatedAsyncRS;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
+import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import io.reactivex.functions.Consumer;
 
 import static com.epam.reportportal.service.Launch.LOGGER;
@@ -37,7 +38,7 @@ final class LoggingCallback {
 	 */
 	static final Consumer<OperationCompletionRS> LOG_SUCCESS = new Consumer<OperationCompletionRS>() {
 		@Override
-		public void accept(OperationCompletionRS rs) throws Exception {
+		public void accept(OperationCompletionRS rs) {
 			LOGGER.debug(rs.getResultMessage());
 		}
 	};
@@ -47,7 +48,7 @@ final class LoggingCallback {
 	 */
 	static final Consumer<Throwable> LOG_ERROR = new Consumer<Throwable>() {
 		@Override
-		public void accept(Throwable rs) throws Exception {
+		public void accept(Throwable rs) {
 			LOGGER.error("[{}] ReportPortal execution error", Thread.currentThread().getId(), rs);
 		}
 	};
@@ -58,10 +59,10 @@ final class LoggingCallback {
 	 * @param entry Type of entity
 	 * @return Consumer/Callback
 	 */
-	static Consumer<EntryCreatedRS> logCreated(final String entry) {
-		return new Consumer<EntryCreatedRS>() {
+	static Consumer<EntryCreatedAsyncRS> logCreated(final String entry) {
+		return new Consumer<EntryCreatedAsyncRS>() {
 			@Override
-			public void accept(EntryCreatedRS rs) throws Exception {
+			public void accept(EntryCreatedAsyncRS rs) {
 				LOGGER.debug("ReportPortal {} with ID '{}' has been created", entry, rs.getId());
 			}
 		};

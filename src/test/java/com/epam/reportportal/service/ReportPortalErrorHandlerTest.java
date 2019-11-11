@@ -1,19 +1,17 @@
 /*
+ * Copyright 2019 EPAM Systems
  *
- *  * Copyright (C) 2018 EPAM Systems
- *  *
- *  * Licensed under the Apache License, Version 2.0 (the "License");
- *  * you may not use this file except in compliance with the License.
- *  * You may obtain a copy of the License at
- *  *
- *  * http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.epam.reportportal.service;
@@ -64,6 +62,42 @@ public class ReportPortalErrorHandlerTest {
 		reportPortalErrorHandler.handle(invalidResponse);
 	}
 
+	@Test(expected = InternalReportPortalClientException.class)
+	public void handle_not_json_lowercase() throws Exception {
+		//  given:
+		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
+		invalidHeaders.put(HttpHeaders.CONTENT_TYPE.toLowerCase(), ContentType.TEXT_HTML.getMimeType());
+
+		Response<ByteSource> invalidResponse = createFakeResponse(200, invalidHeaders);
+
+		//  when:
+		reportPortalErrorHandler.handle(invalidResponse);
+	}
+
+	@Test
+	public void handle_json() throws Exception {
+		//  given:
+		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
+		invalidHeaders.put(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
+
+		Response<ByteSource> invalidResponse = createFakeResponse(201, invalidHeaders);
+
+		//  when:
+		reportPortalErrorHandler.handle(invalidResponse);
+	}
+
+	@Test
+	public void handle_json_lowercase() throws Exception {
+		//  given:
+		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
+		invalidHeaders.put(HttpHeaders.CONTENT_TYPE.toLowerCase(), ContentType.APPLICATION_JSON.getMimeType());
+
+		Response<ByteSource> invalidResponse = createFakeResponse(200, invalidHeaders);
+
+		//  when:
+		reportPortalErrorHandler.handle(invalidResponse);
+	}
+
 	@Test(expected = GeneralReportPortalException.class)
 	public void handle_error_code() throws Exception {
 		//  given:
@@ -76,7 +110,7 @@ public class ReportPortalErrorHandlerTest {
 		reportPortalErrorHandler.handle(invalidResponse);
 	}
 
-	@Test(expected = ReportPortalException.class)
+	@Test(expected = GeneralReportPortalException.class)
 	public void handle_known_error() throws Exception {
 		//  given:
 		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
