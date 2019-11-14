@@ -22,7 +22,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * Annotation for test methods to attach {@link com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ} to the test items
+ *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
+ * @see Attribute
+ * @see AttributeValue
+ * @see MultiKeyAttribute
+ * @see MultiValueAttribute
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
