@@ -28,17 +28,9 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface Attributes {
 
-	String[] component() default {};
-
-	String[] e2e() default {};
-
-	String[] persona() default {};
-
-	String[] product() default {};
-
-	String[] vertical() default {};
-
 	Attribute[] attributes() default {};
+
+	AttributeValue[] attributeValues() default {};
 
 	MultiKeyAttribute[] multiKeyAttributes() default {};
 

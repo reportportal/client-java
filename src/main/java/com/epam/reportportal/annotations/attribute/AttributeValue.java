@@ -16,17 +16,16 @@
 
 package com.epam.reportportal.annotations.attribute;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
-public final class AttributeConstants {
+@Retention(RetentionPolicy.RUNTIME)
+@Target({})
+public @interface AttributeValue {
 
-	public static final String COMPONENT_KEY = "component";
-	public static final String E2E_KEY = "e2e";
-	public static final String PERSONA_KEY = "persona";
-	public static final String PRODUCT_KEY = "product";
-	public static final String VERTICAL_KEY = "vertical";
-
-	private AttributeConstants() {
-	}
+	String value();
 }
