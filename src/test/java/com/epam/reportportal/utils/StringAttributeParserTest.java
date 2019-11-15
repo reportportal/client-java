@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.epam;
+package com.epam.reportportal.utils;
 
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.util.Set;
 
-public class AttributeParserTest {
+public class StringAttributeParserTest {
 	@Test
 	public void testNull() {
 		Set<ItemAttributesRQ> itemAttributeResources = AttributeParser.parseAsSet(null);
