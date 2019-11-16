@@ -1,9 +1,6 @@
 package com.epam.reportportal.utils;
 
-import com.epam.reportportal.annotations.attribute.AttributeValue;
-import com.epam.reportportal.annotations.attribute.Attributes;
-import com.epam.reportportal.annotations.attribute.MultiKeyAttribute;
-import com.epam.reportportal.annotations.attribute.MultiValueAttribute;
+import com.epam.reportportal.annotations.attribute.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
@@ -192,7 +189,7 @@ public class AnnotationAttributeParserTest {
 	}
 
 	@Test
-	public void verify_two_multi_value_attributes_with_empty_array_returns_empty_set() throws NoSuchMethodException {
+	public void verify_multi_value_attribute_with_empty_array_returns_empty_set() throws NoSuchMethodException {
 		Attributes testAnnotation = getAttributesAnnotation(MultiValueAttributeEmptyArrayVerify.class);
 		Set<ItemAttributesRQ> result = AttributeParser.retrieveAttributes(testAnnotation);
 
@@ -272,5 +269,61 @@ public class AnnotationAttributeParserTest {
 		assertThat(request.isSystem(), equalTo(false));
 		assertThat(request.getValue(), equalTo(MULTI_VALUE_ATTRIBUTE_VERIFY));
 		assertThat(request.getKey(), nullValue());
+	}
+
+	private static final class AttributeVerify {
+		@Attributes(attributes = @Attribute(key = MULTI_VALUE_ATTRIBUTE_KEY_VERIFY, value = MULTI_VALUE_ATTRIBUTE_VERIFY))
+		public void testMethod() {
+		}
+	}
+
+	@Test
+	public void verify_attribute_converted_into_correct_rq() throws NoSuchMethodException {
+		Attributes testAnnotation = getAttributesAnnotation(AttributeVerify.class);
+		Set<ItemAttributesRQ> result = AttributeParser.retrieveAttributes(testAnnotation);
+
+		assertThat(result, hasSize(1));
+		ItemAttributesRQ request = result.iterator().next();
+		assertThat(request.isSystem(), equalTo(false));
+		assertThat(request.getKey(), equalTo(MULTI_VALUE_ATTRIBUTE_KEY_VERIFY));
+		assertThat(request.getValue(), equalTo(MULTI_VALUE_ATTRIBUTE_VERIFY));
+	}
+
+	private static final class TwoAttributeVerify {
+		@Attributes(attributes = {@Attribute(key = MULTI_VALUE_ATTRIBUTE_KEY_VERIFY, value = MULTI_VALUE_ATTRIBUTE_VERIFY),
+				@Attribute(key = MULTI_KEY_ATTRIBUTE_KEY_VERIFY_TEST_1, value = MULTI_VALUE_ATTRIBUTE_VERIFY_TEST_1)})
+		public void testMethod() {
+		}
+	}
+
+	@Test
+	public void verify_two_attributes_converted_into_correct_rq() throws NoSuchMethodException {
+		Attributes testAnnotation = getAttributesAnnotation(TwoAttributeVerify.class);
+		Set<ItemAttributesRQ> result = AttributeParser.retrieveAttributes(testAnnotation);
+
+		assertThat(result, hasSize(2));
+		for (ItemAttributesRQ request : result) {
+			assertThat(request.isSystem(), equalTo(false));
+		}
+
+		assertThat(Iterables.transform(result, KEY_EXTRACT), containsInAnyOrder(MULTI_VALUE_ATTRIBUTE_KEY_VERIFY, MULTI_KEY_ATTRIBUTE_KEY_VERIFY_TEST_1));
+		assertThat(Iterables.transform(result, VALUE_EXTRACT), containsInAnyOrder(MULTI_VALUE_ATTRIBUTE_VERIFY, MULTI_VALUE_ATTRIBUTE_VERIFY_TEST_1));
+	}
+
+	private static final class AllAttributeAnnotationsVerify {
+		@Attributes(attributes = @Attribute(key = MULTI_VALUE_ATTRIBUTE_KEY_VERIFY, value = MULTI_VALUE_ATTRIBUTE_VERIFY),
+		attributeValues = @AttributeValue(VALUE_ATTRIBUTE_VERIFY_TEST_1),
+		multiKeyAttributes = @MultiKeyAttribute(keys = MULTI_KEY_ATTRIBUTE_KEY_VERIFY_TEST_1, value = MULTI_VALUE_ATTRIBUTE_VERIFY),
+		multiValueAttributes = @MultiValueAttribute(key = MULTI_VALUE_ATTRIBUTE_KEY_VERIFY, values = MULTI_VALUE_ATTRIBUTE_VERIFY_TEST_1))
+		public void testMethod() {
+		}
+	}
+
+	@Test
+	public void verify_all_attributes_in_one_annotation() throws NoSuchMethodException {
+		Attributes testAnnotation = getAttributesAnnotation(AllAttributeAnnotationsVerify.class);
+		Set<ItemAttributesRQ> result = AttributeParser.retrieveAttributes(testAnnotation);
+
+		assertThat(result, hasSize(4));
 	}
 }
