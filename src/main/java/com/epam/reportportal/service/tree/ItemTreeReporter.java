@@ -179,11 +179,11 @@ public class ItemTreeReporter {
 			final Maybe<String> itemId, final String level, final String message, final Date logTime) {
 		return launchId.flatMap(new Function<String, MaybeSource<EntryCreatedAsyncRS>>() {
 			@Override
-			public MaybeSource<EntryCreatedAsyncRS> apply(String launchId) {
+			public MaybeSource<EntryCreatedAsyncRS> apply(final String launchId) {
 				return itemId.flatMap(new Function<String, MaybeSource<EntryCreatedAsyncRS>>() {
 					@Override
 					public MaybeSource<EntryCreatedAsyncRS> apply(String itemId) {
-						SaveLogRQ saveLogRequest = createSaveLogRequest(itemId, level, message, logTime);
+						SaveLogRQ saveLogRequest = createSaveLogRequest(launchId, itemId, level, message, logTime);
 						return reportPortalClient.log(saveLogRequest);
 					}
 				});
@@ -195,11 +195,11 @@ public class ItemTreeReporter {
 			final Maybe<String> itemId, final String level, final String message, final Date logTime, final File file) {
 		return launchId.flatMap(new Function<String, MaybeSource<BatchSaveOperatingRS>>() {
 			@Override
-			public MaybeSource<BatchSaveOperatingRS> apply(String launchId) {
+			public MaybeSource<BatchSaveOperatingRS> apply(final String launchId) {
 				return itemId.flatMap(new Function<String, MaybeSource<BatchSaveOperatingRS>>() {
 					@Override
 					public MaybeSource<BatchSaveOperatingRS> apply(String itemId) throws Exception {
-						SaveLogRQ saveLogRequest = createSaveLogRequest(itemId, level, message, logTime);
+						SaveLogRQ saveLogRequest = createSaveLogRequest(launchId, itemId, level, message, logTime);
 						saveLogRequest.setFile(createFileModel(file));
 						MultiPartRequest multiPartRequest = HttpRequestUtils.buildLogMultiPartRequest(Lists.newArrayList(saveLogRequest));
 						return reportPortalClient.log(multiPartRequest);
@@ -209,8 +209,9 @@ public class ItemTreeReporter {
 		}).observeOn(Schedulers.io());
 	}
 
-	private static SaveLogRQ createSaveLogRequest(String itemId, String level, String message, Date logTime) {
+	private static SaveLogRQ createSaveLogRequest(String launchId, String itemId, String level, String message, Date logTime) {
 		SaveLogRQ saveLogRQ = new SaveLogRQ();
+		saveLogRQ.setLaunchUuid(launchId);
 		saveLogRQ.setItemUuid(itemId);
 		saveLogRQ.setLevel(level);
 		saveLogRQ.setLogTime(logTime);
