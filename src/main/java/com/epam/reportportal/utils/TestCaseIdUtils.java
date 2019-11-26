@@ -49,7 +49,7 @@ public class TestCaseIdUtils {
 	private static Integer getTestCaseId(TestCaseIdKey testCaseIdKey, int paramIndex, Object... parameters) {
 		Object testCaseIdParam = parameters[paramIndex];
 		if (testCaseIdParam != null) {
-			if (testCaseIdKey.isInteger()) {
+			if (testCaseIdKey.numeric()) {
 				try {
 					return Integer.parseInt(String.valueOf(testCaseIdParam));
 				} catch (NumberFormatException e) {

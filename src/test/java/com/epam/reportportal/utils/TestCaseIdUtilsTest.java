@@ -29,7 +29,7 @@ import java.lang.reflect.Method;
 public class TestCaseIdUtilsTest {
 
 	@TestCaseId
-	public void testCaseAnnotationTest(String firstParam, @TestCaseIdKey(isInteger = true) String id) {
+	public void testCaseAnnotationTest(String firstParam, @TestCaseIdKey(numeric = true) String id) {
 
 	}
 

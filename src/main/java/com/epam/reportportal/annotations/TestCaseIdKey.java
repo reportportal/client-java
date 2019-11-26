@@ -22,11 +22,18 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * Annotation to mark a field or a method parameter that will be used to generate {@link TestCaseId#value()} in a parameterized test
+ *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.FIELD, ElementType.PARAMETER })
 public @interface TestCaseIdKey {
 
-	boolean isInteger();
+	/**
+	 * @return flag to define whether a marked field or method parameter is {@link Integer} or not.
+	 * If 'true' value is parsed by {@link com.epam.reportportal.utils.TestCaseIdUtils} as {@link Integer}
+	 * otherwise {@link Object#hashCode()} method is invoked
+	 */
+	boolean numeric();
 }
