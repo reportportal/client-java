@@ -28,7 +28,6 @@ import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
-import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
@@ -111,34 +110,15 @@ public class ItemTreeReporter {
 	 * @param level              Log level
 	 * @param message            Log message
 	 * @param logTime            Log time
+	 * @param launchId           Launch id
 	 * @param testItemLeaf       {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
 	 * @return True if request is sent otherwise false
 	 */
 	public static boolean sendLog(final ReportPortalClient reportPortalClient, final String level, final String message, final Date logTime,
-			TestItemTree.TestItemLeaf testItemLeaf) {
+			Maybe<String> launchId, TestItemTree.TestItemLeaf testItemLeaf) {
 		Maybe<String> itemId = testItemLeaf.getItemId();
-		if (itemId != null) {
-			sendLogRequest(reportPortalClient, itemId, level, message, logTime).subscribe();
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	/**
-	 * @param reportPortalClient           {@link com.epam.reportportal.service.ReportPortal}
-	 * @param level                        Log level
-	 * @param message                      Log message
-	 * @param logTime                      Log time
-	 * @param testItemLeaf                 {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
-	 * @param batchSaveOperatingRSConsumer Returned response consumer
-	 * @return True if request is sent otherwise false
-	 */
-	public static boolean sendLog(final ReportPortalClient reportPortalClient, final String level, final String message, final Date logTime,
-			TestItemTree.TestItemLeaf testItemLeaf, Consumer<EntryCreatedAsyncRS> batchSaveOperatingRSConsumer) {
-		Maybe<String> itemId = testItemLeaf.getItemId();
-		if (itemId != null) {
-			sendLogRequest(reportPortalClient, itemId, level, message, logTime).subscribe(batchSaveOperatingRSConsumer);
+		if (launchId != null && itemId != null) {
+			sendLogRequest(reportPortalClient, launchId, itemId, level, message, logTime).subscribe();
 			return true;
 		} else {
 			return false;
@@ -150,35 +130,15 @@ public class ItemTreeReporter {
 	 * @param level              Log level
 	 * @param message            Log message
 	 * @param logTime            Log time
+	 * @param launchId           Launch id
 	 * @param testItemLeaf       {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
 	 * @return True if request is sent otherwise false
 	 */
 	public static boolean sendLog(final ReportPortalClient reportPortalClient, final String level, final String message, final Date logTime,
-			final File file, TestItemTree.TestItemLeaf testItemLeaf) {
+			final File file, Maybe<String> launchId, TestItemTree.TestItemLeaf testItemLeaf) {
 		Maybe<String> itemId = testItemLeaf.getItemId();
-		if (itemId != null) {
-			sendLogMultiPartRequest(reportPortalClient, itemId, level, message, logTime, file).subscribe();
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	/**
-	 * @param reportPortalClient           {@link com.epam.reportportal.service.ReportPortal}
-	 * @param level                        Log level
-	 * @param message                      Log message
-	 * @param logTime                      Log time
-	 * @param file                         Log attachment
-	 * @param testItemLeaf                 {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
-	 * @param batchSaveOperatingRSConsumer Returned response consumer
-	 * @return True if request is sent otherwise false
-	 */
-	public static boolean sendLog(final ReportPortalClient reportPortalClient, final String level, final String message, final Date logTime,
-			final File file, TestItemTree.TestItemLeaf testItemLeaf, Consumer<BatchSaveOperatingRS> batchSaveOperatingRSConsumer) {
-		Maybe<String> itemId = testItemLeaf.getItemId();
-		if (itemId != null) {
-			sendLogMultiPartRequest(reportPortalClient, itemId, level, message, logTime, file).subscribe(batchSaveOperatingRSConsumer);
+		if (launchId != null && itemId != null) {
+			sendLogMultiPartRequest(reportPortalClient, launchId, itemId, level, message, logTime, file).subscribe();
 			return true;
 		} else {
 			return false;
@@ -215,26 +175,36 @@ public class ItemTreeReporter {
 		});
 	}
 
-	private static Maybe<EntryCreatedAsyncRS> sendLogRequest(final ReportPortalClient reportPortalClient, Maybe<String> itemId,
-			final String level, final String message, final Date logTime) {
-		return itemId.flatMap(new Function<String, MaybeSource<EntryCreatedAsyncRS>>() {
+	private static Maybe<EntryCreatedAsyncRS> sendLogRequest(final ReportPortalClient reportPortalClient, Maybe<String> launchId,
+			final Maybe<String> itemId, final String level, final String message, final Date logTime) {
+		return launchId.flatMap(new Function<String, MaybeSource<EntryCreatedAsyncRS>>() {
 			@Override
-			public MaybeSource<EntryCreatedAsyncRS> apply(String itemId) {
-				SaveLogRQ saveLogRequest = createSaveLogRequest(itemId, level, message, logTime);
-				return reportPortalClient.log(saveLogRequest);
+			public MaybeSource<EntryCreatedAsyncRS> apply(String launchId) {
+				return itemId.flatMap(new Function<String, MaybeSource<EntryCreatedAsyncRS>>() {
+					@Override
+					public MaybeSource<EntryCreatedAsyncRS> apply(String itemId) {
+						SaveLogRQ saveLogRequest = createSaveLogRequest(itemId, level, message, logTime);
+						return reportPortalClient.log(saveLogRequest);
+					}
+				});
 			}
 		}).observeOn(Schedulers.io());
 	}
 
-	private static Maybe<BatchSaveOperatingRS> sendLogMultiPartRequest(final ReportPortalClient reportPortalClient, Maybe<String> itemId,
-			final String level, final String message, final Date logTime, final File file) {
-		return itemId.flatMap(new Function<String, MaybeSource<BatchSaveOperatingRS>>() {
+	private static Maybe<BatchSaveOperatingRS> sendLogMultiPartRequest(final ReportPortalClient reportPortalClient, Maybe<String> launchId,
+			final Maybe<String> itemId, final String level, final String message, final Date logTime, final File file) {
+		return launchId.flatMap(new Function<String, MaybeSource<BatchSaveOperatingRS>>() {
 			@Override
-			public MaybeSource<BatchSaveOperatingRS> apply(String itemId) throws Exception {
-				SaveLogRQ saveLogRequest = createSaveLogRequest(itemId, level, message, logTime);
-				saveLogRequest.setFile(createFileModel(file));
-				MultiPartRequest multiPartRequest = HttpRequestUtils.buildLogMultiPartRequest(Lists.newArrayList(saveLogRequest));
-				return reportPortalClient.log(multiPartRequest);
+			public MaybeSource<BatchSaveOperatingRS> apply(String launchId) {
+				return itemId.flatMap(new Function<String, MaybeSource<BatchSaveOperatingRS>>() {
+					@Override
+					public MaybeSource<BatchSaveOperatingRS> apply(String itemId) throws Exception {
+						SaveLogRQ saveLogRequest = createSaveLogRequest(itemId, level, message, logTime);
+						saveLogRequest.setFile(createFileModel(file));
+						MultiPartRequest multiPartRequest = HttpRequestUtils.buildLogMultiPartRequest(Lists.newArrayList(saveLogRequest));
+						return reportPortalClient.log(multiPartRequest);
+					}
+				});
 			}
 		}).observeOn(Schedulers.io());
 	}
