@@ -64,28 +64,7 @@ public class ItemTreeReporter {
 		final Maybe<String> parent = testItemLeaf.getParentId();
 		if (parent != null && launchId != null) {
 			Maybe<String> itemId = sendStartItemRequest(reportPortalClient, launchId, parent, startTestItemRQ);
-			itemId.subscribeOn(Schedulers.computation()).subscribe();
-			return itemId;
-		} else {
-			return Maybe.empty();
-		}
-
-	}
-
-	/**
-	 * @param reportPortalClient {@link ReportPortalClient}
-	 * @param startTestItemRQ    {@link StartTestItemRQ}
-	 * @param launchId           Launch id
-	 * @param testItemLeaf       {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
-	 * @param resultConsumer     Returned item id consumer
-	 * @return {@link Maybe} containing item id
-	 */
-	public static Maybe<String> startItem(final ReportPortalClient reportPortalClient, final StartTestItemRQ startTestItemRQ,
-			final Maybe<String> launchId, final TestItemTree.TestItemLeaf testItemLeaf, Consumer<String> resultConsumer) {
-		final Maybe<String> parent = testItemLeaf.getParentId();
-		if (parent != null && launchId != null) {
-			Maybe<String> itemId = sendStartItemRequest(reportPortalClient, launchId, parent, startTestItemRQ);
-			itemId.subscribeOn(Schedulers.computation()).subscribe(resultConsumer);
+			itemId.subscribeOn(Schedulers.io()).subscribe();
 			return itemId;
 		} else {
 			return Maybe.empty();
@@ -120,7 +99,7 @@ public class ItemTreeReporter {
 						return sendFinishItemRequest(item, finishTestItemRQ, reportPortalClient);
 					}
 				}
-			}).subscribeOn(Schedulers.computation());
+			}).subscribeOn(Schedulers.io());
 		} else {
 			return Maybe.empty();
 		}
@@ -244,7 +223,7 @@ public class ItemTreeReporter {
 				SaveLogRQ saveLogRequest = createSaveLogRequest(itemId, level, message, logTime);
 				return reportPortalClient.log(saveLogRequest);
 			}
-		}).observeOn(Schedulers.computation());
+		}).observeOn(Schedulers.io());
 	}
 
 	private static Maybe<BatchSaveOperatingRS> sendLogMultiPartRequest(final ReportPortalClient reportPortalClient, Maybe<String> itemId,
@@ -257,7 +236,7 @@ public class ItemTreeReporter {
 				MultiPartRequest multiPartRequest = HttpRequestUtils.buildLogMultiPartRequest(Lists.newArrayList(saveLogRequest));
 				return reportPortalClient.log(multiPartRequest);
 			}
-		}).observeOn(Schedulers.computation());
+		}).observeOn(Schedulers.io());
 	}
 
 	private static SaveLogRQ createSaveLogRequest(String itemId, String level, String message, Date logTime) {
