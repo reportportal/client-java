@@ -26,8 +26,11 @@ import com.epam.reportportal.restendpoint.serializer.ByteArraySerializer;
 import com.epam.reportportal.restendpoint.serializer.Serializer;
 import com.epam.reportportal.restendpoint.serializer.json.JacksonSerializer;
 import com.epam.reportportal.utils.SslUtils;
+import com.epam.reportportal.utils.Waiter;
 import com.epam.reportportal.utils.properties.ListenerProperty;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
+import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
+import com.epam.ta.reportportal.ws.model.launch.LaunchResource;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -35,6 +38,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
+import io.reactivex.MaybeEmitter;
+import io.reactivex.MaybeOnSubscribe;
+import io.reactivex.functions.Consumer;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
@@ -53,6 +59,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -72,16 +79,20 @@ public class ReportPortal {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportPortal.class);
 	private static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
 
+	private volatile String instanceUuid = UUID.randomUUID().toString();
+
 	private ReportPortalClient rpClient;
 	private ListenerParameters parameters;
+	private LockFile lockFile;
 
 	/**
 	 * @param rpClient   ReportPortal client
 	 * @param parameters Listener Parameters
 	 */
-	ReportPortal(ReportPortalClient rpClient, ListenerParameters parameters) {
+	ReportPortal(ReportPortalClient rpClient, ListenerParameters parameters, LockFile lockFile) {
 		this.rpClient = rpClient;
 		this.parameters = parameters;
+		this.lockFile = lockFile;
 	}
 
 	/**
@@ -95,17 +106,17 @@ public class ReportPortal {
 			return Launch.NOOP_LAUNCH;
 		}
 
-		return new LaunchImpl(rpClient, parameters, rq);
+		return getLaunch(rq);
 	}
 
 	/**
 	 * Factory method for {@link ReportPortal} that uses already started launch
 	 *
-	 * @param currentLaunchId Launch to be used
+	 * @param launchUuid Launch to be used
 	 * @return This instance for chaining
 	 */
-	public Launch withLaunch(Maybe<String> currentLaunchId) {
-		return new LaunchImpl(rpClient, parameters, currentLaunchId);
+	public Launch withLaunch(Maybe<String> launchUuid) {
+		return new LaunchImpl(rpClient, parameters, launchUuid);
 	}
 
 	/**
@@ -131,6 +142,13 @@ public class ReportPortal {
 		return new Builder();
 	}
 
+	private static LockFile getLockFile(ListenerParameters parameters) {
+		if (parameters.getClientJoin()) {
+			return new LockFile(parameters);
+		}
+		return null;
+	}
+
 	/**
 	 * Creates new ReportPortal based on already built dependencies
 	 *
@@ -139,7 +157,7 @@ public class ReportPortal {
 	 * @return builder for {@link ReportPortal}
 	 */
 	public static ReportPortal create(ReportPortalClient client, ListenerParameters params) {
-		return new ReportPortal(client, params);
+		return new ReportPortal(client, params, getLockFile(params));
 	}
 
 	/**
@@ -338,7 +356,7 @@ public class ReportPortal {
 				executorService = Executors.newFixedThreadPool(params.getIoPoolSize(),
 						new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build()
 				);
-				return new ReportPortal(buildClient(ReportPortalClient.class, params), params);
+				return new ReportPortal(buildClient(ReportPortalClient.class, params), params, buildLockFile(params));
 			} catch (Exception e) {
 				String errMsg = "Cannot build ReportPortal client";
 				LOGGER.error(errMsg, e);
@@ -419,9 +437,119 @@ public class ReportPortal {
 
 		}
 
+		protected LockFile buildLockFile(ListenerParameters parameters) {
+			return getLockFile(parameters);
+		}
+
 		protected PropertiesLoader defaultPropertiesLoader() {
 			return PropertiesLoader.load();
 		}
 	}
 
+	private class SecondaryLaunch extends LaunchImpl {
+		private final ReportPortalClient rpClient;
+		private final Maybe<String> launch;
+
+		SecondaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch) {
+			super(rpClient, parameters, launch);
+			this.rpClient = rpClient;
+			this.launch = launch;
+		}
+
+		private void waitForLaunchStart() {
+			new Waiter("Wait for Launch start").pollingEvery(1, TimeUnit.SECONDS).timeoutFail().till(new Callable<Boolean>() {
+				private volatile Boolean result = null;
+
+				@Override
+				public Boolean call() {
+					launch.subscribe(new Consumer<String>() {
+						@Override
+						public void accept(String uuid) {
+							Maybe<LaunchResource> maybeRs = rpClient.getLaunchByUuid(uuid);
+							if (maybeRs != null) {
+								maybeRs.subscribe(new Consumer<LaunchResource>() {
+									@Override
+									public void accept(LaunchResource launchResource) {
+										result = Boolean.TRUE;
+									}
+								}, new Consumer<Throwable>() {
+									@Override
+									public void accept(Throwable throwable) {
+										LOGGER.debug("Unable to get a Launch: " + throwable.getLocalizedMessage(), throwable);
+									}
+								});
+							} else {
+								LOGGER.debug("RP Client returned 'null' response on get Launch by UUID call");
+							}
+						}
+					});
+					return result;
+				}
+			});
+		}
+
+		@Override
+		public Maybe<String> start() {
+			if (!parameters.isAsyncReporting()) {
+				waitForLaunchStart();
+			}
+			return super.start();
+		}
+
+		@Override
+		public void finish(final FinishExecutionRQ rq) {
+			// ignore that call, since only primary launch should finish it
+			lockFile.finishInstanceUuid(instanceUuid);
+		}
+	}
+
+	private class PrimaryLaunch extends LaunchImpl {
+		PrimaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, StartLaunchRQ launch) {
+			super(rpClient, parameters, launch);
+		}
+
+		@Override
+		public void finish(final FinishExecutionRQ rq) {
+			try {
+				super.finish(rq);
+			} finally {
+				lockFile.finishInstanceUuid(instanceUuid);
+				instanceUuid = UUID.randomUUID().toString();
+			}
+		}
+	}
+
+	private Launch getLaunch(StartLaunchRQ rq) {
+		if (lockFile == null) {
+			// do not use multi-client mode
+			return new LaunchImpl(rpClient, parameters, rq);
+		}
+
+		final String uuid = lockFile.obtainLaunchUuid(instanceUuid);
+		if (uuid == null) {
+			// timeout locking on file or interrupted
+			throw new InternalReportPortalClientException("Unable to create a new launch: unable to read/write lock file.");
+		}
+
+		if (instanceUuid.equals(uuid)) {
+			// We got our own UUID as launch UUID, that means we are primary launch.
+			ObjectMapper objectMapper = new ObjectMapper();
+			try {
+				StartLaunchRQ rqCopy = objectMapper.readValue(objectMapper.writeValueAsString(rq), StartLaunchRQ.class);
+				rqCopy.setUuid(uuid);
+				return new PrimaryLaunch(rpClient, parameters, rqCopy);
+			} catch (IOException e) {
+				throw new InternalReportPortalClientException("Unable to clone start launch request:", e);
+			}
+		} else {
+			Maybe<String> launch = Maybe.create(new MaybeOnSubscribe<String>() {
+				@Override
+				public void subscribe(final MaybeEmitter<String> emitter) {
+					emitter.onSuccess(uuid);
+					emitter.onComplete();
+				}
+			});
+			return new SecondaryLaunch(rpClient, parameters, launch);
+		}
+	}
 }

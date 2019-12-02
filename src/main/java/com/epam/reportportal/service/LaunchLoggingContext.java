@@ -84,7 +84,7 @@ class LaunchLoggingContext {
 			public void accept(Throwable throwable) throws Exception {
 				throwable.printStackTrace();
 			}
-		}).observeOn(Schedulers.computation()).subscribe(logFlowableResults("Launch logging context"));
+		}).observeOn(Schedulers.io()).subscribe(logFlowableResults("Launch logging context"));
 
 	}
 

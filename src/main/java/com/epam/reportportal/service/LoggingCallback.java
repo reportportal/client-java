@@ -17,7 +17,6 @@ package com.epam.reportportal.service;
 
 import com.epam.ta.reportportal.ws.model.EntryCreatedAsyncRS;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
-import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import io.reactivex.functions.Consumer;
 
 import static com.epam.reportportal.service.Launch.LOGGER;

@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class Launch {
 	static final Logger LOGGER = LoggerFactory.getLogger(Launch.class);
+
 	private final ListenerParameters parameters;
 
 	Launch(ListenerParameters parameters) {
@@ -55,7 +56,7 @@ public abstract class Launch {
 	/**
 	 * Starts new test item in ReportPortal asynchronously (non-blocking)
 	 *
-	 * @param rq Start RQ
+	 * @param rq       Start RQ
 	 * @param parentId Parent ID
 	 * @return Test Item ID promise
 	 */

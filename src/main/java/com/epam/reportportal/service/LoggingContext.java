@@ -135,7 +135,7 @@ public class LoggingContext {
 			public void accept(Throwable throwable) throws Exception {
 				LOG_ERROR.accept(throwable);
 			}
-		}).observeOn(Schedulers.computation()).subscribe(logFlowableResults("Logging context"));
+		}).observeOn(Schedulers.io()).subscribe(logFlowableResults("Logging context"));
 
 	}
 
