@@ -30,10 +30,4 @@ import java.lang.annotation.Target;
 @Target({ ElementType.FIELD, ElementType.PARAMETER })
 public @interface TestCaseIdKey {
 
-	/**
-	 * @return flag to define whether a marked field or method parameter is {@link Integer} or not.
-	 * If 'true' value is parsed by {@link com.epam.reportportal.utils.TestCaseIdUtils} as {@link Integer}
-	 * otherwise {@link Object#hashCode()} method is invoked
-	 */
-	boolean numeric();
 }

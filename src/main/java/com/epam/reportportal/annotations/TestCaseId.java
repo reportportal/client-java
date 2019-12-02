@@ -33,10 +33,10 @@ import java.lang.annotation.Target;
 public @interface TestCaseId {
 
 	/**
-	 * @return provided value or '0' by default.
+	 * @return provided value or empty {@link String} by default.
 	 * Default value is provided to avoid unnecessary value setting in parameterized tests
 	 */
-	int value() default 0;
+	String value() default "";
 
 	/**
 	 * @return flag to define whether test is parameterized or not

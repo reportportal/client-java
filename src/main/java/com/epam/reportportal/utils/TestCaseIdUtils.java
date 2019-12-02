@@ -17,6 +17,7 @@
 package com.epam.reportportal.utils;
 
 import com.epam.reportportal.annotations.TestCaseIdKey;
+import com.epam.reportportal.service.item.TestCaseIdEntry;
 import io.reactivex.annotations.Nullable;
 
 import java.lang.annotation.Annotation;
@@ -32,7 +33,7 @@ public class TestCaseIdUtils {
 	}
 
 	@Nullable
-	public static Integer getParameterizedTestCaseId(Method method, Object... parameters) {
+	public static TestCaseIdEntry getParameterizedTestCaseId(Method method, Object... parameters) {
 		Annotation[][] parameterAnnotations = method.getParameterAnnotations();
 		for (int paramIndex = 0; paramIndex < parameterAnnotations.length; paramIndex++) {
 			for (int annotationIndex = 0; annotationIndex < parameterAnnotations[paramIndex].length; annotationIndex++) {
@@ -46,20 +47,11 @@ public class TestCaseIdUtils {
 	}
 
 	@Nullable
-	private static Integer getTestCaseId(TestCaseIdKey testCaseIdKey, int paramIndex, Object... parameters) {
+	private static TestCaseIdEntry getTestCaseId(TestCaseIdKey testCaseIdKey, int paramIndex, Object... parameters) {
 		Object testCaseIdParam = parameters[paramIndex];
 		if (testCaseIdParam != null) {
-			if (testCaseIdKey.numeric()) {
-				try {
-					return Integer.parseInt(String.valueOf(testCaseIdParam));
-				} catch (NumberFormatException e) {
-					return testCaseIdParam.hashCode();
-				}
-			} else {
-				return testCaseIdParam.hashCode();
-			}
+			return new TestCaseIdEntry(String.valueOf(testCaseIdParam), testCaseIdParam.hashCode());
 		}
-
 		return null;
 	}
 }
