@@ -13,10 +13,6 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
-/**
- * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
- */
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
@@ -63,6 +59,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+/**
+ * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
+ */
 public class ReportPortalClientJoinTest {
 	private static final long WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
 

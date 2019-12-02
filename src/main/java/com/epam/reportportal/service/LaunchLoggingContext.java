@@ -81,10 +81,10 @@ class LaunchLoggingContext {
 			}
 		}).doOnError(new Consumer<Throwable>() {
 			@Override
-			public void accept(Throwable throwable) throws Exception {
+			public void accept(Throwable throwable) {
 				throwable.printStackTrace();
 			}
-		}).observeOn(Schedulers.computation()).subscribe(logFlowableResults("Launch logging context"));
+		}).observeOn(Schedulers.io()).subscribe(logFlowableResults("Launch logging context"));
 
 	}
 
