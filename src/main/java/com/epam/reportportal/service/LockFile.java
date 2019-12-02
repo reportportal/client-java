@@ -1,3 +1,19 @@
+/*
+ * Copyright 2019 EPAM Systems
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
@@ -24,6 +40,8 @@ import java.util.concurrent.TimeUnit;
  * A service to perform blocking I/O operations on '.lock' and '.sync' file to get single launch UUID for multiple clients on a machine.
  * This class uses a local storage disk, therefore applicable in scope of a single hardware machine. You can control lock and sync file
  * paths with {@link ListenerProperty#LOCK_FILE_NAME} and {@link ListenerProperty#SYNC_FILE_NAME} properties.
+ *
+ * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
 public class LockFile implements LaunchIdLock {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LockFile.class);
@@ -50,7 +68,7 @@ public class LockFile implements LaunchIdLock {
 		try {
 			lockAccess = new RandomAccessFile(file, "rwd");
 		} catch (FileNotFoundException e) {
-			LOGGER.info("Unable to open '{}' file: {}", filePath, e.getLocalizedMessage(), e);
+			LOGGER.debug("Unable to open '{}' file: {}", filePath, e.getLocalizedMessage(), e);
 			return null;
 		}
 
@@ -122,7 +140,7 @@ public class LockFile implements LaunchIdLock {
 		closeAccess(io.getLeft());
 	}
 
-	private <T> T executeBockingOperation(final IoOperation<T> operation, final File file) {
+	private <T> T executeBlockingOperation(final IoOperation<T> operation, final File file) {
 		return new Waiter("Wait for a blocking operation on file '" + file.getPath() + "'")
 				.duration(fileWaitTimeout, TimeUnit.MILLISECONDS)
 				.applyRandomDiscrepancy(MAX_WAIT_TIME_DISCREPANCY)
@@ -183,7 +201,7 @@ public class LockFile implements LaunchIdLock {
 				return Boolean.TRUE;
 			}
 		};
-		Boolean result = executeBockingOperation(uuidRead, syncFile);
+		Boolean result = executeBlockingOperation(uuidRead, syncFile);
 		if (result == null || !result) {
 			throw new InternalReportPortalClientException("Unable to write instance UUID to a sync file: " + syncFile.getPath());
 		}
@@ -198,7 +216,7 @@ public class LockFile implements LaunchIdLock {
 				return uuid != null ? uuid : instanceUuid;
 			}
 		};
-		String result = executeBockingOperation(uuidRead, syncFile);
+		String result = executeBlockingOperation(uuidRead, syncFile);
 		if (result == null) {
 			throw new InternalReportPortalClientException("Unable to read launch UUID from sync file: " + syncFile.getPath());
 		}
@@ -289,7 +307,7 @@ public class LockFile implements LaunchIdLock {
 			}
 		};
 
-		Boolean isLast = executeBockingOperation(uuidRemove, syncFile);
+		Boolean isLast = executeBlockingOperation(uuidRemove, syncFile);
 		if (isLast != null && isLast) {
 			syncFile.delete();
 		}
