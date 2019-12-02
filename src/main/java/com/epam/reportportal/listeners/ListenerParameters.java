@@ -24,7 +24,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.*;
 
@@ -42,6 +41,7 @@ public class ListenerParameters {
 	private static final boolean DEFAULT_CONVERT_IMAGE = false;
 	private static final boolean DEFAULT_RETURN = false;
 	private static final boolean DEFAULT_ASYNC_REPORTING = false;
+	private static final boolean DEFAULT_CALLBACK_REPORTING_ENABLED = false;
 	private static final int DEFAULT_MAX_CONNECTION_TIME_TO_LIVE_MS = 29900;
 	private static final int DEFAULT_MAX_CONNECTION_IDLE_TIME_MS = 5 * 1000;
 	private static final int DEFAULT_TRANSFER_RETRY_COUNT = 5;
@@ -63,6 +63,7 @@ public class ListenerParameters {
 	private boolean rerun;
 	private String rerunOf;
 	private boolean asyncReporting;
+	private boolean callbackReportingEnabled;
 	private Integer ioPoolSize;
 	private Integer maxConnectionsPerRoute;
 	private Integer maxConnectionsTotal;
@@ -84,6 +85,7 @@ public class ListenerParameters {
 		this.rerun = DEFAULT_RETURN;
 
 		this.asyncReporting = DEFAULT_ASYNC_REPORTING;
+		this.callbackReportingEnabled = DEFAULT_CALLBACK_REPORTING_ENABLED;
 
 		this.ioPoolSize = DEFAULT_IO_POOL_SIZE;
 		this.maxConnectionsPerRoute = DEFAULT_MAX_CONNECTIONS_PER_ROUTE;
@@ -115,6 +117,7 @@ public class ListenerParameters {
 		this.rerunOf = properties.getProperty(RERUN_OF);
 
 		this.asyncReporting = properties.getPropertyAsBoolean(ASYNC_REPORTING, DEFAULT_ASYNC_REPORTING);
+		this.callbackReportingEnabled = properties.getPropertyAsBoolean(CALLBACK_REPORTING_ENABLED, DEFAULT_CALLBACK_REPORTING_ENABLED);
 
 		this.ioPoolSize = properties.getPropertyAsInt(IO_POOL_SIZE, DEFAULT_IO_POOL_SIZE);
 		this.maxConnectionsPerRoute = properties.getPropertyAsInt(MAX_CONNECTIONS_PER_ROUTE, DEFAULT_MAX_CONNECTIONS_PER_ROUTE);
@@ -249,6 +252,14 @@ public class ListenerParameters {
 		this.asyncReporting = asyncReporting;
 	}
 
+	public boolean isCallbackReportingEnabled() {
+		return callbackReportingEnabled;
+	}
+
+	public void setCallbackReportingEnabled(boolean callbackReportingEnabled) {
+		this.callbackReportingEnabled = callbackReportingEnabled;
+	}
+
 	public void setRerun(boolean rerun) {
 		this.rerun = rerun;
 	}
@@ -335,6 +346,7 @@ public class ListenerParameters {
 		sb.append(", rerunOf='").append(rerunOf).append('\'');
 		sb.append(", asyncReporting=").append(asyncReporting);
 		sb.append(", ioPoolSize=").append(ioPoolSize);
+		sb.append(", callbackReportingEnabled=").append(callbackReportingEnabled);
 		sb.append(", maxConnectionsPerRoute=").append(maxConnectionsPerRoute);
 		sb.append(", maxConnectionsTotal=").append(maxConnectionsTotal);
 		sb.append(", maxConnectionTtlMs=").append(maxConnectionTtlMs);
