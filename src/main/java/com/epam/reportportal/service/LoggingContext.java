@@ -132,7 +132,7 @@ public class LoggingContext {
 			}
 		}).doOnError(new Consumer<Throwable>() {
 			@Override
-			public void accept(Throwable throwable) {
+			public void accept(Throwable throwable) throws Exception {
 				LOG_ERROR.accept(throwable);
 			}
 		}).observeOn(Schedulers.io()).subscribe(logFlowableResults("Logging context"));
