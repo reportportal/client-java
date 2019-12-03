@@ -17,10 +17,6 @@
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.base.Supplier;
-import com.google.common.collect.Collections2;
 import com.tngtech.java.junit.dataprovider.DataProvider;
 import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
@@ -32,7 +28,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -46,7 +41,11 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.*;
 import static org.apache.commons.lang3.StringUtils.join;
 import static org.apache.commons.lang3.StringUtils.joinWith;
@@ -95,21 +94,11 @@ public class LockFileTest {
 		}
 		final File myLockFile = new File(lockFileName);
 		if (myLockFile.exists()) {
-			Awaitility.await().until(new Callable<Boolean>() {
-				@Override
-				public Boolean call() {
-					return myLockFile.delete();
-				}
-			});
+			Awaitility.await().until(myLockFile::delete);
 		}
 		final File mySyncFile = new File(syncFileName);
 		if (mySyncFile.exists()) {
-			Awaitility.await().until(new Callable<Boolean>() {
-				@Override
-				public Boolean call() {
-					return mySyncFile.delete();
-				}
-			});
+			Awaitility.await().until(mySyncFile::delete);
 		}
 	}
 
@@ -126,15 +115,10 @@ public class LockFileTest {
 	}
 
 	private static Callable<String> getObtainLaunchUuidReadCallable(final String selfUuid, final LockFile lockFile) {
-		return new Callable<String>() {
-			@Override
-			public String call() {
-				return lockFile.obtainLaunchUuid(selfUuid);
-			}
-		};
+		return () -> lockFile.obtainLaunchUuid(selfUuid);
 	}
 
-	private static class GetFutureResults<T> implements Function<Future<T>, T> {
+	private static final class GetFutureResults<T> implements Function<Future<T>, T> {
 		@Override
 		public T apply(Future<T> input) {
 			try {
@@ -149,7 +133,7 @@ public class LockFileTest {
 	}
 
 	private Map<String, Callable<String>> getLaunchUuidReadCallables(int num, Supplier<LockFile> serviceProvider) {
-		Map<String, Callable<String>> results = new HashMap<String, Callable<String>>();
+		Map<String, Callable<String>> results = new HashMap<>();
 		for (int i = 0; i < num; i++) {
 			String uuid = UUID.randomUUID().toString();
 			Callable<String> task = getObtainLaunchUuidReadCallable(uuid, serviceProvider.get());
@@ -159,22 +143,14 @@ public class LockFileTest {
 	}
 
 	private <T> Supplier<T> singletonSupplier(final T value) {
-		return new Supplier<T>() {
-			@Override
-			public T get() {
-				return value;
-			}
-		};
+		return () -> value;
 	}
 
 	private ExecutorService testExecutor(final int threadNum) {
-		return Executors.newFixedThreadPool(threadNum, new ThreadFactory() {
-			@Override
-			public Thread newThread(Runnable r) {
-				Thread t = Executors.defaultThreadFactory().newThread(r);
-				t.setDaemon(true);
-				return t;
-			}
+		return Executors.newFixedThreadPool(threadNum, r -> {
+			Thread t = Executors.defaultThreadFactory().newThread(r);
+			t.setDaemon(true);
+			return t;
 		});
 	}
 
@@ -184,7 +160,7 @@ public class LockFileTest {
 		ExecutorService executor = testExecutor(threadNum);
 		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(lockFile));
 
-		Collection<String> results = Collections2.transform(executor.invokeAll(tasks.values()), new GetFutureResults<String>());
+		Collection<String> results = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
 		assertThat(results, Matchers.everyItem(equalTo(results.iterator().next())));
 	}
 
@@ -196,7 +172,7 @@ public class LockFileTest {
 		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(lockFile));
 
 		// Call Future#get to wait for execution.
-		String launchUuid = Collections2.transform(executor.invokeAll(tasks.values()), new GetFutureResults<String>()).iterator().next();
+		String launchUuid = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList()).iterator().next();
 
 		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LockFile.LOCK_FILE_CHARSET);
 		assertThat(syncFileContent.get(0), equalTo(launchUuid));
@@ -218,15 +194,10 @@ public class LockFileTest {
 			throws InterruptedException {
 		ExecutorService executor = testExecutor(threadNum);
 		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, iterableSupplier(lockFileCollection));
-		Collection<String> result = Collections2.transform(executor.invokeAll(tasks.values()), new GetFutureResults<String>());
+		Collection<String> result = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
 		final File testFile = new File(lockFileName);
 
-		Awaitility.await("Wait for .lock file creation").until(new Callable<Boolean>() {
-			@Override
-			public Boolean call() {
-				return testFile.exists();
-			}
-		}, equalTo(Boolean.TRUE));
+		Awaitility.await("Wait for .lock file creation").until(testFile::exists, equalTo(Boolean.TRUE));
 		return ImmutablePair.of(tasks.keySet(), result);
 	}
 
@@ -240,20 +211,10 @@ public class LockFileTest {
 		lockFile.finishInstanceUuid(uuidIterator.next());
 
 		final File lockFile = new File(lockFileName);
-		Awaitility.await("Wait for .lock file removal").until(new Callable<Boolean>() {
-			@Override
-			public Boolean call() {
-				return lockFile.exists();
-			}
-		}, equalTo(Boolean.FALSE));
+		Awaitility.await("Wait for .lock file removal").until(lockFile::exists, equalTo(Boolean.FALSE));
 
 		final File syncFile = new File(syncFileName);
-		Awaitility.await("Wait for .sync file removal").until(new Callable<Boolean>() {
-			@Override
-			public Boolean call() {
-				return syncFile.exists();
-			}
-		}, equalTo(Boolean.FALSE));
+		Awaitility.await("Wait for .sync file removal").until(syncFile::exists, equalTo(Boolean.FALSE));
 	}
 
 	@Test
@@ -266,7 +227,7 @@ public class LockFileTest {
 		lockFile.finishInstanceUuid(uuidToRemove);
 
 		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LockFile.LOCK_FILE_CHARSET);
-		assertThat(syncFileContent, Matchers.<String>hasSize(threadNum - 1));
+		assertThat(syncFileContent, Matchers.hasSize(threadNum - 1));
 		assertThat(syncFileContent, not(contains(uuidToRemove)));
 	}
 
@@ -286,7 +247,7 @@ public class LockFileTest {
 		lockFile.finishInstanceUuid(uuidToRemove);
 
 		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LockFile.LOCK_FILE_CHARSET);
-		assertThat(syncFileContent, Matchers.<String>hasSize(threadNum));
+		assertThat(syncFileContent, Matchers.hasSize(threadNum));
 		assertThat(syncFileContent, not(hasItem(uuidToRemove)));
 		assertThat(syncFileContent, containsInAnyOrder(uuidSet.getLeft().toArray(new String[0])));
 	}
@@ -294,7 +255,7 @@ public class LockFileTest {
 	@Test
 	@UseDataProvider("threadNumProvider")
 	public void test_different_lock_file_service_instances_synchronize_correctly(final int threadNum) throws InterruptedException {
-		lockFileCollection = new ArrayList<LockFile>(threadNum);
+		lockFileCollection = new ArrayList<>(threadNum);
 		lockFileCollection.add(lockFile);
 		for (int i = 1; i < threadNum; i++) {
 			lockFileCollection.add(new LockFile(getParameters()));
@@ -325,11 +286,11 @@ public class LockFileTest {
 		lockFile.reset();
 
 		List<String> lockFileContent = FileUtils.readLines(new File(lockFileName), LockFile.LOCK_FILE_CHARSET);
-		assertThat(lockFileContent, Matchers.<String>hasSize(1));
+		assertThat(lockFileContent, Matchers.hasSize(1));
 		assertThat(lockFileContent, contains(secondLaunchUuid));
 
 		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LockFile.LOCK_FILE_CHARSET);
-		assertThat(syncFileContent, Matchers.<String>hasSize(1));
+		assertThat(syncFileContent, Matchers.hasSize(1));
 		assertThat(syncFileContent, contains(secondLaunchUuid));
 	}
 
@@ -346,17 +307,7 @@ public class LockFileTest {
 		);
 	}
 
-	private static final Predicate<String> WELCOME_MESSAGE_PREDICATE = new Predicate<String>() {
-		@Override
-		public boolean test(@Nullable String input) {
-			return apply(input);
-		}
-
-		@Override
-		public boolean apply(@Nullable String input) {
-			return LockFileRunner.WELCOME_MESSAGE.equals(input);
-		}
-	};
+	private static final Predicate<String> WELCOME_MESSAGE_PREDICATE = LockFileRunner.WELCOME_MESSAGE::equals;
 
 	@SuppressWarnings("unchecked")
 	private static String waitForLine(String runCommand, final BufferedReader reader, final BufferedReader errorReader,
@@ -365,20 +316,17 @@ public class LockFileTest {
 			return Awaitility.await("Waiting for a line")
 					.timeout(8, TimeUnit.SECONDS)
 					.pollInterval(100, TimeUnit.MILLISECONDS)
-					.until(new Callable<String>() {
-						@Override
-						public String call() throws Exception {
-							if (!reader.ready()) {
-								return null;
-							}
-							String line;
-							while ((line = reader.readLine()) != null) {
-								if (linePredicate.apply(line)) {
-									return line;
-								}
-							}
+					.until(() -> {
+						if (!reader.ready()) {
 							return null;
 						}
+						String line;
+						while ((line = reader.readLine()) != null) {
+							if (linePredicate.test(line)) {
+								return line;
+							}
+						}
+						return null;
 					}, notNullValue());
 		} catch (ConditionTimeoutException e) {
 			List<String> errorLines = Collections.EMPTY_LIST;
@@ -392,17 +340,7 @@ public class LockFileTest {
 		}
 	}
 
-	private static final Predicate<String> ANY_STRING_PREDICATE = new Predicate<String>() {
-		@Override
-		public boolean test(@Nullable String input) {
-			return apply(input);
-		}
-
-		@Override
-		public boolean apply(@Nullable String input) {
-			return !isEmpty(input);
-		}
-	};
+	private static final Predicate<String> ANY_STRING_PREDICATE = input -> !isEmpty(input);
 
 	private static final String JAVA_JUN_COMMAND_PATTERN = "%s -classpath %s %s";
 
@@ -433,7 +371,7 @@ public class LockFileTest {
 				throw new ExecutableNotFoundException("Unable to find java executable file.");
 			}
 		}
-		List<String> paramList = new ArrayList<String>();
+		List<String> paramList = new ArrayList<>();
 		paramList.add("");
 		paramList.addAll(Arrays.asList(params));
 		return String.format(JAVA_JUN_COMMAND_PATTERN, executablePath, getClasspath(), getPathToClass(mainClass)) + join(paramList, " ");

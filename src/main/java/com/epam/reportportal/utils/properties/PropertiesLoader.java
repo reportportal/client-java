@@ -17,16 +17,14 @@ package com.epam.reportportal.utils.properties;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Charsets;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
-import com.google.common.io.Closer;
-import com.google.common.io.Resources;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.values;
@@ -39,6 +37,7 @@ public class PropertiesLoader {
 
 	public static final String INNER_PATH = "reportportal.properties";
 	public static final String PATH = "./reportportal.properties";
+	public static final Charset STANDARD_CHARSET = StandardCharsets.UTF_8;
 
 	private Supplier<Properties> propertiesSupplier;
 
@@ -49,14 +48,11 @@ public class PropertiesLoader {
 	 * @see #INNER_PATH
 	 */
 	public static PropertiesLoader load() {
-		return new PropertiesLoader(new Supplier<Properties>() {
-			@Override
-			public Properties get() {
-				try {
-					return loadProperties(INNER_PATH);
-				} catch (IOException e) {
-					throw new InternalReportPortalClientException("Unable to load properties", e);
-				}
+		return new PropertiesLoader(() -> {
+			try {
+				return loadProperties(INNER_PATH);
+			} catch (IOException e) {
+				throw new InternalReportPortalClientException("Unable to load properties", e);
 			}
 		});
 	}
@@ -68,19 +64,16 @@ public class PropertiesLoader {
 	 * @return PropertiesLoader instance
 	 */
 	public static PropertiesLoader load(final String resource) {
-		return new PropertiesLoader(new Supplier<Properties>() {
-			@Override
-			public Properties get() {
-				try {
-					return loadProperties(resource);
-				} catch (IOException e) {
-					throw new InternalReportPortalClientException("Unable to load properties", e);
-				}
+		return new PropertiesLoader(() -> {
+			try {
+				return loadProperties(resource);
+			} catch (IOException e) {
+				throw new InternalReportPortalClientException("Unable to load properties", e);
 			}
 		});
 	}
 
-	private PropertiesLoader(Supplier<Properties> propertiesSupplier) {
+	private PropertiesLoader(final Supplier<Properties> propertiesSupplier) {
 		this.propertiesSupplier = memoize(propertiesSupplier);
 	}
 
@@ -116,7 +109,7 @@ public class PropertiesLoader {
 	 */
 	public boolean getPropertyAsBoolean(ListenerProperty propertyName, boolean defaultValue) {
 		final String value = propertiesSupplier.get().getProperty(propertyName.getPropertyName());
-		return null != value ? Boolean.valueOf(value) : defaultValue;
+		return null != value ? Boolean.parseBoolean(value) : defaultValue;
 	}
 
 	/**
@@ -171,7 +164,9 @@ public class PropertiesLoader {
 		Properties props = new Properties();
 		Optional<URL> propertyFile = getResource(resource);
 		if (propertyFile.isPresent()) {
-			props.load(Resources.asCharSource(propertyFile.get(), Charsets.UTF_8).openBufferedStream());
+			try(InputStream is = propertyFile.get().openStream()){
+				props.load(new InputStreamReader(is, STANDARD_CHARSET));
+			}
 		}
 		overrideWith(props, System.getProperties());
 		overrideWith(props, System.getenv());
@@ -189,19 +184,12 @@ public class PropertiesLoader {
 		Properties props = new Properties();
 		File propertiesFile = new File(PATH);
 
-		Closer closer = Closer.create();
-		try {
-			InputStream is = propertiesFile.exists() ?
-					new FileInputStream(propertiesFile) :
-					PropertiesLoader.class.getResourceAsStream(INNER_PATH);
-			closer.register(is);
-			InputStreamReader isr = new InputStreamReader(is, Charsets.UTF_8);
-			closer.register(isr);
-			props.load(isr);
-		} catch (Throwable e) {
-			throw closer.rethrow(e);
-		} finally {
-			closer.close();
+		try (InputStream is = propertiesFile.exists() ?
+				new FileInputStream(propertiesFile) :
+				PropertiesLoader.class.getResourceAsStream(INNER_PATH)) {
+			try (InputStreamReader isr = new InputStreamReader(is, STANDARD_CHARSET)) {
+				props.load(isr);
+			}
 		}
 		return props;
 	}
@@ -254,10 +242,8 @@ public class PropertiesLoader {
 	}
 
 	private static Optional<URL> getResource(String resourceName) {
-		ClassLoader loader = MoreObjects.firstNonNull(Thread.currentThread().getContextClassLoader(),
-				PropertiesLoader.class.getClassLoader()
-		);
-		return Optional.fromNullable(loader.getResource(resourceName));
+		ClassLoader loader = Optional.ofNullable(Thread.currentThread().getContextClassLoader())
+				.orElse(PropertiesLoader.class.getClassLoader());
+		return Optional.ofNullable(loader.getResource(resourceName));
 	}
-
 }

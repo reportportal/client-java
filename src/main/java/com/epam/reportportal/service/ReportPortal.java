@@ -165,8 +165,19 @@ public class ReportPortal {
 	 *
 	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
 	 * @return true if log has been emitted
+	 * @deprecated use {@link com.epam.reportportal.service.ReportPortal#emitLog(java.util.function.Function)}
 	 */
-	public static boolean emitLog(com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
+	public static boolean emitLog(final Function<String, SaveLogRQ> logSupplier) {
+		return emitLog((java.util.function.Function<String, SaveLogRQ>) logSupplier);
+	}
+
+	/**
+	 * Emits log message if there is any active context attached to the current thread
+	 *
+	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
+	 * @return true if log has been emitted
+	 */
+	public static boolean emitLog(final java.util.function.Function<String, SaveLogRQ> logSupplier) {
 		final LoggingContext loggingContext = LoggingContext.CONTEXT_THREAD_LOCAL.get().peek();
 		if (null != loggingContext) {
 			loggingContext.emit(logSupplier);
@@ -175,7 +186,24 @@ public class ReportPortal {
 		return false;
 	}
 
-	public static boolean emitLaunchLog(Function<String, SaveLogRQ> logSupplier) {
+	/**
+	 * Emits log message on Launch level if there is any active context attached to the current thread
+	 *
+	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
+	 * @return true if log has been emitted
+	 * @deprecated use {@link com.epam.reportportal.service.ReportPortal#emitLaunchLog(java.util.function.Function)}
+	 */
+	public static boolean emitLaunchLog(final Function<String, SaveLogRQ> logSupplier) {
+		return emitLaunchLog((java.util.function.Function<String, SaveLogRQ>) logSupplier);
+	}
+
+	/**
+	 * Emits log message on Launch level if there is any active context attached to the current thread
+	 *
+	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
+	 * @return true if log has been emitted
+	 */
+	public static boolean emitLaunchLog(final java.util.function.Function<String, SaveLogRQ> logSupplier) {
 		final LaunchLoggingContext launchLoggingContext = LaunchLoggingContext.loggingContextMap.get(DEFAULT_LAUNCH_KEY);
 		if (null != launchLoggingContext) {
 			launchLoggingContext.emit(logSupplier);
@@ -193,141 +221,124 @@ public class ReportPortal {
 	 * @return true if log has been emitted
 	 */
 	public static boolean emitLog(final String message, final String level, final Date time) {
-		return emitLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String itemUuid) {
-				SaveLogRQ rq = new SaveLogRQ();
-				rq.setLevel(level);
-				rq.setLogTime(time);
-				rq.setItemUuid(itemUuid);
-				rq.setMessage(message);
-				return rq;
-			}
+		return emitLog((java.util.function.Function<String, SaveLogRQ>) itemUuid -> {
+			SaveLogRQ rq = new SaveLogRQ();
+			rq.setLevel(level);
+			rq.setLogTime(time);
+			rq.setItemUuid(itemUuid);
+			rq.setMessage(message);
+			return rq;
 		});
 
 	}
 
+	/**
+	 * Emits log message on Launch level if there is any active context attached to the current thread
+	 *
+	 * @param message Log message
+	 * @param level   Log level
+	 * @param time    Log time
+	 * @return true if log has been emitted
+	 */
 	public static boolean emitLaunchLog(final String message, final String level, final Date time) {
-		return emitLaunchLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String launchUuid) {
-				SaveLogRQ rq = new SaveLogRQ();
-				rq.setLevel(level);
-				rq.setLogTime(time);
-				rq.setLaunchUuid(launchUuid);
-				rq.setMessage(message);
-				return rq;
-			}
+		return emitLaunchLog((java.util.function.Function<String, SaveLogRQ>) launchUuid -> {
+			SaveLogRQ rq = new SaveLogRQ();
+			rq.setLevel(level);
+			rq.setLogTime(time);
+			rq.setLaunchUuid(launchUuid);
+			rq.setMessage(message);
+			return rq;
 		});
 	}
 
+	private static void fillSaveLogRQ(final SaveLogRQ rq, final String message, final String level, final Date time, final File file) {
+		rq.setMessage(message);
+		rq.setLevel(level);
+		rq.setLogTime(time);
+
+		try {
+			SaveLogRQ.File f = new SaveLogRQ.File();
+			f.setContentType(detect(file));
+			f.setContent(toByteArray(file));
+
+			f.setName(UUID.randomUUID().toString());
+			rq.setFile(f);
+		} catch (IOException e) {
+			// seems like there is some problem. Do not report an file
+			LOGGER.error("Cannot send file to ReportPortal", e);
+		}
+	}
+
+	/**
+	 * Emits log message if there is any active context attached to the current thread
+	 *
+	 * @param message Log message
+	 * @param level   Log level
+	 * @param time    Log time
+	 * @param file    a file to attach to the log message
+	 * @return true if log has been emitted
+	 */
 	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
-		return emitLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String itemUuid) {
-				SaveLogRQ rq = new SaveLogRQ();
-				rq.setLevel(level);
-				rq.setLogTime(time);
-				rq.setItemUuid(itemUuid);
-				rq.setMessage(message);
-
-				try {
-					SaveLogRQ.File f = new SaveLogRQ.File();
-					f.setContentType(detect(file));
-					f.setContent(toByteArray(file));
-
-					f.setName(UUID.randomUUID().toString());
-					rq.setFile(f);
-				} catch (IOException e) {
-					// seems like there is some problem. Do not report an file
-					LOGGER.error("Cannot send file to ReportPortal", e);
-				}
-
-				return rq;
-			}
+		return emitLog((java.util.function.Function<String, SaveLogRQ>) itemUuid -> {
+			SaveLogRQ rq = new SaveLogRQ();
+			rq.setItemUuid(itemUuid);
+			fillSaveLogRQ(rq, message, level, time, file);
+			return rq;
 		});
 	}
 
+	/**
+	 * Emits log message on Launch level if there is any active context attached to the current thread
+	 *
+	 * @param message Log message
+	 * @param level   Log level
+	 * @param time    Log time
+	 * @param file    a file to attach to the log message
+	 * @return true if log has been emitted
+	 */
 	public static boolean emitLaunchLog(final String message, final String level, final Date time, final File file) {
-		return emitLaunchLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String launchUuid) {
-				SaveLogRQ rq = new SaveLogRQ();
-				rq.setLevel(level);
-				rq.setLogTime(time);
-				rq.setLaunchUuid(launchUuid);
-				rq.setMessage(message);
-
-				try {
-					SaveLogRQ.File f = new SaveLogRQ.File();
-					f.setContentType(detect(file));
-					f.setContent(toByteArray(file));
-
-					f.setName(UUID.randomUUID().toString());
-					rq.setFile(f);
-				} catch (IOException e) {
-					// seems like there is some problem. Do not report an file
-					LOGGER.error("Cannot send file to ReportPortal", e);
-				}
-
-				return rq;
-			}
+		return emitLaunchLog((java.util.function.Function<String, SaveLogRQ>) launchUuid -> {
+			SaveLogRQ rq = new SaveLogRQ();
+			rq.setLaunchUuid(launchUuid);
+			fillSaveLogRQ(rq, message, level, time, file);
+			return rq;
 		});
+	}
+
+	private static void fillSaveLogRQ(final SaveLogRQ rq, final String level, final Date time, final ReportPortalMessage message) {
+		rq.setLevel(level);
+		rq.setLogTime(time);
+		rq.setMessage(message.getMessage());
+		try {
+			final TypeAwareByteSource data = message.getData();
+			SaveLogRQ.File file = new SaveLogRQ.File();
+			file.setContent(data.read());
+
+			file.setContentType(data.getMediaType());
+			file.setName(UUID.randomUUID().toString());
+			rq.setFile(file);
+
+		} catch (Exception e) {
+			// seems like there is some problem. Do not report an file
+			LOGGER.error("Cannot send file to ReportPortal", e);
+		}
 	}
 
 	public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String itemUuid) {
-				SaveLogRQ rq = new SaveLogRQ();
-				rq.setLevel(level);
-				rq.setLogTime(time);
-				rq.setItemUuid(itemUuid);
-				rq.setMessage(message.getMessage());
-				try {
-					final TypeAwareByteSource data = message.getData();
-					SaveLogRQ.File file = new SaveLogRQ.File();
-					file.setContent(data.read());
-
-					file.setContentType(data.getMediaType());
-					file.setName(UUID.randomUUID().toString());
-					rq.setFile(file);
-
-				} catch (Exception e) {
-					// seems like there is some problem. Do not report an file
-					LOGGER.error("Cannot send file to ReportPortal", e);
-				}
-
-				return rq;
-			}
+		return emitLog((java.util.function.Function<String, SaveLogRQ>) itemUuid -> {
+			SaveLogRQ rq = new SaveLogRQ();
+			rq.setItemUuid(itemUuid);
+			fillSaveLogRQ(rq, level, time, message);
+			return rq;
 		});
 	}
 
 	public static boolean emitLaunchLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLaunchLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String launchUuid) {
-				SaveLogRQ rq = new SaveLogRQ();
-				rq.setLevel(level);
-				rq.setLogTime(time);
-				rq.setLaunchUuid(launchUuid);
-				rq.setMessage(message.getMessage());
-				try {
-					final TypeAwareByteSource data = message.getData();
-					SaveLogRQ.File file = new SaveLogRQ.File();
-					file.setContent(data.read());
-
-					file.setContentType(data.getMediaType());
-					file.setName(UUID.randomUUID().toString());
-					rq.setFile(file);
-
-				} catch (Exception e) {
-					// seems like there is some problem. Do not report an file
-					LOGGER.error("Cannot send file to ReportPortal", e);
-				}
-
-				return rq;
-			}
+		return emitLaunchLog((java.util.function.Function<String, SaveLogRQ>) launchUuid -> {
+			SaveLogRQ rq = new SaveLogRQ();
+			rq.setLaunchUuid(launchUuid);
+			fillSaveLogRQ(rq, level, time, message);
+			return rq;
 		});
 	}
 

@@ -23,7 +23,6 @@ import com.epam.reportportal.restendpoint.http.Response;
 import com.epam.reportportal.restendpoint.http.exception.RestEndpointIOException;
 import com.epam.reportportal.restendpoint.serializer.Serializer;
 import com.epam.ta.reportportal.ws.model.ErrorRS;
-import com.google.common.base.Charsets;
 import com.google.common.io.ByteSource;
 import org.apache.http.HttpHeaders;
 import org.apache.http.entity.ContentType;
@@ -31,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
 /**
@@ -89,7 +89,7 @@ public class ReportPortalErrorHandler extends DefaultErrorHandler {
 				} else {
 
 					//there is some unknown error since we cannot de-serialize it into default error object
-					throw new GeneralReportPortalException(statusCode, statusMessage, new String(body, Charsets.UTF_8));
+					throw new GeneralReportPortalException(statusCode, statusMessage, new String(body, StandardCharsets.UTF_8));
 				}
 			}
 
