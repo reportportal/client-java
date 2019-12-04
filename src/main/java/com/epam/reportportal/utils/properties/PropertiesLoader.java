@@ -48,11 +48,14 @@ public class PropertiesLoader {
 	 * @see #INNER_PATH
 	 */
 	public static PropertiesLoader load() {
-		return new PropertiesLoader(() -> {
-			try {
-				return loadProperties(INNER_PATH);
-			} catch (IOException e) {
-				throw new InternalReportPortalClientException("Unable to load properties", e);
+		return new PropertiesLoader(new Supplier<Properties>() {
+			@Override
+			public Properties get() {
+				try {
+					return loadProperties(INNER_PATH);
+				} catch (IOException e) {
+					throw new InternalReportPortalClientException("Unable to load properties", e);
+				}
 			}
 		});
 	}
@@ -64,11 +67,14 @@ public class PropertiesLoader {
 	 * @return PropertiesLoader instance
 	 */
 	public static PropertiesLoader load(final String resource) {
-		return new PropertiesLoader(() -> {
-			try {
-				return loadProperties(resource);
-			} catch (IOException e) {
-				throw new InternalReportPortalClientException("Unable to load properties", e);
+		return new PropertiesLoader(new Supplier<Properties>() {
+			@Override
+			public Properties get() {
+				try {
+					return loadProperties(resource);
+				} catch (IOException e) {
+					throw new InternalReportPortalClientException("Unable to load properties", e);
+				}
 			}
 		});
 	}
