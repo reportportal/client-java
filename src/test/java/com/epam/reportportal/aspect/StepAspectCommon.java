@@ -40,9 +40,12 @@ import static org.mockito.Mockito.when;
  */
 public class StepAspectCommon {
 	static void simulateStartItemResponse(Launch launch, Maybe<String> parentIdMaybe, final String itemUuid) {
-		when(launch.startTestItem(eq(parentIdMaybe), any(StartTestItemRQ.class))).thenReturn(Maybe.create(emitter -> {
-			emitter.onSuccess(itemUuid);
-			emitter.onComplete();
+		when(launch.startTestItem(eq(parentIdMaybe), any(StartTestItemRQ.class))).thenReturn(Maybe.create(new MaybeOnSubscribe<String>() {
+			@Override
+			public void subscribe(MaybeEmitter<String> emitter) {
+				emitter.onSuccess(itemUuid);
+				emitter.onComplete();
+			}
 		}));
 	}
 

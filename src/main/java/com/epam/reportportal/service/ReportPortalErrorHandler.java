@@ -43,7 +43,7 @@ public class ReportPortalErrorHandler extends DefaultErrorHandler {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ReportPortalErrorHandler.class);
 
-	private final Serializer serializer;
+	private Serializer serializer;
 
 	public ReportPortalErrorHandler(Serializer serializer) {
 		this.serializer = serializer;

@@ -18,6 +18,7 @@ package com.epam.reportportal.service;
 
 import com.epam.reportportal.exception.GeneralReportPortalException;
 import com.epam.reportportal.exception.InternalReportPortalClientException;
+import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.restendpoint.http.HttpMethod;
 import com.epam.reportportal.restendpoint.http.Response;
 import com.epam.reportportal.restendpoint.serializer.json.JacksonSerializer;
@@ -29,6 +30,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 
@@ -43,13 +45,13 @@ public class ReportPortalErrorHandlerTest {
 	private ReportPortalErrorHandler reportPortalErrorHandler;
 
 	@Before
-	public void setUp() {
+	public void setUp() throws Exception {
 
 		reportPortalErrorHandler = new ReportPortalErrorHandler(new JacksonSerializer());
 	}
 
 	@Test(expected = InternalReportPortalClientException.class)
-	public void handle_not_json() {
+	public void handle_not_json() throws Exception {
 		//  given:
 		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
 		invalidHeaders.put(HttpHeaders.CONTENT_TYPE, ContentType.TEXT_HTML.getMimeType());
@@ -61,7 +63,7 @@ public class ReportPortalErrorHandlerTest {
 	}
 
 	@Test(expected = InternalReportPortalClientException.class)
-	public void handle_not_json_lowercase() {
+	public void handle_not_json_lowercase() throws Exception {
 		//  given:
 		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
 		invalidHeaders.put(HttpHeaders.CONTENT_TYPE.toLowerCase(), ContentType.TEXT_HTML.getMimeType());
@@ -73,7 +75,7 @@ public class ReportPortalErrorHandlerTest {
 	}
 
 	@Test
-	public void handle_json() {
+	public void handle_json() throws Exception {
 		//  given:
 		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
 		invalidHeaders.put(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
@@ -85,7 +87,7 @@ public class ReportPortalErrorHandlerTest {
 	}
 
 	@Test
-	public void handle_json_lowercase() {
+	public void handle_json_lowercase() throws Exception {
 		//  given:
 		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
 		invalidHeaders.put(HttpHeaders.CONTENT_TYPE.toLowerCase(), ContentType.APPLICATION_JSON.getMimeType());
@@ -97,7 +99,7 @@ public class ReportPortalErrorHandlerTest {
 	}
 
 	@Test(expected = GeneralReportPortalException.class)
-	public void handle_error_code() {
+	public void handle_error_code() throws Exception {
 		//  given:
 		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
 		invalidHeaders.put(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
@@ -109,7 +111,7 @@ public class ReportPortalErrorHandlerTest {
 	}
 
 	@Test(expected = GeneralReportPortalException.class)
-	public void handle_known_error() {
+	public void handle_known_error() throws Exception {
 		//  given:
 		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
 		invalidHeaders.put(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
@@ -124,7 +126,7 @@ public class ReportPortalErrorHandlerTest {
 	}
 
 	@Test
-	public void hasError() {
+	public void hasError() throws Exception {
 		//  given:
 		LinkedListMultimap<String, String> validHeaders = LinkedListMultimap.create();
 		validHeaders.put(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
@@ -155,9 +157,9 @@ public class ReportPortalErrorHandlerTest {
 	}
 
 	private Response<ByteSource> createFakeResponse(int statusCode, LinkedListMultimap<String, String> headers, final String value) {
-		return new Response<>(URI.create("test"), HttpMethod.GET, statusCode, "testue", headers, new ByteSource() {
+		return new Response<ByteSource>(URI.create("test"), HttpMethod.GET, statusCode, "testue", headers, new ByteSource() {
 			@Override
-			public InputStream openStream() {
+			public InputStream openStream() throws IOException {
 				return new ByteArrayInputStream(value.getBytes());
 			}
 		});

@@ -22,6 +22,7 @@ import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.utils.MimeTypeDetector;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.*;
+import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
@@ -81,22 +82,27 @@ public class ItemTreeReporter {
 			final FinishTestItemRQ finishTestItemRQ, final Maybe<String> launchId, final TestItemTree.TestItemLeaf testItemLeaf) {
 		final Maybe<String> item = testItemLeaf.getItemId();
 		if (item != null && launchId != null) {
-			return launchId.flatMap((Function<String, MaybeSource<OperationCompletionRS>>) launchPromise -> {
-				finishTestItemRQ.setLaunchUuid(launchPromise);
-				Maybe<OperationCompletionRS> finishResponse = testItemLeaf.getFinishResponse();
-				if (finishResponse != null) {
-					return finishResponse.flatMap((Function<OperationCompletionRS, MaybeSource<OperationCompletionRS>>) operationCompletionRS -> sendFinishItemRequest(
-							item,
-							finishTestItemRQ,
-							reportPortalClient
-					));
-				} else {
-					return sendFinishItemRequest(item, finishTestItemRQ, reportPortalClient);
+			return launchId.flatMap(new Function<String, MaybeSource<OperationCompletionRS>>() {
+				@Override
+				public MaybeSource<OperationCompletionRS> apply(final String launchId) {
+					finishTestItemRQ.setLaunchUuid(launchId);
+					Maybe<OperationCompletionRS> finishResponse = testItemLeaf.getFinishResponse();
+					if (finishResponse != null) {
+						return finishResponse.flatMap(new Function<OperationCompletionRS, MaybeSource<OperationCompletionRS>>() {
+							@Override
+							public MaybeSource<OperationCompletionRS> apply(OperationCompletionRS operationCompletionRS) {
+								return sendFinishItemRequest(item, finishTestItemRQ, reportPortalClient);
+							}
+						});
+					} else {
+						return sendFinishItemRequest(item, finishTestItemRQ, reportPortalClient);
+					}
 				}
 			}).subscribeOn(Schedulers.io());
 		} else {
 			return Maybe.empty();
 		}
+
 	}
 
 	/**
@@ -141,33 +147,66 @@ public class ItemTreeReporter {
 
 	private static Maybe<String> sendStartItemRequest(final ReportPortalClient reportPortalClient, Maybe<String> launchId,
 			final Maybe<String> parent, final StartTestItemRQ startTestItemRQ) {
-		return launchId.flatMap((Function<String, MaybeSource<String>>) id -> parent.flatMap((Function<String, MaybeSource<String>>) parentId -> reportPortalClient
-				.startTestItem(parentId, startTestItemRQ)
-				.map(EntryCreatedAsyncRS::getId))).cache();
+		return launchId.flatMap(new Function<String, MaybeSource<String>>() {
+			@Override
+			public MaybeSource<String> apply(String launchId) {
+				return parent.flatMap(new Function<String, MaybeSource<String>>() {
+					@Override
+					public MaybeSource<String> apply(String parentId) {
+						return reportPortalClient.startTestItem(parentId, startTestItemRQ).map(new Function<ItemCreatedRS, String>() {
+							@Override
+							public String apply(ItemCreatedRS itemCreatedRS) {
+								return itemCreatedRS.getId();
+							}
+						});
+					}
+				});
+			}
+		}).cache();
 	}
 
-	private static Maybe<OperationCompletionRS> sendFinishItemRequest(Maybe<String> itemIdPromise, final FinishTestItemRQ finishTestItemRQ,
+	private static Maybe<OperationCompletionRS> sendFinishItemRequest(Maybe<String> item, final FinishTestItemRQ finishTestItemRQ,
 			final ReportPortalClient reportPortalClient) {
-		return itemIdPromise.flatMap((Function<String, MaybeSource<OperationCompletionRS>>) itemId -> reportPortalClient.finishTestItem(itemId, finishTestItemRQ));
+		return item.flatMap(new Function<String, MaybeSource<OperationCompletionRS>>() {
+			@Override
+			public MaybeSource<OperationCompletionRS> apply(final String itemId) {
+				return reportPortalClient.finishTestItem(itemId, finishTestItemRQ);
+			}
+		});
 	}
 
-	private static Maybe<EntryCreatedAsyncRS> sendLogRequest(final ReportPortalClient reportPortalClient, Maybe<String> launchIdPromise,
-			final Maybe<String> itemIdPromise, final String level, final String message, final Date logTime) {
-		return launchIdPromise.flatMap((Function<String, MaybeSource<EntryCreatedAsyncRS>>) launchId -> itemIdPromise.flatMap((Function<String, MaybeSource<EntryCreatedAsyncRS>>) itemId -> {
-			SaveLogRQ saveLogRequest = createSaveLogRequest(launchId, itemId, level, message, logTime);
-			return reportPortalClient.log(saveLogRequest);
-		})).observeOn(Schedulers.io());
+	private static Maybe<EntryCreatedAsyncRS> sendLogRequest(final ReportPortalClient reportPortalClient, Maybe<String> launchId,
+			final Maybe<String> itemId, final String level, final String message, final Date logTime) {
+		return launchId.flatMap(new Function<String, MaybeSource<EntryCreatedAsyncRS>>() {
+			@Override
+			public MaybeSource<EntryCreatedAsyncRS> apply(final String launchId) {
+				return itemId.flatMap(new Function<String, MaybeSource<EntryCreatedAsyncRS>>() {
+					@Override
+					public MaybeSource<EntryCreatedAsyncRS> apply(String itemId) {
+						SaveLogRQ saveLogRequest = createSaveLogRequest(launchId, itemId, level, message, logTime);
+						return reportPortalClient.log(saveLogRequest);
+					}
+				});
+			}
+		}).observeOn(Schedulers.io());
 	}
 
-	private static Maybe<BatchSaveOperatingRS> sendLogMultiPartRequest(final ReportPortalClient reportPortalClient,
-			Maybe<String> launchIdPromise, final Maybe<String> itemIdPromise, final String level, final String message, final Date logTime,
-			final File file) {
-		return launchIdPromise.flatMap((Function<String, MaybeSource<BatchSaveOperatingRS>>) launchId -> itemIdPromise.flatMap((Function<String, MaybeSource<BatchSaveOperatingRS>>) itemId -> {
-			SaveLogRQ saveLogRequest = createSaveLogRequest(launchId, itemId, level, message, logTime);
-			saveLogRequest.setFile(createFileModel(file));
-			MultiPartRequest multiPartRequest = HttpRequestUtils.buildLogMultiPartRequest(Lists.newArrayList(saveLogRequest));
-			return reportPortalClient.log(multiPartRequest);
-		})).observeOn(Schedulers.io());
+	private static Maybe<BatchSaveOperatingRS> sendLogMultiPartRequest(final ReportPortalClient reportPortalClient, Maybe<String> launchId,
+			final Maybe<String> itemId, final String level, final String message, final Date logTime, final File file) {
+		return launchId.flatMap(new Function<String, MaybeSource<BatchSaveOperatingRS>>() {
+			@Override
+			public MaybeSource<BatchSaveOperatingRS> apply(final String launchId) {
+				return itemId.flatMap(new Function<String, MaybeSource<BatchSaveOperatingRS>>() {
+					@Override
+					public MaybeSource<BatchSaveOperatingRS> apply(String itemId) throws Exception {
+						SaveLogRQ saveLogRequest = createSaveLogRequest(launchId, itemId, level, message, logTime);
+						saveLogRequest.setFile(createFileModel(file));
+						MultiPartRequest multiPartRequest = HttpRequestUtils.buildLogMultiPartRequest(Lists.newArrayList(saveLogRequest));
+						return reportPortalClient.log(multiPartRequest);
+					}
+				});
+			}
+		}).observeOn(Schedulers.io());
 	}
 
 	private static SaveLogRQ createSaveLogRequest(String launchId, String itemId, String level, String message, Date logTime) {

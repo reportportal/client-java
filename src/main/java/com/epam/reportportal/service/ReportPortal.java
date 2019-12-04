@@ -35,8 +35,12 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Function;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
+import io.reactivex.MaybeEmitter;
+import io.reactivex.MaybeOnSubscribe;
+import io.reactivex.functions.Consumer;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
@@ -59,7 +63,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 import static com.epam.reportportal.service.LaunchLoggingContext.DEFAULT_LAUNCH_KEY;
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
@@ -78,9 +81,9 @@ public class ReportPortal {
 
 	private volatile String instanceUuid = UUID.randomUUID().toString();
 
-	private final ReportPortalClient rpClient;
-	private final ListenerParameters parameters;
-	private final LockFile lockFile;
+	private ReportPortalClient rpClient;
+	private ListenerParameters parameters;
+	private LockFile lockFile;
 
 	/**
 	 * @param rpClient   ReportPortal client
@@ -162,10 +165,10 @@ public class ReportPortal {
 	 *
 	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
 	 * @return true if log has been emitted
-	 * @deprecated use {@link com.epam.reportportal.service.ReportPortal#emitLog(Function)}
+	 * @deprecated use {@link com.epam.reportportal.service.ReportPortal#emitLog(java.util.function.Function)}
 	 */
-	public static boolean emitLog(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
-		return emitLog((Function<String, SaveLogRQ>) logSupplier);
+	public static boolean emitLog(final Function<String, SaveLogRQ> logSupplier) {
+		return emitLog((java.util.function.Function<String, SaveLogRQ>) logSupplier);
 	}
 
 	/**
@@ -174,7 +177,7 @@ public class ReportPortal {
 	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
 	 * @return true if log has been emitted
 	 */
-	public static boolean emitLog(final Function<String, SaveLogRQ> logSupplier) {
+	public static boolean emitLog(final java.util.function.Function<String, SaveLogRQ> logSupplier) {
 		final LoggingContext loggingContext = LoggingContext.CONTEXT_THREAD_LOCAL.get().peek();
 		if (null != loggingContext) {
 			loggingContext.emit(logSupplier);
@@ -188,10 +191,10 @@ public class ReportPortal {
 	 *
 	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
 	 * @return true if log has been emitted
-	 * @deprecated use {@link com.epam.reportportal.service.ReportPortal#emitLaunchLog(Function)}
+	 * @deprecated use {@link com.epam.reportportal.service.ReportPortal#emitLaunchLog(java.util.function.Function)}
 	 */
-	public static boolean emitLaunchLog(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
-		return emitLaunchLog((Function<String, SaveLogRQ>) logSupplier);
+	public static boolean emitLaunchLog(final Function<String, SaveLogRQ> logSupplier) {
+		return emitLaunchLog((java.util.function.Function<String, SaveLogRQ>) logSupplier);
 	}
 
 	/**
@@ -200,7 +203,7 @@ public class ReportPortal {
 	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
 	 * @return true if log has been emitted
 	 */
-	public static boolean emitLaunchLog(final Function<String, SaveLogRQ> logSupplier) {
+	public static boolean emitLaunchLog(final java.util.function.Function<String, SaveLogRQ> logSupplier) {
 		final LaunchLoggingContext launchLoggingContext = LaunchLoggingContext.loggingContextMap.get(DEFAULT_LAUNCH_KEY);
 		if (null != launchLoggingContext) {
 			launchLoggingContext.emit(logSupplier);
@@ -218,7 +221,7 @@ public class ReportPortal {
 	 * @return true if log has been emitted
 	 */
 	public static boolean emitLog(final String message, final String level, final Date time) {
-		return emitLog((Function<String, SaveLogRQ>) itemUuid -> {
+		return emitLog((java.util.function.Function<String, SaveLogRQ>) itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setLevel(level);
 			rq.setLogTime(time);
@@ -238,7 +241,7 @@ public class ReportPortal {
 	 * @return true if log has been emitted
 	 */
 	public static boolean emitLaunchLog(final String message, final String level, final Date time) {
-		return emitLaunchLog((Function<String, SaveLogRQ>) launchUuid -> {
+		return emitLaunchLog((java.util.function.Function<String, SaveLogRQ>) launchUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setLevel(level);
 			rq.setLogTime(time);
@@ -276,7 +279,7 @@ public class ReportPortal {
 	 * @return true if log has been emitted
 	 */
 	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
-		return emitLog((Function<String, SaveLogRQ>) itemUuid -> {
+		return emitLog((java.util.function.Function<String, SaveLogRQ>) itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			fillSaveLogRQ(rq, message, level, time, file);
@@ -294,7 +297,7 @@ public class ReportPortal {
 	 * @return true if log has been emitted
 	 */
 	public static boolean emitLaunchLog(final String message, final String level, final Date time, final File file) {
-		return emitLaunchLog((Function<String, SaveLogRQ>) launchUuid -> {
+		return emitLaunchLog((java.util.function.Function<String, SaveLogRQ>) launchUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setLaunchUuid(launchUuid);
 			fillSaveLogRQ(rq, message, level, time, file);
@@ -322,7 +325,7 @@ public class ReportPortal {
 	}
 
 	public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLog((Function<String, SaveLogRQ>) itemUuid -> {
+		return emitLog((java.util.function.Function<String, SaveLogRQ>) itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			fillSaveLogRQ(rq, level, time, message);
@@ -331,7 +334,7 @@ public class ReportPortal {
 	}
 
 	public static boolean emitLaunchLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLaunchLog((Function<String, SaveLogRQ>) launchUuid -> {
+		return emitLaunchLog((java.util.function.Function<String, SaveLogRQ>) launchUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setLaunchUuid(launchUuid);
 			fillSaveLogRQ(rq, level, time, message);
@@ -470,14 +473,25 @@ public class ReportPortal {
 
 				@Override
 				public Boolean call() {
-					launch.subscribe(uuid -> {
-						Maybe<LaunchResource> maybeRs = rpClient.getLaunchByUuid(uuid);
-						if (maybeRs != null) {
-							maybeRs.subscribe(launchResource -> result = Boolean.TRUE,
-									throwable -> LOGGER.debug("Unable to get a Launch: " + throwable.getLocalizedMessage(), throwable)
-							);
-						} else {
-							LOGGER.debug("RP Client returned 'null' response on get Launch by UUID call");
+					launch.subscribe(new Consumer<String>() {
+						@Override
+						public void accept(String uuid) {
+							Maybe<LaunchResource> maybeRs = rpClient.getLaunchByUuid(uuid);
+							if (maybeRs != null) {
+								maybeRs.subscribe(new Consumer<LaunchResource>() {
+									@Override
+									public void accept(LaunchResource launchResource) {
+										result = Boolean.TRUE;
+									}
+								}, new Consumer<Throwable>() {
+									@Override
+									public void accept(Throwable throwable) {
+										LOGGER.debug("Unable to get a Launch: " + throwable.getLocalizedMessage(), throwable);
+									}
+								});
+							} else {
+								LOGGER.debug("RP Client returned 'null' response on get Launch by UUID call");
+							}
 						}
 					});
 					return result;
@@ -539,9 +553,12 @@ public class ReportPortal {
 				throw new InternalReportPortalClientException("Unable to clone start launch request:", e);
 			}
 		} else {
-			Maybe<String> launch = Maybe.create(emitter -> {
-				emitter.onSuccess(uuid);
-				emitter.onComplete();
+			Maybe<String> launch = Maybe.create(new MaybeOnSubscribe<String>() {
+				@Override
+				public void subscribe(final MaybeEmitter<String> emitter) {
+					emitter.onSuccess(uuid);
+					emitter.onComplete();
+				}
 			});
 			return new SecondaryLaunch(rpClient, parameters, launch);
 		}

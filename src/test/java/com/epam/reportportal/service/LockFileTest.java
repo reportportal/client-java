@@ -47,8 +47,9 @@ import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.*;
+import static org.apache.commons.lang3.StringUtils.join;
+import static org.apache.commons.lang3.StringUtils.joinWith;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.*;
 
 /**
@@ -180,7 +181,7 @@ public class LockFileTest {
 
 	private <T> Supplier<T> iterableSupplier(final Iterable<T> instanceIterable) {
 		return new Supplier<T>() {
-			private final Iterator<T> instanceIterator = instanceIterable.iterator();
+			private Iterator<T> instanceIterator = instanceIterable.iterator();
 
 			@Override
 			public T get() {

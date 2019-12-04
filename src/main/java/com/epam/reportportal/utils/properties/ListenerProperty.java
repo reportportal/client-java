@@ -70,9 +70,9 @@ public enum ListenerProperty {
     FILE_WAIT_TIMEOUT_MS("rp.client.join.file.wait.timeout.ms", false);
     //formatter:on
 
-    private final String propertyName;
+    private String propertyName;
 
-    private final boolean required;
+    private boolean required;
 
     ListenerProperty(String propertyName, boolean required) {
         this.propertyName = propertyName;

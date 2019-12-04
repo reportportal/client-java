@@ -20,9 +20,9 @@ import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 /**
  * This class contains functionality for parsing tags from string.
@@ -48,10 +48,16 @@ public class AttributeParser {
 		if (null == rawAttributes) {
 			return Sets.newHashSet();
 		}
+		Set<ItemAttributesRQ> attributes = Sets.newHashSet();
 
 		String[] attributesSplitted = rawAttributes.trim().split(ATTRIBUTES_SPLITTER);
-		return Stream.of(attributesSplitted).map(s -> Optional.ofNullable(splitKeyValue(s)))
-				.filter(Optional::isPresent).map(Optional::get).collect(Collectors.toSet());
+		for (int i = 0; i < attributesSplitted.length; i++) {
+			ItemAttributesRQ itemAttributeResource = splitKeyValue(attributesSplitted[i]);
+			if (itemAttributeResource != null) {
+				attributes.add(itemAttributeResource);
+			}
+		}
+		return attributes;
 	}
 
 	public static ItemAttributesRQ splitKeyValue(String attribute) {

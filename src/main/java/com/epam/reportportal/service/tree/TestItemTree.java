@@ -21,7 +21,6 @@ import io.reactivex.Maybe;
 import io.reactivex.annotations.Nullable;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -36,7 +35,7 @@ public class TestItemTree {
 	private final Map<ItemTreeKey, TestItemLeaf> testItems;
 
 	public TestItemTree() {
-		this.testItems = new ConcurrentHashMap<>();
+		this.testItems = new ConcurrentHashMap<ItemTreeKey, TestItemLeaf>();
 	}
 
 	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> itemId, int expectedChildrenCount) {
@@ -117,7 +116,7 @@ public class TestItemTree {
 			if (hash != that.hash) {
 				return false;
 			}
-			return Objects.equals(name, that.name);
+			return name != null ? name.equals(that.name) : that.name == null;
 		}
 
 		@Override
@@ -146,7 +145,7 @@ public class TestItemTree {
 
 		private TestItemLeaf(Maybe<String> itemId, int expectedChildrenCount) {
 			this.itemId = itemId;
-			this.childItems = new ConcurrentHashMap<>(expectedChildrenCount);
+			this.childItems = new ConcurrentHashMap<ItemTreeKey, TestItemLeaf>(expectedChildrenCount);
 		}
 
 		private TestItemLeaf(Maybe<String> itemId, ConcurrentHashMap<ItemTreeKey, TestItemLeaf> childItems) {
