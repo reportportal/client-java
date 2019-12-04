@@ -17,7 +17,6 @@ package com.epam.reportportal.utils.properties;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Supplier;
 
 import java.io.*;
 import java.net.URL;
@@ -26,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.function.Supplier;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.values;
 import static com.google.common.base.Suppliers.memoize;
@@ -74,7 +74,7 @@ public class PropertiesLoader {
 	}
 
 	private PropertiesLoader(final Supplier<Properties> propertiesSupplier) {
-		this.propertiesSupplier = memoize(propertiesSupplier);
+		this.propertiesSupplier = memoize(propertiesSupplier::get);
 	}
 
 	/**

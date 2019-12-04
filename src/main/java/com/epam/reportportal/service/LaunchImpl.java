@@ -50,10 +50,18 @@ import static com.google.common.collect.Lists.newArrayList;
  */
 public class LaunchImpl extends Launch {
 
-	private static final Function<ItemCreatedRS, String> TO_ID = EntryCreatedAsyncRS::getId;
-	private static final Consumer<StartLaunchRS> LAUNCH_SUCCESS_CONSUMER = rs -> {
-		logCreated("launch").accept(rs);
-		System.setProperty("rp.launch.id", String.valueOf(rs.getId()));
+	private static final Function<ItemCreatedRS, String> TO_ID = new Function<ItemCreatedRS, String>() {
+		@Override
+		public String apply(ItemCreatedRS rs) {
+			return rs.getId();
+		}
+	};
+	private static final Consumer<StartLaunchRS> LAUNCH_SUCCESS_CONSUMER = new Consumer<StartLaunchRS>() {
+		@Override
+		public void accept(StartLaunchRS rs) throws Exception {
+			logCreated("launch").accept(rs);
+			System.setProperty("rp.launch.id", String.valueOf(rs.getId()));
+		}
 	};
 	private static final int ITEM_FINISH_MAX_RETRIES = 10;
 	private static final int ITEM_FINISH_RETRY_TIMEOUT = 10;

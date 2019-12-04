@@ -16,6 +16,8 @@
 
 package com.epam.reportportal.annotations;
 
+import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -23,7 +25,7 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation-marker for methods that are invoked during the test execution. Methods that are marked by this annotation
- * are represented in Report Portal as 'Nested Steps' with {@link com.epam.ta.reportportal.ws.model.StartTestItemRQ#hasStats} equal to 'false'
+ * are represented in Report Portal as 'Nested Steps' with {@link StartTestItemRQ#isHasStats()} equal to 'false'.
  * Methods marked with this annotation can be nested in other methods and will be attached (reported as a child)
  * to the 'closest' wrapper (either test method or another method marked with this annotation)
  *
