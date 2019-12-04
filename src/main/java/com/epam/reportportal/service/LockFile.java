@@ -33,7 +33,6 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -93,12 +92,7 @@ public class LockFile implements LaunchIdLock {
 	private Pair<RandomAccessFile, FileLock> waitForLock(final File file) {
 		return new Waiter("Wait for file '" + file.getPath() + "' lock").duration(fileWaitTimeout, TimeUnit.MILLISECONDS)
 				.applyRandomDiscrepancy(MAX_WAIT_TIME_DISCREPANCY)
-				.till(new Callable<Pair<RandomAccessFile, FileLock>>() {
-					@Override
-					public Pair<RandomAccessFile, FileLock> call() {
-						return obtainLock(file);
-					}
-				});
+				.till(() -> obtainLock(file));
 	}
 
 	private static void releaseLock(FileLock lock) {
@@ -144,22 +138,19 @@ public class LockFile implements LaunchIdLock {
 		return new Waiter("Wait for a blocking operation on file '" + file.getPath() + "'")
 				.duration(fileWaitTimeout, TimeUnit.MILLISECONDS)
 				.applyRandomDiscrepancy(MAX_WAIT_TIME_DISCREPANCY)
-				.till(new Callable<T>() {
-					@Override
-					public T call() {
-						Pair<RandomAccessFile, FileLock> fileIo = obtainLock(file);
-						if (fileIo != null) {
-							try {
-								return operation.execute(fileIo);
-							} catch (IOException e) {
-								// operations failed with IOException will be retried according to timeout and retries number
-								LOGGER.error("Unable to read/write a file after obtaining mainLock: " + e.getMessage(), e);
-							} finally {
-								closeIo(fileIo);
-							}
+				.till(() -> {
+					Pair<RandomAccessFile, FileLock> fileIo = obtainLock(file);
+					if (fileIo != null) {
+						try {
+							return operation.execute(fileIo);
+						} catch (IOException e) {
+							// operations failed with IOException will be retried according to timeout and retries number
+							LOGGER.error("Unable to read/write a file after obtaining mainLock: " + e.getMessage(), e);
+						} finally {
+							closeIo(fileIo);
 						}
-						return null;
 					}
+					return null;
 				});
 	}
 
@@ -195,11 +186,9 @@ public class LockFile implements LaunchIdLock {
 	}
 
 	private void writeInstanceUuid(final String instanceUuid) {
-		IoOperation<Boolean> uuidRead = new IoOperation<Boolean>() {
-			public Boolean execute(Pair<RandomAccessFile, FileLock> fileIo) throws IOException {
-				appendUuid(fileIo.getKey(), instanceUuid);
-				return Boolean.TRUE;
-			}
+		IoOperation<Boolean> uuidRead = fileIo -> {
+			appendUuid(fileIo.getKey(), instanceUuid);
+			return Boolean.TRUE;
 		};
 		Boolean result = executeBlockingOperation(uuidRead, syncFile);
 		if (result == null || !result) {
@@ -208,13 +197,11 @@ public class LockFile implements LaunchIdLock {
 	}
 
 	private String obtainLaunch(final String instanceUuid) {
-		IoOperation<String> uuidRead = new IoOperation<String>() {
-			public String execute(Pair<RandomAccessFile, FileLock> fileIo) throws IOException {
-				RandomAccessFile access = fileIo.getKey();
-				String uuid = readLaunchUuid(access);
-				appendUuid(access, instanceUuid);
-				return uuid != null ? uuid : instanceUuid;
-			}
+		IoOperation<String> uuidRead = fileIo -> {
+			RandomAccessFile access = fileIo.getKey();
+			String uuid = readLaunchUuid(access);
+			appendUuid(access, instanceUuid);
+			return uuid != null ? uuid : instanceUuid;
 		};
 		String result = executeBlockingOperation(uuidRead, syncFile);
 		if (result == null) {
@@ -272,38 +259,36 @@ public class LockFile implements LaunchIdLock {
 		if (uuid == null) {
 			return;
 		}
-		IoOperation<Boolean> uuidRemove = new IoOperation<Boolean>() {
-			public Boolean execute(Pair<RandomAccessFile, FileLock> fileIo) throws IOException {
-				String line;
-				List<String> uuidList = new ArrayList<String>();
-				RandomAccessFile fileAccess = fileIo.getKey();
-				boolean needUpdate = false;
-				while ((line = fileAccess.readLine()) != null) {
-					String trimmedLine = line.trim();
-					if (uuid.equals(trimmedLine)) {
-						needUpdate = true;
-						continue;
-					}
-					uuidList.add(trimmedLine);
+		IoOperation<Boolean> uuidRemove = fileIo -> {
+			String line;
+			List<String> uuidList = new ArrayList<>();
+			RandomAccessFile fileAccess = fileIo.getKey();
+			boolean needUpdate = false;
+			while ((line = fileAccess.readLine()) != null) {
+				String trimmedLine = line.trim();
+				if (uuid.equals(trimmedLine)) {
+					needUpdate = true;
+					continue;
 				}
+				uuidList.add(trimmedLine);
+			}
 
-				if (!needUpdate) {
-					return false;
-				}
+			if (!needUpdate) {
+				return false;
+			}
 
-				String uuidNl = uuid + LINE_SEPARATOR;
-				long newLength = fileAccess.length() - uuidNl.length();
-				if (newLength > 0) {
-					fileAccess.setLength(newLength);
-					fileAccess.seek(0);
-					for (String uuid : uuidList) {
-						writeLine(fileAccess, uuid);
-					}
-					return false;
-				} else {
-					fileIo.getKey().setLength(0);
-					return true;
+			String uuidNl = uuid + LINE_SEPARATOR;
+			long newLength = fileAccess.length() - uuidNl.length();
+			if (newLength > 0) {
+				fileAccess.setLength(newLength);
+				fileAccess.seek(0);
+				for (String uuid1 : uuidList) {
+					writeLine(fileAccess, uuid1);
 				}
+				return false;
+			} else {
+				fileIo.getKey().setLength(0);
+				return true;
 			}
 		};
 

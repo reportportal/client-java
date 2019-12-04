@@ -42,23 +42,23 @@ import static com.google.common.base.Throwables.getStackTraceAsString;
 @Aspect
 public class StepAspect {
 
-	private static InheritableThreadLocal<String> currentLaunchId = new InheritableThreadLocal<>();
+	private static final InheritableThreadLocal<String> CURRENT_LAUNCH_ID = new InheritableThreadLocal<>();
 
-	private static InheritableThreadLocal<Map<String, Launch>> launchMap = new InheritableThreadLocal<Map<String, Launch>>() {
+	private static final InheritableThreadLocal<Map<String, Launch>> LAUNCH_MAP = new InheritableThreadLocal<Map<String, Launch>>() {
 		@Override
 		protected Map<String, Launch> initialValue() {
 			return new HashMap<>();
 		}
 	};
 
-	private static InheritableThreadLocal<Deque<Maybe<String>>> stepStack = new InheritableThreadLocal<Deque<Maybe<String>>>() {
+	private static final InheritableThreadLocal<Deque<Maybe<String>>> STEP_STACK = new InheritableThreadLocal<Deque<Maybe<String>>>() {
 		@Override
 		protected Deque<Maybe<String>> initialValue() {
 			return Queues.newArrayDeque();
 		}
 	};
 
-	private static InheritableThreadLocal<Maybe<String>> parentId = new InheritableThreadLocal<>();
+	private static final InheritableThreadLocal<Maybe<String>> PARENT_ID = new InheritableThreadLocal<>();
 
 	@Pointcut("@annotation(step)")
 	public void withStepAnnotation(Step step) {
@@ -75,16 +75,16 @@ public class StepAspect {
 		if (!step.isIgnored()) {
 			MethodSignature signature = (MethodSignature) joinPoint.getSignature();
 
-			Maybe<String> parent = stepStack.get().peek();
+			Maybe<String> parent = STEP_STACK.get().peek();
 			if (parent == null) {
-				parent = parentId.get();
+				parent = PARENT_ID.get();
 			}
 
 			StartTestItemRQ startStepRequest = StepRequestUtils.buildStartStepRequest(signature, step, joinPoint);
 
-			Launch launch = launchMap.get().get(currentLaunchId.get());
+			Launch launch = LAUNCH_MAP.get().get(CURRENT_LAUNCH_ID.get());
 			Maybe<String> stepMaybe = launch.startTestItem(parent, startStepRequest);
-			stepStack.get().push(stepMaybe);
+			STEP_STACK.get().push(stepMaybe);
 		}
 
 	}
@@ -92,12 +92,12 @@ public class StepAspect {
 	@AfterReturning(value = "anyMethod() && withStepAnnotation(step)", argNames = "step")
 	public void finishNestedStep(Step step) {
 		if (!step.isIgnored()) {
-			Maybe<String> stepId = stepStack.get().poll();
+			Maybe<String> stepId = STEP_STACK.get().poll();
 			if (stepId == null) {
 				return;
 			}
 			FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(Statuses.PASSED, Calendar.getInstance().getTime());
-			launchMap.get().get(currentLaunchId.get()).finishTestItem(stepId, finishStepRequest);
+			LAUNCH_MAP.get().get(CURRENT_LAUNCH_ID.get()).finishTestItem(stepId, finishStepRequest);
 		}
 	}
 
@@ -106,7 +106,7 @@ public class StepAspect {
 
 		if (!step.isIgnored()) {
 
-			Maybe<String> stepId = stepStack.get().poll();
+			Maybe<String> stepId = STEP_STACK.get().poll();
 			if (stepId == null) {
 				return;
 			}
@@ -129,12 +129,12 @@ public class StepAspect {
 			FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(Statuses.FAILED, Calendar.getInstance().getTime());
 
 			while (stepId != null) {
-				launchMap.get().get(currentLaunchId.get()).finishTestItem(stepId, finishStepRequest);
-				stepId = stepStack.get().poll();
+				LAUNCH_MAP.get().get(CURRENT_LAUNCH_ID.get()).finishTestItem(stepId, finishStepRequest);
+				stepId = STEP_STACK.get().poll();
 			}
 
 			FinishTestItemRQ finishParentRequest = buildFinishParentRequest(Statuses.FAILED, Calendar.getInstance().getTime());
-			launchMap.get().get(currentLaunchId.get()).finishTestItem(parentId.get(), finishParentRequest);
+			LAUNCH_MAP.get().get(CURRENT_LAUNCH_ID.get()).finishTestItem(PARENT_ID.get(), finishParentRequest);
 		}
 
 	}
@@ -144,8 +144,8 @@ public class StepAspect {
 		rq.setEndTime(endTime);
 		rq.setStatus(status);
 		// Allows indicate that SKIPPED is not to investigate items for WS
-		if (Statuses.SKIPPED.equals(status) && !Optional.ofNullable(launchMap.get()
-				.get(currentLaunchId.get())
+		if (Statuses.SKIPPED.equals(status) && !Optional.ofNullable(LAUNCH_MAP.get()
+				.get(CURRENT_LAUNCH_ID.get())
 				.getParameters()
 				.getSkippedAnIssue()).orElse(false)) {
 			Issue issue = new Issue();
@@ -156,15 +156,15 @@ public class StepAspect {
 	}
 
 	public static void setCurrentLaunchId(String id) {
-		currentLaunchId.set(id);
+		CURRENT_LAUNCH_ID.set(id);
 	}
 
 	public static void addLaunch(String key, Launch launch) {
-		launchMap.get().put(key, launch);
-		currentLaunchId.set(key);
+		LAUNCH_MAP.get().put(key, launch);
+		CURRENT_LAUNCH_ID.set(key);
 	}
 
 	public static void setParentId(Maybe<String> parent) {
-		parentId.set(parent);
+		PARENT_ID.set(parent);
 	}
 }

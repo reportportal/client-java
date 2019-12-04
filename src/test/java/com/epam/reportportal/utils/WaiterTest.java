@@ -49,35 +49,20 @@ public class WaiterTest {
 
 	@Test
 	public void test_waiter_does_not_fail_by_default(){
-		waiter.till(new Callable<Boolean>() {
-			@Override
-			public Boolean call() {
-				return null;
-			}
-		});
+		waiter.till((Callable<Boolean>) () -> null);
 	}
 
 	@Test
 	public void test_waiter_fails_if_requested(){
 		exception.expect(InternalReportPortalClientException.class);
-		waiter.timeoutFail().till(new Callable<Boolean>() {
-			@Override
-			public Boolean call() {
-				return null;
-			}
-		});
+		waiter.timeoutFail().till((Callable<Boolean>) () -> null);
 	}
 
 	@Test
 	public void test_waiter_fail_description() {
 		exception.expect(InternalReportPortalClientException.class);
 		exception.expectMessage(description + " timed out");
-		waiter.timeoutFail().till(new Callable<Boolean>() {
-			@Override
-			public Boolean call() {
-				return null;
-			}
-		});
+		waiter.timeoutFail().till((Callable<Boolean>) () -> null);
 	}
 
 	@Test
@@ -85,11 +70,8 @@ public class WaiterTest {
 		final String errorMessage = "Just a dummy message";
 		exception.expect(InternalReportPortalClientException.class);
 		exception.expectMessage(errorMessage);
-		waiter.ignore(IllegalAccessException.class).till(new Callable<Boolean>() {
-			@Override
-			public Boolean call() {
-				throw new IllegalArgumentException(errorMessage);
-			}
+		waiter.ignore(IllegalAccessException.class).till((Callable<Boolean>) () -> {
+			throw new IllegalArgumentException(errorMessage);
 		});
 
 	}
@@ -97,30 +79,19 @@ public class WaiterTest {
 	@Test
 	public void test_waiter_does_not_fail_on_known_exception() {
 		final String errorMessage = "Just a dummy message 2";
-		waiter.ignore(IllegalArgumentException.class).till(new Callable<Boolean>() {
-			@Override
-			public Boolean call() {
-				throw new IllegalArgumentException(errorMessage);
-			}
+		waiter.ignore(IllegalArgumentException.class).till((Callable<Boolean>) () -> {
+			throw new IllegalArgumentException(errorMessage);
 		});
 	}
 
 	@Test
 	public void test_waiter_tries_number() {
 		final AtomicInteger counter = new AtomicInteger();
-		waiter.duration(6, TimeUnit.MILLISECONDS).pollingEvery(1, TimeUnit.MILLISECONDS).till(new Callable<Boolean>() {
-			@Override
-			public Boolean call() {
-				counter.incrementAndGet();
-				return null;
-			}
+		waiter.duration(6, TimeUnit.MILLISECONDS).pollingEvery(1, TimeUnit.MILLISECONDS).till((Callable<Boolean>) () -> {
+			counter.incrementAndGet();
+			return null;
 		});
 
 		assertThat(counter.get(), is(6));
-	}
-
-	@Test
-	public void test() {
-
 	}
 }

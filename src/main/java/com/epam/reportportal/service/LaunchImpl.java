@@ -75,7 +75,7 @@ public class LaunchImpl extends Launch {
 				}
 			});
 
-	private Maybe<String> launch;
+	private final Maybe<String> launch;
 
 	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, final StartLaunchRQ rq) {
 		super(parameters);
@@ -191,7 +191,7 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @param itemId Item ID promise
 	 * @param rq     Finish request
-	 * @return
+	 * @return response promise
 	 */
 	public Maybe<OperationCompletionRS> finishTestItem(final Maybe<String> itemId, final FinishTestItemRQ rq) {
 		Objects.requireNonNull(itemId, "ItemID should not be null");
@@ -247,7 +247,7 @@ public class LaunchImpl extends Launch {
 	 */
 	static class TreeItem {
 		private volatile Maybe<String> parent;
-		private List<Completable> children = new CopyOnWriteArrayList<>();
+		private final List<Completable> children = new CopyOnWriteArrayList<>();
 
 		LaunchImpl.TreeItem withParent(Maybe<String> parent) {
 			this.parent = parent;

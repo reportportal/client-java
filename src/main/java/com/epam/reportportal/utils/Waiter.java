@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -35,18 +36,11 @@ import java.util.concurrent.TimeUnit;
 public class Waiter {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Waiter.class);
 
-	private static final ThreadLocal<Random> RANDOM = new ThreadLocal<Random>() {
-		@Override
-		protected Random initialValue() {
-			return new Random();
-		}
-	};
-
 	private final String waitDescription;
 
 	private long durationNs = TimeUnit.MINUTES.toNanos(1);
 	private long pollingNs = TimeUnit.MILLISECONDS.toNanos(100);
-	private List<Class<? extends Throwable>> ignoreExceptions = new ArrayList<Class<? extends Throwable>>();
+	private final List<Class<? extends Throwable>> ignoreExceptions = new ArrayList<>();
 	private boolean useDiscrepancy = false;
 	private float discrepancy = 0.0f;
 	private double maxDiscrepancyNs = pollingNs * discrepancy;
@@ -91,7 +85,7 @@ public class Waiter {
 		if (!useDiscrepancy) {
 			return 0;
 		}
-		Random random = RANDOM.get();
+		Random random = ThreadLocalRandom.current();
 		double absoluteDiscrepancy = maxDiscrepancyNs * random.nextDouble();
 		double discrepancy = random.nextBoolean() ? absoluteDiscrepancy : -absoluteDiscrepancy;
 		return (long) discrepancy;

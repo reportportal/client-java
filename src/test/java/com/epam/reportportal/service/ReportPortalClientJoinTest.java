@@ -27,8 +27,6 @@ import com.epam.ta.reportportal.ws.model.launch.LaunchResource;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import io.reactivex.Maybe;
-import io.reactivex.MaybeEmitter;
-import io.reactivex.MaybeOnSubscribe;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import org.apache.commons.lang3.tuple.Triple;
@@ -50,13 +48,10 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
@@ -103,44 +98,31 @@ public class ReportPortalClientJoinTest {
 	private static Maybe<StartLaunchRS> startLaunchResponse(String id) {
 		final StartLaunchRS rs = new StartLaunchRS();
 		rs.setId(id);
-		return Maybe.create(new MaybeOnSubscribe<StartLaunchRS>() {
-			@Override
-			public void subscribe(final MaybeEmitter<StartLaunchRS> emitter) {
-				emitter.onSuccess(rs);
-				emitter.onComplete();
-			}
+		return Maybe.create(emitter -> {
+			emitter.onSuccess(rs);
+			emitter.onComplete();
 		});
 	}
 
 	private static void simulateStartLaunchResponse(final ReportPortalClient client) {
-		when(client.startLaunch(any(StartLaunchRQ.class))).then(new Answer<Maybe<StartLaunchRS>>() {
-			@Override
-			public Maybe<StartLaunchRS> answer(InvocationOnMock invocation) {
-				StartLaunchRQ rq = invocation.getArgument(0);
-				return startLaunchResponse(rq.getUuid());
-			}
+		when(client.startLaunch(any(StartLaunchRQ.class))).then((Answer<Maybe<StartLaunchRS>>) invocation -> {
+			StartLaunchRQ rq = invocation.getArgument(0);
+			return startLaunchResponse(rq.getUuid());
 		});
 	}
 
 	private static Maybe<LaunchResource> getLaunchResponse(String id) {
 		final LaunchResource rs = new LaunchResource();
 		rs.setUuid(id);
-		return Maybe.create(new MaybeOnSubscribe<LaunchResource>() {
-			@Override
-			public void subscribe(final MaybeEmitter<LaunchResource> emitter) {
-				emitter.onSuccess(rs);
-				emitter.onComplete();
-			}
+		return Maybe.create(emitter -> {
+			emitter.onSuccess(rs);
+			emitter.onComplete();
 		});
 	}
 
 	private static void simulateGetLaunchResponse(final ReportPortalClient client) {
-		when(client.getLaunchByUuid(anyString())).then(new Answer<Maybe<LaunchResource>>() {
-			@Override
-			public Maybe<LaunchResource> answer(InvocationOnMock invocation) {
-				return getLaunchResponse(invocation.getArgument(0).toString());
-			}
-		});
+		when(client.getLaunchByUuid(anyString())).then((Answer<Maybe<LaunchResource>>) invocation -> getLaunchResponse(invocation.getArgument(
+				0).toString()));
 	}
 
 	private static StartLaunchRQ standardLaunchRequest(final ListenerParameters params) {
@@ -174,19 +156,14 @@ public class ReportPortalClientJoinTest {
 			return Awaitility.await("Waiting for reactivex consumer")
 					.pollInterval(2, TimeUnit.MILLISECONDS)
 					.atMost(10, TimeUnit.SECONDS)
-					.until(new Callable<String>() {
-						@Override
-						public String call() {
-							return consumer.getResult();
-						}
-					}, Matchers.notNullValue());
+					.until(consumer::getResult, Matchers.notNullValue());
 		} finally {
 			disposable.dispose();
 		}
 	}
 
 	private static List<Launch> createLaunches(int num, Triple<ReportPortalClient, ListenerParameters, LockFile> config) {
-		List<Launch> result = new ArrayList<Launch>(num);
+		List<Launch> result = new ArrayList<>(num);
 		simulateStartLaunchResponse(config.getLeft());
 		simulateGetLaunchResponse(config.getLeft());
 		simulateObtainLaunchUuidResponse(config.getRight());
@@ -292,24 +269,15 @@ public class ReportPortalClientJoinTest {
 	}
 
 	private static void simulateStartItemResponse(final ReportPortalClient client, final String itemUuid) {
-		when(client.startTestItem(any(StartTestItemRQ.class))).then(new Answer<Maybe<ItemCreatedRS>>() {
-			@Override
-			public Maybe<ItemCreatedRS> answer(InvocationOnMock invocation) {
-				StartTestItemRQ rq = invocation.getArgument(0);
-				return standardItemResponse(itemUuid);
-			}
-		});
+		when(client.startTestItem(any(StartTestItemRQ.class))).then((Answer<Maybe<ItemCreatedRS>>) invocation -> standardItemResponse(itemUuid));
 	}
 
 	private static Maybe<ItemCreatedRS> standardItemResponse(String id) {
 		final ItemCreatedRS rs = new ItemCreatedRS();
 		rs.setId(id);
-		return Maybe.create(new MaybeOnSubscribe<ItemCreatedRS>() {
-			@Override
-			public void subscribe(final MaybeEmitter<ItemCreatedRS> emitter) {
-				emitter.onSuccess(rs);
-				emitter.onComplete();
-			}
+		return Maybe.create(emitter -> {
+			emitter.onSuccess(rs);
+			emitter.onComplete();
 		});
 	}
 
@@ -342,28 +310,17 @@ public class ReportPortalClientJoinTest {
 	}
 
 	private static Maybe<LaunchResource> getLaunchErrorResponse() {
-		return Maybe.create(new MaybeOnSubscribe<LaunchResource>() {
-			@Override
-			public void subscribe(final MaybeEmitter<LaunchResource> emitter) {
-				emitter.onError(new ReportPortalException(404, "Launch not found", new ErrorRS()));
-				emitter.onComplete();
-			}
+		return Maybe.create(emitter -> {
+			emitter.onError(new ReportPortalException(404, "Launch not found", new ErrorRS()));
+			emitter.onComplete();
 		});
 	}
 
-	private static void simulateGetLaunchByUuidResponse(ReportPortalClient client){
-		Answer<Maybe<LaunchResource>> errorAnswer = new Answer<Maybe<LaunchResource>>() {
-			@Override
-			public Maybe<LaunchResource> answer(InvocationOnMock invocation) {
-				return getLaunchErrorResponse();
-			}
-		};
-		when(client.getLaunchByUuid(anyString())).then(errorAnswer).then(errorAnswer).then(new Answer<Maybe<LaunchResource>>() {
-			@Override
-			public Maybe<LaunchResource> answer(InvocationOnMock invocation) {
-				return getLaunchResponse(invocation.getArgument(0).toString());
-			}
-		});
+	private static void simulateGetLaunchByUuidResponse(ReportPortalClient client) {
+		Answer<Maybe<LaunchResource>> errorAnswer = invocation -> getLaunchErrorResponse();
+		when(client.getLaunchByUuid(anyString())).then(errorAnswer)
+				.then(errorAnswer)
+				.then((Answer<Maybe<LaunchResource>>) invocation -> getLaunchResponse(invocation.getArgument(0).toString()));
 	}
 
 	@Test
@@ -372,7 +329,7 @@ public class ReportPortalClientJoinTest {
 		simulateObtainLaunchUuidResponse(lockFile);
 		simulateGetLaunchByUuidResponse(rpClient);
 		params.setAsyncReporting(false);
-		List<Launch> launches = new ArrayList<Launch>(num);
+		List<Launch> launches = new ArrayList<>(num);
 		for (int i = 0; i < num; i++) {
 			ReportPortal rp = new ReportPortal(rpClient, params, lockFile);
 			launches.add(rp.newLaunch(standardLaunchRequest(params)));
@@ -391,7 +348,7 @@ public class ReportPortalClientJoinTest {
 		simulateObtainLaunchUuidResponse(lockFile);
 		simulateGetLaunchByUuidResponse(rpClient);
 		params.setAsyncReporting(true);
-		List<Launch> launches = new ArrayList<Launch>(num);
+		List<Launch> launches = new ArrayList<>(num);
 		for (int i = 0; i < num; i++) {
 			ReportPortal rp = new ReportPortal(rpClient, params, lockFile);
 			launches.add(rp.newLaunch(standardLaunchRequest(params)));

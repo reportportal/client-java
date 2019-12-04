@@ -25,12 +25,12 @@ import static com.epam.reportportal.utils.markdown.MarkdownUtils.asCode;
  */
 public class MarkdownUtilsTest {
 	@Test
-	public void asMarkdown() throws Exception {
+	public void asMarkdown() {
 		Assert.assertEquals("Incorrect markdown prefix", "!!!MARKDOWN_MODE!!!hello", MarkdownUtils.asMarkdown("hello"));
 	}
 
 	@Test
-	public void toMarkdownScript() throws Exception {
+	public void toMarkdownScript() {
 		Assert.assertEquals("Incorrect markdown prefix", "!!!MARKDOWN_MODE!!!```groovy\nhello\n```", asCode("groovy", "hello"));
 	}
 

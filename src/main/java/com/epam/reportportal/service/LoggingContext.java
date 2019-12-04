@@ -23,8 +23,6 @@ import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
-import io.reactivex.functions.BiFunction;
-import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.PublishSubject;
@@ -58,12 +56,7 @@ public class LoggingContext {
 	/* default back-pressure buffer size */
 	public static final int DEFAULT_BUFFER_SIZE = 10;
 
-	static final ThreadLocal<Deque<LoggingContext>> CONTEXT_THREAD_LOCAL = new ThreadLocal<Deque<LoggingContext>>() {
-		@Override
-		protected Deque<LoggingContext> initialValue() {
-			return new ArrayDeque<LoggingContext>();
-		}
-	};
+	static final ThreadLocal<Deque<LoggingContext>> CONTEXT_THREAD_LOCAL = ThreadLocal.withInitial(ArrayDeque::new);
 
 	/**
 	 * Initializes new logging context and attaches it to current thread
@@ -120,22 +113,14 @@ public class LoggingContext {
 		this.itemId = itemId;
 		this.emitter = PublishSubject.create();
 		this.convertImages = convertImages;
-		emitter.toFlowable(BackpressureStrategy.BUFFER).flatMap(new Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>() {
-			@Override
-			public Publisher<SaveLogRQ> apply(Maybe<SaveLogRQ> rq) throws Exception {
-				return rq.toFlowable();
-			}
-		}).buffer(bufferSize).flatMap(new Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>() {
-			@Override
-			public Flowable<BatchSaveOperatingRS> apply(List<SaveLogRQ> rqs) throws Exception {
-				return client.log(HttpRequestUtils.buildLogMultiPartRequest(rqs)).toFlowable();
-			}
-		}).doOnError(new Consumer<Throwable>() {
-			@Override
-			public void accept(Throwable throwable) throws Exception {
-				LOG_ERROR.accept(throwable);
-			}
-		}).observeOn(Schedulers.io()).subscribe(logFlowableResults("Logging context"));
+		emitter.toFlowable(BackpressureStrategy.BUFFER)
+				.flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable)
+				.buffer(bufferSize)
+				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
+						rqs)).toFlowable())
+				.doOnError(LOG_ERROR)
+				.observeOn(Schedulers.io())
+				.subscribe(logFlowableResults("Logging context"));
 
 	}
 
@@ -155,19 +140,16 @@ public class LoggingContext {
 	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
 	 */
 	public void emit(final java.util.function.Function<String, SaveLogRQ> logSupplier) {
-		emitter.onNext(launchId.zipWith(itemId, new BiFunction<String, String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String launchId, String itemId) throws Exception {
-				final SaveLogRQ rq = logSupplier.apply(itemId);
-				rq.setLaunchUuid(launchId);
-				SaveLogRQ.File file = rq.getFile();
-				if (convertImages && null != file && isImage(file.getContentType())) {
-					final TypeAwareByteSource source = convert(wrap(file.getContent()));
-					file.setContent(source.read());
-					file.setContentType(source.getMediaType());
-				}
-				return rq;
+		emitter.onNext(launchId.zipWith(itemId, (launchId, itemId) -> {
+			final SaveLogRQ rq = logSupplier.apply(itemId);
+			rq.setLaunchUuid(launchId);
+			SaveLogRQ.File file = rq.getFile();
+			if (convertImages && null != file && isImage(file.getContentType())) {
+				final TypeAwareByteSource source = convert(wrap(file.getContent()));
+				file.setContent(source.read());
+				file.setContentType(source.getMediaType());
 			}
+			return rq;
 		}));
 	}
 
