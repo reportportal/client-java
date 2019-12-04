@@ -94,11 +94,21 @@ public class LockFileTest {
 		}
 		final File myLockFile = new File(lockFileName);
 		if (myLockFile.exists()) {
-			Awaitility.await().until(myLockFile::delete);
+			Awaitility.await().until(new Callable<Boolean>() {
+				@Override
+				public Boolean call() {
+					return myLockFile.delete();
+				}
+			});
 		}
 		final File mySyncFile = new File(syncFileName);
 		if (mySyncFile.exists()) {
-			Awaitility.await().until(mySyncFile::delete);
+			Awaitility.await().until(new Callable<Boolean>() {
+				@Override
+				public Boolean call() {
+					return mySyncFile.delete();
+				}
+			});
 		}
 	}
 
@@ -115,7 +125,12 @@ public class LockFileTest {
 	}
 
 	private static Callable<String> getObtainLaunchUuidReadCallable(final String selfUuid, final LockFile lockFile) {
-		return () -> lockFile.obtainLaunchUuid(selfUuid);
+		return new Callable<String>() {
+			@Override
+			public String call() {
+				return lockFile.obtainLaunchUuid(selfUuid);
+			}
+		};
 	}
 
 	private static final class GetFutureResults<T> implements Function<Future<T>, T> {
@@ -143,14 +158,22 @@ public class LockFileTest {
 	}
 
 	private <T> Supplier<T> singletonSupplier(final T value) {
-		return () -> value;
+		return new Supplier<T>() {
+			@Override
+			public T get() {
+				return value;
+			}
+		};
 	}
 
 	private ExecutorService testExecutor(final int threadNum) {
-		return Executors.newFixedThreadPool(threadNum, r -> {
-			Thread t = Executors.defaultThreadFactory().newThread(r);
-			t.setDaemon(true);
-			return t;
+		return Executors.newFixedThreadPool(threadNum, new ThreadFactory() {
+			@Override
+			public Thread newThread(Runnable r) {
+				Thread t = Executors.defaultThreadFactory().newThread(r);
+				t.setDaemon(true);
+				return t;
+			}
 		});
 	}
 
@@ -197,7 +220,12 @@ public class LockFileTest {
 		Collection<String> result = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
 		final File testFile = new File(lockFileName);
 
-		Awaitility.await("Wait for .lock file creation").until(testFile::exists, equalTo(Boolean.TRUE));
+		Awaitility.await("Wait for .lock file creation").until(new Callable<Boolean>() {
+			@Override
+			public Boolean call() {
+				return testFile.exists();
+			}
+		}, equalTo(Boolean.TRUE));
 		return ImmutablePair.of(tasks.keySet(), result);
 	}
 
@@ -211,10 +239,20 @@ public class LockFileTest {
 		lockFile.finishInstanceUuid(uuidIterator.next());
 
 		final File lockFile = new File(lockFileName);
-		Awaitility.await("Wait for .lock file removal").until(lockFile::exists, equalTo(Boolean.FALSE));
+		Awaitility.await("Wait for .lock file removal").until(new Callable<Boolean>() {
+			@Override
+			public Boolean call() {
+				return lockFile.exists();
+			}
+		}, equalTo(Boolean.FALSE));
 
 		final File syncFile = new File(syncFileName);
-		Awaitility.await("Wait for .sync file removal").until(syncFile::exists, equalTo(Boolean.FALSE));
+		Awaitility.await("Wait for .sync file removal").until(new Callable<Boolean>() {
+			@Override
+			public Boolean call() {
+				return syncFile.exists();
+			}
+		}, equalTo(Boolean.FALSE));
 	}
 
 	@Test
@@ -307,7 +345,12 @@ public class LockFileTest {
 		);
 	}
 
-	private static final Predicate<String> WELCOME_MESSAGE_PREDICATE = LockFileRunner.WELCOME_MESSAGE::equals;
+	private static final Predicate<String> WELCOME_MESSAGE_PREDICATE = new Predicate<String>() {
+		@Override
+		public boolean test(String input) {
+			return LockFileRunner.WELCOME_MESSAGE.equals(input);
+		}
+	};
 
 	@SuppressWarnings("unchecked")
 	private static String waitForLine(String runCommand, final BufferedReader reader, final BufferedReader errorReader,
@@ -316,17 +359,20 @@ public class LockFileTest {
 			return Awaitility.await("Waiting for a line")
 					.timeout(8, TimeUnit.SECONDS)
 					.pollInterval(100, TimeUnit.MILLISECONDS)
-					.until(() -> {
-						if (!reader.ready()) {
+					.until(new Callable<String>() {
+						@Override
+						public String call() throws Exception {
+							if (!reader.ready()) {
+								return null;
+							}
+							String line;
+							while ((line = reader.readLine()) != null) {
+								if (linePredicate.test(line)) {
+									return line;
+								}
+							}
 							return null;
 						}
-						String line;
-						while ((line = reader.readLine()) != null) {
-							if (linePredicate.test(line)) {
-								return line;
-							}
-						}
-						return null;
 					}, notNullValue());
 		} catch (ConditionTimeoutException e) {
 			List<String> errorLines = Collections.EMPTY_LIST;
@@ -340,7 +386,12 @@ public class LockFileTest {
 		}
 	}
 
-	private static final Predicate<String> ANY_STRING_PREDICATE = input -> !isEmpty(input);
+	private static final Predicate<String> ANY_STRING_PREDICATE = new Predicate<String>() {
+		@Override
+		public boolean test(String input) {
+			return !isEmpty(input);
+		}
+	};
 
 	private static final String JAVA_JUN_COMMAND_PATTERN = "%s -classpath %s %s";
 
