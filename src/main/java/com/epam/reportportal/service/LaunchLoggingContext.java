@@ -132,8 +132,18 @@ class LaunchLoggingContext {
 	 * Emits log. Basically, put it into processing pipeline
 	 *
 	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
+	 * @deprecated use {@link LaunchLoggingContext#emit(java.util.function.Function)}
 	 */
 	void emit(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
+		emit((java.util.function.Function<String, SaveLogRQ>) logSupplier);
+	}
+
+	/**
+	 * Emits log. Basically, put it into processing pipeline
+	 *
+	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
+	 */
+	void emit(final java.util.function.Function<String, SaveLogRQ> logSupplier) {
 		emitter.onNext(launchId.map(new Function<String, SaveLogRQ>() {
 			@Override
 			public SaveLogRQ apply(String input) throws Exception {
@@ -147,7 +157,6 @@ class LaunchLoggingContext {
 				return rq;
 			}
 		}));
-
 	}
 
 	/**

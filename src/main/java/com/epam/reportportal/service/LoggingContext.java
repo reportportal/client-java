@@ -143,8 +143,18 @@ public class LoggingContext {
 	 * Emits log. Basically, put it into processing pipeline
 	 *
 	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
+	 * @deprecated use {@link LoggingContext#emit(java.util.function.Function)}
 	 */
 	public void emit(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
+		emit((java.util.function.Function<String, SaveLogRQ>) logSupplier);
+	}
+
+	/**
+	 * Emits log. Basically, put it into processing pipeline
+	 *
+	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
+	 */
+	public void emit(final java.util.function.Function<String, SaveLogRQ> logSupplier) {
 		emitter.onNext(launchId.zipWith(itemId, new BiFunction<String, String, SaveLogRQ>() {
 			@Override
 			public SaveLogRQ apply(String launchId, String itemId) throws Exception {
@@ -159,7 +169,6 @@ public class LoggingContext {
 				return rq;
 			}
 		}));
-
 	}
 
 	/**
