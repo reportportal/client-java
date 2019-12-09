@@ -2,8 +2,6 @@ package com.epam.reportportal.utils;
 
 import com.epam.reportportal.annotations.attribute.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
-import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hamcrest.Matcher;
 import org.junit.Test;
@@ -11,10 +9,13 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.function.Function;
 
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
+@SuppressWarnings("unused")
 public class AnnotationAttributeParserTest {
 
 	private static final String VALUE_ATTRIBUTE_VERIFY_TEST_1 = "my_attribute_value_test";
@@ -71,7 +72,7 @@ public class AnnotationAttributeParserTest {
 			assertThat(request.isSystem(), equalTo(false));
 			assertThat(request.getKey(), nullValue());
 		}
-		assertThat(Iterables.transform(result, VALUE_EXTRACT), containsInAnyOrder(VALUE_ATTRIBUTE_VERIFY_TEST_ARRAY));
+		assertThat(result.stream().map(VALUE_EXTRACT).collect(toList()), containsInAnyOrder(VALUE_ATTRIBUTE_VERIFY_TEST_ARRAY));
 	}
 
 	@Test
@@ -119,13 +120,13 @@ public class AnnotationAttributeParserTest {
 			assertThat(request.isSystem(), equalTo(false));
 			assertThat(request.getKey(), keyVerify);
 		}
-		assertThat(Iterables.transform(result, VALUE_EXTRACT), containsInAnyOrder(MULTI_VALUE_ATTRIBUTE_VERIFY_ARRAY));
+		assertThat(result.stream().map(VALUE_EXTRACT).collect(toList()), containsInAnyOrder(MULTI_VALUE_ATTRIBUTE_VERIFY_ARRAY));
 	}
 
 	@Test
 	public void verify_multi_value_attributes_converted_into_correct_rq() throws NoSuchMethodException {
 		verify_multi_value_attributes_converted_into_correct_rq(MultiValueAttributeVerify.class,
-				equalTo((Object) MULTI_VALUE_ATTRIBUTE_KEY_VERIFY)
+				equalTo(MULTI_VALUE_ATTRIBUTE_KEY_VERIFY)
 		);
 	}
 
@@ -150,7 +151,7 @@ public class AnnotationAttributeParserTest {
 
 	@Test
 	public void verify_multi_value_attributes_empty_key_converted_into_correct_rq() throws NoSuchMethodException {
-		verify_multi_value_attributes_converted_into_correct_rq(MultiValueAttributeEmptyKeyVerify.class, equalTo((Object) ""));
+		verify_multi_value_attributes_converted_into_correct_rq(MultiValueAttributeEmptyKeyVerify.class, equalTo(""));
 	}
 
 	private static final String MULTI_VALUE_ATTRIBUTE_KEY_VERIFY_2 = "keytest2";
@@ -176,10 +177,10 @@ public class AnnotationAttributeParserTest {
 			assertThat(request.isSystem(), equalTo(false));
 			assertThat(request.getKey(), anyOf(equalTo(MULTI_VALUE_ATTRIBUTE_KEY_VERIFY), equalTo(MULTI_VALUE_ATTRIBUTE_KEY_VERIFY_2)));
 		}
-		ArrayList<String> expectedValues = new ArrayList<String>(expectedSize);
+		ArrayList<String> expectedValues = new ArrayList<>(expectedSize);
 		expectedValues.addAll(Arrays.asList(MULTI_VALUE_ATTRIBUTE_VERIFY_ARRAY));
 		expectedValues.addAll(Arrays.asList(MULTI_VALUE_ATTRIBUTE_VERIFY_ARRAY));
-		assertThat(Iterables.transform(result, VALUE_EXTRACT), containsInAnyOrder(expectedValues.toArray()));
+		assertThat(result.stream().map(VALUE_EXTRACT).collect(toList()), containsInAnyOrder(expectedValues.toArray()));
 	}
 
 	private static final class MultiValueAttributeEmptyArrayVerify {
@@ -235,7 +236,7 @@ public class AnnotationAttributeParserTest {
 			assertThat(request.isSystem(), equalTo(false));
 			assertThat(request.getValue(), equalTo(MULTI_VALUE_ATTRIBUTE_VERIFY));
 		}
-		assertThat(Iterables.transform(result, KEY_EXTRACT), containsInAnyOrder(MULTI_KEY_ATTRIBUTE_VERIFY_ARRAY));
+		assertThat(result.stream().map(KEY_EXTRACT).collect(toList()), containsInAnyOrder(MULTI_KEY_ATTRIBUTE_VERIFY_ARRAY));
 	}
 
 	private static final class MultiKeyEmptyValueAttributeVerify {
@@ -306,8 +307,8 @@ public class AnnotationAttributeParserTest {
 			assertThat(request.isSystem(), equalTo(false));
 		}
 
-		assertThat(Iterables.transform(result, KEY_EXTRACT), containsInAnyOrder(MULTI_VALUE_ATTRIBUTE_KEY_VERIFY, MULTI_KEY_ATTRIBUTE_KEY_VERIFY_TEST_1));
-		assertThat(Iterables.transform(result, VALUE_EXTRACT), containsInAnyOrder(MULTI_VALUE_ATTRIBUTE_VERIFY, MULTI_VALUE_ATTRIBUTE_VERIFY_TEST_1));
+		assertThat(result.stream().map(KEY_EXTRACT).collect(toList()), containsInAnyOrder(MULTI_VALUE_ATTRIBUTE_KEY_VERIFY, MULTI_KEY_ATTRIBUTE_KEY_VERIFY_TEST_1));
+		assertThat(result.stream().map(VALUE_EXTRACT).collect(toList()), containsInAnyOrder(MULTI_VALUE_ATTRIBUTE_VERIFY, MULTI_VALUE_ATTRIBUTE_VERIFY_TEST_1));
 	}
 
 	private static final class AllAttributeAnnotationsVerify {

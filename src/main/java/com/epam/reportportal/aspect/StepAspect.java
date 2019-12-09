@@ -24,7 +24,6 @@ import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import com.google.common.base.Function;
 import com.google.common.collect.Queues;
 import io.reactivex.Maybe;
 import org.aspectj.lang.JoinPoint;
@@ -32,9 +31,9 @@ import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.MethodSignature;
 
 import java.util.*;
+import java.util.function.Function;
 
 import static com.epam.reportportal.service.LaunchImpl.NOT_ISSUE;
-import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Throwables.getStackTraceAsString;
 
 /**
@@ -43,12 +42,12 @@ import static com.google.common.base.Throwables.getStackTraceAsString;
 @Aspect
 public class StepAspect {
 
-	private static InheritableThreadLocal<String> currentLaunchId = new InheritableThreadLocal<String>();
+	private static InheritableThreadLocal<String> currentLaunchId = new InheritableThreadLocal<>();
 
 	private static InheritableThreadLocal<Map<String, Launch>> launchMap = new InheritableThreadLocal<Map<String, Launch>>() {
 		@Override
 		protected Map<String, Launch> initialValue() {
-			return new HashMap<String, Launch>();
+			return new HashMap<>();
 		}
 	};
 
@@ -59,7 +58,7 @@ public class StepAspect {
 		}
 	};
 
-	private static InheritableThreadLocal<Maybe<String>> parentId = new InheritableThreadLocal<Maybe<String>>();
+	private static InheritableThreadLocal<Maybe<String>> parentId = new InheritableThreadLocal<>();
 
 	@Pointcut("@annotation(step)")
 	public void withStepAnnotation(Step step) {
@@ -112,22 +111,19 @@ public class StepAspect {
 				return;
 			}
 
-			ReportPortal.emitLog(new Function<String, SaveLogRQ>() {
-				@Override
-				public SaveLogRQ apply(String itemUuid) {
-					SaveLogRQ rq = new SaveLogRQ();
-					rq.setItemUuid(itemUuid);
-					rq.setLevel("ERROR");
-					rq.setLogTime(Calendar.getInstance().getTime());
-					if (throwable != null) {
-						rq.setMessage(getStackTraceAsString(throwable));
-					} else {
-						rq.setMessage("Test has failed without exception");
-					}
-					rq.setLogTime(Calendar.getInstance().getTime());
-
-					return rq;
+			ReportPortal.emitLog((Function<String, SaveLogRQ>) itemUuid -> {
+				SaveLogRQ rq = new SaveLogRQ();
+				rq.setItemUuid(itemUuid);
+				rq.setLevel("ERROR");
+				rq.setLogTime(Calendar.getInstance().getTime());
+				if (throwable != null) {
+					rq.setMessage(getStackTraceAsString(throwable));
+				} else {
+					rq.setMessage("Test has failed without exception");
 				}
+				rq.setLogTime(Calendar.getInstance().getTime());
+
+				return rq;
 			});
 
 			FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(Statuses.FAILED, Calendar.getInstance().getTime());
@@ -148,8 +144,10 @@ public class StepAspect {
 		rq.setEndTime(endTime);
 		rq.setStatus(status);
 		// Allows indicate that SKIPPED is not to investigate items for WS
-		if (Statuses.SKIPPED.equals(status) && !fromNullable(launchMap.get().get(currentLaunchId.get()).getParameters().getSkippedAnIssue())
-				.or(false)) {
+		if (Statuses.SKIPPED.equals(status) && !Optional.ofNullable(launchMap.get()
+				.get(currentLaunchId.get())
+				.getParameters()
+				.getSkippedAnIssue()).orElse(false)) {
 			Issue issue = new Issue();
 			issue.setIssueType(NOT_ISSUE);
 			rq.setIssue(issue);

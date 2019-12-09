@@ -24,7 +24,6 @@ import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
-import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -36,6 +35,7 @@ import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -87,8 +87,8 @@ public class LaunchImpl extends Launch {
 
 	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, final StartLaunchRQ rq) {
 		super(parameters);
-		this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
-		Preconditions.checkNotNull(parameters, "Parameters shouldn't be NULL");
+		this.rpClient = Objects.requireNonNull(rpClient, "RestEndpoint shouldn't be NULL");
+		Objects.requireNonNull(parameters, "Parameters shouldn't be NULL");
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 
@@ -121,8 +121,8 @@ public class LaunchImpl extends Launch {
 
 	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch) {
 		super(parameters);
-		this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
-		Preconditions.checkNotNull(parameters, "Parameters shouldn't be NULL");
+		this.rpClient = Objects.requireNonNull(rpClient, "RestEndpoint shouldn't be NULL");
+		Objects.requireNonNull(parameters, "Parameters shouldn't be NULL");
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 
@@ -237,11 +237,10 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @param itemId Item ID promise
 	 * @param rq     Finish request
-	 * @return
+	 * @return a Finish Item response promise
 	 */
 	public Maybe<OperationCompletionRS> finishTestItem(final Maybe<String> itemId, final FinishTestItemRQ rq) {
-
-		Preconditions.checkArgument(null != itemId, "ItemID should not be null");
+		Objects.requireNonNull(itemId, "ItemID should not be null");
 
 		if (Statuses.SKIPPED.equals(rq.getStatus()) && !getParameters().getSkippedAnIssue()) {
 			Issue issue = new Issue();
