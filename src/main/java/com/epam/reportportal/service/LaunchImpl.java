@@ -29,12 +29,16 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.reactivex.*;
-import io.reactivex.functions.*;
+import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
+import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.service.LoggingCallback.*;
@@ -80,12 +84,16 @@ public class LaunchImpl extends Launch {
 				}
 			});
 
-	private Maybe<String> launch;
+	private final Maybe<String> launch;
+	private final ThreadPoolExecutor executor;
+	private final Scheduler scheduler;
 	private boolean rerun;
 
-	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, final StartLaunchRQ rq) {
+	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, final StartLaunchRQ rq, ThreadPoolExecutor executorService) {
 		super(parameters);
 		this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
+		this.executor = Preconditions.checkNotNull(executorService);
+		this.scheduler = Schedulers.from(executor);
 		Preconditions.checkNotNull(parameters, "Parameters shouldn't be NULL");
 
 		if (!parameters.isRerun()) {
@@ -101,7 +109,7 @@ public class LaunchImpl extends Launch {
 						public MaybeSource<? extends StartLaunchRS> call() {
 							return rpClient.startLaunch(rq).doOnSuccess(LAUNCH_SUCCESS_CONSUMER).doOnError(LOG_ERROR);
 						}
-					}).subscribeOn(Schedulers.computation()).cache();
+					}).subscribeOn(scheduler).cache();
 
 					LaunchFile.create(rq.getName(), launchPromise);
 
@@ -128,12 +136,14 @@ public class LaunchImpl extends Launch {
 
 	}
 
-	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch) {
+	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch, ThreadPoolExecutor executorService) {
 		super(parameters);
 		this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
+		this.executor = Preconditions.checkNotNull(executorService);
+		this.scheduler = Schedulers.from(executor);
 		Preconditions.checkNotNull(parameters, "Parameters shouldn't be NULL");
 
-		this.launch = launch.subscribeOn(Schedulers.computation()).cache();
+		this.launch = launch.subscribeOn(scheduler).cache();
 	}
 
 	/**
@@ -141,7 +151,7 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @return Launch ID promise
 	 */
-	public synchronized Maybe<String> start() {
+	public Maybe<String> start() {
 
 		launch.subscribe(logMaybeResults("Launch start"));
 
@@ -154,16 +164,38 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @param rq Finish RQ
 	 */
-	public synchronized void finish(final FinishExecutionRQ rq) {
+	public void finish(final FinishExecutionRQ rq) {
 		final Completable finish = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren())
 				.andThen(this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
 					@Override
 					public Maybe<OperationCompletionRS> apply(String id) {
 						return rpClient.finishLaunch(id, rq).doOnSuccess(LOG_SUCCESS).doOnError(LOG_ERROR);
 					}
-				})).doFinally(new Action() {
+				}))
+				.doFinally(new Action() {
 					@Override
 					public void run() {
+						try {
+							/*
+							 * We do the following sleep since the last threads which stay running in the executor service can submit
+							 * additional task to the service. The solution is way far from perfect, since there is still might be a
+							 * situation when a thread/test keep publishing new tasks, or someone submit infinitive running thread.
+							 *
+							 * But we need to fix issues with underreporting of logs and test items due to early client close.
+							 *
+							 * For 5.0 or 5.1 we need a custom execution queue, where after shutdown switch it's still possible to post
+							 * additional tasks from within the queue but not from outside.
+							 */
+							int step = 1;
+							for (int i = 0; i < getParameters().getReportingTimeout() && executor.getActiveCount() > 0; i += step) {
+								TimeUnit.SECONDS.sleep(step);
+							}
+
+							executor.shutdown();
+							executor.awaitTermination(getParameters().getReportingTimeout(), TimeUnit.SECONDS);
+						} catch (InterruptedException e) {
+							LOGGER.warn("A thread was interrupted during processing thread pool shutdown wait.", e);
+						}
 						rpClient.close();
 					}
 				})
@@ -192,9 +224,9 @@ public class LaunchImpl extends Launch {
 
 			}
 		}).cache();
-		testItem.subscribeOn(Schedulers.computation()).subscribe(logMaybeResults("Start test item"));
+		testItem.subscribeOn(scheduler).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(testItem).addToQueue(testItem.ignoreElement());
-		LoggingContext.init(testItem, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
+		LoggingContext.init(testItem, this.rpClient, scheduler, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
 		return testItem;
 	}
 
@@ -230,9 +262,9 @@ public class LaunchImpl extends Launch {
 				});
 			}
 		}).cache();
-		itemId.subscribeOn(Schedulers.computation()).subscribe(logMaybeResults("Start test item"));
+		itemId.subscribeOn(scheduler).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement());
-		LoggingContext.init(itemId, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
+		LoggingContext.init(itemId, this.rpClient, scheduler, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
 		return itemId;
 	}
 
@@ -287,7 +319,7 @@ public class LaunchImpl extends Launch {
 				})
 				.ignoreElement()
 				.cache();
-		finishCompletion.subscribeOn(Schedulers.computation()).subscribe(logCompletableResults("Finish test item"));
+		finishCompletion.subscribeOn(scheduler).subscribe(logCompletableResults("Finish test item"));
 		//find parent and add to its queue
 		final Maybe<String> parent = treeItem.getParent();
 		if (null != parent) {
@@ -307,10 +339,10 @@ public class LaunchImpl extends Launch {
 	 * Wrapper around TestItem entity to be able to track parent and children items
 	 */
 	static class TreeItem {
-		private Maybe<String> parent;
+		private volatile Maybe<String> parent;
 		private List<Completable> children = new CopyOnWriteArrayList<Completable>();
 
-		synchronized LaunchImpl.TreeItem withParent(Maybe<String> parent) {
+		LaunchImpl.TreeItem withParent(Maybe<String> parent) {
 			this.parent = parent;
 			return this;
 		}
@@ -324,7 +356,7 @@ public class LaunchImpl extends Launch {
 			return newArrayList(this.children);
 		}
 
-		synchronized Maybe<String> getParent() {
+		Maybe<String> getParent() {
 			return parent;
 		}
 	}

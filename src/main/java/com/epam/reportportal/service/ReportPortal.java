@@ -51,7 +51,9 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
 import static com.google.common.io.Files.toByteArray;
@@ -67,16 +69,18 @@ public class ReportPortal {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportPortal.class);
 	private static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
 
-	private ReportPortalClient rpClient;
-	private ListenerParameters parameters;
+	private final ReportPortalClient rpClient;
+	private final ListenerParameters parameters;
+	private final ThreadPoolExecutor executor;
 
 	/**
 	 * @param rpClient   ReportPortal client
 	 * @param parameters Listener Parameters
 	 */
-	ReportPortal(ReportPortalClient rpClient, ListenerParameters parameters) {
+	ReportPortal(ReportPortalClient rpClient, ListenerParameters parameters, ThreadPoolExecutor executor) {
 		this.rpClient = rpClient;
 		this.parameters = parameters;
+		this.executor = executor;
 	}
 
 	/**
@@ -90,7 +94,7 @@ public class ReportPortal {
 			return Launch.NOOP_LAUNCH;
 		}
 
-		LaunchImpl service = new LaunchImpl(rpClient, parameters, rq);
+		LaunchImpl service = new LaunchImpl(rpClient, parameters, rq, executor);
 		return service;
 	}
 
@@ -101,7 +105,7 @@ public class ReportPortal {
 	 * @return This instance for chaining
 	 */
 	public Launch withLaunch(Maybe<String> currentLaunchId) {
-		return new LaunchImpl(rpClient, parameters, currentLaunchId);
+		return new LaunchImpl(rpClient, parameters, currentLaunchId, executor);
 	}
 
 	/**
@@ -133,7 +137,7 @@ public class ReportPortal {
 	 * @return builder for {@link ReportPortal}
 	 */
 	public static ReportPortal create(ReportPortalClient client, ListenerParameters params) {
-		return new ReportPortal(client, params);
+		return new ReportPortal(client, params, buildExecutorService(params));
 	}
 
 	/**
@@ -243,7 +247,8 @@ public class ReportPortal {
 		public ReportPortal build() {
 			try {
 				ListenerParameters params = null == this.parameters ? new ListenerParameters(defaultPropertiesLoader()) : this.parameters;
-				return new ReportPortal(buildClient(ReportPortalClient.class, params), params);
+				ThreadPoolExecutor executor = buildExecutorService(params);
+				return new ReportPortal(buildClient(ReportPortalClient.class, params, executor), params, executor);
 			} catch (Exception e) {
 				String errMsg = "Cannot build ReportPortal client";
 				LOGGER.error(errMsg, e);
@@ -253,13 +258,12 @@ public class ReportPortal {
 		}
 
 
-		public <T extends ReportPortalClient> T buildClient(Class<T> clientType, ListenerParameters params) {
+		public <T extends ReportPortalClient> T buildClient(Class<T> clientType, ListenerParameters params, ExecutorService executor) {
 			try {
 				HttpClient client = null == this.httpClient ?
 						defaultClient(params) :
 						this.httpClient.addInterceptorLast(new BearerAuthInterceptor(params.getUuid())).build();
-
-				return RestEndpoints.forInterface(clientType, buildRestEndpoint(params, client));
+				return RestEndpoints.forInterface(clientType, buildRestEndpoint(params, client, executor));
 			} catch (Exception e) {
 				String errMsg = "Cannot build ReportPortal client";
 				LOGGER.error(errMsg, e);
@@ -268,7 +272,7 @@ public class ReportPortal {
 
 		}
 
-		protected RestEndpoint buildRestEndpoint(ListenerParameters parameters, HttpClient client) {
+		protected RestEndpoint buildRestEndpoint(ListenerParameters parameters, HttpClient client, ExecutorService executor) {
 			final ObjectMapper om = new ObjectMapper();
 			om.setDateFormat(new SimpleDateFormat(DEFAULT_DATE_FORMAT));
 			om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -280,7 +284,7 @@ public class ReportPortal {
 			return new HttpClientRestEndpoint(client, new LinkedList<Serializer>() {{
 				add(jacksonSerializer);
 				add(new ByteArraySerializer());
-			}}, new ReportPortalErrorHandler(jacksonSerializer), buildEndpointUrl(baseUrl, project), buildExecutorService(parameters));
+			}}, new ReportPortalErrorHandler(jacksonSerializer), buildEndpointUrl(baseUrl, project), executor);
 		}
 
 		protected String buildEndpointUrl(String baseUrl, String project) {
@@ -322,13 +326,16 @@ public class ReportPortal {
 		protected PropertiesLoader defaultPropertiesLoader() {
 			return PropertiesLoader.load();
 		}
-
-		protected ExecutorService buildExecutorService(ListenerParameters params){
-			return Executors.newFixedThreadPool(params.getIoPoolSize(),
-					new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build()
-			);
-		}
-
 	}
 
+	protected static ThreadPoolExecutor buildExecutorService(ListenerParameters params) {
+		int nThreads = params.getIoPoolSize();
+		return new ThreadPoolExecutor(nThreads,
+				nThreads,
+				0L,
+				TimeUnit.MILLISECONDS,
+				new LinkedBlockingQueue<Runnable>(),
+				new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build()
+		);
+	}
 }
