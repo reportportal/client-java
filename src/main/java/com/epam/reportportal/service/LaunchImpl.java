@@ -15,6 +15,7 @@
  */
 package com.epam.reportportal.service;
 
+import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
@@ -268,9 +269,9 @@ public class LaunchImpl extends Launch {
 								.retry(new RetryWithDelay(new Predicate<Throwable>() {
 									@Override
 									public boolean test(Throwable throwable) {
-										return throwable instanceof ReportPortalException
+										return (throwable instanceof ReportPortalException
 												&& ErrorType.FINISH_ITEM_NOT_ALLOWED.equals(((ReportPortalException) throwable).getError()
-												.getErrorType());
+												.getErrorType())) || throwable instanceof InternalReportPortalClientException;
 									}
 								}, ITEM_FINISH_MAX_RETRIES, TimeUnit.SECONDS.toMillis(ITEM_FINISH_RETRY_TIMEOUT)))
 								.doOnSuccess(LOG_SUCCESS)

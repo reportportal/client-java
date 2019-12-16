@@ -41,11 +41,14 @@ import io.reactivex.MaybeEmitter;
 import io.reactivex.MaybeOnSubscribe;
 import io.reactivex.functions.Consumer;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
+import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.client.StandardHttpRequestRetryHandler;
+import org.apache.http.protocol.HttpContext;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -446,6 +449,16 @@ public class ReportPortal {
 			}
 
 			builder.setRetryHandler(new StandardHttpRequestRetryHandler(parameters.getTransferRetries(), true))
+					.setKeepAliveStrategy(new DefaultConnectionKeepAliveStrategy() {
+						@Override
+						public long getKeepAliveDuration(HttpResponse response, HttpContext context) {
+							long keepAliveDuration = super.getKeepAliveDuration(response, context);
+							if (keepAliveDuration == -1) {
+								return parameters.getMaxConnectionTtlMs();
+							}
+							return keepAliveDuration;
+						}
+					})
 					.setMaxConnPerRoute(parameters.getMaxConnectionsPerRoute())
 					.setMaxConnTotal(parameters.getMaxConnectionsTotal())
 					.setConnectionTimeToLive(parameters.getMaxConnectionTtlMs(), TimeUnit.MILLISECONDS)
