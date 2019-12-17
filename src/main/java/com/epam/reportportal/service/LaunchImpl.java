@@ -36,10 +36,7 @@ import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static com.epam.reportportal.service.LoggingCallback.*;
 import static com.epam.reportportal.utils.SubscriptionUtils.logCompletableResults;
@@ -85,12 +82,12 @@ public class LaunchImpl extends Launch {
 			});
 
 	private final Maybe<String> launch;
-	private final ThreadPoolExecutor executor;
+	private final ExecutorService executor;
 	private final Scheduler scheduler;
 	private boolean rerun;
 
 	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, final StartLaunchRQ rq,
-			ThreadPoolExecutor executorService) {
+			ExecutorService executorService) {
 		super(parameters);
 		this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
 		this.executor = Preconditions.checkNotNull(executorService);
@@ -137,7 +134,7 @@ public class LaunchImpl extends Launch {
 
 	}
 
-	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch, ThreadPoolExecutor executorService) {
+	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch, ExecutorService executorService) {
 		super(parameters);
 		this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
 		this.executor = Preconditions.checkNotNull(executorService);

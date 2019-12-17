@@ -50,10 +50,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
 import static com.google.common.io.Files.toByteArray;
@@ -71,13 +68,13 @@ public class ReportPortal {
 
 	private final ReportPortalClient rpClient;
 	private final ListenerParameters parameters;
-	private final ThreadPoolExecutor executor;
+	private final ExecutorService executor;
 
 	/**
 	 * @param rpClient   ReportPortal client
 	 * @param parameters Listener Parameters
 	 */
-	ReportPortal(ReportPortalClient rpClient, ListenerParameters parameters, ThreadPoolExecutor executor) {
+	ReportPortal(ReportPortalClient rpClient, ListenerParameters parameters, ExecutorService executor) {
 		this.rpClient = rpClient;
 		this.parameters = parameters;
 		this.executor = executor;
@@ -94,8 +91,7 @@ public class ReportPortal {
 			return Launch.NOOP_LAUNCH;
 		}
 
-		LaunchImpl service = new LaunchImpl(rpClient, parameters, rq, executor);
-		return service;
+		return new LaunchImpl(rpClient, parameters, rq, executor);
 	}
 
 	/**
@@ -247,7 +243,7 @@ public class ReportPortal {
 		public ReportPortal build() {
 			try {
 				ListenerParameters params = null == this.parameters ? new ListenerParameters(defaultPropertiesLoader()) : this.parameters;
-				ThreadPoolExecutor executor = buildExecutorService(params);
+				ExecutorService executor = buildExecutorService(params);
 				return new ReportPortal(buildClient(ReportPortalClient.class, params, executor), params, executor);
 			} catch (Exception e) {
 				String errMsg = "Cannot build ReportPortal client";
@@ -326,15 +322,14 @@ public class ReportPortal {
 		protected PropertiesLoader defaultPropertiesLoader() {
 			return PropertiesLoader.load();
 		}
+
+		protected ExecutorService buildExecutorService(ListenerParameters params) {
+			return ReportPortal.buildExecutorService(params);
+		}
 	}
 
-	protected static ThreadPoolExecutor buildExecutorService(ListenerParameters params) {
-		int nThreads = params.getIoPoolSize();
-		return new ThreadPoolExecutor(nThreads,
-				nThreads,
-				0L,
-				TimeUnit.MILLISECONDS,
-				new LinkedBlockingQueue<Runnable>(),
+	private static ExecutorService buildExecutorService(ListenerParameters params) {
+		return Executors.newFixedThreadPool(params.getIoPoolSize(),
 				new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build()
 		);
 	}
