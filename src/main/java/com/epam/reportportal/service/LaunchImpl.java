@@ -89,7 +89,8 @@ public class LaunchImpl extends Launch {
 	private final Scheduler scheduler;
 	private boolean rerun;
 
-	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, final StartLaunchRQ rq, ThreadPoolExecutor executorService) {
+	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, final StartLaunchRQ rq,
+			ThreadPoolExecutor executorService) {
 		super(parameters);
 		this.rpClient = Preconditions.checkNotNull(rpClient, "RestEndpoint shouldn't be NULL");
 		this.executor = Preconditions.checkNotNull(executorService);
@@ -166,45 +167,20 @@ public class LaunchImpl extends Launch {
 	 */
 	public void finish(final FinishExecutionRQ rq) {
 		final Completable finish = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren())
-				.andThen(this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
+				.andThen(this.launch.map(new Function<String, OperationCompletionRS>() {
 					@Override
-					public Maybe<OperationCompletionRS> apply(String id) {
-						return rpClient.finishLaunch(id, rq).doOnSuccess(LOG_SUCCESS).doOnError(LOG_ERROR);
+					public OperationCompletionRS apply(String id) {
+						return rpClient.finishLaunch(id, rq).doOnSuccess(LOG_SUCCESS).doOnError(LOG_ERROR).blockingGet();
 					}
 				}))
-				.doFinally(new Action() {
-					@Override
-					public void run() {
-						try {
-							/*
-							 * We do the following sleep since the last threads which stay running in the executor service can submit
-							 * additional task to the service. The solution is way far from perfect, since there is still might be a
-							 * situation when a thread/test keep publishing new tasks, or someone submit infinitive running thread.
-							 *
-							 * But we need to fix issues with underreporting of logs and test items due to early client close.
-							 *
-							 * For 5.0 or 5.1 we need a custom execution queue, where after shutdown switch it's still possible to post
-							 * additional tasks from within the queue but not from outside.
-							 */
-							int step = 1;
-							for (int i = 0; i < getParameters().getReportingTimeout() && executor.getActiveCount() > 0; i += step) {
-								TimeUnit.SECONDS.sleep(step);
-							}
-
-							executor.shutdown();
-							executor.awaitTermination(getParameters().getReportingTimeout(), TimeUnit.SECONDS);
-						} catch (InterruptedException e) {
-							LOGGER.warn("A thread was interrupted during processing thread pool shutdown wait.", e);
-						}
-						rpClient.close();
-					}
-				})
 				.ignoreElement()
 				.cache();
 		try {
 			finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
 		} catch (Exception e) {
 			LOGGER.error("Unable to finish launch in ReportPortal", e);
+		} finally {
+			rpClient.close();
 		}
 	}
 
