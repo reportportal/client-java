@@ -22,10 +22,7 @@ import com.epam.ta.reportportal.ws.model.Constants;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.google.common.base.Strings;
 import com.google.common.net.MediaType;
-import io.reactivex.BackpressureStrategy;
-import io.reactivex.Completable;
-import io.reactivex.Flowable;
-import io.reactivex.Maybe;
+import io.reactivex.*;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
@@ -79,7 +76,21 @@ public class LoggingContext {
 	 * @return New Logging Context
 	 */
 	public static LoggingContext init(Maybe<String> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
-		LoggingContext context = new LoggingContext(itemId, client, bufferSize, convertImages);
+		return init(itemId, client, Schedulers.io(), bufferSize, convertImages);
+	}
+
+	/**
+	 * Initializes new logging context and attaches it to current thread
+	 *
+	 * @param itemId        Test Item ID
+	 * @param client        Client of ReportPortal
+	 * @param scheduler		a log processing and upload scheduler
+	 * @param bufferSize    Size of back-pressure buffer
+	 * @param convertImages Whether Image should be converted to BlackAndWhite
+	 * @return New Logging Context
+	 */
+	public static LoggingContext init(Maybe<String> itemId, final ReportPortalClient client, Scheduler scheduler, int bufferSize, boolean convertImages) {
+		LoggingContext context = new LoggingContext(itemId, client, scheduler, bufferSize, convertImages);
 		CONTEXT_THREAD_LOCAL.set(context);
 		return context;
 	}
@@ -105,7 +116,7 @@ public class LoggingContext {
 	/* Whether Image should be converted to BlackAndWhite */
 	private final boolean convertImages;
 
-	LoggingContext(Maybe<String> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
+	LoggingContext(Maybe<String> itemId, final ReportPortalClient client, Scheduler scheduler, int bufferSize, boolean convertImages) {
 		this.itemId = itemId;
 		this.emitter = PublishSubject.create();
 		this.convertImages = convertImages;
@@ -145,7 +156,7 @@ public class LoggingContext {
 						throwable.printStackTrace();
 					}
 				})
-				.observeOn(Schedulers.computation())
+				.observeOn(scheduler)
 				.subscribe();
 
 	}
