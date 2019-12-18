@@ -58,13 +58,12 @@ shadowJar {
 
 dependencies {
 
-//    compile 'com.epam.reportportal:commons-model:3.0.0'
     compile ('com.epam.reportportal:commons-model:4.2.0') {
         exclude group: 'com.fasterxml.jackson.core', module: 'jackson-annotations'
         exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
     }
     compile 'com.google.guava:guava:24.1.1-jre'
-    compile 'com.epam.reportportal:restendpoint:0.2.11'
+    compile 'com.epam.reportportal:restendpoint:0.2.13'
 
     shadow "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     shadow "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
