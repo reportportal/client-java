@@ -48,7 +48,6 @@ import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.client.StandardHttpRequestRetryHandler;
-import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.slf4j.Logger;
@@ -59,7 +58,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
-import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.UUID;
@@ -463,7 +461,6 @@ public class ReportPortal {
 					})
 					.setMaxConnPerRoute(parameters.getMaxConnectionsPerRoute())
 					.setMaxConnTotal(parameters.getMaxConnectionsTotal())
-					.setDefaultHeaders(Collections.singletonList(new BasicHeader("Keep-Alive", "timeout=15, max=100")))
 					.setConnectionTimeToLive(parameters.getMaxConnectionTtlMs(), TimeUnit.MILLISECONDS)
 					.evictIdleConnections(parameters.getMaxConnectionIdleTtlMs(), TimeUnit.MILLISECONDS);
 			return builder.addInterceptorLast(new BearerAuthInterceptor(parameters.getApiKey())).build();

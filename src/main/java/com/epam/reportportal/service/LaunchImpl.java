@@ -66,7 +66,7 @@ public class LaunchImpl extends Launch {
 	};
 
 	private static final int DEFAULT_RETRY_COUNT = 5;
-	private static final int DEFAULT_RETRY_TIMEOUT = 5;
+	private static final int DEFAULT_RETRY_TIMEOUT = 2;
 
 	private static final int ITEM_FINISH_MAX_RETRIES = 10;
 	private static final int ITEM_FINISH_RETRY_TIMEOUT = 10;
