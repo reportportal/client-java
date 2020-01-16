@@ -64,7 +64,7 @@ dependencies {
     }
 
     compile 'com.google.guava:guava:26.0-jre'
-    compile 'com.epam.reportportal:restendpoint:0.2.8'
+    compile 'com.github.reportportal:restendpoint:e7e97d9b'
 
     shadow "org.aspectj:aspectjweaver:1.9.2"
     shadow "org.aspectj:aspectjrt:1.9.2"
