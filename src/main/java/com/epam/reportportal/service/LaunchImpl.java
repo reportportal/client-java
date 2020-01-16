@@ -28,7 +28,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.reactivex.*;
-import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
@@ -38,6 +37,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.service.LoggingCallback.*;
@@ -83,12 +83,16 @@ public class LaunchImpl extends Launch {
 				}
 			});
 
-	private Maybe<String> launch;
+	private final Maybe<String> launch;
+	private final ExecutorService executor;
+	private final Scheduler scheduler;
 
-	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, final StartLaunchRQ rq) {
+	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, final StartLaunchRQ rq, ExecutorService executor) {
 		super(parameters);
 		this.rpClient = Objects.requireNonNull(rpClient, "RestEndpoint shouldn't be NULL");
 		Objects.requireNonNull(parameters, "Parameters shouldn't be NULL");
+		this.executor = Objects.requireNonNull(executor);
+		this.scheduler = Schedulers.from(this.executor);
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 
@@ -101,7 +105,7 @@ public class LaunchImpl extends Launch {
 					public MaybeSource<? extends StartLaunchRS> call() {
 						return rpClient.startLaunch(rq).doOnSuccess(LAUNCH_SUCCESS_CONSUMER).doOnError(LOG_ERROR);
 					}
-				}).subscribeOn(Schedulers.io()).cache();
+				}).subscribeOn(scheduler).cache();
 
 				launchPromise.subscribe(new Consumer<StartLaunchRS>() {
 					@Override
@@ -119,14 +123,16 @@ public class LaunchImpl extends Launch {
 		}).cache();
 	}
 
-	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch) {
+	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch, ExecutorService executor) {
 		super(parameters);
 		this.rpClient = Objects.requireNonNull(rpClient, "RestEndpoint shouldn't be NULL");
 		Objects.requireNonNull(parameters, "Parameters shouldn't be NULL");
+		this.executor = Objects.requireNonNull(executor);
+		this.scheduler = Schedulers.from(this.executor);
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 
-		this.launch = launch.subscribeOn(Schedulers.io()).cache();
+		this.launch = launch.subscribeOn(scheduler).cache();
 	}
 
 	/**
@@ -137,7 +143,12 @@ public class LaunchImpl extends Launch {
 	public Maybe<String> start() {
 
 		launch.subscribe(logMaybeResults("Launch start"));
-		LaunchLoggingContext.init(this.launch, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
+		LaunchLoggingContext.init(this.launch,
+				this.rpClient,
+				this.scheduler,
+				getParameters().getBatchLogsSize(),
+				getParameters().isConvertImage()
+		);
 
 		return this.launch;
 
@@ -151,24 +162,20 @@ public class LaunchImpl extends Launch {
 	public void finish(final FinishExecutionRQ rq) {
 		QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
 		final Completable finish = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren())
-				.andThen(this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
+				.andThen(this.launch.map(new Function<String, OperationCompletionRS>() {
 					@Override
-					public Maybe<OperationCompletionRS> apply(String id) {
-						return rpClient.finishLaunch(id, rq).doOnSuccess(LOG_SUCCESS).doOnError(LOG_ERROR);
+					public OperationCompletionRS apply(String id) {
+						return rpClient.finishLaunch(id, rq).doOnSuccess(LOG_SUCCESS).doOnError(LOG_ERROR).blockingGet();
 					}
 				}))
-				.doFinally(new Action() {
-					@Override
-					public void run() throws Exception {
-						rpClient.close();
-					}
-				})
 				.ignoreElement()
 				.cache();
 		try {
 			finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
 		} catch (Exception e) {
 			LOGGER.error("Unable to finish launch in ReportPortal", e);
+		} finally {
+			rpClient.close();
 		}
 	}
 
@@ -188,9 +195,15 @@ public class LaunchImpl extends Launch {
 
 			}
 		}).cache();
-		testItem.subscribeOn(Schedulers.io()).subscribe(logMaybeResults("Start test item"));
+		testItem.subscribeOn(scheduler).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(testItem).addToQueue(testItem.ignoreElement());
-		LoggingContext.init(this.launch, testItem, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
+		LoggingContext.init(this.launch,
+				testItem,
+				this.rpClient,
+				scheduler,
+				getParameters().getBatchLogsSize(),
+				getParameters().isConvertImage()
+		);
 		return testItem;
 	}
 
@@ -226,9 +239,16 @@ public class LaunchImpl extends Launch {
 				});
 			}
 		}).cache();
-		itemId.subscribeOn(Schedulers.io()).subscribe(logMaybeResults("Start test item"));
+		itemId.subscribeOn(scheduler).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement());
-		LoggingContext.init(this.launch, itemId, this.rpClient, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
+		LoggingContext.init(
+				this.launch,
+				itemId,
+				this.rpClient,
+				scheduler,
+				getParameters().getBatchLogsSize(),
+				getParameters().isConvertImage()
+		);
 		return itemId;
 	}
 
@@ -290,7 +310,7 @@ public class LaunchImpl extends Launch {
 				})
 				.ignoreElement()
 				.cache();
-		finishCompletion.subscribeOn(Schedulers.io()).subscribe(logCompletableResults("Finish test item"));
+		finishCompletion.subscribeOn(scheduler).subscribe(logCompletableResults("Finish test item"));
 		//find parent and add to its queue
 		final Maybe<String> parent = treeItem.getParent();
 		if (null != parent) {

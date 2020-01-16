@@ -20,13 +20,9 @@ import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import io.reactivex.BackpressureStrategy;
-import io.reactivex.Completable;
-import io.reactivex.Flowable;
-import io.reactivex.Maybe;
+import io.reactivex.*;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
-import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.PublishSubject;
 import org.reactivestreams.Publisher;
 
@@ -65,7 +61,8 @@ class LaunchLoggingContext {
 	/* Whether Image should be converted to BlackAndWhite */
 	private final boolean convertImages;
 
-	private LaunchLoggingContext(Maybe<String> launchId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
+	private LaunchLoggingContext(Maybe<String> launchId, final ReportPortalClient client, Scheduler scheduler, int bufferSize,
+			boolean convertImages) {
 		this.launchId = launchId;
 		this.emitter = PublishSubject.create();
 		this.convertImages = convertImages;
@@ -84,7 +81,7 @@ class LaunchLoggingContext {
 			public void accept(Throwable throwable) throws Exception {
 				throwable.printStackTrace();
 			}
-		}).observeOn(Schedulers.io()).subscribe(logFlowableResults("Launch logging context"));
+		}).observeOn(scheduler).subscribe(logFlowableResults("Launch logging context"));
 
 	}
 
@@ -95,8 +92,8 @@ class LaunchLoggingContext {
 	 * @param client   Client of ReportPortal
 	 * @return New Logging Context
 	 */
-	static LaunchLoggingContext init(Maybe<String> launchId, final ReportPortalClient client) {
-		return init(launchId, client, DEFAULT_BUFFER_SIZE, false);
+	static LaunchLoggingContext init(Maybe<String> launchId, final ReportPortalClient client, Scheduler scheduler) {
+		return init(launchId, client, scheduler, DEFAULT_BUFFER_SIZE, false);
 	}
 
 	/**
@@ -108,8 +105,9 @@ class LaunchLoggingContext {
 	 * @param convertImages Whether Image should be converted to BlackAndWhite
 	 * @return New Logging Context
 	 */
-	static LaunchLoggingContext init(Maybe<String> launchId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
-		LaunchLoggingContext context = new LaunchLoggingContext(launchId, client, bufferSize, convertImages);
+	static LaunchLoggingContext init(Maybe<String> launchId, final ReportPortalClient client, Scheduler scheduler, int bufferSize,
+			boolean convertImages) {
+		LaunchLoggingContext context = new LaunchLoggingContext(launchId, client, scheduler, bufferSize, convertImages);
 		loggingContextMap.put(DEFAULT_LAUNCH_KEY, context);
 		return context;
 	}
