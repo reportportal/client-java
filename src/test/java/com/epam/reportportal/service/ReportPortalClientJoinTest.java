@@ -31,7 +31,6 @@ import io.reactivex.MaybeEmitter;
 import io.reactivex.MaybeOnSubscribe;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
-import org.apache.commons.lang3.tuple.Triple;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -51,6 +50,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -70,6 +70,9 @@ public class ReportPortalClientJoinTest {
 
 	@Mock
 	LockFile lockFile;
+
+	@Mock
+	ExecutorService executorService;
 
 	@Rule
 	public MockitoRule mockitoRule = MockitoJUnit.rule();
@@ -185,21 +188,22 @@ public class ReportPortalClientJoinTest {
 		}
 	}
 
-	private static List<Launch> createLaunches(int num, Triple<ReportPortalClient, ListenerParameters, LockFile> config) {
+	private static List<Launch> createLaunches(int num, ReportPortalClient rpClient, ListenerParameters params, LockFile lockFile,
+			ExecutorService executor) {
 		List<Launch> result = new ArrayList<Launch>(num);
-		simulateStartLaunchResponse(config.getLeft());
-		simulateGetLaunchResponse(config.getLeft());
-		simulateObtainLaunchUuidResponse(config.getRight());
+		simulateStartLaunchResponse(rpClient);
+		simulateGetLaunchResponse(rpClient);
+		simulateObtainLaunchUuidResponse(lockFile);
 		for (int i = 0; i < num; i++) {
-			ReportPortal rp = new ReportPortal(config.getLeft(), config.getMiddle(), config.getRight());
-			result.add(rp.newLaunch(standardLaunchRequest(config.getMiddle())));
+			ReportPortal rp = new ReportPortal(rpClient, executor, params, lockFile);
+			result.add(rp.newLaunch(standardLaunchRequest(params)));
 		}
 		return result;
 	}
 
 	@Test
 	public void test_two_launches_have_correct_class_names() {
-		List<Launch> launches = createLaunches(2, Triple.of(rpClient, params, lockFile));
+		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executorService);
 
 		assertThat(launches.get(0).getClass().getCanonicalName(), Matchers.endsWith("PrimaryLaunch"));
 		assertThat(launches.get(1).getClass().getCanonicalName(), Matchers.endsWith("SecondaryLaunch"));
@@ -207,7 +211,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_two_launches_call_start_launch_only_once() {
-		List<Launch> launches = createLaunches(2, Triple.of(rpClient, params, lockFile));
+		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executorService);
 		launches.get(0).start();
 		launches.get(1).start();
 
@@ -217,7 +221,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_primary_launch_start_launch_request() {
-		List<Launch> launches = createLaunches(1, Triple.of(rpClient, params, lockFile));
+		List<Launch> launches = createLaunches(1, rpClient, params, lockFile, executorService);
 		launches.get(0).start();
 
 		ArgumentCaptor<String> passedUuid = ArgumentCaptor.forClass(String.class);
@@ -233,7 +237,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_two_launches_have_same_uuid() {
-		List<Launch> launches = createLaunches(2, Triple.of(rpClient, params, lockFile));
+		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executorService);
 
 		String firstUuid = getId(launches.get(0).start());
 		String secondUuid = getId(launches.get(1).start());
@@ -250,7 +254,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_only_primary_launch_finish_launch_on_rp() {
-		List<Launch> launches = createLaunches(2, Triple.of(rpClient, params, lockFile));
+		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executorService);
 		launches.get(0).start();
 		launches.get(1).start();
 
@@ -264,8 +268,8 @@ public class ReportPortalClientJoinTest {
 	@Test
 	public void test_standard_launch_returned_if_the_feature_is_off() {
 		params.setClientJoin(false);
-		ReportPortal rp1 = new ReportPortal(rpClient, params, null);
-		ReportPortal rp2 = new ReportPortal(rpClient, params, null);
+		ReportPortal rp1 = new ReportPortal(rpClient, executorService, params, null);
+		ReportPortal rp2 = new ReportPortal(rpClient, executorService, params, null);
 
 		Launch firstLaunch = rp1.newLaunch(standardLaunchRequest(params));
 		Launch secondLaunch = rp2.newLaunch(standardLaunchRequest(params));
@@ -276,7 +280,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_rp_client_throws_error_in_case_of_lock_file_error() {
-		ReportPortal rp1 = new ReportPortal(rpClient, params, lockFile);
+		ReportPortal rp1 = new ReportPortal(rpClient, executorService, params, lockFile);
 
 		exception.expect(InternalReportPortalClientException.class);
 		exception.expectMessage("Unable to create a new launch: unable to read/write lock file.");
@@ -315,7 +319,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_rp_client_sends_correct_start_item_for_secondary_launch() {
-		List<Launch> launches = createLaunches(2, Triple.of(rpClient, params, lockFile));
+		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executorService);
 		launches.get(0).start();
 		launches.get(1).start();
 
@@ -329,7 +333,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_secondary_launch_call_get_launch_by_uuid() {
-		List<Launch> launches = createLaunches(2, Triple.of(rpClient, params, lockFile));
+		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executorService);
 		launches.get(1).start();
 
 		ArgumentCaptor<String> obtainUuids = ArgumentCaptor.forClass(String.class);
@@ -351,7 +355,7 @@ public class ReportPortalClientJoinTest {
 		});
 	}
 
-	private static void simulateGetLaunchByUuidResponse(ReportPortalClient client){
+	private static void simulateGetLaunchByUuidResponse(ReportPortalClient client) {
 		Answer<Maybe<LaunchResource>> errorAnswer = new Answer<Maybe<LaunchResource>>() {
 			@Override
 			public Maybe<LaunchResource> answer(InvocationOnMock invocation) {
@@ -374,7 +378,7 @@ public class ReportPortalClientJoinTest {
 		params.setAsyncReporting(false);
 		List<Launch> launches = new ArrayList<Launch>(num);
 		for (int i = 0; i < num; i++) {
-			ReportPortal rp = new ReportPortal(rpClient, params, lockFile);
+			ReportPortal rp = new ReportPortal(rpClient, executorService, params, lockFile);
 			launches.add(rp.newLaunch(standardLaunchRequest(params)));
 		}
 		launches.get(1).start();
@@ -384,7 +388,6 @@ public class ReportPortalClientJoinTest {
 		verify(rpClient, after(WAIT_TIMEOUT * 3).times(3)).getLaunchByUuid(anyString());
 	}
 
-
 	@Test
 	public void test_secondary_launch_does_not_wait_get_launch_by_uuid_correct_response_for_v2() {
 		int num = 2;
@@ -393,7 +396,7 @@ public class ReportPortalClientJoinTest {
 		params.setAsyncReporting(true);
 		List<Launch> launches = new ArrayList<Launch>(num);
 		for (int i = 0; i < num; i++) {
-			ReportPortal rp = new ReportPortal(rpClient, params, lockFile);
+			ReportPortal rp = new ReportPortal(rpClient, executorService, params, lockFile);
 			launches.add(rp.newLaunch(standardLaunchRequest(params)));
 		}
 		launches.get(1).start();

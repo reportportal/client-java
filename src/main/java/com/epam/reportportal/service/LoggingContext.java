@@ -19,14 +19,10 @@ import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import io.reactivex.BackpressureStrategy;
-import io.reactivex.Completable;
-import io.reactivex.Flowable;
-import io.reactivex.Maybe;
+import io.reactivex.*;
 import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
-import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.PublishSubject;
 import org.reactivestreams.Publisher;
 
@@ -51,7 +47,7 @@ import static com.google.common.io.ByteSource.wrap;
  * to batch incoming log messages into one request
  *
  * @author Andrei Varabyeu
- * @see #init(Maybe, Maybe, ReportPortalClient)
+ * @see LoggingContext#init(Maybe, Maybe, ReportPortalClient)
  */
 public class LoggingContext {
 
@@ -72,8 +68,8 @@ public class LoggingContext {
 	 * @param client Client of ReportPortal
 	 * @return New Logging Context
 	 */
-	public static LoggingContext init(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client) {
-		return init(launchId, itemId, client, DEFAULT_BUFFER_SIZE, false);
+	public static LoggingContext init(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, Scheduler scheduler) {
+		return init(launchId, itemId, client, scheduler, DEFAULT_BUFFER_SIZE, false);
 	}
 
 	/**
@@ -85,9 +81,9 @@ public class LoggingContext {
 	 * @param convertImages Whether Image should be converted to BlackAndWhite
 	 * @return New Logging Context
 	 */
-	public static LoggingContext init(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, int bufferSize,
-			boolean convertImages) {
-		LoggingContext context = new LoggingContext(launchId, itemId, client, bufferSize, convertImages);
+	public static LoggingContext init(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, Scheduler scheduler,
+			int bufferSize, boolean convertImages) {
+		LoggingContext context = new LoggingContext(launchId, itemId, client, scheduler, bufferSize, convertImages);
 		CONTEXT_THREAD_LOCAL.get().push(context);
 		return context;
 	}
@@ -115,7 +111,8 @@ public class LoggingContext {
 	/* Whether Image should be converted to BlackAndWhite */
 	private final boolean convertImages;
 
-	LoggingContext(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
+	LoggingContext(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, Scheduler scheduler, int bufferSize,
+			boolean convertImages) {
 		this.launchId = launchId;
 		this.itemId = itemId;
 		this.emitter = PublishSubject.create();
@@ -135,7 +132,7 @@ public class LoggingContext {
 			public void accept(Throwable throwable) throws Exception {
 				LOG_ERROR.accept(throwable);
 			}
-		}).observeOn(Schedulers.io()).subscribe(logFlowableResults("Logging context"));
+		}).observeOn(scheduler).subscribe(logFlowableResults("Logging context"));
 
 	}
 

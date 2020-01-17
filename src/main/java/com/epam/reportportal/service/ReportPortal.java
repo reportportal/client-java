@@ -84,16 +84,18 @@ public class ReportPortal {
 
 	private volatile String instanceUuid = UUID.randomUUID().toString();
 
-	private ReportPortalClient rpClient;
 	private ListenerParameters parameters;
 	private LockFile lockFile;
+	private final ReportPortalClient rpClient;
+	private final ExecutorService executor;
 
 	/**
 	 * @param rpClient   ReportPortal client
 	 * @param parameters Listener Parameters
 	 */
-	ReportPortal(ReportPortalClient rpClient, ListenerParameters parameters, LockFile lockFile) {
+	ReportPortal(ReportPortalClient rpClient, ExecutorService executor, ListenerParameters parameters, LockFile lockFile) {
 		this.rpClient = rpClient;
+		this.executor = executor;
 		this.parameters = parameters;
 		this.lockFile = lockFile;
 	}
@@ -119,7 +121,7 @@ public class ReportPortal {
 	 * @return This instance for chaining
 	 */
 	public Launch withLaunch(Maybe<String> launchUuid) {
-		return new LaunchImpl(rpClient, parameters, launchUuid);
+		return new LaunchImpl(rpClient, parameters, launchUuid, executor);
 	}
 
 	/**
@@ -160,7 +162,7 @@ public class ReportPortal {
 	 * @return builder for {@link ReportPortal}
 	 */
 	public static ReportPortal create(ReportPortalClient client, ListenerParameters params) {
-		return new ReportPortal(client, params, getLockFile(params));
+		return new ReportPortal(client, buildExecutorService(params), params, getLockFile(params));
 	}
 
 	/**
@@ -376,7 +378,11 @@ public class ReportPortal {
 				executorService = Executors.newFixedThreadPool(params.getIoPoolSize(),
 						new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build()
 				);
-				return new ReportPortal(buildClient(ReportPortalClient.class, params), params, buildLockFile(params));
+				return new ReportPortal(buildClient(ReportPortalClient.class, params),
+						buildExecutorService(params),
+						params,
+						buildLockFile(params)
+				);
 			} catch (Exception e) {
 				String errMsg = "Cannot build ReportPortal client";
 				LOGGER.error(errMsg, e);
@@ -481,7 +487,7 @@ public class ReportPortal {
 		private final Maybe<String> launch;
 
 		SecondaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch) {
-			super(rpClient, parameters, launch);
+			super(rpClient, parameters, launch, buildExecutorService(parameters));
 			this.rpClient = rpClient;
 			this.launch = launch;
 		}
@@ -535,7 +541,7 @@ public class ReportPortal {
 
 	private class PrimaryLaunch extends LaunchImpl {
 		PrimaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, StartLaunchRQ launch) {
-			super(rpClient, parameters, launch);
+			super(rpClient, parameters, launch, buildExecutorService(parameters));
 		}
 
 		@Override
@@ -552,7 +558,7 @@ public class ReportPortal {
 	private Launch getLaunch(StartLaunchRQ rq) {
 		if (lockFile == null) {
 			// do not use multi-client mode
-			return new LaunchImpl(rpClient, parameters, rq);
+			return new LaunchImpl(rpClient, parameters, rq, buildExecutorService(parameters));
 		}
 
 		final String uuid = lockFile.obtainLaunchUuid(instanceUuid);
@@ -581,5 +587,9 @@ public class ReportPortal {
 			});
 			return new SecondaryLaunch(rpClient, parameters, launch);
 		}
+	}
+
+	private static ExecutorService buildExecutorService(ListenerParameters params) {
+		return Executors.newFixedThreadPool(params.getIoPoolSize(), new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build());
 	}
 }
