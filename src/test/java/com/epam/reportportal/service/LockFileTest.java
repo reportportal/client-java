@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.FileSystems;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
@@ -60,6 +61,7 @@ public class LockFileTest {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LockFileTest.class);
 	private static final String LOCK_FILE_NAME_PATTERN = "%s.reportportal.lock";
 	private static final String SYNC_FILE_NAME_PATTERN = "%s.reportportal.sync";
+	private static final boolean IS_POSIX = FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
 
 	private String lockFileName;
 	private String syncFileName;
@@ -403,7 +405,14 @@ public class LockFileTest {
 
 	private static String getClasspath() {
 		String rawClasspath = System.getProperty("java.class.path");
-		return rawClasspath.contains(" ") ? "\"" + rawClasspath + "\"" : rawClasspath;
+		if(rawClasspath.contains(" ")){
+			if(IS_POSIX) {
+				return rawClasspath.replace(" ", "\\ ");
+			} else {
+				return "\"" + rawClasspath + "\"";
+			}
+		}
+		return rawClasspath;
 	}
 
 	private static String getPathToClass(Class<?> mainClass) {
