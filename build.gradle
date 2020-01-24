@@ -58,13 +58,13 @@ shadowJar {
 
 dependencies {
     if (releaseMode) {
-        compile 'com.epam.reportportal:commons-model:5.0.0-BETA-11'
+        compile 'com.epam.reportportal:commons-model:5.0.0'
     } else {
         compile 'com.github.reportportal:commons-model:feec39f3'
     }
 
     compile 'com.google.guava:guava:26.0-jre'
-    compile 'com.epam.reportportal:restendpoint:0.2.8'
+    compile 'com.epam.reportportal:restendpoint:0.2.14'
 
     shadow "org.aspectj:aspectjweaver:1.9.2"
     shadow "org.aspectj:aspectjrt:1.9.2"

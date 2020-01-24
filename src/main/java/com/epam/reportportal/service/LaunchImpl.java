@@ -15,6 +15,7 @@
  */
 package com.epam.reportportal.service;
 
+import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
@@ -63,8 +64,27 @@ public class LaunchImpl extends Launch {
 			System.setProperty("rp.launch.id", String.valueOf(rs.getId()));
 		}
 	};
+
+	private static final int DEFAULT_RETRY_COUNT = 5;
+	private static final int DEFAULT_RETRY_TIMEOUT = 2;
+
 	private static final int ITEM_FINISH_MAX_RETRIES = 10;
 	private static final int ITEM_FINISH_RETRY_TIMEOUT = 10;
+
+	private static final Predicate<Throwable> INTERNAL_CLIENT_EXCEPTION_PREDICATE = throwable -> throwable instanceof InternalReportPortalClientException;
+	private static final Predicate<Throwable> TEST_ITEM_FINISH_RETRY_PREDICATE = throwable -> (throwable instanceof ReportPortalException
+			&& ErrorType.FINISH_ITEM_NOT_ALLOWED.equals(((ReportPortalException) throwable).getError().getErrorType()))
+			|| INTERNAL_CLIENT_EXCEPTION_PREDICATE.test(throwable);
+
+	private static final RetryWithDelay DEFAULT_REQUEST_RETRY = new RetryWithDelay(INTERNAL_CLIENT_EXCEPTION_PREDICATE,
+			DEFAULT_RETRY_COUNT,
+			TimeUnit.SECONDS.toMillis(DEFAULT_RETRY_TIMEOUT)
+	);
+	private static final RetryWithDelay TEST_ITEM_FINISH_REQUEST_RETRY = new RetryWithDelay(TEST_ITEM_FINISH_RETRY_PREDICATE,
+			ITEM_FINISH_MAX_RETRIES,
+			TimeUnit.SECONDS.toMillis(ITEM_FINISH_RETRY_TIMEOUT)
+	);
+
 	public static final String NOT_ISSUE = "NOT_ISSUE";
 
 	/**
@@ -103,7 +123,7 @@ public class LaunchImpl extends Launch {
 				Maybe<StartLaunchRS> launchPromise = Maybe.defer(new Callable<MaybeSource<? extends StartLaunchRS>>() {
 					@Override
 					public MaybeSource<? extends StartLaunchRS> call() {
-						return rpClient.startLaunch(rq).doOnSuccess(LAUNCH_SUCCESS_CONSUMER).doOnError(LOG_ERROR);
+						return rpClient.startLaunch(rq).retry(DEFAULT_REQUEST_RETRY).doOnSuccess(LAUNCH_SUCCESS_CONSUMER).doOnError(LOG_ERROR);
 					}
 				}).subscribeOn(scheduler).cache();
 
@@ -165,7 +185,7 @@ public class LaunchImpl extends Launch {
 				.andThen(this.launch.map(new Function<String, OperationCompletionRS>() {
 					@Override
 					public OperationCompletionRS apply(String id) {
-						return rpClient.finishLaunch(id, rq).doOnSuccess(LOG_SUCCESS).doOnError(LOG_ERROR).blockingGet();
+						return rpClient.finishLaunch(id, rq).retry(DEFAULT_REQUEST_RETRY).doOnSuccess(LOG_SUCCESS).doOnError(LOG_ERROR).blockingGet();
 					}
 				}))
 				.ignoreElement()
@@ -191,7 +211,7 @@ public class LaunchImpl extends Launch {
 			@Override
 			public Maybe<String> apply(String launchId) {
 				rq.setLaunchUuid(launchId);
-				return rpClient.startTestItem(rq).doOnSuccess(logCreated("item")).map(TO_ID);
+				return rpClient.startTestItem(rq).retry(DEFAULT_REQUEST_RETRY).doOnSuccess(logCreated("item")).map(TO_ID);
 
 			}
 		}).cache();
@@ -234,7 +254,7 @@ public class LaunchImpl extends Launch {
 					public MaybeSource<String> apply(String parentId) {
 						rq.setLaunchUuid(launchId);
 						LOGGER.debug("Starting test item..." + Thread.currentThread().getName());
-						return rpClient.startTestItem(parentId, rq).doOnSuccess(logCreated("item")).map(TO_ID);
+						return rpClient.startTestItem(parentId, rq).retry(DEFAULT_REQUEST_RETRY).doOnSuccess(logCreated("item")).map(TO_ID);
 					}
 				});
 			}
@@ -285,14 +305,7 @@ public class LaunchImpl extends Launch {
 					public Maybe<OperationCompletionRS> apply(String itemId) {
 						rq.setLaunchUuid(launchId);
 						return rpClient.finishTestItem(itemId, rq)
-								.retry(new RetryWithDelay(new Predicate<Throwable>() {
-									@Override
-									public boolean test(Throwable throwable) {
-										return throwable instanceof ReportPortalException
-												&& ErrorType.FINISH_ITEM_NOT_ALLOWED.equals(((ReportPortalException) throwable).getError()
-												.getErrorType());
-									}
-								}, ITEM_FINISH_MAX_RETRIES, TimeUnit.SECONDS.toMillis(ITEM_FINISH_RETRY_TIMEOUT)))
+								.retry(TEST_ITEM_FINISH_REQUEST_RETRY)
 								.doOnSuccess(LOG_SUCCESS)
 								.doOnError(LOG_ERROR);
 					}
