@@ -39,11 +39,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.FileSystems;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.*;
@@ -60,6 +63,7 @@ public class LockFileTest {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LockFileTest.class);
 	private static final String LOCK_FILE_NAME_PATTERN = "%s.reportportal.lock";
 	private static final String SYNC_FILE_NAME_PATTERN = "%s.reportportal.sync";
+	private static final boolean IS_POSIX = FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
 
 	private String lockFileName;
 	private String syncFileName;
@@ -403,7 +407,8 @@ public class LockFileTest {
 
 	private static String getClasspath() {
 		String rawClasspath = System.getProperty("java.class.path");
-		return rawClasspath.contains(" ") ? "\"" + rawClasspath + "\"" : rawClasspath;
+		String pathSeparator = System.getProperty("path.separator");
+		return Arrays.stream(rawClasspath.split(pathSeparator)).map((s) -> s.contains(" ")?"\"" + s +"\"":s).collect(Collectors.joining(pathSeparator));
 	}
 
 	private static String getPathToClass(Class<?> mainClass) {
