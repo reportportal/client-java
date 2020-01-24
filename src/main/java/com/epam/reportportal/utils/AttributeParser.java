@@ -15,9 +15,13 @@
  */
 package com.epam.reportportal.utils;
 
+import com.epam.reportportal.annotations.attribute.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -71,5 +75,61 @@ public class AttributeParser {
 			return new ItemAttributesRQ(key, keyValue[1].trim());
 		}
 		return null;
+	}
+
+	public static Set<ItemAttributesRQ> retrieveAttributes(Attributes attributesAnnotation) {
+		Set<ItemAttributesRQ> itemAttributes = Sets.newLinkedHashSet();
+		for (Attribute attribute : attributesAnnotation.attributes()) {
+			if (!attribute.value().trim().isEmpty()) {
+				itemAttributes.add(createItemAttribute(attribute.key(), attribute.value()));
+			}
+		}
+		for (AttributeValue attributeValue : attributesAnnotation.attributeValues()) {
+			if (!attributeValue.value().trim().isEmpty()) {
+				itemAttributes.add(createItemAttribute(null, attributeValue.value()));
+			}
+		}
+		for (MultiKeyAttribute attribute : attributesAnnotation.multiKeyAttributes()) {
+			itemAttributes.addAll(createItemAttributes(attribute.keys(), attribute.value()));
+		}
+		for (MultiValueAttribute attribute : attributesAnnotation.multiValueAttributes()) {
+			itemAttributes.addAll(createItemAttributes(attribute.isNullKey() ? null : attribute.key(), attribute.values()));
+		}
+
+		return itemAttributes;
+	}
+
+	private static List<ItemAttributesRQ> createItemAttributes(String[] keys, String value) {
+		if (value == null || value.trim().isEmpty()) {
+			return Collections.emptyList();
+		}
+		if (keys == null || keys.length < 1) {
+			return Collections.singletonList(createItemAttribute(null, value));
+		}
+
+		List<ItemAttributesRQ> itemAttributes = Lists.newArrayListWithExpectedSize(keys.length);
+		for (String key : keys) {
+			itemAttributes.add(createItemAttribute(key, value));
+		}
+		return itemAttributes;
+	}
+
+	private static List<ItemAttributesRQ> createItemAttributes(String key, String[] values) {
+		if (values != null && values.length > 0) {
+			List<ItemAttributesRQ> attributes = Lists.newArrayListWithExpectedSize(values.length);
+			for (String value : values) {
+				if (value != null && !value.trim().isEmpty()) {
+					attributes.add(createItemAttribute(key, value));
+				}
+			}
+
+			return attributes;
+		}
+
+		return Collections.emptyList();
+	}
+
+	private static ItemAttributesRQ createItemAttribute(String key, String value) {
+		return new ItemAttributesRQ(key, value);
 	}
 }

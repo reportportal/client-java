@@ -16,20 +16,13 @@
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.message.TypeAwareByteSource;
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
+import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
-import com.epam.ta.reportportal.ws.model.Constants;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import com.google.common.base.Strings;
-import com.google.common.net.MediaType;
-import io.reactivex.BackpressureStrategy;
-import io.reactivex.Completable;
-import io.reactivex.Flowable;
-import io.reactivex.Maybe;
+import io.reactivex.*;
 import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
-import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.PublishSubject;
 import org.reactivestreams.Publisher;
 
@@ -54,7 +47,7 @@ import static com.google.common.io.ByteSource.wrap;
  * to batch incoming log messages into one request
  *
  * @author Andrei Varabyeu
- * @see #init(Maybe, Maybe, ReportPortalClient)
+ * @see LoggingContext#init(Maybe, Maybe, ReportPortalClient)
  */
 public class LoggingContext {
 
@@ -75,8 +68,8 @@ public class LoggingContext {
 	 * @param client Client of ReportPortal
 	 * @return New Logging Context
 	 */
-	public static LoggingContext init(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client) {
-		return init(launchId, itemId, client, DEFAULT_BUFFER_SIZE, false);
+	public static LoggingContext init(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, Scheduler scheduler) {
+		return init(launchId, itemId, client, scheduler, DEFAULT_BUFFER_SIZE, false);
 	}
 
 	/**
@@ -88,8 +81,9 @@ public class LoggingContext {
 	 * @param convertImages Whether Image should be converted to BlackAndWhite
 	 * @return New Logging Context
 	 */
-	public static LoggingContext init(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
-		LoggingContext context = new LoggingContext(launchId, itemId, client, bufferSize, convertImages);
+	public static LoggingContext init(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, Scheduler scheduler,
+			int bufferSize, boolean convertImages) {
+		LoggingContext context = new LoggingContext(launchId, itemId, client, scheduler, bufferSize, convertImages);
 		CONTEXT_THREAD_LOCAL.get().push(context);
 		return context;
 	}
@@ -117,7 +111,8 @@ public class LoggingContext {
 	/* Whether Image should be converted to BlackAndWhite */
 	private final boolean convertImages;
 
-	LoggingContext(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, int bufferSize, boolean convertImages) {
+	LoggingContext(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, Scheduler scheduler, int bufferSize,
+			boolean convertImages) {
 		this.launchId = launchId;
 		this.itemId = itemId;
 		this.emitter = PublishSubject.create();
@@ -130,29 +125,14 @@ public class LoggingContext {
 		}).buffer(bufferSize).flatMap(new Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>() {
 			@Override
 			public Flowable<BatchSaveOperatingRS> apply(List<SaveLogRQ> rqs) throws Exception {
-				MultiPartRequest.Builder builder = new MultiPartRequest.Builder();
-
-				builder.addSerializedPart(Constants.LOG_REQUEST_JSON_PART, rqs);
-
-				for (SaveLogRQ rq : rqs) {
-					final SaveLogRQ.File file = rq.getFile();
-					if (null != file) {
-						builder.addBinaryPart(
-								Constants.LOG_REQUEST_BINARY_PART,
-								file.getName(),
-								Strings.isNullOrEmpty(file.getContentType()) ? MediaType.OCTET_STREAM.toString() : file.getContentType(),
-								wrap(file.getContent())
-						);
-					}
-				}
-				return client.log(builder.build()).toFlowable();
+				return client.log(HttpRequestUtils.buildLogMultiPartRequest(rqs)).toFlowable();
 			}
 		}).doOnError(new Consumer<Throwable>() {
 			@Override
 			public void accept(Throwable throwable) throws Exception {
 				LOG_ERROR.accept(throwable);
 			}
-		}).observeOn(Schedulers.computation()).subscribe(logFlowableResults("Logging context"));
+		}).observeOn(scheduler).subscribe(logFlowableResults("Logging context"));
 
 	}
 
@@ -160,10 +140,20 @@ public class LoggingContext {
 	 * Emits log. Basically, put it into processing pipeline
 	 *
 	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
+	 * @deprecated use {@link LoggingContext#emit(java.util.function.Function)}
 	 */
 	public void emit(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
+		emit((java.util.function.Function<String, SaveLogRQ>) logSupplier);
+	}
+
+	/**
+	 * Emits log. Basically, put it into processing pipeline
+	 *
+	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
+	 */
+	public void emit(final java.util.function.Function<String, SaveLogRQ> logSupplier) {
 		emitter.onNext(launchId.zipWith(itemId, new BiFunction<String, String, SaveLogRQ>() {
-				@Override
+			@Override
 			public SaveLogRQ apply(String launchId, String itemId) throws Exception {
 				final SaveLogRQ rq = logSupplier.apply(itemId);
 				rq.setLaunchUuid(launchId);
@@ -176,7 +166,6 @@ public class LoggingContext {
 				return rq;
 			}
 		}));
-
 	}
 
 	/**

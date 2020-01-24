@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.reportportal.annotations;
+package com.epam.reportportal.annotations.attribute;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -22,12 +22,23 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation to mark a field or a method parameter that will be used to generate {@link TestCaseId#value()} in a parameterized test
+ * Annotation for test methods to attach {@link com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ} to the test items
  *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
+ * @see Attribute
+ * @see AttributeValue
+ * @see MultiKeyAttribute
+ * @see MultiValueAttribute
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.FIELD, ElementType.PARAMETER })
-public @interface TestCaseIdKey {
+@Target(ElementType.METHOD)
+public @interface Attributes {
 
+	Attribute[] attributes() default {};
+
+	AttributeValue[] attributeValues() default {};
+
+	MultiKeyAttribute[] multiKeyAttributes() default {};
+
+	MultiValueAttribute[] multiValueAttributes() default {};
 }

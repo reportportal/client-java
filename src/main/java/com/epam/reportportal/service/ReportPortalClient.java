@@ -26,8 +26,7 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 
-import static com.epam.reportportal.restendpoint.http.HttpMethod.POST;
-import static com.epam.reportportal.restendpoint.http.HttpMethod.PUT;
+import static com.epam.reportportal.restendpoint.http.HttpMethod.*;
 
 /**
  * @author Andrei Varabyeu
@@ -57,6 +56,9 @@ public interface ReportPortalClient {
 
 	@Request(method = POST, url = "/log/")
 	Maybe<BatchSaveOperatingRS> log(@Body @Multipart MultiPartRequest rq);
+
+	@Request(method = GET, url = "/launch/uuid/{launchUuid}")
+	Maybe<LaunchResource> getLaunchByUuid(@Path("launchUuid") String launchUuid);
 
 	@Close
 	void close();
