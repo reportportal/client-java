@@ -40,19 +40,18 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.FileSystems;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.*;
-import static org.apache.commons.lang3.StringUtils.join;
-import static org.apache.commons.lang3.StringUtils.joinWith;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.*;
 
 /**
@@ -408,7 +407,10 @@ public class LockFileTest {
 	private static String getClasspath() {
 		String rawClasspath = System.getProperty("java.class.path");
 		String pathSeparator = System.getProperty("path.separator");
-		return Arrays.stream(rawClasspath.split(pathSeparator)).map((s) -> s.contains(" ")?"\"" + s +"\"":s).collect(Collectors.joining(pathSeparator));
+		String currentDir = System.getProperty("user.dir");
+		return Arrays.stream(rawClasspath.split(pathSeparator))
+				.map((s) -> s.contains(" ") ? IS_POSIX ? Paths.get(currentDir).relativize(Paths.get(s)).toString() : "\"" + s + "\"" : s)
+				.collect(Collectors.joining(pathSeparator));
 	}
 
 	private static String getPathToClass(Class<?> mainClass) {
