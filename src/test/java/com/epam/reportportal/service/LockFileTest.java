@@ -45,6 +45,8 @@ import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.*;
@@ -405,14 +407,8 @@ public class LockFileTest {
 
 	private static String getClasspath() {
 		String rawClasspath = System.getProperty("java.class.path");
-		if(rawClasspath.contains(" ")){
-			if(IS_POSIX) {
-				return rawClasspath.replace(" ", "\\ ");
-			} else {
-				return "\"" + rawClasspath + "\"";
-			}
-		}
-		return rawClasspath;
+		String pathSeparator = System.getProperty("path.separator");
+		return Arrays.stream(rawClasspath.split(pathSeparator)).map((s) -> s.contains(" ")?"\"" + s +"\"":s).collect(Collectors.joining(pathSeparator));
 	}
 
 	private static String getPathToClass(Class<?> mainClass) {
