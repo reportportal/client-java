@@ -36,7 +36,6 @@ import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeEmitter;
 import io.reactivex.MaybeOnSubscribe;
@@ -533,15 +532,8 @@ public class ReportPortal {
 
 		@Override
 		public void finish(final FinishExecutionRQ rq) {
-			TreeItem unchecked = QUEUE.getUnchecked(this.launch);
 			try {
-				Throwable throwable = Completable.concat(unchecked.getChildren())
-						.blockingGet(getParameters().getReportingTimeout(), TimeUnit.SECONDS);
-				if (throwable != null) {
-					throwable.printStackTrace();
-				}
-			} catch (Exception e) {
-				LOGGER.error("Unable to finish secondary launch in ReportPortal", e);
+				super.finish(rq);
 			} finally {
 				// ignore that call, since only primary launch should finish it
 				lockFile.finishInstanceUuid(instanceUuid);

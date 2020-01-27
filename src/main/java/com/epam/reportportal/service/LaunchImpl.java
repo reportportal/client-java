@@ -95,7 +95,7 @@ public class LaunchImpl extends Launch {
 	/**
 	 * Messages queue to track items execution order
 	 */
-	protected final LoadingCache<Maybe<String>, LaunchImpl.TreeItem> QUEUE = CacheBuilder.newBuilder()
+	private final LoadingCache<Maybe<String>, LaunchImpl.TreeItem> QUEUE = CacheBuilder.newBuilder()
 			.build(new CacheLoader<Maybe<String>, LaunchImpl.TreeItem>() {
 				@Override
 				public LaunchImpl.TreeItem load(Maybe<String> key) {
