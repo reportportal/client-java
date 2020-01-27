@@ -139,6 +139,13 @@ public class ReportPortal {
 	}
 
 	/**
+	 * @return Report Portal {@link ExecutorService}
+	 */
+	public ExecutorService getExecutor() {
+		return executor;
+	}
+
+	/**
 	 * Creates new builder for {@link ReportPortal}
 	 *
 	 * @return builder for {@link ReportPortal}
