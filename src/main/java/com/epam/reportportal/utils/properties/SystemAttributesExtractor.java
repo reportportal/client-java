@@ -21,10 +21,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -39,27 +41,39 @@ public class SystemAttributesExtractor {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SystemAttributesExtractor.class);
 
 	public static Set<ItemAttributesRQ> extract(final String resource) {
-
-		return ofNullable(SystemAttributesExtractor.class.getClassLoader().getResource(resource)).map(url -> {
-			Properties properties = new Properties();
-			try (InputStream resourceStream = url.openStream()) {
-				properties.load(new InputStreamReader(resourceStream, StandardCharsets.UTF_8));
+		Properties properties = new Properties();
+		ofNullable(SystemAttributesExtractor.class.getClassLoader().getResource(resource)).ifPresent(url -> {
+			try (InputStreamReader inputStreamReader = new InputStreamReader(url.openStream(), StandardCharsets.UTF_8)) {
+				properties.load(inputStreamReader);
 			} catch (IOException e) {
 				LOGGER.warn("Unable to load system properties file");
 			}
-			return getAttributes(properties);
-		}).orElseGet(Collections::emptySet);
+		});
+		return getAttributes(properties);
+	}
+
+	public static Set<ItemAttributesRQ> extract(final Path path) {
+		Properties properties = new Properties();
+		File file = path.toFile();
+		if (file.exists()) {
+			try (InputStreamReader inputStreamReader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
+				properties.load(inputStreamReader);
+			} catch (IOException e) {
+				LOGGER.warn("Unable to load system properties file");
+			}
+		}
+		return getAttributes(properties);
 	}
 
 	private static Set<ItemAttributesRQ> getAttributes(final Properties properties) {
-		Set<ItemAttributesRQ> attributes = Arrays.stream(DefaultSystemProperties.values())
-				.filter(DefaultSystemProperties::isSystem)
+		Set<ItemAttributesRQ> attributes = Arrays.stream(DefaultProperties.values())
+				.filter(DefaultProperties::isSystem)
 				.map(defaultProperty -> convert(defaultProperty.getName(), properties, defaultProperty.getPropertyKeys()))
 				.filter(Optional::isPresent)
 				.map(Optional::get)
 				.collect(Collectors.toSet());
 
-		Arrays.stream(DefaultSystemProperties.values()).filter(defaultProperty -> !defaultProperty.isSystem()).forEach(defaultProperty -> {
+		Arrays.stream(DefaultProperties.values()).filter(defaultProperty -> !defaultProperty.isSystem()).forEach(defaultProperty -> {
 			convert(defaultProperty.getName(), defaultProperty.getPropertyKeys()).ifPresent(attributes::add);
 		});
 
@@ -98,7 +112,7 @@ public class SystemAttributesExtractor {
 		}
 	}
 
-	private enum DefaultSystemProperties {
+	private enum DefaultProperties {
 		OS("os", true, "os.name", "os.arch", "os.version"),
 		AGENT("agent", false, "agent.name", "agent.version");
 
@@ -106,7 +120,7 @@ public class SystemAttributesExtractor {
 		private boolean system;
 		private String[] propertyKeys;
 
-		DefaultSystemProperties(String name, boolean system, String... propertyKeys) {
+		DefaultProperties(String name, boolean system, String... propertyKeys) {
 			this.name = name;
 			this.system = system;
 			this.propertyKeys = propertyKeys;
