@@ -40,6 +40,8 @@ public class SystemAttributesExtractor {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SystemAttributesExtractor.class);
 
+	private static final String ATTRIBUTE_VALUE_SEPARATOR = "|";
+
 	public static Set<ItemAttributesRQ> extract(final String resource) {
 		Properties properties = new Properties();
 		ofNullable(SystemAttributesExtractor.class.getClassLoader().getResource(resource)).ifPresent(url -> {
@@ -67,13 +69,13 @@ public class SystemAttributesExtractor {
 
 	private static Set<ItemAttributesRQ> getAttributes(final Properties properties) {
 		Set<ItemAttributesRQ> attributes = Arrays.stream(DefaultProperties.values())
-				.filter(DefaultProperties::isSystem)
+				.filter(defaultProperties -> !defaultProperties.isSystem())
 				.map(defaultProperty -> convert(defaultProperty.getName(), properties, defaultProperty.getPropertyKeys()))
 				.filter(Optional::isPresent)
 				.map(Optional::get)
 				.collect(Collectors.toSet());
 
-		Arrays.stream(DefaultProperties.values()).filter(defaultProperty -> !defaultProperty.isSystem()).forEach(defaultProperty -> {
+		Arrays.stream(DefaultProperties.values()).filter(DefaultProperties::isSystem).forEach(defaultProperty -> {
 			convert(defaultProperty.getName(), defaultProperty.getPropertyKeys()).ifPresent(attributes::add);
 		});
 
@@ -106,7 +108,7 @@ public class SystemAttributesExtractor {
 				.map(Optional::get)
 				.collect(Collectors.toList());
 		if (!values.isEmpty()) {
-			return Optional.of(new ItemAttributesRQ(attributeKey, StringUtils.join(values, " ", true)));
+			return Optional.of(new ItemAttributesRQ(attributeKey, StringUtils.join(values, ATTRIBUTE_VALUE_SEPARATOR), true));
 		} else {
 			return Optional.empty();
 		}
