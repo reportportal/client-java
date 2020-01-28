@@ -36,6 +36,7 @@ import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeEmitter;
 import io.reactivex.MaybeOnSubscribe;
@@ -484,12 +485,10 @@ public class ReportPortal {
 
 	private class SecondaryLaunch extends LaunchImpl {
 		private final ReportPortalClient rpClient;
-		private final Maybe<String> launch;
 
 		SecondaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch) {
 			super(rpClient, parameters, launch, buildExecutorService(parameters));
 			this.rpClient = rpClient;
-			this.launch = launch;
 		}
 
 		private void waitForLaunchStart() {
@@ -534,8 +533,17 @@ public class ReportPortal {
 
 		@Override
 		public void finish(final FinishExecutionRQ rq) {
-			// ignore that call, since only primary launch should finish it
-			lockFile.finishInstanceUuid(instanceUuid);
+			QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
+			try {
+				Throwable throwable = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren()).
+						timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
+			} catch (Exception e) {
+				LOGGER.error("Unable to finish secondary launch in ReportPortal", e);
+			} finally {
+				rpClient.close();
+				// ignore that call, since only primary launch should finish it
+				lockFile.finishInstanceUuid(instanceUuid);
+			}
 		}
 	}
 
