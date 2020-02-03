@@ -42,28 +42,39 @@ public class SystemAttributesExtractor {
 
 	private static final String ATTRIBUTE_VALUE_SEPARATOR = "|";
 
+	private SystemAttributesExtractor() {
+		//static only
+	}
+
 	public static Set<ItemAttributesRQ> extract(final String resource) {
 		Properties properties = new Properties();
-		ofNullable(SystemAttributesExtractor.class.getClassLoader().getResource(resource)).ifPresent(url -> {
-			try (InputStreamReader inputStreamReader = new InputStreamReader(url.openStream(), StandardCharsets.UTF_8)) {
-				properties.load(inputStreamReader);
-			} catch (IOException e) {
-				LOGGER.warn("Unable to load system properties file");
-			}
-		});
+
+		ofNullable(resource).flatMap(res -> ofNullable(SystemAttributesExtractor.class.getClassLoader().getResource(res)))
+				.ifPresent(url -> {
+					try (InputStreamReader inputStreamReader = new InputStreamReader(url.openStream(), StandardCharsets.UTF_8)) {
+						properties.load(inputStreamReader);
+					} catch (IOException e) {
+						LOGGER.warn("Unable to load system properties file");
+					}
+				});
+
 		return getAttributes(properties);
 	}
 
 	public static Set<ItemAttributesRQ> extract(final Path path) {
 		Properties properties = new Properties();
-		File file = path.toFile();
-		if (file.exists()) {
-			try (InputStreamReader inputStreamReader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
-				properties.load(inputStreamReader);
-			} catch (IOException e) {
-				LOGGER.warn("Unable to load system properties file");
+
+		ofNullable(path).ifPresent(p -> {
+			File file = p.toFile();
+			if (file.exists()) {
+				try (InputStreamReader inputStreamReader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
+					properties.load(inputStreamReader);
+				} catch (IOException e) {
+					LOGGER.warn("Unable to load system properties file");
+				}
 			}
-		}
+		});
+
 		return getAttributes(properties);
 	}
 
