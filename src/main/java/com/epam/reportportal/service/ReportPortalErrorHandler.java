@@ -33,6 +33,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
+import static java.lang.String.format;
+
 /**
  * Report Portal Error Handler<br>
  * Converts error from Endpoint to ReportPortal-related errors
@@ -41,105 +43,98 @@ import java.util.Collection;
  */
 public class ReportPortalErrorHandler extends DefaultErrorHandler {
 
-	private static final Logger LOG = LoggerFactory.getLogger(ReportPortalErrorHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReportPortalErrorHandler.class);
 
-	private Serializer serializer;
+    private Serializer serializer;
 
-	public ReportPortalErrorHandler(Serializer serializer) {
-		this.serializer = serializer;
-	}
+    public ReportPortalErrorHandler(Serializer serializer) {
+        this.serializer = serializer;
+    }
 
-	@Override
-	public void handle(Response<ByteSource> rs) throws RestEndpointIOException {
+    @Override
+    public void handle(Response<ByteSource> rs) throws RestEndpointIOException {
 
-		if (!hasError(rs)) {
-			return;
-		}
+        if (!hasError(rs)) {
+            return;
+        }
 
-		handleError(rs);
-	}
+        handleError(rs);
+    }
 
-	@Override
-	public boolean hasError(Response<ByteSource> rs) {
+    @Override
+    public boolean hasError(Response<ByteSource> rs) {
 
-		return super.hasError(rs) || isNotJson(rs);
-	}
+        return super.hasError(rs) || isNotJson(rs);
+    }
 
-	private void handleError(Response<ByteSource> rs) throws RestEndpointIOException {
-		try {
+    private void handleError(Response<ByteSource> rs) throws RestEndpointIOException {
+        try {
 
-			ByteSource errorBody = rs.getBody();
-			int statusCode = rs.getStatus();
-			String statusMessage = rs.getReason();
+            ByteSource errorBody = rs.getBody();
+            int statusCode = rs.getStatus();
+            String statusMessage = rs.getReason();
 
-			//read the body
-			final byte[] body = errorBody.read();
+            //read the body
+            final byte[] body = errorBody.read();
 
-			//try to deserialize an error
-			ErrorRS errorRS = deserializeError(body);
-			if (null != errorRS) {
+            //try to deserialize an error
+            ErrorRS errorRS = deserializeError(body);
+            if (null != errorRS) {
 
-				//ok, it's known ReportPortal error
-				throw new ReportPortalException(statusCode, statusMessage, errorRS);
-			} else {
+                //ok, it's known ReportPortal error
+                throw new ReportPortalException(statusCode, statusMessage, errorRS);
+            } else {
+                if (isNotJson(rs)) {
+                    throw new InternalReportPortalClientException(format("Report portal is not functioning correctly. Response is not json. Uri: [%s]; statusCode: [%s]; statusMessage: [%s];", rs.getUri(), statusCode, statusMessage));
+                } else {
+                    //there is some unknown error since we cannot de-serialize it into default error object
+                    throw new GeneralReportPortalException(statusCode, statusMessage, new String(body, StandardCharsets.UTF_8));
+                }
+            }
+        } catch (IOException e) {
+            //cannot read the body. just throw the general error
+            throw new GeneralReportPortalException(rs.getStatus(), rs.getReason(), "Cannot read the response");
+        }
+    }
 
-				if (isNotJson(rs)) {
+    /**
+     * Try to deserialize an error body
+     *
+     * @param content content to be deserialized
+     * @return Serialized object or NULL if it's impossible
+     */
+    private ErrorRS deserializeError(byte[] content) {
+        try {
+            if (null != content) {
+                return serializer.deserialize(content, ErrorRS.class);
+            } else {
+                return null;
+            }
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
-					throw new InternalReportPortalClientException("Report portal is not functioning correctly. Response is not json: " + rs.getReason());
-				} else {
+    private boolean isNotJson(Response<ByteSource> rs) {
 
-					//there is some unknown error since we cannot de-serialize it into default error object
-					throw new GeneralReportPortalException(statusCode, statusMessage, new String(body, StandardCharsets.UTF_8));
-				}
-			}
+        boolean result = true;
 
-		} catch (IOException e) {
-			//cannot read the body. just throw the general error
-			throw new GeneralReportPortalException(rs.getStatus(), rs.getReason(), "Cannot read the response");
-		}
+        Collection<String> contentTypes = rs.getHeaders().get(HttpHeaders.CONTENT_TYPE);
+        if (contentTypes.isEmpty() && rs.getHeaders().containsKey(HttpHeaders.CONTENT_TYPE.toLowerCase())) {
+            contentTypes = rs.getHeaders().get(HttpHeaders.CONTENT_TYPE.toLowerCase());
+        }
 
-	}
+        if (null != contentTypes) {
+            for (String contentType : contentTypes) {
 
-	/**
-	 * Try to deserialize an error body
-	 *
-	 * @param content content to be deserialized
-	 * @return Serialized object or NULL if it's impossible
-	 */
-	private ErrorRS deserializeError(byte[] content) {
-		try {
-			if (null != content) {
-				return serializer.deserialize(content, ErrorRS.class);
-			} else {
-				return null;
-			}
+                boolean isJson = contentType.contains(ContentType.APPLICATION_JSON.getMimeType());
+                if (isJson) {
+                    result = false;
+                    break;
+                }
+            }
+        }
 
-		} catch (Exception e) {
-			return null;
-		}
-
-	}
-
-	private boolean isNotJson(Response<ByteSource> rs) {
-
-		boolean result = true;
-
-		Collection<String> contentTypes = rs.getHeaders().get(HttpHeaders.CONTENT_TYPE);
-		if (contentTypes.isEmpty() && rs.getHeaders().containsKey(HttpHeaders.CONTENT_TYPE.toLowerCase())) {
-			contentTypes = rs.getHeaders().get(HttpHeaders.CONTENT_TYPE.toLowerCase());
-		}
-
-		if (null != contentTypes) {
-			for (String contentType : contentTypes) {
-
-				boolean isJson = contentType.contains(ContentType.APPLICATION_JSON.getMimeType());
-				if (isJson) {
-					result = false;
-					break;
-				}
-			}
-		}
-
-		return result;
-	}
+        return result;
+    }
 }
