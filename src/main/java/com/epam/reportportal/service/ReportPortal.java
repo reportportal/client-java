@@ -26,21 +26,29 @@ import com.epam.reportportal.restendpoint.serializer.ByteArraySerializer;
 import com.epam.reportportal.restendpoint.serializer.Serializer;
 import com.epam.reportportal.restendpoint.serializer.json.JacksonSerializer;
 import com.epam.reportportal.utils.SslUtils;
+import com.epam.reportportal.utils.Waiter;
 import com.epam.reportportal.utils.properties.ListenerProperty;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
+import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
+import com.epam.ta.reportportal.ws.model.launch.LaunchResource;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Function;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
+import io.reactivex.MaybeEmitter;
+import io.reactivex.MaybeOnSubscribe;
+import io.reactivex.functions.Consumer;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
+import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.client.StandardHttpRequestRetryHandler;
+import org.apache.http.protocol.HttpContext;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,9 +61,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import static com.epam.reportportal.service.LaunchLoggingContext.DEFAULT_LAUNCH_KEY;
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
@@ -72,16 +82,22 @@ public class ReportPortal {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportPortal.class);
 	private static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
 
-	private ReportPortalClient rpClient;
+	private volatile String instanceUuid = UUID.randomUUID().toString();
+
 	private ListenerParameters parameters;
+	private LockFile lockFile;
+	private final ReportPortalClient rpClient;
+	private final ExecutorService executor;
 
 	/**
 	 * @param rpClient   ReportPortal client
 	 * @param parameters Listener Parameters
 	 */
-	ReportPortal(ReportPortalClient rpClient, ListenerParameters parameters) {
+	ReportPortal(ReportPortalClient rpClient, ExecutorService executor, ListenerParameters parameters, LockFile lockFile) {
 		this.rpClient = rpClient;
+		this.executor = executor;
 		this.parameters = parameters;
+		this.lockFile = lockFile;
 	}
 
 	/**
@@ -95,17 +111,17 @@ public class ReportPortal {
 			return Launch.NOOP_LAUNCH;
 		}
 
-		return new LaunchImpl(rpClient, parameters, rq);
+		return getLaunch(rq);
 	}
 
 	/**
 	 * Factory method for {@link ReportPortal} that uses already started launch
 	 *
-	 * @param currentLaunchId Launch to be used
+	 * @param launchUuid Launch to be used
 	 * @return This instance for chaining
 	 */
-	public Launch withLaunch(Maybe<String> currentLaunchId) {
-		return new LaunchImpl(rpClient, parameters, currentLaunchId);
+	public Launch withLaunch(Maybe<String> launchUuid) {
+		return new LaunchImpl(rpClient, parameters, launchUuid, executor);
 	}
 
 	/**
@@ -131,6 +147,13 @@ public class ReportPortal {
 		return new Builder();
 	}
 
+	private static LockFile getLockFile(ListenerParameters parameters) {
+		if (parameters.getClientJoin()) {
+			return new LockFile(parameters);
+		}
+		return null;
+	}
+
 	/**
 	 * Creates new ReportPortal based on already built dependencies
 	 *
@@ -139,7 +162,18 @@ public class ReportPortal {
 	 * @return builder for {@link ReportPortal}
 	 */
 	public static ReportPortal create(ReportPortalClient client, ListenerParameters params) {
-		return new ReportPortal(client, params);
+		return new ReportPortal(client, buildExecutorService(params), params, getLockFile(params));
+	}
+
+	/**
+	 * Emits log message if there is any active context attached to the current thread
+	 *
+	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
+	 * @return true if log has been emitted
+	 * @deprecated use {@link com.epam.reportportal.service.ReportPortal#emitLog(Function)}
+	 */
+	public static boolean emitLog(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
+		return emitLog((Function<String, SaveLogRQ>) logSupplier);
 	}
 
 	/**
@@ -148,7 +182,7 @@ public class ReportPortal {
 	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
 	 * @return true if log has been emitted
 	 */
-	public static boolean emitLog(com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
+	public static boolean emitLog(final Function<String, SaveLogRQ> logSupplier) {
 		final LoggingContext loggingContext = LoggingContext.CONTEXT_THREAD_LOCAL.get().peek();
 		if (null != loggingContext) {
 			loggingContext.emit(logSupplier);
@@ -157,7 +191,24 @@ public class ReportPortal {
 		return false;
 	}
 
-	public static boolean emitLaunchLog(Function<String, SaveLogRQ> logSupplier) {
+	/**
+	 * Emits log message on Launch level if there is any active context attached to the current thread
+	 *
+	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
+	 * @return true if log has been emitted
+	 * @deprecated use {@link com.epam.reportportal.service.ReportPortal#emitLaunchLog(Function)}
+	 */
+	public static boolean emitLaunchLog(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
+		return emitLaunchLog((Function<String, SaveLogRQ>) logSupplier);
+	}
+
+	/**
+	 * Emits log message on Launch level if there is any active context attached to the current thread
+	 *
+	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
+	 * @return true if log has been emitted
+	 */
+	public static boolean emitLaunchLog(final Function<String, SaveLogRQ> logSupplier) {
 		final LaunchLoggingContext launchLoggingContext = LaunchLoggingContext.loggingContextMap.get(DEFAULT_LAUNCH_KEY);
 		if (null != launchLoggingContext) {
 			launchLoggingContext.emit(logSupplier);
@@ -189,6 +240,14 @@ public class ReportPortal {
 
 	}
 
+	/**
+	 * Emits log message on Launch level if there is any active context attached to the current thread
+	 *
+	 * @param message Log message
+	 * @param level   Log level
+	 * @param time    Log time
+	 * @return true if log has been emitted
+	 */
 	public static boolean emitLaunchLog(final String message, final String level, final Date time) {
 		return emitLaunchLog(new Function<String, SaveLogRQ>() {
 			@Override
@@ -203,113 +262,94 @@ public class ReportPortal {
 		});
 	}
 
+	private static void fillSaveLogRQ(final SaveLogRQ rq, final String message, final String level, final Date time, final File file) {
+		rq.setMessage(message);
+		rq.setLevel(level);
+		rq.setLogTime(time);
+
+		try {
+			SaveLogRQ.File f = new SaveLogRQ.File();
+			f.setContentType(detect(file));
+			f.setContent(toByteArray(file));
+
+			f.setName(UUID.randomUUID().toString());
+			rq.setFile(f);
+		} catch (IOException e) {
+			// seems like there is some problem. Do not report an file
+			LOGGER.error("Cannot send file to ReportPortal", e);
+		}
+	}
+
+	/**
+	 * Emits log message if there is any active context attached to the current thread
+	 *
+	 * @param message Log message
+	 * @param level   Log level
+	 * @param time    Log time
+	 * @param file    a file to attach to the log message
+	 * @return true if log has been emitted
+	 */
 	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
-		return emitLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String itemUuid) {
-				SaveLogRQ rq = new SaveLogRQ();
-				rq.setLevel(level);
-				rq.setLogTime(time);
-				rq.setItemUuid(itemUuid);
-				rq.setMessage(message);
-
-				try {
-					SaveLogRQ.File f = new SaveLogRQ.File();
-					f.setContentType(detect(file));
-					f.setContent(toByteArray(file));
-
-					f.setName(UUID.randomUUID().toString());
-					rq.setFile(f);
-				} catch (IOException e) {
-					// seems like there is some problem. Do not report an file
-					LOGGER.error("Cannot send file to ReportPortal", e);
-				}
-
-				return rq;
-			}
+		return emitLog((Function<String, SaveLogRQ>) itemUuid -> {
+			SaveLogRQ rq = new SaveLogRQ();
+			rq.setItemUuid(itemUuid);
+			fillSaveLogRQ(rq, message, level, time, file);
+			return rq;
 		});
 	}
 
+	/**
+	 * Emits log message on Launch level if there is any active context attached to the current thread
+	 *
+	 * @param message Log message
+	 * @param level   Log level
+	 * @param time    Log time
+	 * @param file    a file to attach to the log message
+	 * @return true if log has been emitted
+	 */
 	public static boolean emitLaunchLog(final String message, final String level, final Date time, final File file) {
-		return emitLaunchLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String launchUuid) {
-				SaveLogRQ rq = new SaveLogRQ();
-				rq.setLevel(level);
-				rq.setLogTime(time);
-				rq.setLaunchUuid(launchUuid);
-				rq.setMessage(message);
-
-				try {
-					SaveLogRQ.File f = new SaveLogRQ.File();
-					f.setContentType(detect(file));
-					f.setContent(toByteArray(file));
-
-					f.setName(UUID.randomUUID().toString());
-					rq.setFile(f);
-				} catch (IOException e) {
-					// seems like there is some problem. Do not report an file
-					LOGGER.error("Cannot send file to ReportPortal", e);
-				}
-
-				return rq;
-			}
+		return emitLaunchLog((Function<String, SaveLogRQ>) launchUuid -> {
+			SaveLogRQ rq = new SaveLogRQ();
+			rq.setLaunchUuid(launchUuid);
+			fillSaveLogRQ(rq, message, level, time, file);
+			return rq;
 		});
+	}
+
+	private static void fillSaveLogRQ(final SaveLogRQ rq, final String level, final Date time, final ReportPortalMessage message) {
+		rq.setLevel(level);
+		rq.setLogTime(time);
+		rq.setMessage(message.getMessage());
+		try {
+			final TypeAwareByteSource data = message.getData();
+			SaveLogRQ.File file = new SaveLogRQ.File();
+			file.setContent(data.read());
+
+			file.setContentType(data.getMediaType());
+			file.setName(UUID.randomUUID().toString());
+			rq.setFile(file);
+
+		} catch (Exception e) {
+			// seems like there is some problem. Do not report an file
+			LOGGER.error("Cannot send file to ReportPortal", e);
+		}
 	}
 
 	public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String itemUuid) {
-				SaveLogRQ rq = new SaveLogRQ();
-				rq.setLevel(level);
-				rq.setLogTime(time);
-				rq.setItemUuid(itemUuid);
-				rq.setMessage(message.getMessage());
-				try {
-					final TypeAwareByteSource data = message.getData();
-					SaveLogRQ.File file = new SaveLogRQ.File();
-					file.setContent(data.read());
-
-					file.setContentType(data.getMediaType());
-					file.setName(UUID.randomUUID().toString());
-					rq.setFile(file);
-
-				} catch (Exception e) {
-					// seems like there is some problem. Do not report an file
-					LOGGER.error("Cannot send file to ReportPortal", e);
-				}
-
-				return rq;
-			}
+		return emitLog((Function<String, SaveLogRQ>) itemUuid -> {
+			SaveLogRQ rq = new SaveLogRQ();
+			rq.setItemUuid(itemUuid);
+			fillSaveLogRQ(rq, level, time, message);
+			return rq;
 		});
 	}
 
 	public static boolean emitLaunchLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLaunchLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String launchUuid) {
-				SaveLogRQ rq = new SaveLogRQ();
-				rq.setLevel(level);
-				rq.setLogTime(time);
-				rq.setLaunchUuid(launchUuid);
-				rq.setMessage(message.getMessage());
-				try {
-					final TypeAwareByteSource data = message.getData();
-					SaveLogRQ.File file = new SaveLogRQ.File();
-					file.setContent(data.read());
-
-					file.setContentType(data.getMediaType());
-					file.setName(UUID.randomUUID().toString());
-					rq.setFile(file);
-
-				} catch (Exception e) {
-					// seems like there is some problem. Do not report an file
-					LOGGER.error("Cannot send file to ReportPortal", e);
-				}
-
-				return rq;
-			}
+		return emitLaunchLog((Function<String, SaveLogRQ>) launchUuid -> {
+			SaveLogRQ rq = new SaveLogRQ();
+			rq.setLaunchUuid(launchUuid);
+			fillSaveLogRQ(rq, level, time, message);
+			return rq;
 		});
 	}
 
@@ -338,7 +378,11 @@ public class ReportPortal {
 				executorService = Executors.newFixedThreadPool(params.getIoPoolSize(),
 						new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build()
 				);
-				return new ReportPortal(buildClient(ReportPortalClient.class, params), params);
+				return new ReportPortal(buildClient(ReportPortalClient.class, params),
+						buildExecutorService(params),
+						params,
+						buildLockFile(params)
+				);
 			} catch (Exception e) {
 				String errMsg = "Cannot build ReportPortal client";
 				LOGGER.error(errMsg, e);
@@ -411,6 +455,16 @@ public class ReportPortal {
 			}
 
 			builder.setRetryHandler(new StandardHttpRequestRetryHandler(parameters.getTransferRetries(), true))
+					.setKeepAliveStrategy(new DefaultConnectionKeepAliveStrategy() {
+						@Override
+						public long getKeepAliveDuration(HttpResponse response, HttpContext context) {
+							long keepAliveDuration = super.getKeepAliveDuration(response, context);
+							if (keepAliveDuration == -1) {
+								return parameters.getMaxConnectionTtlMs();
+							}
+							return keepAliveDuration;
+						}
+					})
 					.setMaxConnPerRoute(parameters.getMaxConnectionsPerRoute())
 					.setMaxConnTotal(parameters.getMaxConnectionsTotal())
 					.setConnectionTimeToLive(parameters.getMaxConnectionTtlMs(), TimeUnit.MILLISECONDS)
@@ -419,9 +473,123 @@ public class ReportPortal {
 
 		}
 
+		protected LockFile buildLockFile(ListenerParameters parameters) {
+			return getLockFile(parameters);
+		}
+
 		protected PropertiesLoader defaultPropertiesLoader() {
 			return PropertiesLoader.load();
 		}
 	}
 
+	private class SecondaryLaunch extends LaunchImpl {
+		private final ReportPortalClient rpClient;
+		private final Maybe<String> launch;
+
+		SecondaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch) {
+			super(rpClient, parameters, launch, buildExecutorService(parameters));
+			this.rpClient = rpClient;
+			this.launch = launch;
+		}
+
+		private void waitForLaunchStart() {
+			new Waiter("Wait for Launch start").pollingEvery(1, TimeUnit.SECONDS).timeoutFail().till(new Callable<Boolean>() {
+				private volatile Boolean result = null;
+
+				@Override
+				public Boolean call() {
+					launch.subscribe(new Consumer<String>() {
+						@Override
+						public void accept(String uuid) {
+							Maybe<LaunchResource> maybeRs = rpClient.getLaunchByUuid(uuid);
+							if (maybeRs != null) {
+								maybeRs.subscribe(new Consumer<LaunchResource>() {
+									@Override
+									public void accept(LaunchResource launchResource) {
+										result = Boolean.TRUE;
+									}
+								}, new Consumer<Throwable>() {
+									@Override
+									public void accept(Throwable throwable) {
+										LOGGER.debug("Unable to get a Launch: " + throwable.getLocalizedMessage(), throwable);
+									}
+								});
+							} else {
+								LOGGER.debug("RP Client returned 'null' response on get Launch by UUID call");
+							}
+						}
+					});
+					return result;
+				}
+			});
+		}
+
+		@Override
+		public Maybe<String> start() {
+			if (!parameters.isAsyncReporting()) {
+				waitForLaunchStart();
+			}
+			return super.start();
+		}
+
+		@Override
+		public void finish(final FinishExecutionRQ rq) {
+			// ignore that call, since only primary launch should finish it
+			lockFile.finishInstanceUuid(instanceUuid);
+		}
+	}
+
+	private class PrimaryLaunch extends LaunchImpl {
+		PrimaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, StartLaunchRQ launch) {
+			super(rpClient, parameters, launch, buildExecutorService(parameters));
+		}
+
+		@Override
+		public void finish(final FinishExecutionRQ rq) {
+			try {
+				super.finish(rq);
+			} finally {
+				lockFile.finishInstanceUuid(instanceUuid);
+				instanceUuid = UUID.randomUUID().toString();
+			}
+		}
+	}
+
+	private Launch getLaunch(StartLaunchRQ rq) {
+		if (lockFile == null) {
+			// do not use multi-client mode
+			return new LaunchImpl(rpClient, parameters, rq, buildExecutorService(parameters));
+		}
+
+		final String uuid = lockFile.obtainLaunchUuid(instanceUuid);
+		if (uuid == null) {
+			// timeout locking on file or interrupted
+			throw new InternalReportPortalClientException("Unable to create a new launch: unable to read/write lock file.");
+		}
+
+		if (instanceUuid.equals(uuid)) {
+			// We got our own UUID as launch UUID, that means we are primary launch.
+			ObjectMapper objectMapper = new ObjectMapper();
+			try {
+				StartLaunchRQ rqCopy = objectMapper.readValue(objectMapper.writeValueAsString(rq), StartLaunchRQ.class);
+				rqCopy.setUuid(uuid);
+				return new PrimaryLaunch(rpClient, parameters, rqCopy);
+			} catch (IOException e) {
+				throw new InternalReportPortalClientException("Unable to clone start launch request:", e);
+			}
+		} else {
+			Maybe<String> launch = Maybe.create(new MaybeOnSubscribe<String>() {
+				@Override
+				public void subscribe(final MaybeEmitter<String> emitter) {
+					emitter.onSuccess(uuid);
+					emitter.onComplete();
+				}
+			});
+			return new SecondaryLaunch(rpClient, parameters, launch);
+		}
+	}
+
+	private static ExecutorService buildExecutorService(ListenerParameters params) {
+		return Executors.newFixedThreadPool(params.getIoPoolSize(), new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build());
+	}
 }

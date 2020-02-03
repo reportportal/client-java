@@ -13,27 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.epam.reportportal.utils;
 
-import org.junit.Assert;
-import org.junit.Test;
+package com.epam.reportportal.annotations;
 
-import java.io.File;
-import java.io.FilenameFilter;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public class LaunchFileTest {
-	@Test
-	public void find() throws Exception {
-		File tmpDir = LaunchFile.getTempDir();
-		File f1 = new File(tmpDir, "rplaunch-xxxx-#1-11.tmp");
-		f1.createNewFile();
-		f1.deleteOnExit();
-
-		File f2 = new File(tmpDir, "rplaunch-xxxx-#3-13.tmp");
-		f2.createNewFile();
-		f2.deleteOnExit();
-
-		Assert.assertEquals("13", LaunchFile.find("xxxx").blockingGet());
-	}
+/**
+ * Annotation to mark a field or a method parameter that will be used to generate {@link TestCaseId#value()} in a parameterized test
+ *
+ * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
+ */
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ ElementType.FIELD, ElementType.PARAMETER })
+public @interface TestCaseIdKey {
 
 }

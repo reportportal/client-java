@@ -18,14 +18,17 @@ package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.UniqueID;
-import com.epam.reportportal.aspect.StepNameUtils;
+import com.epam.reportportal.annotations.attribute.Attributes;
+import com.epam.reportportal.utils.AttributeParser;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Set;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -45,6 +48,7 @@ class StepRequestUtils {
 		if (uniqueId != null && !uniqueId.trim().isEmpty()) {
 			request.setUniqueId(uniqueId);
 		}
+		request.setAttributes(createStepAttributes(signature));
 		if (!step.description().isEmpty()) {
 			request.setDescription(step.description());
 		}
@@ -61,5 +65,13 @@ class StepRequestUtils {
 		rq.setEndTime(endTime);
 		rq.setStatus(status);
 		return rq;
+	}
+
+	private static Set<ItemAttributesRQ> createStepAttributes(MethodSignature methodSignature) {
+		Attributes attributesAnnotation = methodSignature.getMethod().getAnnotation(Attributes.class);
+		if (attributesAnnotation != null) {
+			return AttributeParser.retrieveAttributes(attributesAnnotation);
+		}
+		return null;
 	}
 }

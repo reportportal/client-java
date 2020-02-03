@@ -18,6 +18,7 @@ package com.epam.reportportal.service;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
+import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import org.slf4j.Logger;
@@ -28,6 +29,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class Launch {
 	static final Logger LOGGER = LoggerFactory.getLogger(Launch.class);
+
 	private final ListenerParameters parameters;
 
 	Launch(ListenerParameters parameters) {
@@ -54,7 +56,7 @@ public abstract class Launch {
 	/**
 	 * Starts new test item in ReportPortal asynchronously (non-blocking)
 	 *
-	 * @param rq Start RQ
+	 * @param rq       Start RQ
 	 * @param parentId Parent ID
 	 * @return Test Item ID promise
 	 */
@@ -72,11 +74,11 @@ public abstract class Launch {
 
 	/**
 	 * Finishes Test Item in ReportPortal. Non-blocking. Schedules finish after success of all child items
-	 *
-	 * @param itemId Item ID promise
+	 *  @param itemId Item ID promise
 	 * @param rq     Finish request
+	 * @return Promise of Test Item finish response
 	 */
-	abstract public void finishTestItem(Maybe<String> itemId, final FinishTestItemRQ rq);
+	abstract public Maybe<OperationCompletionRS> finishTestItem(Maybe<String> itemId, final FinishTestItemRQ rq);
 
 	public ListenerParameters getParameters() {
 		return this.parameters;
@@ -113,8 +115,8 @@ public abstract class Launch {
 		}
 
 		@Override
-		public void finishTestItem(Maybe<String> itemId, FinishTestItemRQ rq) {
-
+		public Maybe<OperationCompletionRS> finishTestItem(Maybe<String> itemId, FinishTestItemRQ rq) {
+			return Maybe.empty();
 		}
 	};
 }

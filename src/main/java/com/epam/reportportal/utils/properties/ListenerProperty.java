@@ -38,6 +38,7 @@ public enum ListenerProperty {
     RERUN("rp.rerun", false),
     RERUN_OF("rp.rerun.of", false),
     ASYNC_REPORTING("rp.reporting.async", false),
+    CALLBACK_REPORTING_ENABLED("rp.reporting.callback", false),
     SKIPPED_AS_ISSUE("rp.skipped.issue", false),
     IO_POOL_SIZE("rp.io.pool.size", false),
     MAX_CONNECTIONS_PER_ROUTE("rp.max.connections.per.route", false),
@@ -56,7 +57,17 @@ public enum ListenerProperty {
     /**
      * Maximum number of deliver attempts on transport layer. Retries IO and connection exceptions.
      */
-    MAX_TRANSFER_RETRY_COUNT("rp.transport.connections.retry.count", false);
+    MAX_TRANSFER_RETRY_COUNT("rp.transport.connections.retry.count", false),
+
+    /**
+     * Run report portal client in multiple client mode. In such mode RC client will share one launch ID between all clients on the machine.
+     * Such build systems as Gradle forks JVMs during parallel run, that leads to multiple launches on dashboard,
+     * so using that property should allow to merge them all in one.
+     */
+    CLIENT_JOIN_MODE("rp.client.join", false),
+    LOCK_FILE_NAME("rp.client.join.lock.file.name", false),
+    SYNC_FILE_NAME("rp.client.join.sync.file.name", false),
+    FILE_WAIT_TIMEOUT_MS("rp.client.join.file.wait.timeout.ms", false);
     //formatter:on
 
     private String propertyName;

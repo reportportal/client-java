@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.reportportal.annotations;
-
-import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+package com.epam.reportportal.annotations.attribute;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -24,22 +22,23 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation-marker for methods that are invoked during the test execution. Methods that are marked by this annotation
- * are represented in Report Portal as 'Nested Steps' with {@link StartTestItemRQ#isHasStats()} equal to 'false'.
- * Methods marked with this annotation can be nested in other methods and will be attached (reported as a child)
- * to the 'closest' wrapper (either test method or another method marked with this annotation)
+ * Annotation for test methods to attach {@link com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ} to the test items
  *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
+ * @see Attribute
+ * @see AttributeValue
+ * @see MultiKeyAttribute
+ * @see MultiValueAttribute
  */
-@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Step {
+@Target(ElementType.METHOD)
+public @interface Attributes {
 
-	String value() default "";
+	Attribute[] attributes() default {};
 
-	String description() default "";
+	AttributeValue[] attributeValues() default {};
 
-	boolean isIgnored() default false;
+	MultiKeyAttribute[] multiKeyAttributes() default {};
 
-	StepTemplateConfig templateConfig() default @StepTemplateConfig;
+	MultiValueAttribute[] multiValueAttributes() default {};
 }
