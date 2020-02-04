@@ -9,7 +9,7 @@
 
 ## JVM-based clients configuration
 
-Copy your configuration from UI of ReportPortal at [User Profile](<#user-profile>) section
+Copy your configuration from UI of ReportPortal at User Profile section
 
 or
 
