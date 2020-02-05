@@ -56,8 +56,9 @@ public class SystemAttributesExtractor {
 	 * @return {@link Set} of {@link ItemAttributesRQ}
 	 */
 	public static Set<ItemAttributesRQ> extract(final String resource) {
-		Properties properties = new Properties();
+		Set<ItemAttributesRQ> attributes = getInternalAttributes();
 
+		Properties properties = new Properties();
 		ofNullable(resource).flatMap(res -> ofNullable(SystemAttributesExtractor.class.getClassLoader().getResource(res)))
 				.ifPresent(url -> {
 					try (InputStreamReader inputStreamReader = new InputStreamReader(url.openStream(), StandardCharsets.UTF_8)) {
@@ -67,7 +68,8 @@ public class SystemAttributesExtractor {
 					}
 				});
 
-		return getAttributes(properties);
+		attributes.addAll(getExternalAttributes(properties));
+		return attributes;
 	}
 
 	/**
@@ -77,8 +79,9 @@ public class SystemAttributesExtractor {
 	 * @return {@link Set} of {@link ItemAttributesRQ}
 	 */
 	public static Set<ItemAttributesRQ> extract(final Path path) {
-		Properties properties = new Properties();
+		Set<ItemAttributesRQ> attributes = getInternalAttributes();
 
+		Properties properties = new Properties();
 		ofNullable(path).ifPresent(p -> {
 			File file = p.toFile();
 			if (file.exists()) {
@@ -90,22 +93,27 @@ public class SystemAttributesExtractor {
 			}
 		});
 
-		return getAttributes(properties);
+		attributes.addAll(getExternalAttributes(properties));
+		return attributes;
 	}
 
-	private static Set<ItemAttributesRQ> getAttributes(final Properties properties) {
-		Set<ItemAttributesRQ> attributes = Arrays.stream(DefaultProperties.values())
-				.filter(defaultProperties -> !defaultProperties.isSystem())
-				.map(defaultProperty -> convert(defaultProperty.getName(), properties, defaultProperty.getPropertyKeys()))
+	private static Set<ItemAttributesRQ> getInternalAttributes() {
+		return Arrays.stream(DefaultProperties.values())
+				.filter(DefaultProperties::isInternal)
+				.map(defaultProperty -> convert(defaultProperty.getName(), defaultProperty.getPropertyKeys()))
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.collect(Collectors.toSet());
+	}
+
+	private static Set<ItemAttributesRQ> getExternalAttributes(final Properties externalAttributes) {
+		return Arrays.stream(DefaultProperties.values())
+				.filter(defaultProperties -> !defaultProperties.isInternal())
+				.map(defaultProperty -> convert(defaultProperty.getName(), externalAttributes, defaultProperty.getPropertyKeys()))
 				.filter(Optional::isPresent)
 				.map(Optional::get)
 				.collect(Collectors.toSet());
 
-		Arrays.stream(DefaultProperties.values()).filter(DefaultProperties::isSystem).forEach(defaultProperty -> {
-			convert(defaultProperty.getName(), defaultProperty.getPropertyKeys()).ifPresent(attributes::add);
-		});
-
-		return attributes;
 	}
 
 	private static Optional<ItemAttributesRQ> convert(String attributeKey, Properties properties, String... propertyKeys) {
@@ -156,12 +164,12 @@ public class SystemAttributesExtractor {
 		AGENT("agent", false, "agent.name", "agent.version");
 
 		private String name;
-		private boolean system;
+		private boolean internal;
 		private String[] propertyKeys;
 
-		DefaultProperties(String name, boolean system, String... propertyKeys) {
+		DefaultProperties(String name, boolean internal, String... propertyKeys) {
 			this.name = name;
-			this.system = system;
+			this.internal = internal;
 			this.propertyKeys = propertyKeys;
 		}
 
@@ -169,8 +177,8 @@ public class SystemAttributesExtractor {
 			return name;
 		}
 
-		public boolean isSystem() {
-			return system;
+		public boolean isInternal() {
+			return internal;
 		}
 
 		public String[] getPropertyKeys() {
