@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 EPAM Systems
+ * Copyright 2020 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,9 @@ import java.util.stream.Collectors;
 import static java.util.Optional.ofNullable;
 
 /**
+ * Util for retrieving properties from `System` env variables and provided `resource` and converting them to the {@link ItemAttributesRQ}
+ * with {@link ItemAttributesRQ#isSystem()}='true'
+ *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
 public class SystemAttributesExtractor {
@@ -46,6 +49,12 @@ public class SystemAttributesExtractor {
 		//static only
 	}
 
+	/**
+	 * Loads properties from the specified location
+	 *
+	 * @param resource Path to the resource in classpath
+	 * @return {@link Set} of {@link ItemAttributesRQ}
+	 */
 	public static Set<ItemAttributesRQ> extract(final String resource) {
 		Properties properties = new Properties();
 
@@ -61,6 +70,12 @@ public class SystemAttributesExtractor {
 		return getAttributes(properties);
 	}
 
+	/**
+	 * Loads properties from the specified location
+	 *
+	 * @param path Path to the resource the file system
+	 * @return {@link Set} of {@link ItemAttributesRQ}
+	 */
 	public static Set<ItemAttributesRQ> extract(final Path path) {
 		Properties properties = new Properties();
 
@@ -103,10 +118,21 @@ public class SystemAttributesExtractor {
 		return extractAttribute(propertyExtractor, attributeKey, propertyKeys);
 	}
 
+	/**
+	 * Function for loading properties from the {@link Properties}
+	 *
+	 * @param properties {@link Properties}
+	 * @return {@link Function} that retrieves value from the `properties` by provided String `key`
+	 */
 	private static Function<String, Optional<String>> getPropertyExtractor(Properties properties) {
 		return key -> ofNullable(properties.getProperty(key));
 	}
 
+	/**
+	 * Function for loading properties from the {@link System}
+	 *
+	 * @return {@link Function} that retrieves value from the `System` by provided String `key`
+	 */
 	private static Function<String, Optional<String>> getPropertyExtractor() {
 		return key -> ofNullable(System.getProperty(key));
 	}
