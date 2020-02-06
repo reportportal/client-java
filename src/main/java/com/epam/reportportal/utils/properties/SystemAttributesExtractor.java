@@ -161,6 +161,7 @@ public class SystemAttributesExtractor {
 
 	private enum DefaultProperties {
 		OS("os", true, "os.name", "os.arch", "os.version"),
+		JVM("jvm", true, "java.vm.name", "java.version", "java.class.version"),
 		AGENT("agent", false, "agent.name", "agent.version");
 
 		private String name;
