@@ -36,13 +36,13 @@ import static java.util.Optional.ofNullable;
  */
 public class SystemAttributesExtractorTest {
 
-	private static final Map<String, Pattern> agentProperties = new HashMap<>();
-	private static final Map<String, Pattern> systemProperties = new HashMap<>();
+	private static final Map<String, Pattern> properties = new HashMap<>();
 
 	@BeforeClass
 	public static void initKeys() {
-		systemProperties.put("os", Pattern.compile("^.+\\|.+\\|.+$"));
-		agentProperties.put("agent", Pattern.compile("^test-agent\\|test-1\\.0$"));
+		properties.put("os", Pattern.compile("^.+\\|.+\\|.+$"));
+		properties.put("jvm", Pattern.compile("^.+\\|.+\\|.+$"));
+		properties.put("agent", Pattern.compile("^test-agent\\|test-1\\.0$"));
 	}
 
 	@Test
@@ -58,42 +58,51 @@ public class SystemAttributesExtractorTest {
 	@Test
 	public void testFromResource() {
 		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract("agent-test.properties");
-		Assert.assertEquals(2, attributes.size());
+		Assert.assertEquals(3, attributes.size());
 
 		ArrayList<ItemAttributesRQ> attributesList = new ArrayList<>(attributes);
 
-		ItemAttributesRQ firstAttribute = attributesList.get(0);
-		Pattern firstPattern = getPattern(firstAttribute);
-		Assert.assertNotNull(firstPattern);
-		Assert.assertTrue(firstPattern.matcher(firstAttribute.getValue()).matches());
+		ItemAttributesRQ osAttribute = attributesList.get(0);
+		Pattern osPattern = getPattern(osAttribute);
+		Assert.assertNotNull(osPattern);
+		Assert.assertTrue(osPattern.matcher(osAttribute.getValue()).matches());
 
-		ItemAttributesRQ secondAttribute = attributesList.get(1);
-		Pattern secondPattern = getPattern(secondAttribute);
-		Assert.assertNotNull(secondPattern);
-		Assert.assertTrue(secondPattern.matcher(secondAttribute.getValue()).matches());
+		ItemAttributesRQ jvmAttribute = attributesList.get(1);
+		Pattern jvmPattern = getPattern(jvmAttribute);
+		Assert.assertNotNull(jvmPattern);
+		Assert.assertTrue(jvmPattern.matcher(jvmAttribute.getValue()).matches());
+
+		ItemAttributesRQ agentAttribute = attributesList.get(2);
+		Pattern agentPattern = getPattern(agentAttribute);
+		Assert.assertNotNull(agentPattern);
+		Assert.assertTrue(agentPattern.matcher(agentAttribute.getValue()).matches());
 	}
 
 	@Test
 	public void testFromPath() {
 		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract(Paths.get("./src/test/resources/agent-test.properties"));
-		Assert.assertEquals(2, attributes.size());
+		Assert.assertEquals(3, attributes.size());
 
 		ArrayList<ItemAttributesRQ> attributesList = new ArrayList<>(attributes);
 
 		ItemAttributesRQ firstAttribute = attributesList.get(0);
-		Pattern firstPattern = getPattern(firstAttribute);
-		Assert.assertNotNull(firstPattern);
-		Assert.assertTrue(firstPattern.matcher(firstAttribute.getValue()).matches());
+		Pattern osPattern = getPattern(firstAttribute);
+		Assert.assertNotNull(osPattern);
+		Assert.assertTrue(osPattern.matcher(firstAttribute.getValue()).matches());
 
-		ItemAttributesRQ secondAttribute = attributesList.get(1);
-		Pattern secondPattern = getPattern(secondAttribute);
-		Assert.assertNotNull(secondPattern);
-		Assert.assertTrue(secondPattern.matcher(secondAttribute.getValue()).matches());
+		ItemAttributesRQ jvmAttribute = attributesList.get(1);
+		Pattern jvmPattern = getPattern(jvmAttribute);
+		Assert.assertNotNull(jvmPattern);
+		Assert.assertTrue(jvmPattern.matcher(jvmAttribute.getValue()).matches());
+
+		ItemAttributesRQ agentAttribute = attributesList.get(2);
+		Pattern agentPattern = getPattern(agentAttribute);
+		Assert.assertNotNull(agentPattern);
+		Assert.assertTrue(agentPattern.matcher(agentAttribute.getValue()).matches());
 	}
 
 	private Pattern getPattern(ItemAttributesRQ attribute) {
-		return ofNullable(systemProperties.get(attribute.getKey())).orElseGet(() -> ofNullable(agentProperties.get(attribute.getKey())).orElse(
-				null));
+		return ofNullable(properties.get(attribute.getKey())).orElse(null);
 
 	}
 
