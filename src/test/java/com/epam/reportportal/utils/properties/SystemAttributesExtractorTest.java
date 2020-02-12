@@ -47,7 +47,7 @@ public class SystemAttributesExtractorTest {
 
 	@Test
 	public void nullSafeTestForString() {
-		SystemAttributesExtractor.extract((String) null);
+		SystemAttributesExtractor.extract((String) null, null);
 	}
 
 	@Test
@@ -57,7 +57,7 @@ public class SystemAttributesExtractorTest {
 
 	@Test
 	public void testFromResource() {
-		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract("agent-test.properties");
+		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract("agent-test.properties", SystemAttributesExtractorTest.class.getClassLoader());
 		Assert.assertEquals(3, attributes.size());
 
 		ArrayList<ItemAttributesRQ> attributesList = new ArrayList<>(attributes);

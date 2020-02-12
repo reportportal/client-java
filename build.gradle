@@ -95,6 +95,8 @@ test{
         exceptionFormat = 'full'
     }
     systemProperty("file.encoding", "utf-8")
+    maxParallelForks(5)
+    outputs.upToDateWhen {false}
 }
 
 wrapper {

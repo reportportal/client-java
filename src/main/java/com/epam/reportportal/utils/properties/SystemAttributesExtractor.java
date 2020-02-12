@@ -53,20 +53,21 @@ public class SystemAttributesExtractor {
 	 * Loads properties from the specified location
 	 *
 	 * @param resource Path to the resource in classpath
+	 * @param loader context class loader, which is used by a specific agent implementation
 	 * @return {@link Set} of {@link ItemAttributesRQ}
 	 */
-	public static Set<ItemAttributesRQ> extract(final String resource) {
+	public static Set<ItemAttributesRQ> extract(final String resource, final ClassLoader loader) {
 		Set<ItemAttributesRQ> attributes = getInternalAttributes();
 
 		Properties properties = new Properties();
-		ofNullable(resource).flatMap(res -> ofNullable(Thread.currentThread().getContextClassLoader().getResource(res)))
+		ofNullable(loader).flatMap(l -> ofNullable(resource).flatMap(res -> ofNullable(l.getResource(res))))
 				.ifPresent(url -> {
 					try (InputStreamReader inputStreamReader = new InputStreamReader(url.openStream(), StandardCharsets.UTF_8)) {
 						properties.load(inputStreamReader);
 					} catch (IOException e) {
 						LOGGER.warn("Unable to load system properties file");
 					}
-				});
+		});
 
 		attributes.addAll(getExternalAttributes(properties));
 		return attributes;
