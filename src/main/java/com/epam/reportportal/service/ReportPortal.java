@@ -178,17 +178,6 @@ public class ReportPortal {
 	 *
 	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
 	 * @return true if log has been emitted
-	 * @deprecated use {@link com.epam.reportportal.service.ReportPortal#emitLog(Function)}
-	 */
-	public static boolean emitLog(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
-		return emitLog((Function<String, SaveLogRQ>) logSupplier);
-	}
-
-	/**
-	 * Emits log message if there is any active context attached to the current thread
-	 *
-	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
-	 * @return true if log has been emitted
 	 */
 	public static boolean emitLog(final Function<String, SaveLogRQ> logSupplier) {
 		final LoggingContext loggingContext = LoggingContext.CONTEXT_THREAD_LOCAL.get().peek();
@@ -197,17 +186,6 @@ public class ReportPortal {
 			return true;
 		}
 		return false;
-	}
-
-	/**
-	 * Emits log message on Launch level if there is any active context attached to the current thread
-	 *
-	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
-	 * @return true if log has been emitted
-	 * @deprecated use {@link com.epam.reportportal.service.ReportPortal#emitLaunchLog(Function)}
-	 */
-	public static boolean emitLaunchLog(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
-		return emitLaunchLog((Function<String, SaveLogRQ>) logSupplier);
 	}
 
 	/**
@@ -234,16 +212,13 @@ public class ReportPortal {
 	 * @return true if log has been emitted
 	 */
 	public static boolean emitLog(final String message, final String level, final Date time) {
-		return emitLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String itemUuid) {
-				SaveLogRQ rq = new SaveLogRQ();
-				rq.setLevel(level);
-				rq.setLogTime(time);
-				rq.setItemUuid(itemUuid);
-				rq.setMessage(message);
-				return rq;
-			}
+		return emitLog(itemUuid -> {
+			SaveLogRQ rq = new SaveLogRQ();
+			rq.setLevel(level);
+			rq.setLogTime(time);
+			rq.setItemUuid(itemUuid);
+			rq.setMessage(message);
+			return rq;
 		});
 
 	}
@@ -257,16 +232,13 @@ public class ReportPortal {
 	 * @return true if log has been emitted
 	 */
 	public static boolean emitLaunchLog(final String message, final String level, final Date time) {
-		return emitLaunchLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String launchUuid) {
-				SaveLogRQ rq = new SaveLogRQ();
-				rq.setLevel(level);
-				rq.setLogTime(time);
-				rq.setLaunchUuid(launchUuid);
-				rq.setMessage(message);
-				return rq;
-			}
+		return emitLaunchLog(launchUuid -> {
+			SaveLogRQ rq = new SaveLogRQ();
+			rq.setLevel(level);
+			rq.setLogTime(time);
+			rq.setLaunchUuid(launchUuid);
+			rq.setMessage(message);
+			return rq;
 		});
 	}
 
@@ -298,7 +270,7 @@ public class ReportPortal {
 	 * @return true if log has been emitted
 	 */
 	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
-		return emitLog((Function<String, SaveLogRQ>) itemUuid -> {
+		return emitLog(itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			fillSaveLogRQ(rq, message, level, time, file);
@@ -316,7 +288,7 @@ public class ReportPortal {
 	 * @return true if log has been emitted
 	 */
 	public static boolean emitLaunchLog(final String message, final String level, final Date time, final File file) {
-		return emitLaunchLog((Function<String, SaveLogRQ>) launchUuid -> {
+		return emitLaunchLog(launchUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setLaunchUuid(launchUuid);
 			fillSaveLogRQ(rq, message, level, time, file);
@@ -344,7 +316,7 @@ public class ReportPortal {
 	}
 
 	public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLog((Function<String, SaveLogRQ>) itemUuid -> {
+		return emitLog(itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			fillSaveLogRQ(rq, level, time, message);
@@ -353,7 +325,7 @@ public class ReportPortal {
 	}
 
 	public static boolean emitLaunchLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLaunchLog((Function<String, SaveLogRQ>) launchUuid -> {
+		return emitLaunchLog(launchUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setLaunchUuid(launchUuid);
 			fillSaveLogRQ(rq, level, time, message);
