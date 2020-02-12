@@ -59,7 +59,7 @@ public class SystemAttributesExtractor {
 		Set<ItemAttributesRQ> attributes = getInternalAttributes();
 
 		Properties properties = new Properties();
-		ofNullable(resource).flatMap(res -> ofNullable(SystemAttributesExtractor.class.getClassLoader().getResource(res)))
+		ofNullable(resource).flatMap(res -> ofNullable(Thread.currentThread().getContextClassLoader().getResource(res)))
 				.ifPresent(url -> {
 					try (InputStreamReader inputStreamReader = new InputStreamReader(url.openStream(), StandardCharsets.UTF_8)) {
 						properties.load(inputStreamReader);
