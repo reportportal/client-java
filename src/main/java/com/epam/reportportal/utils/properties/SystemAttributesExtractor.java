@@ -60,9 +60,9 @@ public class SystemAttributesExtractor {
 		Set<ItemAttributesRQ> attributes = getInternalAttributes();
 
 		Properties properties = new Properties();
-		ofNullable(loader).flatMap(l -> ofNullable(resource).flatMap(res -> ofNullable(l.getResource(res))))
-				.ifPresent(url -> {
-					try (InputStreamReader inputStreamReader = new InputStreamReader(url.openStream(), StandardCharsets.UTF_8)) {
+		ofNullable(loader).flatMap(l -> ofNullable(resource).flatMap(res -> ofNullable(l.getResourceAsStream(res))))
+				.ifPresent(resStream -> {
+					try (InputStreamReader inputStreamReader = new InputStreamReader(resStream, StandardCharsets.UTF_8)) {
 						properties.load(inputStreamReader);
 					} catch (IOException e) {
 						LOGGER.warn("Unable to load system properties file");
