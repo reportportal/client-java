@@ -21,7 +21,6 @@ import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.*;
-import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.subjects.PublishSubject;
 import org.reactivestreams.Publisher;
@@ -45,7 +44,7 @@ import static com.google.common.io.ByteSource.wrap;
  * to batch incoming log messages into one request
  *
  * @author <a href="mailto:ihar_kahadouski@epam.com">Ihar Kahadouski</a>
- * @see #init(Maybe, ReportPortalClient)
+ * @see #init(Maybe, ReportPortalClient, Scheduler)
  */
 class LaunchLoggingContext {
 
@@ -66,23 +65,13 @@ class LaunchLoggingContext {
 		this.launchId = launchId;
 		this.emitter = PublishSubject.create();
 		this.convertImages = convertImages;
-		emitter.toFlowable(BackpressureStrategy.BUFFER).flatMap(new Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>() {
-			@Override
-			public Publisher<SaveLogRQ> apply(Maybe<SaveLogRQ> rq) throws Exception {
-				return rq.toFlowable();
-			}
-		}).buffer(bufferSize).flatMap(new Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>() {
-			@Override
-			public Flowable<BatchSaveOperatingRS> apply(List<SaveLogRQ> rqs) throws Exception {
-				return client.log(HttpRequestUtils.buildLogMultiPartRequest(rqs)).toFlowable();
-			}
-		}).doOnError(new Consumer<Throwable>() {
-			@Override
-			public void accept(Throwable throwable) throws Exception {
-				throwable.printStackTrace();
-			}
-		}).observeOn(scheduler).subscribe(logFlowableResults("Launch logging context"));
-
+		emitter.toFlowable(BackpressureStrategy.BUFFER)
+				.flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable)
+				.buffer(bufferSize)
+				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(rqs)).toFlowable())
+				.doOnError(Throwable::printStackTrace)
+				.observeOn(scheduler)
+				.subscribe(logFlowableResults("Launch logging context"));
 	}
 
 	/**
@@ -130,30 +119,17 @@ class LaunchLoggingContext {
 	 * Emits log. Basically, put it into processing pipeline
 	 *
 	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
-	 * @deprecated use {@link LaunchLoggingContext#emit(java.util.function.Function)}
-	 */
-	void emit(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
-		emit((java.util.function.Function<String, SaveLogRQ>) logSupplier);
-	}
-
-	/**
-	 * Emits log. Basically, put it into processing pipeline
-	 *
-	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
 	 */
 	void emit(final java.util.function.Function<String, SaveLogRQ> logSupplier) {
-		emitter.onNext(launchId.map(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String input) throws Exception {
-				final SaveLogRQ rq = logSupplier.apply(input);
-				SaveLogRQ.File file = rq.getFile();
-				if (convertImages && null != file && isImage(file.getContentType())) {
-					final TypeAwareByteSource source = convert(wrap(file.getContent()));
-					file.setContent(source.read());
-					file.setContentType(source.getMediaType());
-				}
-				return rq;
+		emitter.onNext(launchId.map(input -> {
+			final SaveLogRQ rq = logSupplier.apply(input);
+			SaveLogRQ.File file = rq.getFile();
+			if (convertImages && null != file && isImage(file.getContentType())) {
+				final TypeAwareByteSource source = convert(wrap(file.getContent()));
+				file.setContent(source.read());
+				file.setContentType(source.getMediaType());
 			}
+			return rq;
 		}));
 	}
 

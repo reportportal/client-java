@@ -36,6 +36,7 @@ import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeEmitter;
 import io.reactivex.MaybeOnSubscribe;
@@ -139,6 +140,13 @@ public class ReportPortal {
 	}
 
 	/**
+	 * @return Report Portal {@link ExecutorService}
+	 */
+	public ExecutorService getExecutor() {
+		return executor;
+	}
+
+	/**
 	 * Creates new builder for {@link ReportPortal}
 	 *
 	 * @return builder for {@link ReportPortal}
@@ -170,17 +178,6 @@ public class ReportPortal {
 	 *
 	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
 	 * @return true if log has been emitted
-	 * @deprecated use {@link com.epam.reportportal.service.ReportPortal#emitLog(Function)}
-	 */
-	public static boolean emitLog(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
-		return emitLog((Function<String, SaveLogRQ>) logSupplier);
-	}
-
-	/**
-	 * Emits log message if there is any active context attached to the current thread
-	 *
-	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
-	 * @return true if log has been emitted
 	 */
 	public static boolean emitLog(final Function<String, SaveLogRQ> logSupplier) {
 		final LoggingContext loggingContext = LoggingContext.CONTEXT_THREAD_LOCAL.get().peek();
@@ -189,17 +186,6 @@ public class ReportPortal {
 			return true;
 		}
 		return false;
-	}
-
-	/**
-	 * Emits log message on Launch level if there is any active context attached to the current thread
-	 *
-	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
-	 * @return true if log has been emitted
-	 * @deprecated use {@link com.epam.reportportal.service.ReportPortal#emitLaunchLog(Function)}
-	 */
-	public static boolean emitLaunchLog(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
-		return emitLaunchLog((Function<String, SaveLogRQ>) logSupplier);
 	}
 
 	/**
@@ -226,16 +212,13 @@ public class ReportPortal {
 	 * @return true if log has been emitted
 	 */
 	public static boolean emitLog(final String message, final String level, final Date time) {
-		return emitLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String itemUuid) {
-				SaveLogRQ rq = new SaveLogRQ();
-				rq.setLevel(level);
-				rq.setLogTime(time);
-				rq.setItemUuid(itemUuid);
-				rq.setMessage(message);
-				return rq;
-			}
+		return emitLog(itemUuid -> {
+			SaveLogRQ rq = new SaveLogRQ();
+			rq.setLevel(level);
+			rq.setLogTime(time);
+			rq.setItemUuid(itemUuid);
+			rq.setMessage(message);
+			return rq;
 		});
 
 	}
@@ -249,16 +232,13 @@ public class ReportPortal {
 	 * @return true if log has been emitted
 	 */
 	public static boolean emitLaunchLog(final String message, final String level, final Date time) {
-		return emitLaunchLog(new Function<String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String launchUuid) {
-				SaveLogRQ rq = new SaveLogRQ();
-				rq.setLevel(level);
-				rq.setLogTime(time);
-				rq.setLaunchUuid(launchUuid);
-				rq.setMessage(message);
-				return rq;
-			}
+		return emitLaunchLog(launchUuid -> {
+			SaveLogRQ rq = new SaveLogRQ();
+			rq.setLevel(level);
+			rq.setLogTime(time);
+			rq.setLaunchUuid(launchUuid);
+			rq.setMessage(message);
+			return rq;
 		});
 	}
 
@@ -290,7 +270,7 @@ public class ReportPortal {
 	 * @return true if log has been emitted
 	 */
 	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
-		return emitLog((Function<String, SaveLogRQ>) itemUuid -> {
+		return emitLog(itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			fillSaveLogRQ(rq, message, level, time, file);
@@ -308,7 +288,7 @@ public class ReportPortal {
 	 * @return true if log has been emitted
 	 */
 	public static boolean emitLaunchLog(final String message, final String level, final Date time, final File file) {
-		return emitLaunchLog((Function<String, SaveLogRQ>) launchUuid -> {
+		return emitLaunchLog(launchUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setLaunchUuid(launchUuid);
 			fillSaveLogRQ(rq, message, level, time, file);
@@ -336,7 +316,7 @@ public class ReportPortal {
 	}
 
 	public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLog((Function<String, SaveLogRQ>) itemUuid -> {
+		return emitLog(itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			fillSaveLogRQ(rq, level, time, message);
@@ -345,7 +325,7 @@ public class ReportPortal {
 	}
 
 	public static boolean emitLaunchLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLaunchLog((Function<String, SaveLogRQ>) launchUuid -> {
+		return emitLaunchLog(launchUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setLaunchUuid(launchUuid);
 			fillSaveLogRQ(rq, level, time, message);
@@ -484,12 +464,10 @@ public class ReportPortal {
 
 	private class SecondaryLaunch extends LaunchImpl {
 		private final ReportPortalClient rpClient;
-		private final Maybe<String> launch;
 
 		SecondaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch) {
 			super(rpClient, parameters, launch, buildExecutorService(parameters));
 			this.rpClient = rpClient;
-			this.launch = launch;
 		}
 
 		private void waitForLaunchStart() {
@@ -534,8 +512,17 @@ public class ReportPortal {
 
 		@Override
 		public void finish(final FinishExecutionRQ rq) {
-			// ignore that call, since only primary launch should finish it
-			lockFile.finishInstanceUuid(instanceUuid);
+			QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
+			try {
+				Throwable throwable = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren()).
+						timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
+			} catch (Exception e) {
+				LOGGER.error("Unable to finish secondary launch in ReportPortal", e);
+			} finally {
+				rpClient.close();
+				// ignore that call, since only primary launch should finish it
+				lockFile.finishInstanceUuid(instanceUuid);
+			}
 		}
 	}
 
