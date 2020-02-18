@@ -135,11 +135,11 @@ public class ItemLoggingContextMultiThreadTest {
 		ArgumentCaptor<MultiPartRequest> obtainLogs = ArgumentCaptor.forClass(MultiPartRequest.class);
 		verify(rpClient, times(10)).log(obtainLogs.capture());
 		obtainLogs.getAllValues().forEach( rq -> {
-			((List<SaveLogRQ>) rq.getSerializedRQs().get(0).getRequest()).forEach(log ->{
+			rq.getSerializedRQs().forEach(rqm -> ((List<SaveLogRQ>) rqm.getRequest()).forEach(log ->{
 				String logItemId = log.getItemUuid();
 				String logMessage = log.getMessage();
 				assertThat("First logItemUUID equals to first test UUID", logMessage, Matchers.endsWith(logItemId));
-			});
+			}));
 		});
 	}
 }
