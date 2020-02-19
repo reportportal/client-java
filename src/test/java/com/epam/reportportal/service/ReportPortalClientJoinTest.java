@@ -25,7 +25,6 @@ import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.LaunchResource;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
-import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeEmitter;
 import io.reactivex.MaybeOnSubscribe;
@@ -53,6 +52,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static com.epam.reportportal.test.TestUtils.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -103,28 +103,6 @@ public class ReportPortalClientJoinTest {
 		});
 	}
 
-	private static Maybe<StartLaunchRS> startLaunchResponse(String id) {
-		final StartLaunchRS rs = new StartLaunchRS();
-		rs.setId(id);
-		return Maybe.create(new MaybeOnSubscribe<StartLaunchRS>() {
-			@Override
-			public void subscribe(final MaybeEmitter<StartLaunchRS> emitter) {
-				emitter.onSuccess(rs);
-				emitter.onComplete();
-			}
-		});
-	}
-
-	private static void simulateStartLaunchResponse(final ReportPortalClient client) {
-		when(client.startLaunch(any(StartLaunchRQ.class))).then(new Answer<Maybe<StartLaunchRS>>() {
-			@Override
-			public Maybe<StartLaunchRS> answer(InvocationOnMock invocation) {
-				StartLaunchRQ rq = invocation.getArgument(0);
-				return startLaunchResponse(rq.getUuid());
-			}
-		});
-	}
-
 	private static Maybe<LaunchResource> getLaunchResponse(String id) {
 		final LaunchResource rs = new LaunchResource();
 		rs.setUuid(id);
@@ -144,17 +122,6 @@ public class ReportPortalClientJoinTest {
 				return getLaunchResponse(invocation.getArgument(0).toString());
 			}
 		});
-	}
-
-	private static StartLaunchRQ standardLaunchRequest(final ListenerParameters params) {
-		StartLaunchRQ rq = new StartLaunchRQ();
-		rq.setName(params.getLaunchName());
-		rq.setStartTime(Calendar.getInstance().getTime());
-		rq.setAttributes(params.getAttributes());
-		rq.setMode(params.getLaunchRunningMode());
-		rq.setRerun(params.isRerun());
-		rq.setStartTime(Calendar.getInstance().getTime());
-		return rq;
 	}
 
 	private static class StringConsumer implements Consumer<String> {
