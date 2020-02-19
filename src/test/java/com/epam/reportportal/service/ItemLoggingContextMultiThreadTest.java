@@ -70,11 +70,6 @@ public class ItemLoggingContextMultiThreadTest {
 		rp = new ReportPortal(rpClient, clientExecutorService, params, null);
 	}
 
-	@After
-	public void cleanUp() {
-
-	}
-
 	private static class TestNgTest implements Callable<String> {
 		private Launch launch;
 		private Maybe<String> suiteRs;
@@ -152,7 +147,7 @@ public class ItemLoggingContextMultiThreadTest {
 		verify(rpClient, times(1)).startTestItem(any());
 		verify(rpClient, times(2)).startTestItem(anyString(), any());
 
-		// Verify 2 log are logged and save their requests
+		// Verify 10 log are logged and save their requests
 		ArgumentCaptor<MultiPartRequest> obtainLogs = ArgumentCaptor.forClass(MultiPartRequest.class);
 		verify(rpClient, times(10)).log(obtainLogs.capture());
 		obtainLogs.getAllValues().forEach(rq -> {
