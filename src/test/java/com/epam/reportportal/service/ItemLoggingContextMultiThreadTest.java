@@ -18,6 +18,7 @@ package com.epam.reportportal.service;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.restendpoint.http.MultiPartRequest;
+import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import org.awaitility.Awaitility;
@@ -35,11 +36,14 @@ import org.mockito.junit.MockitoRule;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.epam.reportportal.test.TestUtils.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -58,7 +62,7 @@ public class ItemLoggingContextMultiThreadTest {
 
 	@Parameterized.Parameters
 	public static Object[][] data() {
-		return new Object[10][0];
+		return new Object[5][0];
 	}
 
 	@Before
@@ -79,27 +83,44 @@ public class ItemLoggingContextMultiThreadTest {
 
 	}
 
-	private static class TestNgTest extends Thread {
-		private Queue<String> itemIds;
+	private static class TestNgTest implements Callable<String> {
 		private Launch launch;
 		private Maybe<String> suiteRs;
 
-		public TestNgTest(Queue<String> idQueue, Launch l, Maybe<String> s){
-			itemIds = idQueue;
+		public TestNgTest(Launch l, Maybe<String> s) {
 			launch = l;
 			suiteRs = s;
 		}
 
-		public void run() {
-			final String itemId = launch.startTestItem(suiteRs, standardStartTestRequest()).blockingGet();
-			IntStream.range(1, 11).forEach(i-> {
-				ReportPortal.emitLog("Thread message " + i + " log " + itemId, "INFO", new Date());
+		@Override
+		public String call() {
+			final String itemId = UUID.randomUUID().toString();
+			StartTestItemRQ rq = standardStartTestRequest();
+			rq.setUuid(itemId);
+			launch.startTestItem(suiteRs, rq);
+			IntStream.rangeClosed(1, 10).forEach(i -> {
+				ReportPortal.emitLog("[" + i + "] log " + itemId, "INFO", new Date());
 				try {
 					Thread.sleep(ThreadLocalRandom.current().nextInt(10));
 				} catch (InterruptedException ignore) {
 				}
 			});
-			itemIds.add(itemId);
+			return itemId;
+		}
+	}
+
+	public static class TestNGThreadFactory implements ThreadFactory {
+
+		private final AtomicInteger threadNumber = new AtomicInteger(1);
+		private final String name;
+
+		public TestNGThreadFactory(String name) {
+			this.name = "UnitTest" + "-" + name + "-";
+		}
+
+		@Override
+		public Thread newThread(Runnable r) {
+			return new Thread(r, name + threadNumber.getAndIncrement());
 		}
 	}
 
@@ -110,32 +131,40 @@ public class ItemLoggingContextMultiThreadTest {
 	 * The test is failing if there is a {@link InheritableThreadLocal} is used in {@link LoggingContext} class.
 	 */
 	@Test
-	public void test_main_and_other_threads_have_different_logging_contexts() {
+	public void test_main_and_other_threads_have_different_logging_contexts() throws InterruptedException {
 		// Main thread starts launch and suite
 		final Launch launch = rp.newLaunch(standardLaunchRequest(params));
 		launch.start();
 		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
-		String suiteId = suiteRs.blockingGet();
 
-		Queue<String> ids = new ArrayBlockingQueue<>(2);
+		// Copy-paste from TestNG to reproduce the issue
+		ExecutorService pooledExecutor = new ThreadPoolExecutor(2,
+				2,
+				10,
+				TimeUnit.SECONDS,
+				new LinkedBlockingQueue<>(),
+				new TestNGThreadFactory("test_logging_context")
+		);
+
+
 
 		// First and second threads start their items and log data
-		TestNgTest t1 = new TestNgTest(ids, launch, suiteRs);
-		TestNgTest t2 = new TestNgTest(ids, launch, suiteRs);
-		t1.start();
-		t2.start();
+		TestNgTest t1 = new TestNgTest(launch, suiteRs);
+		TestNgTest t2 = new TestNgTest(launch, suiteRs);
+		final List<Future<String>> results = pooledExecutor.invokeAll(Arrays.asList(t1, t2));
 
-		Awaitility.await("Wait until test finish").until(ids::size, equalTo(2));
+		Awaitility.await("Wait until test finish").until(() -> results.stream().filter(Future::isDone).collect(Collectors.toList()), hasSize(2));
+
 		// Verify all item start requests passed
 		verify(rpClient, times(1)).startLaunch(any());
 		verify(rpClient, times(1)).startTestItem(any());
-		verify(rpClient, times(2)).startTestItem(eq(suiteId), any());
+		verify(rpClient, times(2)).startTestItem(anyString(), any());
 
 		// Verify 2 log are logged and save their requests
 		ArgumentCaptor<MultiPartRequest> obtainLogs = ArgumentCaptor.forClass(MultiPartRequest.class);
 		verify(rpClient, times(10)).log(obtainLogs.capture());
-		obtainLogs.getAllValues().forEach( rq -> {
-			rq.getSerializedRQs().forEach(rqm -> ((List<SaveLogRQ>) rqm.getRequest()).forEach(log ->{
+		obtainLogs.getAllValues().forEach(rq -> {
+			rq.getSerializedRQs().forEach(rqm -> ((List<SaveLogRQ>) rqm.getRequest()).forEach(log -> {
 				String logItemId = log.getItemUuid();
 				String logMessage = log.getMessage();
 				assertThat("First logItemUUID equals to first test UUID", logMessage, Matchers.endsWith(logItemId));

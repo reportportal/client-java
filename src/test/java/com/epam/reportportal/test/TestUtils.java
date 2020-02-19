@@ -5,7 +5,6 @@ import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.ta.reportportal.ws.model.BatchElementCreatedRS;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
-import com.epam.ta.reportportal.ws.model.EntryCreatedAsyncRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -13,6 +12,8 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import org.mockito.stubbing.Answer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Calendar;
 import java.util.Collection;
@@ -27,6 +28,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 public class TestUtils {
+	private static final Logger LOGGER = LoggerFactory.getLogger(TestUtils.class);
 
 	private TestUtils() {
 	}
@@ -104,19 +106,6 @@ public class TestUtils {
 		return rq;
 	}
 
-	public static Maybe<EntryCreatedAsyncRS> logResponse(String id) {
-		final EntryCreatedAsyncRS rs = new EntryCreatedAsyncRS();
-		rs.setId(id);
-		return getConstantMaybe(rs);
-	}
-
-	public static void simulateLogResponse(final ReportPortalClient client) {
-		when(client.log(any(SaveLogRQ.class))).then((Answer<Maybe<EntryCreatedAsyncRS>>) invocation -> {
-			StartLaunchRQ rq = invocation.getArgument(0);
-			return logResponse(ofNullable(rq.getUuid()).orElseGet(() -> UUID.randomUUID().toString()));
-		});
-	}
-
 	public static Maybe<BatchSaveOperatingRS> batchLogResponse(List<String> ids) {
 		final BatchSaveOperatingRS rs = new BatchSaveOperatingRS();
 		ids.forEach(i -> rs.addResponse(new BatchElementCreatedRS(i)));
@@ -130,6 +119,7 @@ public class TestUtils {
 					.stream()
 					.map(r -> (List<SaveLogRQ>) r.getRequest())
 					.flatMap(Collection::stream)
+					.peek(r -> LOGGER.info(r.getItemUuid() + " - " + r.getMessage()))
 					.map(s -> ofNullable(s.getUuid()).orElseGet(() -> UUID.randomUUID().toString()))
 					.collect(Collectors.toList());
 			return batchLogResponse(saveRqs);
