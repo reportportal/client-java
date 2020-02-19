@@ -27,10 +27,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
@@ -42,12 +41,10 @@ import java.util.stream.IntStream;
 
 import static com.epam.reportportal.test.TestUtils.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@RunWith(Parameterized.class)
 public class ItemLoggingContextMultiThreadTest {
 
 	@Rule
@@ -59,11 +56,6 @@ public class ItemLoggingContextMultiThreadTest {
 	private ExecutorService clientExecutorService = Executors.newFixedThreadPool(2);
 	private ListenerParameters params;
 	private ReportPortal rp;
-
-	@Parameterized.Parameters
-	public static Object[][] data() {
-		return new Object[5][0];
-	}
 
 	@Before
 	public void prepare() {
