@@ -402,7 +402,7 @@ public class ReportPortal {
 					}},
 					new ReportPortalErrorHandler(jacksonSerializer),
 					buildEndpointUrl(baseUrl, project, parameters.isAsyncReporting()),
-					executorService
+					buildExecutorService(parameters)
 			);
 		}
 
