@@ -40,13 +40,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.FileSystems;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.*;
@@ -342,7 +340,8 @@ public class LockFileTest {
 	}
 
 	private static Triple<OutputStreamWriter, BufferedReader, BufferedReader> getProcessIos(Process process) {
-		return ImmutableTriple.of(new OutputStreamWriter(process.getOutputStream()),
+		return ImmutableTriple.of(
+				new OutputStreamWriter(process.getOutputStream()),
 				new BufferedReader(new InputStreamReader(process.getInputStream())),
 				new BufferedReader(new InputStreamReader(process.getErrorStream()))
 		);
@@ -356,8 +355,8 @@ public class LockFileTest {
 	};
 
 	@SuppressWarnings("unchecked")
-	private static String waitForLine(String runCommand, final BufferedReader reader, final BufferedReader errorReader,
-			final Predicate<String> linePredicate) throws IOException {
+	private static String waitForLine(final BufferedReader reader, final BufferedReader errorReader, final Predicate<String> linePredicate)
+			throws IOException {
 		try {
 			return Awaitility.await("Waiting for a line")
 					.timeout(8, TimeUnit.SECONDS)
@@ -383,9 +382,7 @@ public class LockFileTest {
 				errorLines = IOUtils.readLines(errorReader);
 			}
 			String lineSeparator = System.getProperty("line.separator");
-			throw new IllegalStateException(
-					"Unable to run test class: " + join(errorLines, lineSeparator) + lineSeparator + "Run command:" + lineSeparator
-							+ runCommand);
+			throw new IllegalStateException("Unable to run test class: " + join(errorLines, lineSeparator));
 		}
 	}
 
@@ -396,28 +393,17 @@ public class LockFileTest {
 		}
 	};
 
-	private static final String JAVA_JUN_COMMAND_PATTERN = "%s -classpath %s %s";
-
 	private static class ExecutableNotFoundException extends RuntimeException {
 		public ExecutableNotFoundException(String message) {
 			super(message);
 		}
 	}
 
-	private static String getClasspath() {
-		String rawClasspath = System.getProperty("java.class.path");
-		String pathSeparator = System.getProperty("path.separator");
-		String currentDir = System.getProperty("user.dir");
-		return Arrays.stream(rawClasspath.split(pathSeparator))
-				.map((s) -> s.contains(" ") ? IS_POSIX ? Paths.get(currentDir).relativize(Paths.get(s)).toString() : "\"" + s + "\"" : s)
-				.collect(Collectors.joining(pathSeparator));
-	}
-
 	private static String getPathToClass(Class<?> mainClass) {
 		return mainClass.getCanonicalName();
 	}
 
-	private static String getJavaRunCommand(Class<?> mainClass, String... params) {
+	private static Process buildProcess(Class<?> mainClass, String... params) throws IOException {
 		String fileSeparator = System.getProperty("file.separator");
 		String javaHome = System.getProperty("java.home");
 		String executablePath = joinWith(fileSeparator, javaHome, "bin", "java");
@@ -430,32 +416,31 @@ public class LockFileTest {
 			}
 		}
 		List<String> paramList = new ArrayList<>();
-		paramList.add("");
+		paramList.add(executablePath);
+		paramList.add("-classpath");
+		paramList.add(System.getProperty("java.class.path"));
+		paramList.add(getPathToClass(mainClass));
 		paramList.addAll(Arrays.asList(params));
-		return String.format(JAVA_JUN_COMMAND_PATTERN, executablePath, getClasspath(), getPathToClass(mainClass)) + join(paramList, " ");
+		return new ProcessBuilder(paramList).start();
 	}
 
 	@Test(timeout = 10000)
 	public void test_launch_uuid_get_for_two_processes_returns_equal_values_obtainLaunchUuid() throws IOException, InterruptedException {
 		Pair<String, String> uuids = ImmutablePair.of(UUID.randomUUID().toString(), UUID.randomUUID().toString());
 		// @formatter:off
-		Pair<String, String> runCommands = ImmutablePair.of(
-				getJavaRunCommand(LockFileRunner.class, lockFileName, syncFileName, uuids.getKey()),
-				getJavaRunCommand(LockFileRunner.class, lockFileName, syncFileName, uuids.getValue())
-		);
-		LOGGER.debug("Run commands are: " + runCommands.toString());
-
 		Pair<Process, Process> processes = ImmutablePair.of(
-				Runtime.getRuntime().exec(runCommands.getKey()),
-				Runtime.getRuntime().exec(runCommands.getValue())
+				buildProcess(LockFileRunner.class, lockFileName, syncFileName, uuids.getKey()),
+				buildProcess(LockFileRunner.class, lockFileName, syncFileName, uuids.getValue())
 		);
 		// @formatter:on
+
+		LOGGER.info("Running two separate processes");
 
 		Triple<OutputStreamWriter, BufferedReader, BufferedReader> primaryProcessIo = getProcessIos(processes.getKey());
 		Triple<OutputStreamWriter, BufferedReader, BufferedReader> secondaryProcessIo = getProcessIos(processes.getValue());
 
-		waitForLine(runCommands.getKey(), primaryProcessIo.getMiddle(), primaryProcessIo.getRight(), WELCOME_MESSAGE_PREDICATE);
-		waitForLine(runCommands.getValue(), secondaryProcessIo.getMiddle(), secondaryProcessIo.getRight(), WELCOME_MESSAGE_PREDICATE);
+		waitForLine(primaryProcessIo.getMiddle(), primaryProcessIo.getRight(), WELCOME_MESSAGE_PREDICATE);
+		waitForLine(secondaryProcessIo.getMiddle(), secondaryProcessIo.getRight(), WELCOME_MESSAGE_PREDICATE);
 
 		String lineSeparator = System.getProperty("line.separator");
 		primaryProcessIo.getLeft().write(lineSeparator);
@@ -463,12 +448,8 @@ public class LockFileTest {
 		secondaryProcessIo.getLeft().write(lineSeparator);
 		secondaryProcessIo.getLeft().flush();
 
-		String result1 = waitForLine(runCommands.getKey(), primaryProcessIo.getMiddle(), primaryProcessIo.getRight(), ANY_STRING_PREDICATE);
-		String result2 = waitForLine(runCommands.getKey(),
-				secondaryProcessIo.getMiddle(),
-				secondaryProcessIo.getRight(),
-				ANY_STRING_PREDICATE
-		);
+		String result1 = waitForLine(primaryProcessIo.getMiddle(), primaryProcessIo.getRight(), ANY_STRING_PREDICATE);
+		String result2 = waitForLine(secondaryProcessIo.getMiddle(), secondaryProcessIo.getRight(), ANY_STRING_PREDICATE);
 
 		assertThat("Assert two UUIDs from different processes are equal", result1, equalTo(result2));
 
