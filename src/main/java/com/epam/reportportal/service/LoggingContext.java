@@ -20,8 +20,6 @@ import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.*;
-import io.reactivex.functions.BiFunction;
-import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.subjects.PublishSubject;
 import org.reactivestreams.Publisher;
@@ -47,19 +45,14 @@ import static com.google.common.io.ByteSource.wrap;
  * to batch incoming log messages into one request
  *
  * @author Andrei Varabyeu
- * @see LoggingContext#init(Maybe, Maybe, ReportPortalClient)
+ * @see LoggingContext#init(Maybe, Maybe, ReportPortalClient, Scheduler)
  */
 public class LoggingContext {
 
 	/* default back-pressure buffer size */
 	public static final int DEFAULT_BUFFER_SIZE = 10;
 
-	static final ThreadLocal<Deque<LoggingContext>> CONTEXT_THREAD_LOCAL = new InheritableThreadLocal<Deque<LoggingContext>>() {
-		@Override
-		protected Deque<LoggingContext> initialValue() {
-			return new ArrayDeque<LoggingContext>();
-		}
-	};
+	static final ThreadLocal<Deque<LoggingContext>> CONTEXT_THREAD_LOCAL = ThreadLocal.withInitial(ArrayDeque::new);
 
 	/**
 	 * Initializes new logging context and attaches it to current thread
@@ -117,33 +110,14 @@ public class LoggingContext {
 		this.itemId = itemId;
 		this.emitter = PublishSubject.create();
 		this.convertImages = convertImages;
-		emitter.toFlowable(BackpressureStrategy.BUFFER).flatMap(new Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>() {
-			@Override
-			public Publisher<SaveLogRQ> apply(Maybe<SaveLogRQ> rq) throws Exception {
-				return rq.toFlowable();
-			}
-		}).buffer(bufferSize).flatMap(new Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>() {
-			@Override
-			public Flowable<BatchSaveOperatingRS> apply(List<SaveLogRQ> rqs) throws Exception {
-				return client.log(HttpRequestUtils.buildLogMultiPartRequest(rqs)).toFlowable();
-			}
-		}).doOnError(new Consumer<Throwable>() {
-			@Override
-			public void accept(Throwable throwable) throws Exception {
-				LOG_ERROR.accept(throwable);
-			}
-		}).observeOn(scheduler).subscribe(logFlowableResults("Logging context"));
+		emitter.toFlowable(BackpressureStrategy.BUFFER)
+				.flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable)
+				.buffer(bufferSize)
+				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(rqs)).toFlowable())
+				.doOnError(throwable -> LOG_ERROR.accept(throwable))
+				.observeOn(scheduler)
+				.subscribe(logFlowableResults("Logging context"));
 
-	}
-
-	/**
-	 * Emits log. Basically, put it into processing pipeline
-	 *
-	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
-	 * @deprecated use {@link LoggingContext#emit(java.util.function.Function)}
-	 */
-	public void emit(final com.google.common.base.Function<String, SaveLogRQ> logSupplier) {
-		emit((java.util.function.Function<String, SaveLogRQ>) logSupplier);
 	}
 
 	/**
@@ -152,19 +126,16 @@ public class LoggingContext {
 	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
 	 */
 	public void emit(final java.util.function.Function<String, SaveLogRQ> logSupplier) {
-		emitter.onNext(launchId.zipWith(itemId, new BiFunction<String, String, SaveLogRQ>() {
-			@Override
-			public SaveLogRQ apply(String launchId, String itemId) throws Exception {
-				final SaveLogRQ rq = logSupplier.apply(itemId);
-				rq.setLaunchUuid(launchId);
-				SaveLogRQ.File file = rq.getFile();
-				if (convertImages && null != file && isImage(file.getContentType())) {
-					final TypeAwareByteSource source = convert(wrap(file.getContent()));
-					file.setContent(source.read());
-					file.setContentType(source.getMediaType());
-				}
-				return rq;
+		emitter.onNext(launchId.zipWith(itemId, (launchId, itemId) -> {
+			final SaveLogRQ rq = logSupplier.apply(itemId);
+			rq.setLaunchUuid(launchId);
+			SaveLogRQ.File file = rq.getFile();
+			if (convertImages && null != file && isImage(file.getContentType())) {
+				final TypeAwareByteSource source = convert(wrap(file.getContent()));
+				file.setContent(source.read());
+				file.setContentType(source.getMediaType());
 			}
+			return rq;
 		}));
 	}
 
