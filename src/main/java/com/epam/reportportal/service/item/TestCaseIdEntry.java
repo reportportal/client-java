@@ -23,14 +23,11 @@ public class TestCaseIdEntry {
 
 	private String id;
 
-	private Integer hash;
-
 	public TestCaseIdEntry() {
 	}
 
-	public TestCaseIdEntry(String id, Integer hash) {
+	public TestCaseIdEntry(String id) {
 		this.id = id;
-		this.hash = hash;
 	}
 
 	public String getId() {
@@ -39,14 +36,6 @@ public class TestCaseIdEntry {
 
 	public void setId(String id) {
 		this.id = id;
-	}
-
-	public Integer getHash() {
-		return hash;
-	}
-
-	public void setHash(Integer hash) {
-		this.hash = hash;
 	}
 
 	@Override
@@ -60,16 +49,11 @@ public class TestCaseIdEntry {
 
 		TestCaseIdEntry that = (TestCaseIdEntry) o;
 
-		if (id != null ? !id.equals(that.id) : that.id != null) {
-			return false;
-		}
-		return hash != null ? hash.equals(that.hash) : that.hash == null;
+		return id != null ? id.equals(that.id) : that.id == null;
 	}
 
 	@Override
 	public int hashCode() {
-		int result = id != null ? id.hashCode() : 0;
-		result = 31 * result + (hash != null ? hash.hashCode() : 0);
-		return result;
+		return id != null ? id.hashCode() : 0;
 	}
 }
