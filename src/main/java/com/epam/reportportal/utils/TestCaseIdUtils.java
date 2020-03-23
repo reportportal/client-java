@@ -50,7 +50,7 @@ public class TestCaseIdUtils {
 	private static TestCaseIdEntry getTestCaseId(TestCaseIdKey testCaseIdKey, int paramIndex, Object... parameters) {
 		Object testCaseIdParam = parameters[paramIndex];
 		if (testCaseIdParam != null) {
-			return new TestCaseIdEntry(String.valueOf(testCaseIdParam), testCaseIdParam.hashCode());
+			return new TestCaseIdEntry(String.valueOf(testCaseIdParam));
 		}
 		return null;
 	}
