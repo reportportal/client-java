@@ -41,7 +41,6 @@ public class TestCaseIdUtilsTest {
 		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getParameterizedTestCaseId(method, "firstParam", expectedTestCaseId);
 
 		Assert.assertNotNull(testCaseIdEntry);
-		Assert.assertEquals(expectedTestCaseId.hashCode(), (int) testCaseIdEntry.getHash());
 		Assert.assertEquals(expectedTestCaseId, testCaseIdEntry.getId());
 	}
 
