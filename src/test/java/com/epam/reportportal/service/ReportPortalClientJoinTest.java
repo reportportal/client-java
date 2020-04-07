@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.test.TestUtils.*;
@@ -71,8 +72,7 @@ public class ReportPortalClientJoinTest {
 	@Mock
 	LockFile lockFile;
 
-	@Mock
-	ExecutorService executorService;
+	private ExecutorService executorService = Executors.newFixedThreadPool(2);
 
 	@Rule
 	public MockitoRule mockitoRule = MockitoJUnit.rule();
