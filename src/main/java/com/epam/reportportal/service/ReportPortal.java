@@ -54,6 +54,7 @@ import org.apache.http.ssl.SSLContextBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -168,9 +169,24 @@ public class ReportPortal {
 	 * @param client Report Portal Client
 	 * @param params {@link ListenerParameters}
 	 * @return builder for {@link ReportPortal}
+	 * @deprecated use {@link #create(ReportPortalClient, ListenerParameters, ExecutorService)}
 	 */
 	public static ReportPortal create(ReportPortalClient client, ListenerParameters params) {
-		return new ReportPortal(client, buildExecutorService(params), params, getLockFile(params));
+		return create(client, params, buildExecutorService(params));
+	}
+
+	/**
+	 * Creates new ReportPortal based on already built dependencies
+	 *
+	 * @param client   Report Portal Client
+	 * @param params   {@link ListenerParameters}
+	 * @param executor An executor service which will be used for internal request / response queue, should be the same as for the client
+	 *                 param to avoid request tail cut on finish.
+	 * @return builder for {@link ReportPortal}
+	 */
+	public static ReportPortal create(@NotNull final ReportPortalClient client, @NotNull final ListenerParameters params,
+			@NotNull final ExecutorService executor) {
+		return new ReportPortal(client, executor, params, getLockFile(params));
 	}
 
 	/**
@@ -340,7 +356,6 @@ public class ReportPortal {
 
 		private HttpClientBuilder httpClient;
 		private ListenerParameters parameters;
-		private ExecutorService executorService;
 
 		public Builder withHttpClient(HttpClientBuilder client) {
 			this.httpClient = client;
@@ -355,9 +370,6 @@ public class ReportPortal {
 		public ReportPortal build() {
 			try {
 				ListenerParameters params = null == this.parameters ? new ListenerParameters(defaultPropertiesLoader()) : this.parameters;
-				executorService = Executors.newFixedThreadPool(params.getIoPoolSize(),
-						new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build()
-				);
 				return new ReportPortal(buildClient(ReportPortalClient.class, params),
 						buildExecutorService(params),
 						params,
@@ -371,22 +383,59 @@ public class ReportPortal {
 
 		}
 
-		public <T extends ReportPortalClient> T buildClient(Class<T> clientType, ListenerParameters params) {
+		/**
+		 * @param clientType a class to instantiate
+		 * @param params     {@link ListenerParameters} Report Portal parameters
+		 * @param <T>        Report Portal Client interface class
+		 * @return a Report Portal Client instance
+		 * @deprecated use {@link #buildClient(Class, ListenerParameters, ExecutorService)}
+		 */
+		public <T extends ReportPortalClient> T buildClient(@NotNull final Class<T> clientType, @NotNull final ListenerParameters params) {
+			return buildClient(clientType, params, buildExecutorService(params));
+		}
+
+		/**
+		 * @param clientType a class to instantiate
+		 * @param params     {@link ListenerParameters} Report Portal parameters
+		 * @param <T>        Report Portal Client interface class
+		 * @param executor   {@link ExecutorService} an Executor which will be used for internal request / response queue processing, should
+		 *                   be the same for the whole ReportPortal instance to avoid request tail cut on finish.
+		 * @return a Report Portal Client instance
+		 */
+		public <T extends ReportPortalClient> T buildClient(@NotNull final Class<T> clientType, @NotNull final ListenerParameters params,
+				@NotNull final ExecutorService executor) {
 			try {
 				HttpClient client = null == this.httpClient ?
 						defaultClient(params) :
 						this.httpClient.addInterceptorLast(new BearerAuthInterceptor(params.getApiKey())).build();
 
-				return RestEndpoints.forInterface(clientType, buildRestEndpoint(params, client));
+				return RestEndpoints.forInterface(clientType, buildRestEndpoint(params, client, executor));
 			} catch (Exception e) {
 				String errMsg = "Cannot build ReportPortal client";
 				LOGGER.error(errMsg, e);
 				throw new InternalReportPortalClientException(errMsg, e);
 			}
-
 		}
 
-		protected RestEndpoint buildRestEndpoint(ListenerParameters parameters, HttpClient client) {
+		/**
+		 * @param parameters {@link ListenerParameters} Report Portal parameters
+		 * @param client     {@link HttpClient} an apache HTTP client instance
+		 * @return a ReportPortal endpoint description class
+		 * @deprecated use {@link #buildRestEndpoint(ListenerParameters, HttpClient, ExecutorService)}
+		 */
+		protected RestEndpoint buildRestEndpoint(@NotNull final ListenerParameters parameters, @NotNull final HttpClient client) {
+			return buildRestEndpoint(parameters, client, buildExecutorService(parameters));
+		}
+
+		/**
+		 * @param parameters {@link ListenerParameters} Report Portal parameters
+		 * @param client     {@link HttpClient} an apache HTTP client instance
+		 * @param executor   {@link ExecutorService} an Executor which will be used for internal request / response queue processing, should
+		 *                   be the same for the whole ReportPortal instance to avoid request tail cut on finish.
+		 * @return a ReportPortal endpoint description class
+		 */
+		protected RestEndpoint buildRestEndpoint(@NotNull final ListenerParameters parameters, @NotNull final HttpClient client,
+				@NotNull final ExecutorService executor) {
 			final ObjectMapper om = new ObjectMapper();
 			om.setDateFormat(new SimpleDateFormat(DEFAULT_DATE_FORMAT));
 			om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -402,7 +451,7 @@ public class ReportPortal {
 					}},
 					new ReportPortalErrorHandler(jacksonSerializer),
 					buildEndpointUrl(baseUrl, project, parameters.isAsyncReporting()),
-					executorService
+					executor
 			);
 		}
 
@@ -463,13 +512,21 @@ public class ReportPortal {
 		protected PropertiesLoader defaultPropertiesLoader() {
 			return PropertiesLoader.load();
 		}
+
+		protected ExecutorService buildExecutorService(ListenerParameters params) {
+			return ReportPortal.buildExecutorService(params);
+		}
+	}
+
+	private static ExecutorService buildExecutorService(ListenerParameters params) {
+		return Executors.newFixedThreadPool(params.getIoPoolSize(), new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build());
 	}
 
 	private class SecondaryLaunch extends LaunchImpl {
 		private final ReportPortalClient rpClient;
 
 		SecondaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch) {
-			super(rpClient, parameters, launch, buildExecutorService(parameters));
+			super(rpClient, parameters, launch, executor);
 			this.rpClient = rpClient;
 		}
 
@@ -531,7 +588,7 @@ public class ReportPortal {
 
 	private class PrimaryLaunch extends LaunchImpl {
 		PrimaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, StartLaunchRQ launch) {
-			super(rpClient, parameters, launch, buildExecutorService(parameters));
+			super(rpClient, parameters, launch, executor);
 		}
 
 		@Override
@@ -548,7 +605,7 @@ public class ReportPortal {
 	private Launch getLaunch(StartLaunchRQ rq) {
 		if (lockFile == null) {
 			// do not use multi-client mode
-			return new LaunchImpl(rpClient, parameters, rq, buildExecutorService(parameters));
+			return new LaunchImpl(rpClient, parameters, rq, executor);
 		}
 
 		final String uuid = lockFile.obtainLaunchUuid(instanceUuid);
@@ -577,9 +634,5 @@ public class ReportPortal {
 			});
 			return new SecondaryLaunch(rpClient, parameters, launch);
 		}
-	}
-
-	private static ExecutorService buildExecutorService(ListenerParameters params) {
-		return Executors.newFixedThreadPool(params.getIoPoolSize(), new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build());
 	}
 }
