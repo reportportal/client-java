@@ -15,8 +15,10 @@
  */
 package com.epam.reportportal.exception;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 /**
  * @author Andrei Varabyeu
@@ -28,10 +30,10 @@ public class ReportPortalExceptionTest {
 		String errMessage = "Incorrect truncate";
 		String toTrim = "hello world";
 
-		Assert.assertEquals(errMessage, "hello worl", ReportPortalException.trimMessage(toTrim, 10));
-		Assert.assertEquals(errMessage, "hello world", ReportPortalException.trimMessage(toTrim, 15));
-		Assert.assertEquals(errMessage, "hello world", ReportPortalException.trimMessage(toTrim, 11));
-		Assert.assertEquals(errMessage, "hello", ReportPortalException.trimMessage(toTrim, 5));
-		Assert.assertEquals(errMessage, "", ReportPortalException.trimMessage(null, 5));
+		assertThat(errMessage, ReportPortalException.trimMessage(toTrim, 10), equalTo("hello worl"));
+		assertThat(errMessage, ReportPortalException.trimMessage(toTrim, 15), equalTo("hello world"));
+		assertThat(errMessage, ReportPortalException.trimMessage(toTrim, 11), equalTo("hello world"));
+		assertThat(errMessage, ReportPortalException.trimMessage(toTrim, 5), equalTo("hello"));
+		assertThat(errMessage, ReportPortalException.trimMessage(null, 5), equalTo(""));
 	}
 }
