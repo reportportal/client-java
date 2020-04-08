@@ -96,9 +96,6 @@ dependencies {
 
 test{
     useJUnitPlatform()
-    testLogging {
-        showStandardStreams=true
-    }
     systemProperty("file.encoding", "utf-8")
     maxParallelForks(5)
     outputs.upToDateWhen {false}
