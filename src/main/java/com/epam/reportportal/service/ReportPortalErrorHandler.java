@@ -85,7 +85,12 @@ public class ReportPortalErrorHandler extends DefaultErrorHandler {
 				throw new ReportPortalException(statusCode, statusMessage, errorRS);
 			} else {
 				if (isNotJson(rs)) {
-                    throw new InternalReportPortalClientException(format("Report portal is not functioning correctly. Response is not json. Uri: [%s]; statusCode: [%s]; statusMessage: [%s];", rs.getUri(), statusCode, statusMessage));
+					throw new InternalReportPortalClientException(format(
+							"Report portal is not functioning correctly. Response is not json. Uri: [%s]; statusCode: [%s]; statusMessage: [%s];",
+							rs.getUri(),
+							statusCode,
+							statusMessage
+					));
 				} else {
 
 					//there is some unknown error since we cannot de-serialize it into default error object

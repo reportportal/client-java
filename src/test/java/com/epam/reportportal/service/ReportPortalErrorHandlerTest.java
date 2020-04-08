@@ -27,7 +27,9 @@ import com.google.common.io.ByteSource;
 import org.apache.http.HttpHeaders;
 import org.apache.http.entity.ContentType;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -50,8 +52,14 @@ public class ReportPortalErrorHandlerTest {
 		reportPortalErrorHandler = new ReportPortalErrorHandler(new JacksonSerializer());
 	}
 
-	@Test(expected = InternalReportPortalClientException.class)
-	public void handle_not_json() throws Exception {
+	@Rule
+	public ExpectedException expectedEx = ExpectedException.none();
+
+	@Test
+	public void handle_not_json() {
+		expectedEx.expect(InternalReportPortalClientException.class);
+		expectedEx.expectMessage("Report portal is not functioning correctly. Response is not json. Uri: [test]; statusCode: [200]; statusMessage: [testue];");
+
 		//  given:
 		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
 		invalidHeaders.put(HttpHeaders.CONTENT_TYPE, ContentType.TEXT_HTML.getMimeType());
