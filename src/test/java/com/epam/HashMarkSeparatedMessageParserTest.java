@@ -18,10 +18,12 @@ package com.epam;
 import com.epam.reportportal.message.HashMarkSeparatedMessageParser;
 import com.epam.reportportal.message.MessageParser;
 import com.epam.reportportal.message.ReportPortalMessage;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 
 /**
  * @author Andrei Varabyeu
@@ -33,8 +35,8 @@ public class HashMarkSeparatedMessageParserTest {
 		MessageParser parser = new HashMarkSeparatedMessageParser();
 
 		ReportPortalMessage message = parser.parse("RP_MESSAGE#FILE#c:\\somedemofile#demo test message######33");
-		Assert.assertEquals("demo test message######33", message.getMessage());
-		Assert.assertNotNull("Message should not be null", message);
-		Assert.assertNull("Binary data should be nullMessage should be null", message.getData());
+		assertThat(message, notNullValue());
+		assertThat(message.getMessage(), equalTo("demo test message######33"));
+		assertThat(message.getData(), nullValue());
 	}
 }

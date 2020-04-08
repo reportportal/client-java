@@ -32,16 +32,12 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
-import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
 import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
@@ -54,8 +50,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.test.TestUtils.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -66,24 +62,16 @@ import static org.mockito.Mockito.*;
 public class ReportPortalClientJoinTest {
 	private static final long WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
 
-	@Mock
-	ReportPortalClient rpClient;
-
-	@Mock
-	LockFile lockFile;
-
 	private ExecutorService executorService = Executors.newFixedThreadPool(2);
 
-	@Rule
-	public MockitoRule mockitoRule = MockitoJUnit.rule();
-
-	@Rule
-	public ExpectedException exception = ExpectedException.none();
-
+	private ReportPortalClient rpClient;
+	private LockFile lockFile;
 	private ListenerParameters params;
 
-	@Before
+	@BeforeEach
 	public void prepare() {
+		rpClient = mock(ReportPortalClient.class);
+		lockFile = mock(LockFile.class);
 		params = new ListenerParameters();
 		params.setClientJoin(true);
 		params.setEnable(Boolean.TRUE);
@@ -199,7 +187,7 @@ public class ReportPortalClientJoinTest {
 
 		StartLaunchRQ startLaunch = sentUuid.getValue();
 
-		assertThat(startLaunch.getUuid(), Matchers.equalTo(passedUuid.getValue()));
+		assertThat(startLaunch.getUuid(), equalTo(passedUuid.getValue()));
 	}
 
 	@Test
@@ -209,7 +197,7 @@ public class ReportPortalClientJoinTest {
 		String firstUuid = getId(launches.get(0).start());
 		String secondUuid = getId(launches.get(1).start());
 
-		assertEquals(secondUuid, firstUuid);
+		assertThat(firstUuid, equalTo(secondUuid));
 	}
 
 	private static FinishExecutionRQ standardLaunchFinish() {
@@ -241,17 +229,18 @@ public class ReportPortalClientJoinTest {
 		Launch firstLaunch = rp1.newLaunch(standardLaunchRequest(params));
 		Launch secondLaunch = rp2.newLaunch(standardLaunchRequest(params));
 
-		assertThat(firstLaunch.getClass().getCanonicalName(), Matchers.equalTo(LaunchImpl.class.getCanonicalName()));
-		assertThat(secondLaunch.getClass().getCanonicalName(), Matchers.equalTo(LaunchImpl.class.getCanonicalName()));
+		assertThat(firstLaunch.getClass().getCanonicalName(), equalTo(LaunchImpl.class.getCanonicalName()));
+		assertThat(secondLaunch.getClass().getCanonicalName(), equalTo(LaunchImpl.class.getCanonicalName()));
 	}
 
 	@Test
 	public void test_rp_client_throws_error_in_case_of_lock_file_error() {
 		ReportPortal rp1 = new ReportPortal(rpClient, executorService, params, lockFile);
 
-		exception.expect(InternalReportPortalClientException.class);
-		exception.expectMessage("Unable to create a new launch: unable to read/write lock file.");
-		Launch firstLaunch = rp1.newLaunch(standardLaunchRequest(params));
+		InternalReportPortalClientException exc = Assertions.assertThrows(InternalReportPortalClientException.class,
+				() -> rp1.newLaunch(standardLaunchRequest(params))
+		);
+		assertThat(exc.getMessage(), equalTo("Unable to create a new launch: unable to read/write lock file."));
 	}
 
 	private static StartTestItemRQ standardItemRequest() {
@@ -295,7 +284,7 @@ public class ReportPortalClientJoinTest {
 		Maybe<String> rs = launches.get(1).startTestItem(standardItemRequest());
 		String testItemId = getId(rs);
 
-		assertThat(testItemId, Matchers.equalTo(itemUuid));
+		assertThat(testItemId, equalTo(itemUuid));
 	}
 
 	@Test
@@ -309,7 +298,7 @@ public class ReportPortalClientJoinTest {
 		ArgumentCaptor<String> sentUuid = ArgumentCaptor.forClass(String.class);
 		verify(rpClient, after(WAIT_TIMEOUT * 2).times(2)).getLaunchByUuid(sentUuid.capture());
 
-		assertThat(sentUuid.getValue(), Matchers.equalTo(obtainUuids.getAllValues().get(0)));
+		assertThat(sentUuid.getValue(), equalTo(obtainUuids.getAllValues().get(0)));
 	}
 
 	private static Maybe<LaunchResource> getLaunchErrorResponse() {

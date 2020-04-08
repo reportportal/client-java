@@ -19,13 +19,14 @@ package com.epam.reportportal.aspect;
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.StepTemplateConfig;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Map;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -36,7 +37,7 @@ public class StepNameUtilsTest {
 
 	private final MethodSignature methodSignature = mock(MethodSignature.class);
 
-	@Before
+	@BeforeEach
 	public void init() throws NoSuchMethodException {
 		when(methodSignature.getMethod()).thenReturn(this.getClass().getDeclaredMethod("templateConfigMethod"));
 	}
@@ -58,13 +59,12 @@ public class StepNameUtilsTest {
 		Map<String, Object> paramsMapping = StepNameUtils.createParamsMapping(templateConfig, methodSignature, "first", "second", null);
 
 		//3 for name key + 3 for index key + method name key
-		Assert.assertEquals(namesArray.length * 2 + 1, paramsMapping.size());
-		Arrays.stream(namesArray).forEach(name -> Assert.assertTrue(paramsMapping.containsKey(name)));
+		assertThat(paramsMapping.size(), equalTo(namesArray.length * 2 + 1));
+		Arrays.stream(namesArray).forEach(name -> assertThat(paramsMapping, hasKey(name)));
 
-		Assert.assertEquals("first", paramsMapping.get("firstName"));
-		Assert.assertEquals("second", paramsMapping.get("secondName"));
-		Assert.assertNull(paramsMapping.get("thirdName"));
-
+		assertThat(paramsMapping, hasEntry("firstName", "first"));
+		assertThat(paramsMapping, hasEntry("secondName", "second"));
+		assertThat(paramsMapping, hasEntry("thirdName", null));
 	}
 
 	@Step(templateConfig = @StepTemplateConfig)
