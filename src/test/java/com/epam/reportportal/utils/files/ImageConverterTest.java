@@ -19,8 +19,10 @@ import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.utils.MimeTypeDetector;
 import com.google.common.io.ByteSource;
 import com.google.common.io.Resources;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 /**
  * @author Andrei Varabyeu
@@ -31,7 +33,7 @@ public class ImageConverterTest {
 		final String resourceName = "defaultUserPhoto.jpg";
 		final ByteSource byteSource = Resources.asByteSource(Resources.getResource(resourceName));
 		boolean r = ImageConverter.isImage(new TypeAwareByteSource(byteSource, MimeTypeDetector.detect(byteSource, resourceName)));
-		Assert.assertTrue("Incorrect image type detection", r);
+		assertThat("Incorrect image type detection", r, equalTo(true));
 	}
 
 }

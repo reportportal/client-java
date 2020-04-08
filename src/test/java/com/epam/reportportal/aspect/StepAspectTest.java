@@ -21,14 +21,10 @@ import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
 
 import java.lang.reflect.Method;
 import java.util.UUID;
@@ -36,6 +32,7 @@ import java.util.UUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -46,26 +43,21 @@ public class StepAspectTest {
 	private String itemUuid = UUID.randomUUID().toString();
 	private Maybe<String> parentIdMaybe = StepAspectCommon.getMaybe(parentId);
 	private StepAspect aspect = new StepAspect();
-
-	@Rule
-	public MockitoRule mockitoRule = MockitoJUnit.rule();
-
-	@Mock
-	public Launch launch;
-
-	@Mock
+	private Launch launch;
 	public MethodSignature methodSignature;
 
 	private Method method;
 
-	@Before
+	@BeforeEach
 	public void setup() {
+		launch = mock(Launch.class);
+		methodSignature = mock(MethodSignature.class);
 		StepAspect.setParentId(parentIdMaybe);
 		StepAspect.addLaunch(UUID.randomUUID().toString(), launch);
 		StepAspectCommon.simulateStartItemResponse(launch, parentIdMaybe, itemUuid);
 	}
 
-	@After
+	@AfterEach
 	public void cleanUp() {
 		aspect.finishNestedStep(method.getAnnotation(Step.class));
 	}

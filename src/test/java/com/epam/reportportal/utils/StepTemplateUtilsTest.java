@@ -19,20 +19,19 @@ package com.epam.reportportal.utils;
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.StepTemplateConfig;
 import com.google.common.collect.Lists;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
-@RunWith(DataProviderRunner.class)
 public class StepTemplateUtilsTest {
 
 	@Step
@@ -40,8 +39,8 @@ public class StepTemplateUtilsTest {
 
 	}
 
-	@Test
-	@UseDataProvider("data")
+	@ParameterizedTest
+	@MethodSource("data")
 	public void retrieveValue(String template, String expected) throws NoSuchMethodException, NoSuchFieldException {
 
 		Outer.Inner someObject = createInnerObject();
@@ -50,11 +49,9 @@ public class StepTemplateUtilsTest {
 		StepTemplateConfig templateConfig = stepAnnotation.templateConfig();
 		String replacement = StepTemplateUtils.retrieveValue(templateConfig, 1, template.split("\\."), someObject);
 
-		Assert.assertEquals(expected, replacement);
-
+		assertThat(replacement, equalTo(expected));
 	}
 
-	@DataProvider
 	public static Object[][] data() {
 		return new Object[][] { { "someObject.outerName", "outer" }, { "someObject.innerName", "inner" },
 				{ "someObject.innerStrings", "[firstInner, secondInner, thirdInner]" }, { "someObject", "INNER" },
