@@ -23,6 +23,7 @@ import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -42,12 +43,13 @@ import static org.mockito.Mockito.*;
 public class ItemLoggingContextMultiThreadTest {
 
 	private ReportPortalClient rpClient;
-	private ExecutorService clientExecutorService = Executors.newFixedThreadPool(2);
+	private ExecutorService clientExecutorService;
 	private ListenerParameters params;
 	private ReportPortal rp;
 
 	@BeforeEach
 	public void prepare() {
+		clientExecutorService = Executors.newFixedThreadPool(2);
 		rpClient = mock(ReportPortalClient.class);
 		params = new ListenerParameters();
 		params.setEnable(Boolean.TRUE);
@@ -58,6 +60,11 @@ public class ItemLoggingContextMultiThreadTest {
 		simulateStartChildTestItemResponse(rpClient);
 		simulateBatchLogResponse(rpClient);
 		rp = new ReportPortal(rpClient, clientExecutorService, params, null);
+	}
+
+	@AfterEach
+	public void tearDown() {
+		clientExecutorService.shutdownNow();
 	}
 
 	private static class TestNgTest implements Callable<String> {

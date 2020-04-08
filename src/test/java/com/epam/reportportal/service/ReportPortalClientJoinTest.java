@@ -28,10 +28,12 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeEmitter;
 import io.reactivex.MaybeOnSubscribe;
+import io.reactivex.Scheduler;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 import static com.epam.reportportal.test.TestUtils.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -62,11 +65,10 @@ import static org.mockito.Mockito.*;
 public class ReportPortalClientJoinTest {
 	private static final long WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
 
-	private ExecutorService executorService = Executors.newFixedThreadPool(2);
-
 	private ReportPortalClient rpClient;
 	private LockFile lockFile;
 	private ListenerParameters params;
+	private ExecutorService executorService;
 
 	@BeforeEach
 	public void prepare() {
@@ -75,6 +77,12 @@ public class ReportPortalClientJoinTest {
 		params = new ListenerParameters();
 		params.setClientJoin(true);
 		params.setEnable(Boolean.TRUE);
+		executorService = Executors.newFixedThreadPool(2);
+	}
+
+	@AfterEach
+	public void tearDown() {
+		executorService.shutdownNow();
 	}
 
 	private static void simulateObtainLaunchUuidResponse(final LockFile lockFile) {
@@ -360,4 +368,20 @@ public class ReportPortalClientJoinTest {
 		verify(rpClient, after(WAIT_TIMEOUT).times(0)).getLaunchByUuid(anyString());
 	}
 
+	@Test
+	public void test_two_launches_have_the_same_executors() {
+		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executorService);
+
+		assertThat(((LaunchImpl)launches.get(0)).getExecutor(), sameInstance(executorService));
+		assertThat(((LaunchImpl)launches.get(1)).getExecutor(), sameInstance(executorService));
+	}
+
+	@Test
+	public void test_two_launches_have_the_same_scheduler() {
+		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executorService);
+
+		Scheduler scheduler1 = ((LaunchImpl)launches.get(0)).getScheduler();
+		Scheduler scheduler2 = ((LaunchImpl)launches.get(1)).getScheduler();
+		assertThat(scheduler1, sameInstance(scheduler2));
+	}
 }
