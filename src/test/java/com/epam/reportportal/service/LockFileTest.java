@@ -168,13 +168,10 @@ public class LockFileTest {
 	}
 
 	private ExecutorService testExecutor(final int threadNum) {
-		return Executors.newFixedThreadPool(threadNum, new ThreadFactory() {
-			@Override
-			public Thread newThread(Runnable r) {
-				Thread t = Executors.defaultThreadFactory().newThread(r);
-				t.setDaemon(true);
-				return t;
-			}
+		return Executors.newFixedThreadPool(threadNum, r -> {
+			Thread t = Executors.defaultThreadFactory().newThread(r);
+			t.setDaemon(true);
+			return t;
 		});
 	}
 
@@ -347,6 +344,16 @@ public class LockFileTest {
 		);
 	}
 
+	private static void closeIos(Triple<OutputStreamWriter, BufferedReader, BufferedReader> io) {
+		try{
+			io.getLeft().close();
+			io.getMiddle().close();
+			io.getRight().close();
+		} catch (IOException ignore){
+
+		}
+	}
+
 	private static final Predicate<String> WELCOME_MESSAGE_PREDICATE = new Predicate<String>() {
 		@Override
 		public boolean test(String input) {
@@ -427,6 +434,8 @@ public class LockFileTest {
 	@Test(timeout = 10000)
 	public void test_launch_uuid_get_for_two_processes_returns_equal_values_obtainLaunchUuid() throws IOException, InterruptedException {
 		Pair<String, String> uuids = ImmutablePair.of(UUID.randomUUID().toString(), UUID.randomUUID().toString());
+
+		LOGGER.info("Running two separate processes");
 		// @formatter:off
 		Pair<Process, Process> processes = ImmutablePair.of(
 				buildProcess(LockFileRunner.class, lockFileName, syncFileName, uuids.getKey()),
@@ -434,31 +443,38 @@ public class LockFileTest {
 		);
 		// @formatter:on
 
-		LOGGER.info("Running two separate processes");
-
 		Triple<OutputStreamWriter, BufferedReader, BufferedReader> primaryProcessIo = getProcessIos(processes.getKey());
 		Triple<OutputStreamWriter, BufferedReader, BufferedReader> secondaryProcessIo = getProcessIos(processes.getValue());
 
-		waitForLine(primaryProcessIo.getMiddle(), primaryProcessIo.getRight(), WELCOME_MESSAGE_PREDICATE);
-		waitForLine(secondaryProcessIo.getMiddle(), secondaryProcessIo.getRight(), WELCOME_MESSAGE_PREDICATE);
+		try {
 
-		String lineSeparator = System.getProperty("line.separator");
-		primaryProcessIo.getLeft().write(lineSeparator);
-		primaryProcessIo.getLeft().flush();
-		secondaryProcessIo.getLeft().write(lineSeparator);
-		secondaryProcessIo.getLeft().flush();
+			waitForLine(primaryProcessIo.getMiddle(), primaryProcessIo.getRight(), WELCOME_MESSAGE_PREDICATE);
+			waitForLine(secondaryProcessIo.getMiddle(), secondaryProcessIo.getRight(), WELCOME_MESSAGE_PREDICATE);
 
-		String result1 = waitForLine(primaryProcessIo.getMiddle(), primaryProcessIo.getRight(), ANY_STRING_PREDICATE);
-		String result2 = waitForLine(secondaryProcessIo.getMiddle(), secondaryProcessIo.getRight(), ANY_STRING_PREDICATE);
+			String lineSeparator = System.getProperty("line.separator");
+			primaryProcessIo.getLeft().write(lineSeparator);
+			primaryProcessIo.getLeft().flush();
+			secondaryProcessIo.getLeft().write(lineSeparator);
+			secondaryProcessIo.getLeft().flush();
 
-		assertThat("Assert two UUIDs from different processes are equal", result1, equalTo(result2));
+			String result1 = waitForLine(primaryProcessIo.getMiddle(), primaryProcessIo.getRight(), ANY_STRING_PREDICATE);
+			String result2 = waitForLine(secondaryProcessIo.getMiddle(), secondaryProcessIo.getRight(), ANY_STRING_PREDICATE);
 
-		primaryProcessIo.getLeft().write(lineSeparator);
-		primaryProcessIo.getLeft().flush();
-		secondaryProcessIo.getLeft().write(lineSeparator);
-		secondaryProcessIo.getLeft().flush();
+			assertThat("Assert two UUIDs from different processes are equal", result1, equalTo(result2));
 
-		processes.getKey().waitFor();
-		processes.getValue().waitFor();
+			primaryProcessIo.getLeft().write(lineSeparator);
+			primaryProcessIo.getLeft().flush();
+			secondaryProcessIo.getLeft().write(lineSeparator);
+			secondaryProcessIo.getLeft().flush();
+
+			processes.getKey().waitFor();
+			processes.getValue().waitFor();
+		} finally {
+			LOGGER.info("Done. Closing them out.");
+			closeIos(primaryProcessIo);
+			closeIos(secondaryProcessIo);
+			processes.getKey().destroyForcibly();
+			processes.getValue().destroyForcibly();
+		}
 	}
 }
