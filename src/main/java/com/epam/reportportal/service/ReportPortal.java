@@ -413,6 +413,9 @@ public class ReportPortal {
 
 		protected HttpClient defaultClient(ListenerParameters parameters) throws MalformedURLException {
 			String baseUrl = parameters.getBaseUrl();
+			if (baseUrl == null) {
+				throw new InternalReportPortalClientException("Base url for Report Portal server is not set!");
+			}
 			String keyStore = parameters.getKeystore();
 			String keyStorePassword = parameters.getKeystorePassword();
 

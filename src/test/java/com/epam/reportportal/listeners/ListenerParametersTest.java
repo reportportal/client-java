@@ -15,11 +15,13 @@
  */
 package com.epam.reportportal.listeners;
 
+import com.epam.reportportal.utils.properties.PropertiesLoader;
 import org.junit.Test;
 
 import static com.epam.ta.reportportal.ws.model.launch.Mode.DEBUG;
 import static com.epam.ta.reportportal.ws.model.launch.Mode.DEFAULT;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class ListenerParametersTest {
 
@@ -27,6 +29,14 @@ public class ListenerParametersTest {
 	public void testParseLaunchMode() {
 		assertEquals(DEFAULT, new ListenerParameters().parseLaunchMode("notvalid"));
 		assertEquals(DEBUG, new ListenerParameters().parseLaunchMode("Debug"));
+	}
+
+	@Test
+	public void testNoNPEs() {
+		PropertiesLoader properties = PropertiesLoader.load();
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		assertNull(listenerParameters.getBaseUrl());
 	}
 
 }
