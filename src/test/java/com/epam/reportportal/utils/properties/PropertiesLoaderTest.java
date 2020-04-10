@@ -69,7 +69,11 @@ public class PropertiesLoaderTest {
 		properties.setProperty("rp.description", "testvalue");
 
 		PropertiesLoader.overrideWith(properties, ImmutableMap.<String, String>builder().put("rp_description", "anothervalue").build());
-		Assert.assertEquals("Incorrect override behaviour", "anothervalue", properties.getProperty(ListenerProperty.DESCRIPTION.getPropertyName()));
+		Assert.assertEquals(
+				"Incorrect override behaviour",
+				"anothervalue",
+				properties.getProperty(ListenerProperty.DESCRIPTION.getPropertyName())
+		);
 
 	}
 
