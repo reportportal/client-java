@@ -21,6 +21,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.ta.reportportal.ws.model.ErrorRS;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
+import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.LaunchResource;
@@ -52,7 +53,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static com.epam.reportportal.test.TestUtils.*;
+import static com.epam.reportportal.test.TestUtils.simulateStartLaunchResponse;
+import static com.epam.reportportal.test.TestUtils.standardLaunchRequest;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
@@ -232,6 +234,11 @@ public class ReportPortalClientJoinTest {
 		launches.get(0).start();
 		launches.get(1).start();
 
+		when(rpClient.finishLaunch(
+				any(),
+				any(FinishExecutionRQ.class)
+		)).thenReturn(Maybe.create(e -> e.onSuccess(new OperationCompletionRS())));
+
 		launches.get(0).finish(standardLaunchFinish());
 		launches.get(1).finish(standardLaunchFinish());
 
@@ -316,7 +323,7 @@ public class ReportPortalClientJoinTest {
 		verify(lockFile, timeout(WAIT_TIMEOUT).times(2)).obtainLaunchUuid(obtainUuids.capture());
 
 		ArgumentCaptor<String> sentUuid = ArgumentCaptor.forClass(String.class);
-		verify(rpClient, after(WAIT_TIMEOUT * 2).times(2)).getLaunchByUuid(sentUuid.capture());
+		verify(rpClient, after(WAIT_TIMEOUT * 2).times(1)).getLaunchByUuid(sentUuid.capture());
 
 		assertThat(sentUuid.getValue(), equalTo(obtainUuids.getAllValues().get(0)));
 	}
