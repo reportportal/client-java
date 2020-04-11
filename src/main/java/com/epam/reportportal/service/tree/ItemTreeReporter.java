@@ -75,16 +75,14 @@ public class ItemTreeReporter {
 	public static Maybe<OperationCompletionRS> finishItem(final ReportPortalClient reportPortalClient,
 			final FinishTestItemRQ finishTestItemRQ, final Maybe<String> launchUuid, final TestItemTree.TestItemLeaf testItemLeaf) {
 		final Maybe<String> item = testItemLeaf.getItemId();
-		if (item != null && launchUuid != null) {
-			Maybe<OperationCompletionRS> finishResponse = testItemLeaf.getFinishResponse();
-			if (finishResponse != null) {
-				@SuppressWarnings("unused")
-				OperationCompletionRS finishItem = finishResponse.blockingGet(); // we do this call to ensure we are the latest update ith the chain
-			}
-			return sendFinishItemRequest(reportPortalClient, launchUuid, item, finishTestItemRQ);
-		} else {
+		final Maybe<OperationCompletionRS> finishResponse = testItemLeaf.getFinishResponse();
+		if (item == null || launchUuid == null) {
 			return Maybe.empty();
 		}
+		if (testItemLeaf.getFinishResponse() != null) {
+			finishResponse.blockingGet(); //  ensure we are the last update in the chain
+		}
+		return sendFinishItemRequest(reportPortalClient, launchUuid, item, finishTestItemRQ);
 	}
 
 	/**
