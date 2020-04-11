@@ -210,22 +210,20 @@ public class LaunchImpl extends Launch {
 	public void finish(final FinishExecutionRQ rq) {
 		QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
 		final Completable finish = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren())
-				.andThen(this.launch.map(new Function<String, OperationCompletionRS>() {
-					@Override
-					public OperationCompletionRS apply(String id) {
-						return rpClient.finishLaunch(id, rq)
-								.retry(DEFAULT_REQUEST_RETRY)
-								.doOnSuccess(LOG_SUCCESS)
-								.doOnError(LOG_ERROR)
-								.blockingGet();
-					}
-				}))
+				.andThen(this.launch.map(id -> rpClient.finishLaunch(id, rq)
+						.retry(DEFAULT_REQUEST_RETRY)
+						.doOnSuccess(LOG_SUCCESS)
+						.doOnError(LOG_ERROR)
+						.blockingGet()))
 				.ignoreElement()
 				.cache();
 		try {
-			finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
-		} catch (Exception e) {
-			LOGGER.error("Unable to finish launch in ReportPortal", e);
+			Throwable error = finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
+			if (error != null) {
+				throw error;
+			}
+		} catch (Throwable t) {
+			LOGGER.error("Unable to finish launch in ReportPortal", t);
 		} finally {
 			rpClient.close();
 		}
