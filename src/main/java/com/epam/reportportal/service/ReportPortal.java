@@ -40,7 +40,7 @@ import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeEmitter;
 import io.reactivex.MaybeOnSubscribe;
-import io.reactivex.functions.Consumer;
+import io.reactivex.disposables.Disposable;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -62,11 +62,9 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
+import java.util.Queue;
 import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Function;
 
 import static com.epam.reportportal.service.LaunchLoggingContext.DEFAULT_LAUNCH_KEY;
@@ -525,38 +523,36 @@ public class ReportPortal {
 	private class SecondaryLaunch extends LaunchImpl {
 		private final ReportPortalClient rpClient;
 
-		SecondaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch) {
-			super(rpClient, parameters, launch, executor);
+		SecondaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch, ExecutorService executorService) {
+			super(rpClient, parameters, launch, executorService);
 			this.rpClient = rpClient;
 		}
 
 		private void waitForLaunchStart() {
 			new Waiter("Wait for Launch start").pollingEvery(1, TimeUnit.SECONDS).timeoutFail().till(new Callable<Boolean>() {
 				private volatile Boolean result = null;
+				private final Queue<Disposable> disposables = new ConcurrentLinkedQueue<>();
 
 				@Override
 				public Boolean call() {
-					launch.subscribe(new Consumer<String>() {
-						@Override
-						public void accept(String uuid) {
+					if (result == null) {
+						disposables.add(launch.subscribe(uuid -> {
 							Maybe<LaunchResource> maybeRs = rpClient.getLaunchByUuid(uuid);
 							if (maybeRs != null) {
-								maybeRs.subscribe(new Consumer<LaunchResource>() {
-									@Override
-									public void accept(LaunchResource launchResource) {
-										result = Boolean.TRUE;
-									}
-								}, new Consumer<Throwable>() {
-									@Override
-									public void accept(Throwable throwable) {
-										LOGGER.debug("Unable to get a Launch: " + throwable.getLocalizedMessage(), throwable);
-									}
-								});
+								disposables.add(maybeRs.subscribe(
+										launchResource -> result = Boolean.TRUE,
+										throwable -> LOGGER.debug("Unable to get a Launch: " + throwable.getLocalizedMessage(), throwable)
+								));
 							} else {
 								LOGGER.debug("RP Client returned 'null' response on get Launch by UUID call");
 							}
+						}));
+					} else {
+						Disposable disposable;
+						while ((disposable = disposables.poll()) != null) {
+							disposable.dispose();
 						}
-					});
+					}
 					return result;
 				}
 			});
@@ -576,8 +572,11 @@ public class ReportPortal {
 			try {
 				Throwable throwable = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren()).
 						timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
-			} catch (Exception e) {
-				LOGGER.error("Unable to finish secondary launch in ReportPortal", e);
+				if (throwable != null) {
+					throw throwable;
+				}
+			} catch (Throwable t) {
+				LOGGER.error("Unable to finish secondary launch in ReportPortal", t);
 			} finally {
 				rpClient.close();
 				// ignore that call, since only primary launch should finish it
@@ -587,8 +586,8 @@ public class ReportPortal {
 	}
 
 	private class PrimaryLaunch extends LaunchImpl {
-		PrimaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, StartLaunchRQ launch) {
-			super(rpClient, parameters, launch, executor);
+		PrimaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, StartLaunchRQ launch, ExecutorService executorService) {
+			super(rpClient, parameters, launch, executorService);
 		}
 
 		@Override
@@ -620,7 +619,7 @@ public class ReportPortal {
 			try {
 				StartLaunchRQ rqCopy = objectMapper.readValue(objectMapper.writeValueAsString(rq), StartLaunchRQ.class);
 				rqCopy.setUuid(uuid);
-				return new PrimaryLaunch(rpClient, parameters, rqCopy);
+				return new PrimaryLaunch(rpClient, parameters, rqCopy, executor);
 			} catch (IOException e) {
 				throw new InternalReportPortalClientException("Unable to clone start launch request:", e);
 			}
@@ -632,7 +631,7 @@ public class ReportPortal {
 					emitter.onComplete();
 				}
 			});
-			return new SecondaryLaunch(rpClient, parameters, launch);
+			return new SecondaryLaunch(rpClient, parameters, launch, executor);
 		}
 	}
 }
