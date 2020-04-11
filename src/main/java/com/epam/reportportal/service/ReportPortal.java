@@ -167,7 +167,6 @@ public class ReportPortal {
 	 * @param client Report Portal Client
 	 * @param params {@link ListenerParameters}
 	 * @return builder for {@link ReportPortal}
-	 * @deprecated use {@link #create(ReportPortalClient, ListenerParameters, ExecutorService)}
 	 */
 	public static ReportPortal create(ReportPortalClient client, ListenerParameters params) {
 		return create(client, params, buildExecutorService(params));
@@ -178,8 +177,7 @@ public class ReportPortal {
 	 *
 	 * @param client   Report Portal Client
 	 * @param params   {@link ListenerParameters}
-	 * @param executor An executor service which will be used for internal request / response queue, should be the same as for the client
-	 *                 param to avoid request tail cut on finish.
+	 * @param executor An executor service which will be used for internal request / response queue
 	 * @return builder for {@link ReportPortal}
 	 */
 	public static ReportPortal create(@NotNull final ReportPortalClient client, @NotNull final ListenerParameters params,
@@ -368,8 +366,9 @@ public class ReportPortal {
 		public ReportPortal build() {
 			try {
 				ListenerParameters params = null == this.parameters ? new ListenerParameters(defaultPropertiesLoader()) : this.parameters;
-				return new ReportPortal(buildClient(ReportPortalClient.class, params),
-						buildExecutorService(params),
+				ExecutorService executorService = buildExecutorService(params);
+				return new ReportPortal(buildClient(ReportPortalClient.class, params, executorService),
+						executorService,
 						params,
 						buildLockFile(params)
 				);
@@ -378,7 +377,6 @@ public class ReportPortal {
 				LOGGER.error(errMsg, e);
 				throw new InternalReportPortalClientException(errMsg, e);
 			}
-
 		}
 
 		/**
@@ -386,7 +384,6 @@ public class ReportPortal {
 		 * @param params     {@link ListenerParameters} Report Portal parameters
 		 * @param <T>        Report Portal Client interface class
 		 * @return a Report Portal Client instance
-		 * @deprecated use {@link #buildClient(Class, ListenerParameters, ExecutorService)}
 		 */
 		public <T extends ReportPortalClient> T buildClient(@NotNull final Class<T> clientType, @NotNull final ListenerParameters params) {
 			return buildClient(clientType, params, buildExecutorService(params));
@@ -396,8 +393,7 @@ public class ReportPortal {
 		 * @param clientType a class to instantiate
 		 * @param params     {@link ListenerParameters} Report Portal parameters
 		 * @param <T>        Report Portal Client interface class
-		 * @param executor   {@link ExecutorService} an Executor which will be used for internal request / response queue processing, should
-		 *                   be the same for the whole ReportPortal instance to avoid request tail cut on finish.
+		 * @param executor   {@link ExecutorService} an Executor which will be used for internal request / response queue processing
 		 * @return a Report Portal Client instance
 		 */
 		public <T extends ReportPortalClient> T buildClient(@NotNull final Class<T> clientType, @NotNull final ListenerParameters params,
@@ -419,7 +415,6 @@ public class ReportPortal {
 		 * @param parameters {@link ListenerParameters} Report Portal parameters
 		 * @param client     {@link HttpClient} an apache HTTP client instance
 		 * @return a ReportPortal endpoint description class
-		 * @deprecated use {@link #buildRestEndpoint(ListenerParameters, HttpClient, ExecutorService)}
 		 */
 		protected RestEndpoint buildRestEndpoint(@NotNull final ListenerParameters parameters, @NotNull final HttpClient client) {
 			return buildRestEndpoint(parameters, client, buildExecutorService(parameters));
@@ -428,8 +423,7 @@ public class ReportPortal {
 		/**
 		 * @param parameters {@link ListenerParameters} Report Portal parameters
 		 * @param client     {@link HttpClient} an apache HTTP client instance
-		 * @param executor   {@link ExecutorService} an Executor which will be used for internal request / response queue processing, should
-		 *                   be the same for the whole ReportPortal instance to avoid request tail cut on finish.
+		 * @param executor   {@link ExecutorService} an Executor which will be used for internal request / response queue processing
 		 * @return a ReportPortal endpoint description class
 		 */
 		protected RestEndpoint buildRestEndpoint(@NotNull final ListenerParameters parameters, @NotNull final HttpClient client,
