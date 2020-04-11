@@ -112,6 +112,7 @@ public class ItemTreeReporter {
 	 * @param level              Log level
 	 * @param message            Log message
 	 * @param logTime            Log time
+	 * @param file               a file to attach to the log message
 	 * @param launchUuid         Launch UUID
 	 * @param testItemLeaf       {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
 	 * @return True if request is sent otherwise false
