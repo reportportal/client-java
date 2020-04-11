@@ -21,13 +21,13 @@ import com.epam.reportportal.annotations.StepTemplateConfig;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 import java.util.Arrays;
 import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
@@ -35,7 +35,8 @@ import static org.mockito.Mockito.when;
  */
 public class StepNameUtilsTest {
 
-	private final MethodSignature methodSignature = mock(MethodSignature.class);
+	@Mock
+	private MethodSignature methodSignature;
 
 	@BeforeEach
 	public void init() throws NoSuchMethodException {

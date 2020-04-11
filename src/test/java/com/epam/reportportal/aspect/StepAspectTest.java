@@ -25,6 +25,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 
 import java.lang.reflect.Method;
 import java.util.UUID;
@@ -32,7 +33,6 @@ import java.util.UUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -43,15 +43,16 @@ public class StepAspectTest {
 	private String itemUuid = UUID.randomUUID().toString();
 	private Maybe<String> parentIdMaybe = StepAspectCommon.getMaybe(parentId);
 	private StepAspect aspect = new StepAspect();
+
+	@Mock
 	private Launch launch;
+	@Mock
 	public MethodSignature methodSignature;
 
 	private Method method;
 
 	@BeforeEach
 	public void setup() {
-		launch = mock(Launch.class);
-		methodSignature = mock(MethodSignature.class);
 		StepAspect.setParentId(parentIdMaybe);
 		StepAspect.addLaunch(UUID.randomUUID().toString(), launch);
 		StepAspectCommon.simulateStartItemResponse(launch, parentIdMaybe, itemUuid);

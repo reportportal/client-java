@@ -39,6 +39,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
+import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -65,15 +66,15 @@ import static org.mockito.Mockito.*;
 public class ReportPortalClientJoinTest {
 	private static final long WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
 
+	@Mock
 	private ReportPortalClient rpClient;
+	@Mock
 	private LockFile lockFile;
 	private ListenerParameters params;
 	private ExecutorService executorService;
 
 	@BeforeEach
 	public void prepare() {
-		rpClient = mock(ReportPortalClient.class);
-		lockFile = mock(LockFile.class);
 		params = new ListenerParameters();
 		params.setClientJoin(true);
 		params.setEnable(Boolean.TRUE);
@@ -151,11 +152,9 @@ public class ReportPortalClientJoinTest {
 		}
 	}
 
-	private static List<Launch> createLaunches(int num, ReportPortalClient rpClient, ListenerParameters params, LockFile lockFile,
+	private static List<Launch> createLaunchesNoStart(int num, ReportPortalClient rpClient, ListenerParameters params, LockFile lockFile,
 			ExecutorService executor) {
-		List<Launch> result = new ArrayList<Launch>(num);
-		simulateStartLaunchResponse(rpClient);
-		simulateGetLaunchResponse(rpClient);
+		List<Launch> result = new ArrayList<>(num);
 		simulateObtainLaunchUuidResponse(lockFile);
 		for (int i = 0; i < num; i++) {
 			ReportPortal rp = new ReportPortal(rpClient, executor, params, lockFile);
@@ -164,9 +163,21 @@ public class ReportPortalClientJoinTest {
 		return result;
 	}
 
+	private static List<Launch> createLaunchesNoGetLaunch(int num, ReportPortalClient rpClient, ListenerParameters params, LockFile lockFile,
+			ExecutorService executor) {
+		simulateStartLaunchResponse(rpClient);
+		return createLaunchesNoStart(num, rpClient, params, lockFile, executor);
+	}
+
+	private static List<Launch> createLaunches(int num, ReportPortalClient rpClient, ListenerParameters params, LockFile lockFile,
+			ExecutorService executor) {
+		simulateGetLaunchResponse(rpClient);
+		return createLaunchesNoGetLaunch(num, rpClient, params, lockFile, executor);
+	}
+
 	@Test
 	public void test_two_launches_have_correct_class_names() {
-		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executorService);
+		List<Launch> launches = createLaunchesNoStart(2, rpClient, params, lockFile, executorService);
 
 		assertThat(launches.get(0).getClass().getCanonicalName(), Matchers.endsWith("PrimaryLaunch"));
 		assertThat(launches.get(1).getClass().getCanonicalName(), Matchers.endsWith("SecondaryLaunch"));
@@ -184,7 +195,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_primary_launch_start_launch_request() {
-		List<Launch> launches = createLaunches(1, rpClient, params, lockFile, executorService);
+		List<Launch> launches = createLaunchesNoGetLaunch(1, rpClient, params, lockFile, executorService);
 		launches.get(0).start();
 
 		ArgumentCaptor<String> passedUuid = ArgumentCaptor.forClass(String.class);
@@ -297,7 +308,8 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_secondary_launch_call_get_launch_by_uuid() {
-		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executorService);
+		List<Launch> launches = createLaunchesNoStart(2, rpClient, params, lockFile, executorService);
+		simulateGetLaunchResponse(rpClient);
 		launches.get(1).start();
 
 		ArgumentCaptor<String> obtainUuids = ArgumentCaptor.forClass(String.class);
@@ -356,7 +368,6 @@ public class ReportPortalClientJoinTest {
 	public void test_secondary_launch_does_not_wait_get_launch_by_uuid_correct_response_for_v2() {
 		int num = 2;
 		simulateObtainLaunchUuidResponse(lockFile);
-		simulateGetLaunchByUuidResponse(rpClient);
 		params.setAsyncReporting(true);
 		List<Launch> launches = new ArrayList<Launch>(num);
 		for (int i = 0; i < num; i++) {
@@ -370,7 +381,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_two_launches_have_the_same_executors() {
-		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executorService);
+		List<Launch> launches = createLaunchesNoStart(2, rpClient, params, lockFile, executorService);
 
 		assertThat(((LaunchImpl)launches.get(0)).getExecutor(), sameInstance(executorService));
 		assertThat(((LaunchImpl)launches.get(1)).getExecutor(), sameInstance(executorService));
@@ -378,7 +389,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_two_launches_have_the_same_scheduler() {
-		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executorService);
+		List<Launch> launches = createLaunchesNoStart(2, rpClient, params, lockFile, executorService);
 
 		Scheduler scheduler1 = ((LaunchImpl)launches.get(0)).getScheduler();
 		Scheduler scheduler2 = ((LaunchImpl)launches.get(1)).getScheduler();

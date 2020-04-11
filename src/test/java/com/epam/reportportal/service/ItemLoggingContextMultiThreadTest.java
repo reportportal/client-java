@@ -27,6 +27,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -42,6 +43,7 @@ import static org.mockito.Mockito.*;
 
 public class ItemLoggingContextMultiThreadTest {
 
+	@Mock
 	private ReportPortalClient rpClient;
 	private ExecutorService clientExecutorService;
 	private ListenerParameters params;
@@ -50,7 +52,6 @@ public class ItemLoggingContextMultiThreadTest {
 	@BeforeEach
 	public void prepare() {
 		clientExecutorService = Executors.newFixedThreadPool(2);
-		rpClient = mock(ReportPortalClient.class);
 		params = new ListenerParameters();
 		params.setEnable(Boolean.TRUE);
 		params.setClientJoin(false);
