@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableMap;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Properties;
 
 import static org.hamcrest.Matchers.is;
@@ -28,7 +27,7 @@ import static org.hamcrest.Matchers.is;
 public class PropertiesLoaderTest {
 
 	@Test
-	public void testFullReloadProperties() throws IOException {
+	public void testFullReloadProperties() {
 		Properties props = new Properties();
 		for (ListenerProperty listenerProperties : ListenerProperty.values()) {
 			props.setProperty(listenerProperties.getPropertyName(), listenerProperties.getPropertyName());
@@ -50,7 +49,7 @@ public class PropertiesLoaderTest {
 	}
 
 	@Test
-	public void testOverride() throws IOException {
+	public void testOverride() {
 		Properties properties = new Properties();
 		String propertyKey = ListenerProperty.DESCRIPTION.getPropertyName();
 		properties.setProperty(propertyKey, "testvalue");
@@ -65,8 +64,21 @@ public class PropertiesLoaderTest {
 	}
 
 	@Test
-	public void testUtf() throws IOException {
-		Assert.assertThat("Incorrect encoding!", PropertiesLoader.load("utf-demo.properties").getProperty("utf8"), is("привет мир!"));
+	public void testOverrideVariableWithUnderscore() {
+		Properties properties = new Properties();
+		properties.setProperty("rp.description", "testvalue");
 
+		PropertiesLoader.overrideWith(properties, ImmutableMap.<String, String>builder().put("rp_description", "anothervalue").build());
+		Assert.assertEquals(
+				"Incorrect override behaviour",
+				"anothervalue",
+				properties.getProperty(ListenerProperty.DESCRIPTION.getPropertyName())
+		);
+
+	}
+
+	@Test
+	public void testUtf() {
+		Assert.assertThat("Incorrect encoding!", PropertiesLoader.load("utf-demo.properties").getProperty("utf8"), is("привет мир!"));
 	}
 }
