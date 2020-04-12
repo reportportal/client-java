@@ -220,10 +220,8 @@ public class LaunchImpl extends Launch {
 		try {
 			Throwable error = finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
 			if (error != null) {
-				throw error;
+				LOGGER.error("Unable to finish launch in ReportPortal", error);
 			}
-		} catch (Throwable t) {
-			LOGGER.error("Unable to finish launch in ReportPortal", t);
 		} finally {
 			rpClient.close();
 		}

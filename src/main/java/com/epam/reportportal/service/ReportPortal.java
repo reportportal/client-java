@@ -567,10 +567,8 @@ public class ReportPortal {
 				Throwable throwable = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren()).
 						timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
 				if (throwable != null) {
-					throw throwable;
+					LOGGER.error("Unable to finish secondary launch in ReportPortal", throwable);
 				}
-			} catch (Throwable t) {
-				LOGGER.error("Unable to finish secondary launch in ReportPortal", t);
 			} finally {
 				rpClient.close();
 				// ignore that call, since only primary launch should finish it
