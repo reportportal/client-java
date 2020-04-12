@@ -26,6 +26,8 @@ import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import io.reactivex.Maybe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +44,7 @@ import java.util.Date;
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
 public class ItemTreeReporter {
+	private static final Logger LOGGER = LoggerFactory.getLogger(ItemTreeReporter.class);
 
 	private ItemTreeReporter() {
 		//static only
@@ -80,7 +83,10 @@ public class ItemTreeReporter {
 			return Maybe.empty();
 		}
 		if (testItemLeaf.getFinishResponse() != null) {
-			finishResponse.blockingGet(); //  ensure we are the last update in the chain
+			Throwable t = finishResponse.ignoreElement().blockingGet(); //  ensure we are the last update in the chain
+			if (t != null) {
+				LOGGER.warn("A main item finished with error", t);
+			}
 		}
 		return sendFinishItemRequest(reportPortalClient, launchUuid, item, finishTestItemRQ);
 	}
