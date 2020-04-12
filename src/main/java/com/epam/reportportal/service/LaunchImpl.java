@@ -156,6 +156,24 @@ public class LaunchImpl extends Launch {
 	}
 
 	/**
+	 * Returns a current executor which is used to process launch events such as requests and responses.
+	 *
+	 * @return an {@link ExecutorService}
+	 */
+	public ExecutorService getExecutor() {
+		return executor;
+	}
+
+	/**
+	 * Returns a current {@link Scheduler} which is used to process launch events such as requests and responses.
+	 *
+	 * @return an {@link Scheduler}
+	 */
+	public Scheduler getScheduler() {
+		return scheduler;
+	}
+
+	/**
 	 * Starts launch in ReportPortal. Does NOT starts the same launch twice
 	 *
 	 * @return Launch ID promise
