@@ -32,6 +32,7 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -87,6 +88,13 @@ public class ReportPortalClientJoinTest {
 		params = new ListenerParameters();
 		params.setClientJoin(true);
 		params.setEnable(Boolean.TRUE);
+		executorService = Executors.newFixedThreadPool(2);
+	}
+
+	@After
+	public void tearDown() throws InterruptedException {
+		executorService.shutdown();
+		executorService.awaitTermination(10, TimeUnit.SECONDS);
 	}
 
 	private static void simulateObtainLaunchUuidResponse(final LockFile lockFile) {
