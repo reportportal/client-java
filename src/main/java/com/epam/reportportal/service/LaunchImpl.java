@@ -34,12 +34,11 @@ import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
+import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static com.epam.reportportal.service.LoggingCallback.*;
 import static com.epam.reportportal.utils.SubscriptionUtils.logCompletableResults;
@@ -50,6 +49,8 @@ import static com.google.common.collect.Lists.newArrayList;
  * @author Andrei Varabyeu
  */
 public class LaunchImpl extends Launch {
+
+	private static final Map<ExecutorService, Scheduler> SCHEDULERS = new ConcurrentHashMap<>();
 
 	private static final Function<ItemCreatedRS, String> TO_ID = new Function<ItemCreatedRS, String>() {
 		@Override
@@ -107,23 +108,27 @@ public class LaunchImpl extends Launch {
 	private final ExecutorService executor;
 	private final Scheduler scheduler;
 
-	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, final StartLaunchRQ rq, ExecutorService executor) {
+	LaunchImpl(@NotNull final ReportPortalClient reportPortalClient, @NotNull final ListenerParameters parameters,
+			@NotNull final StartLaunchRQ rq, @NotNull final ExecutorService executorService) {
 		super(parameters);
-		this.rpClient = Objects.requireNonNull(rpClient, "RestEndpoint shouldn't be NULL");
+		rpClient = Objects.requireNonNull(reportPortalClient, "RestEndpoint shouldn't be NULL");
 		Objects.requireNonNull(parameters, "Parameters shouldn't be NULL");
-		this.executor = Objects.requireNonNull(executor);
-		this.scheduler = Schedulers.from(this.executor);
+		executor = Objects.requireNonNull(executorService);
+		scheduler = createScheduler(executor);
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 
-		this.launch = Maybe.create(new MaybeOnSubscribe<String>() {
+		launch = Maybe.create(new MaybeOnSubscribe<String>() {
 			@Override
 			public void subscribe(final MaybeEmitter<String> emitter) {
 
 				Maybe<StartLaunchRS> launchPromise = Maybe.defer(new Callable<MaybeSource<? extends StartLaunchRS>>() {
 					@Override
 					public MaybeSource<? extends StartLaunchRS> call() {
-						return rpClient.startLaunch(rq).retry(DEFAULT_REQUEST_RETRY).doOnSuccess(LAUNCH_SUCCESS_CONSUMER).doOnError(LOG_ERROR);
+						return rpClient.startLaunch(rq)
+								.retry(DEFAULT_REQUEST_RETRY)
+								.doOnSuccess(LAUNCH_SUCCESS_CONSUMER)
+								.doOnError(LOG_ERROR);
 					}
 				}).subscribeOn(scheduler).cache();
 
@@ -143,16 +148,21 @@ public class LaunchImpl extends Launch {
 		}).cache();
 	}
 
-	LaunchImpl(final ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch, ExecutorService executor) {
+	LaunchImpl(@NotNull final ReportPortalClient reportPortalClient, @NotNull final ListenerParameters parameters,
+			@NotNull final Maybe<String> launchMaybe, @NotNull final ExecutorService executorService) {
 		super(parameters);
-		this.rpClient = Objects.requireNonNull(rpClient, "RestEndpoint shouldn't be NULL");
+		rpClient = Objects.requireNonNull(reportPortalClient, "RestEndpoint shouldn't be NULL");
 		Objects.requireNonNull(parameters, "Parameters shouldn't be NULL");
-		this.executor = Objects.requireNonNull(executor);
-		this.scheduler = Schedulers.from(this.executor);
+		executor = Objects.requireNonNull(executorService);
+		scheduler = createScheduler(executor);
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 
-		this.launch = launch.subscribeOn(scheduler).cache();
+		launch = launchMaybe.subscribeOn(scheduler).cache();
+	}
+
+	protected Scheduler createScheduler(ExecutorService executorService) {
+		return SCHEDULERS.computeIfAbsent(executorService, Schedulers::from);
 	}
 
 	/**
@@ -200,18 +210,18 @@ public class LaunchImpl extends Launch {
 	public void finish(final FinishExecutionRQ rq) {
 		QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
 		final Completable finish = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren())
-				.andThen(this.launch.map(new Function<String, OperationCompletionRS>() {
-					@Override
-					public OperationCompletionRS apply(String id) {
-						return rpClient.finishLaunch(id, rq).retry(DEFAULT_REQUEST_RETRY).doOnSuccess(LOG_SUCCESS).doOnError(LOG_ERROR).blockingGet();
-					}
-				}))
+				.andThen(this.launch.map(id -> rpClient.finishLaunch(id, rq)
+						.retry(DEFAULT_REQUEST_RETRY)
+						.doOnSuccess(LOG_SUCCESS)
+						.doOnError(LOG_ERROR)
+						.blockingGet()))
 				.ignoreElement()
 				.cache();
 		try {
-			finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
-		} catch (Exception e) {
-			LOGGER.error("Unable to finish launch in ReportPortal", e);
+			Throwable error = finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
+			if (error != null) {
+				LOGGER.error("Unable to finish launch in ReportPortal", error);
+			}
 		} finally {
 			rpClient.close();
 		}
@@ -279,8 +289,7 @@ public class LaunchImpl extends Launch {
 		}).cache();
 		itemId.subscribeOn(scheduler).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement());
-		LoggingContext.init(
-				this.launch,
+		LoggingContext.init(this.launch,
 				itemId,
 				this.rpClient,
 				scheduler,
