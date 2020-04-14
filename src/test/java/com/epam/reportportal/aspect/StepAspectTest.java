@@ -21,14 +21,11 @@ import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
 
 import java.lang.reflect.Method;
 import java.util.UUID;
@@ -47,25 +44,21 @@ public class StepAspectTest {
 	private Maybe<String> parentIdMaybe = StepAspectCommon.getMaybe(parentId);
 	private StepAspect aspect = new StepAspect();
 
-	@Rule
-	public MockitoRule mockitoRule = MockitoJUnit.rule();
-
 	@Mock
-	public Launch launch;
-
+	private Launch launch;
 	@Mock
 	public MethodSignature methodSignature;
 
 	private Method method;
 
-	@Before
+	@BeforeEach
 	public void setup() {
 		StepAspect.setParentId(parentIdMaybe);
 		StepAspect.addLaunch(UUID.randomUUID().toString(), launch);
 		StepAspectCommon.simulateStartItemResponse(launch, parentIdMaybe, itemUuid);
 	}
 
-	@After
+	@AfterEach
 	public void cleanUp() {
 		aspect.finishNestedStep(method.getAnnotation(Step.class));
 	}

@@ -57,26 +57,31 @@ public class LoggingContext {
 	/**
 	 * Initializes new logging context and attaches it to current thread
 	 *
-	 * @param itemId Test Item ID
-	 * @param client Client of ReportPortal
+	 * @param launchUuid a UUID of a Launch
+	 * @param itemUuid   a Test Item UUID
+	 * @param client     Client of ReportPortal
+	 * @param scheduler  a {@link Scheduler} to use with this LoggingContext
 	 * @return New Logging Context
 	 */
-	public static LoggingContext init(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, Scheduler scheduler) {
-		return init(launchId, itemId, client, scheduler, DEFAULT_BUFFER_SIZE, false);
+	public static LoggingContext init(Maybe<String> launchUuid, Maybe<String> itemUuid, final ReportPortalClient client,
+			Scheduler scheduler) {
+		return init(launchUuid, itemUuid, client, scheduler, DEFAULT_BUFFER_SIZE, false);
 	}
 
 	/**
 	 * Initializes new logging context and attaches it to current thread
 	 *
-	 * @param itemId        Test Item ID
+	 * @param launchUuid    a UUID of a Launch
+	 * @param itemUuid      a Test Item UUID
 	 * @param client        Client of ReportPortal
+	 * @param scheduler     a {@link Scheduler} to use with this LoggingContext
 	 * @param bufferSize    Size of back-pressure buffer
 	 * @param convertImages Whether Image should be converted to BlackAndWhite
 	 * @return New Logging Context
 	 */
-	public static LoggingContext init(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, Scheduler scheduler,
-			int bufferSize, boolean convertImages) {
-		LoggingContext context = new LoggingContext(launchId, itemId, client, scheduler, bufferSize, convertImages);
+	public static LoggingContext init(Maybe<String> launchUuid, Maybe<String> itemUuid, final ReportPortalClient client,
+			Scheduler scheduler, int bufferSize, boolean convertImages) {
+		LoggingContext context = new LoggingContext(launchUuid, itemUuid, client, scheduler, bufferSize, convertImages);
 		CONTEXT_THREAD_LOCAL.get().push(context);
 		return context;
 	}
@@ -97,23 +102,24 @@ public class LoggingContext {
 
 	/* Log emitter */
 	private final PublishSubject<Maybe<SaveLogRQ>> emitter;
-	/* ID of Launch in ReportPortal */
-	private final Maybe<String> launchId;
-	/* ID of TestItem in ReportPortal */
-	private final Maybe<String> itemId;
+	/* a UUID of Launch in ReportPortal */
+	private final Maybe<String> launchUuid;
+	/* a UUID of TestItem in ReportPortal to report into */
+	private final Maybe<String> itemUuid;
 	/* Whether Image should be converted to BlackAndWhite */
 	private final boolean convertImages;
 
-	LoggingContext(Maybe<String> launchId, Maybe<String> itemId, final ReportPortalClient client, Scheduler scheduler, int bufferSize,
+	LoggingContext(Maybe<String> launchUuid, Maybe<String> itemUuid, final ReportPortalClient client, Scheduler scheduler, int bufferSize,
 			boolean convertImages) {
-		this.launchId = launchId;
-		this.itemId = itemId;
+		this.launchUuid = launchUuid;
+		this.itemUuid = itemUuid;
 		this.emitter = PublishSubject.create();
 		this.convertImages = convertImages;
 		emitter.toFlowable(BackpressureStrategy.BUFFER)
 				.flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable)
 				.buffer(bufferSize)
-				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(rqs)).toFlowable())
+				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
+						rqs)).toFlowable())
 				.doOnError(throwable -> LOG_ERROR.accept(throwable))
 				.observeOn(scheduler)
 				.subscribe(logFlowableResults("Logging context"));
@@ -126,7 +132,7 @@ public class LoggingContext {
 	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
 	 */
 	public void emit(final java.util.function.Function<String, SaveLogRQ> logSupplier) {
-		emitter.onNext(launchId.zipWith(itemId, (launchId, itemId) -> {
+		emitter.onNext(launchUuid.zipWith(itemUuid, (launchId, itemId) -> {
 			final SaveLogRQ rq = logSupplier.apply(itemId);
 			rq.setLaunchUuid(launchId);
 			SaveLogRQ.File file = rq.getFile();

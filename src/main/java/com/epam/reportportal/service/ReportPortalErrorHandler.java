@@ -33,6 +33,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
+import static java.lang.String.format;
+
 /**
  * Report Portal Error Handler<br>
  * Converts error from Endpoint to ReportPortal-related errors
@@ -82,10 +84,13 @@ public class ReportPortalErrorHandler extends DefaultErrorHandler {
 				//ok, it's known ReportPortal error
 				throw new ReportPortalException(statusCode, statusMessage, errorRS);
 			} else {
-
 				if (isNotJson(rs)) {
-
-					throw new InternalReportPortalClientException("Report portal is not functioning correctly. Response is not json: " + rs.getReason());
+					throw new InternalReportPortalClientException(format(
+							"Report portal is not functioning correctly. Response is not json. Uri: [%s]; statusCode: [%s]; statusMessage: [%s];",
+							rs.getUri(),
+							statusCode,
+							statusMessage
+					));
 				} else {
 
 					//there is some unknown error since we cannot de-serialize it into default error object

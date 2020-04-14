@@ -18,7 +18,6 @@ package com.epam.reportportal.service;
 
 import com.epam.reportportal.exception.GeneralReportPortalException;
 import com.epam.reportportal.exception.InternalReportPortalClientException;
-import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.restendpoint.http.HttpMethod;
 import com.epam.reportportal.restendpoint.http.Response;
 import com.epam.reportportal.restendpoint.serializer.json.JacksonSerializer;
@@ -26,16 +25,17 @@ import com.google.common.collect.LinkedListMultimap;
 import com.google.common.io.ByteSource;
 import org.apache.http.HttpHeaders;
 import org.apache.http.entity.ContentType;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 /**
  * @author Dzianis_Shybeka
@@ -44,14 +44,13 @@ public class ReportPortalErrorHandlerTest {
 
 	private ReportPortalErrorHandler reportPortalErrorHandler;
 
-	@Before
-	public void setUp() throws Exception {
-
+	@BeforeEach
+	public void setUp() {
 		reportPortalErrorHandler = new ReportPortalErrorHandler(new JacksonSerializer());
 	}
 
-	@Test(expected = InternalReportPortalClientException.class)
-	public void handle_not_json() throws Exception {
+	@Test
+	public void handle_not_json() {
 		//  given:
 		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
 		invalidHeaders.put(HttpHeaders.CONTENT_TYPE, ContentType.TEXT_HTML.getMimeType());
@@ -59,10 +58,18 @@ public class ReportPortalErrorHandlerTest {
 		Response<ByteSource> invalidResponse = createFakeResponse(200, invalidHeaders);
 
 		//  when:
-		reportPortalErrorHandler.handle(invalidResponse);
+		InternalReportPortalClientException exc = Assertions.assertThrows(
+				InternalReportPortalClientException.class,
+				() -> reportPortalErrorHandler.handle(invalidResponse)
+		);
+		assertThat(
+				"Error message format incorrect",
+				exc.getMessage(),
+				equalTo("Report portal is not functioning correctly. Response is not json. Uri: [test]; statusCode: [200]; statusMessage: [testue];")
+		);
 	}
 
-	@Test(expected = InternalReportPortalClientException.class)
+	@Test
 	public void handle_not_json_lowercase() throws Exception {
 		//  given:
 		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
@@ -71,7 +78,7 @@ public class ReportPortalErrorHandlerTest {
 		Response<ByteSource> invalidResponse = createFakeResponse(200, invalidHeaders);
 
 		//  when:
-		reportPortalErrorHandler.handle(invalidResponse);
+		Assertions.assertThrows(InternalReportPortalClientException.class, () -> reportPortalErrorHandler.handle(invalidResponse));
 	}
 
 	@Test
@@ -98,7 +105,7 @@ public class ReportPortalErrorHandlerTest {
 		reportPortalErrorHandler.handle(invalidResponse);
 	}
 
-	@Test(expected = GeneralReportPortalException.class)
+	@Test
 	public void handle_error_code() throws Exception {
 		//  given:
 		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
@@ -107,10 +114,10 @@ public class ReportPortalErrorHandlerTest {
 		Response<ByteSource> invalidResponse = createFakeResponse(500, invalidHeaders);
 
 		//  when:
-		reportPortalErrorHandler.handle(invalidResponse);
+		Assertions.assertThrows(GeneralReportPortalException.class, () -> reportPortalErrorHandler.handle(invalidResponse));
 	}
 
-	@Test(expected = GeneralReportPortalException.class)
+	@Test
 	public void handle_known_error() throws Exception {
 		//  given:
 		LinkedListMultimap<String, String> invalidHeaders = LinkedListMultimap.create();
@@ -122,7 +129,7 @@ public class ReportPortalErrorHandlerTest {
 		);
 
 		//  when:
-		reportPortalErrorHandler.handle(invalidResponse);
+		Assertions.assertThrows(GeneralReportPortalException.class, () -> reportPortalErrorHandler.handle(invalidResponse));
 	}
 
 	@Test
@@ -141,15 +148,15 @@ public class ReportPortalErrorHandlerTest {
 		invalidHeaders2.put(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_OCTET_STREAM.getMimeType());
 
 		//  then:
-		assertTrue(reportPortalErrorHandler.hasError(createFakeResponse(500, validHeaders)));
-		assertTrue(reportPortalErrorHandler.hasError(createFakeResponse(404, validHeaders)));
+		assertThat(reportPortalErrorHandler.hasError(createFakeResponse(500, validHeaders)), equalTo(true));
+		assertThat(reportPortalErrorHandler.hasError(createFakeResponse(404, validHeaders)), equalTo(true));
 
-		assertTrue(reportPortalErrorHandler.hasError(createFakeResponse(200, invalidHeaders1)));
-		assertTrue(reportPortalErrorHandler.hasError(createFakeResponse(200, invalidHeaders2)));
+		assertThat(reportPortalErrorHandler.hasError(createFakeResponse(200, invalidHeaders1)), equalTo(true));
+		assertThat(reportPortalErrorHandler.hasError(createFakeResponse(200, invalidHeaders2)), equalTo(true));
 
 		//		and:
-		assertFalse(reportPortalErrorHandler.hasError(createFakeResponse(200, validHeaders)));
-		assertFalse(reportPortalErrorHandler.hasError(createFakeResponse(200, validHeaders2)));
+		assertThat(reportPortalErrorHandler.hasError(createFakeResponse(200, validHeaders)), equalTo(false));
+		assertThat(reportPortalErrorHandler.hasError(createFakeResponse(200, validHeaders2)), equalTo(false));
 	}
 
 	private Response<ByteSource> createFakeResponse(int statusCode, LinkedListMultimap<String, String> headers) {

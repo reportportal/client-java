@@ -55,20 +55,21 @@ class LaunchLoggingContext {
 	static ConcurrentHashMap<String, LaunchLoggingContext> loggingContextMap = new ConcurrentHashMap<String, LaunchLoggingContext>();
 	/* Log emitter */
 	private final PublishSubject<Maybe<SaveLogRQ>> emitter;
-	/* ID of Launch in ReportPortal */
-	private final Maybe<String> launchId;
+	/* a UUID of Launch in ReportPortal */
+	private final Maybe<String> launchUuid;
 	/* Whether Image should be converted to BlackAndWhite */
 	private final boolean convertImages;
 
-	private LaunchLoggingContext(Maybe<String> launchId, final ReportPortalClient client, Scheduler scheduler, int bufferSize,
+	private LaunchLoggingContext(Maybe<String> launchUuid, final ReportPortalClient client, Scheduler scheduler, int bufferSize,
 			boolean convertImages) {
-		this.launchId = launchId;
+		this.launchUuid = launchUuid;
 		this.emitter = PublishSubject.create();
 		this.convertImages = convertImages;
 		emitter.toFlowable(BackpressureStrategy.BUFFER)
 				.flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable)
 				.buffer(bufferSize)
-				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(rqs)).toFlowable())
+				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
+						rqs)).toFlowable())
 				.doOnError(Throwable::printStackTrace)
 				.observeOn(scheduler)
 				.subscribe(logFlowableResults("Launch logging context"));
@@ -77,26 +78,28 @@ class LaunchLoggingContext {
 	/**
 	 * Initializes new logging context and attaches it to current thread
 	 *
-	 * @param launchId Launch ID
-	 * @param client   Client of ReportPortal
+	 * @param launchUuid Launch UUID
+	 * @param client     Client of ReportPortal
+	 * @param scheduler  a {@link Scheduler} to use with this LoggingContext
 	 * @return New Logging Context
 	 */
-	static LaunchLoggingContext init(Maybe<String> launchId, final ReportPortalClient client, Scheduler scheduler) {
-		return init(launchId, client, scheduler, DEFAULT_BUFFER_SIZE, false);
+	static LaunchLoggingContext init(Maybe<String> launchUuid, final ReportPortalClient client, Scheduler scheduler) {
+		return init(launchUuid, client, scheduler, DEFAULT_BUFFER_SIZE, false);
 	}
 
 	/**
 	 * Initializes new logging context and attaches it to current thread
 	 *
-	 * @param launchId      Launch ID
+	 * @param launchUuid    Launch UUID
 	 * @param client        Client of ReportPortal
+	 * @param scheduler     a {@link Scheduler} to use with this LoggingContext
 	 * @param bufferSize    Size of back-pressure buffer
 	 * @param convertImages Whether Image should be converted to BlackAndWhite
 	 * @return New Logging Context
 	 */
-	static LaunchLoggingContext init(Maybe<String> launchId, final ReportPortalClient client, Scheduler scheduler, int bufferSize,
+	static LaunchLoggingContext init(Maybe<String> launchUuid, final ReportPortalClient client, Scheduler scheduler, int bufferSize,
 			boolean convertImages) {
-		LaunchLoggingContext context = new LaunchLoggingContext(launchId, client, scheduler, bufferSize, convertImages);
+		LaunchLoggingContext context = new LaunchLoggingContext(launchUuid, client, scheduler, bufferSize, convertImages);
 		loggingContextMap.put(DEFAULT_LAUNCH_KEY, context);
 		return context;
 	}
@@ -121,7 +124,7 @@ class LaunchLoggingContext {
 	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
 	 */
 	void emit(final java.util.function.Function<String, SaveLogRQ> logSupplier) {
-		emitter.onNext(launchId.map(input -> {
+		emitter.onNext(launchUuid.map(input -> {
 			final SaveLogRQ rq = logSupplier.apply(input);
 			SaveLogRQ.File file = rq.getFile();
 			if (convertImages && null != file && isImage(file.getContentType())) {

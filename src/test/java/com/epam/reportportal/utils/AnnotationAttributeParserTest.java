@@ -4,7 +4,7 @@ import com.epam.reportportal.annotations.attribute.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.hamcrest.Matcher;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;

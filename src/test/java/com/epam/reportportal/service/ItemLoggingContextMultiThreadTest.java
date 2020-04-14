@@ -23,15 +23,11 @@ import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -47,18 +43,15 @@ import static org.mockito.Mockito.*;
 
 public class ItemLoggingContextMultiThreadTest {
 
-	@Rule
-	public MockitoRule mockitoRule = MockitoJUnit.rule();
-
 	@Mock
-	ReportPortalClient rpClient;
-
-	private ExecutorService clientExecutorService = Executors.newFixedThreadPool(2);
+	private ReportPortalClient rpClient;
+	private ExecutorService clientExecutorService;
 	private ListenerParameters params;
 	private ReportPortal rp;
 
-	@Before
+	@BeforeEach
 	public void prepare() {
+		clientExecutorService = Executors.newFixedThreadPool(2);
 		params = new ListenerParameters();
 		params.setEnable(Boolean.TRUE);
 		params.setClientJoin(false);
@@ -68,6 +61,14 @@ public class ItemLoggingContextMultiThreadTest {
 		simulateStartChildTestItemResponse(rpClient);
 		simulateBatchLogResponse(rpClient);
 		rp = new ReportPortal(rpClient, clientExecutorService, params, null);
+	}
+
+	@AfterEach
+	public void tearDown() throws InterruptedException {
+		clientExecutorService.shutdown();
+		if(!clientExecutorService.awaitTermination(10, TimeUnit.SECONDS)) {
+			clientExecutorService.shutdownNow();
+		}
 	}
 
 	private static class TestNgTest implements Callable<String> {

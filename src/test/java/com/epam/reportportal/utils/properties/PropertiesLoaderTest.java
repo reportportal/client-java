@@ -15,20 +15,19 @@
  */
 package com.epam.reportportal.utils.properties;
 
-import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.google.common.collect.ImmutableMap;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.Properties;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 public class PropertiesLoaderTest {
 
 	@Test
-	public void testFullReloadProperties() throws IOException {
+	public void testFullReloadProperties() {
 		Properties props = new Properties();
 		for (ListenerProperty listenerProperties : ListenerProperty.values()) {
 			props.setProperty(listenerProperties.getPropertyName(), listenerProperties.getPropertyName());
@@ -36,37 +35,44 @@ public class PropertiesLoaderTest {
 
 		System.setProperties(props);
 
-		Properties loadedProps = null;
-		try {
-			loadedProps = PropertiesLoader.load().getProperties();
-		} catch (InternalReportPortalClientException e) {
-			Assert.fail("Unable to load properties: " + e.getLocalizedMessage());
-		}
+		Properties loadedProps = PropertiesLoader.load().getProperties();
 
 		for (ListenerProperty listenerProperties : ListenerProperty.values()) {
-			Assert.assertEquals(listenerProperties.getPropertyName(), loadedProps.getProperty(listenerProperties.getPropertyName()));
+			assertThat(loadedProps.getProperty(listenerProperties.getPropertyName()), equalTo(listenerProperties.getPropertyName()));
 		}
 
 	}
 
 	@Test
-	public void testOverride() throws IOException {
+	public void testOverride() {
 		Properties properties = new Properties();
 		String propertyKey = ListenerProperty.DESCRIPTION.getPropertyName();
 		properties.setProperty(propertyKey, "testvalue");
 
 		PropertiesLoader.overrideWith(properties, ImmutableMap.<String, String>builder().put(propertyKey, "anothervalue").build());
-		Assert.assertEquals("Incorrect override behaviour", "anothervalue", properties.getProperty(propertyKey));
+		assertThat("Incorrect override behaviour", properties.getProperty(propertyKey), equalTo("anothervalue"));
 
 		Properties overrides = new Properties();
 		overrides.setProperty(propertyKey, "overridenFromPropertiesObject");
 		PropertiesLoader.overrideWith(properties, overrides);
-		Assert.assertEquals("Incorrect override behaviour", properties.getProperty(propertyKey), "overridenFromPropertiesObject");
+		assertThat("Incorrect override behaviour", properties.getProperty(propertyKey), equalTo("overridenFromPropertiesObject"));
 	}
 
 	@Test
-	public void testUtf() throws IOException {
-		Assert.assertThat("Incorrect encoding!", PropertiesLoader.load("utf-demo.properties").getProperty("utf8"), is("привет мир!"));
+	public void testOverrideVariableWithUnderscore() {
+		Properties properties = new Properties();
+		properties.setProperty("rp.description", "testvalue");
 
+		PropertiesLoader.overrideWith(properties, ImmutableMap.<String, String>builder().put("rp_description", "anothervalue").build());
+		assertThat(
+				"Incorrect override behaviour",
+				properties.getProperty(ListenerProperty.DESCRIPTION.getPropertyName()),
+				equalTo("anothervalue")
+		);
+	}
+
+	@Test
+	public void testUtf() {
+		assertThat("Incorrect encoding!", PropertiesLoader.load("utf-demo.properties").getProperty("utf8"), is("привет мир!"));
 	}
 }
