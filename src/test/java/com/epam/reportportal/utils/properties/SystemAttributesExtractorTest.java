@@ -17,9 +17,8 @@
 package com.epam.reportportal.utils.properties;
 
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,6 +29,8 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import static java.util.Optional.ofNullable;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -38,7 +39,7 @@ public class SystemAttributesExtractorTest {
 
 	private static final Map<String, Pattern> properties = new HashMap<>();
 
-	@BeforeClass
+	@BeforeAll
 	public static void initKeys() {
 		properties.put("os", Pattern.compile("^.+\\|.+\\|.+$"));
 		properties.put("jvm", Pattern.compile("^.+\\|.+\\|.+$"));
@@ -58,47 +59,47 @@ public class SystemAttributesExtractorTest {
 	@Test
 	public void testFromResource() {
 		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract("agent-test.properties", SystemAttributesExtractorTest.class.getClassLoader());
-		Assert.assertEquals(3, attributes.size());
+		assertThat(attributes, hasSize(3));
 
 		ArrayList<ItemAttributesRQ> attributesList = new ArrayList<>(attributes);
 
 		ItemAttributesRQ osAttribute = attributesList.get(0);
 		Pattern osPattern = getPattern(osAttribute);
-		Assert.assertNotNull(osPattern);
-		Assert.assertTrue(osPattern.matcher(osAttribute.getValue()).matches());
+		assertThat(osPattern, notNullValue());
+		assertThat(osAttribute.getValue(), matchesRegex(osPattern));
 
 		ItemAttributesRQ jvmAttribute = attributesList.get(1);
 		Pattern jvmPattern = getPattern(jvmAttribute);
-		Assert.assertNotNull(jvmPattern);
-		Assert.assertTrue(jvmPattern.matcher(jvmAttribute.getValue()).matches());
+		assertThat(jvmPattern, notNullValue());
+		assertThat(jvmAttribute.getValue(), matchesRegex(jvmPattern));
 
 		ItemAttributesRQ agentAttribute = attributesList.get(2);
 		Pattern agentPattern = getPattern(agentAttribute);
-		Assert.assertNotNull(agentPattern);
-		Assert.assertTrue(agentPattern.matcher(agentAttribute.getValue()).matches());
+		assertThat(agentPattern, notNullValue());
+		assertThat(agentAttribute.getValue(), matchesRegex(agentPattern));
 	}
 
 	@Test
 	public void testFromPath() {
 		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract(Paths.get("./src/test/resources/agent-test.properties"));
-		Assert.assertEquals(3, attributes.size());
+		assertThat(attributes, hasSize(3));
 
 		ArrayList<ItemAttributesRQ> attributesList = new ArrayList<>(attributes);
 
 		ItemAttributesRQ firstAttribute = attributesList.get(0);
 		Pattern osPattern = getPattern(firstAttribute);
-		Assert.assertNotNull(osPattern);
-		Assert.assertTrue(osPattern.matcher(firstAttribute.getValue()).matches());
+		assertThat(osPattern, notNullValue());
+		assertThat(firstAttribute.getValue(), matchesRegex(osPattern));
 
 		ItemAttributesRQ jvmAttribute = attributesList.get(1);
 		Pattern jvmPattern = getPattern(jvmAttribute);
-		Assert.assertNotNull(jvmPattern);
-		Assert.assertTrue(jvmPattern.matcher(jvmAttribute.getValue()).matches());
+		assertThat(jvmPattern, notNullValue());
+		assertThat(jvmAttribute.getValue(), matchesRegex(jvmPattern));
 
 		ItemAttributesRQ agentAttribute = attributesList.get(2);
 		Pattern agentPattern = getPattern(agentAttribute);
-		Assert.assertNotNull(agentPattern);
-		Assert.assertTrue(agentPattern.matcher(agentAttribute.getValue()).matches());
+		assertThat(agentPattern, notNullValue());
+		assertThat(agentAttribute.getValue(), matchesRegex(agentPattern));
 	}
 
 	private Pattern getPattern(ItemAttributesRQ attribute) {

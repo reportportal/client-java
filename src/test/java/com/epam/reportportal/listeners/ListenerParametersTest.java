@@ -16,19 +16,20 @@
 package com.epam.reportportal.listeners;
 
 import com.epam.reportportal.utils.properties.PropertiesLoader;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static com.epam.ta.reportportal.ws.model.launch.Mode.DEBUG;
 import static com.epam.ta.reportportal.ws.model.launch.Mode.DEFAULT;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.nullValue;
 
 public class ListenerParametersTest {
 
 	@Test
 	public void testParseLaunchMode() {
-		assertEquals(DEFAULT, new ListenerParameters().parseLaunchMode("notvalid"));
-		assertEquals(DEBUG, new ListenerParameters().parseLaunchMode("Debug"));
+		assertThat(new ListenerParameters().parseLaunchMode("notvalid"), equalTo(DEFAULT));
+		assertThat(new ListenerParameters().parseLaunchMode("Debug"), equalTo(DEBUG));
 	}
 
 	@Test
@@ -36,7 +37,7 @@ public class ListenerParametersTest {
 		PropertiesLoader properties = PropertiesLoader.load();
 		ListenerParameters listenerParameters = new ListenerParameters(properties);
 
-		assertNull(listenerParameters.getBaseUrl());
+		assertThat(listenerParameters.getBaseUrl(), nullValue());
 	}
 
 }

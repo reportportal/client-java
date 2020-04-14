@@ -17,9 +17,6 @@
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.tngtech.java.junit.dataprovider.DataProvider;
-import com.tngtech.java.junit.dataprovider.DataProviderRunner;
-import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -29,17 +26,13 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.nio.file.FileSystems;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
@@ -55,20 +48,15 @@ import static org.hamcrest.Matchers.*;
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
-@RunWith(DataProviderRunner.class)
 public class LockFileTest {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LockFileTest.class);
 	private static final String LOCK_FILE_NAME_PATTERN = "%s.reportportal.lock";
 	private static final String SYNC_FILE_NAME_PATTERN = "%s.reportportal.sync";
-	private static final boolean IS_POSIX = FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
 
 	private String lockFileName;
 	private String syncFileName;
 	private LockFile lockFile;
 	private Collection<LockFile> lockFileCollection;
-
-	@Rule
-	public ExpectedException exception = ExpectedException.none();
 
 	private ListenerParameters getParameters() {
 		ListenerParameters params = new ListenerParameters();
@@ -77,7 +65,7 @@ public class LockFileTest {
 		return params;
 	}
 
-	@Before
+	@BeforeEach
 	public void prepare() {
 		String fileName = UUID.randomUUID().toString();
 		lockFileName = String.format(LOCK_FILE_NAME_PATTERN, fileName);
@@ -85,7 +73,7 @@ public class LockFileTest {
 		lockFile = new LockFile(getParameters());
 	}
 
-	@After()
+	@AfterEach
 	public void cleanUp() {
 		lockFile.reset();
 		if (lockFileCollection != null) {
@@ -270,14 +258,13 @@ public class LockFileTest {
 		assertThat(syncFileContent, not(contains(uuidToRemove)));
 	}
 
-	@DataProvider
 	public static Iterable<Integer> threadNumProvider() {
 		return Arrays.asList(5, 3, 1);
 	}
 
-	@Test
 	@SuppressWarnings("unchecked")
-	@UseDataProvider("threadNumProvider")
+	@ParameterizedTest
+	@MethodSource("threadNumProvider")
 	public void test_new_uuid_remove_does_not_spoil_lock_file_finishInstanceUuid(final int threadNum)
 			throws InterruptedException, IOException {
 		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(threadNum, Collections.nCopies(threadNum, lockFile));
@@ -291,8 +278,8 @@ public class LockFileTest {
 		assertThat(syncFileContent, containsInAnyOrder(uuidSet.getLeft().toArray(new String[0])));
 	}
 
-	@Test
-	@UseDataProvider("threadNumProvider")
+	@ParameterizedTest
+	@MethodSource("threadNumProvider")
 	public void test_different_lock_file_service_instances_synchronize_correctly(final int threadNum) throws InterruptedException {
 		lockFileCollection = new ArrayList<>(threadNum);
 		lockFileCollection.add(lockFile);
@@ -335,8 +322,7 @@ public class LockFileTest {
 
 	@Test
 	public void test_launch_uuid_should_not_be_null_obtainLaunchUuid() {
-		exception.expect(AssertionError.class);
-		lockFile.obtainLaunchUuid(null);
+		Assertions.assertThrows(NullPointerException.class, () -> lockFile.obtainLaunchUuid(null));
 	}
 
 	private static Triple<OutputStreamWriter, BufferedReader, BufferedReader> getProcessIos(Process process) {
@@ -424,7 +410,8 @@ public class LockFileTest {
 		return new ProcessBuilder(paramList).start();
 	}
 
-	@Test(timeout = 10000)
+	@Test
+	@Timeout(10)
 	public void test_launch_uuid_get_for_two_processes_returns_equal_values_obtainLaunchUuid() throws IOException, InterruptedException {
 		Pair<String, String> uuids = ImmutablePair.of(UUID.randomUUID().toString(), UUID.randomUUID().toString());
 		// @formatter:off

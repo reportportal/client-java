@@ -21,6 +21,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.ta.reportportal.ws.model.ErrorRS;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
+import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.LaunchResource;
@@ -28,21 +29,19 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeEmitter;
 import io.reactivex.MaybeOnSubscribe;
+import io.reactivex.Scheduler;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
 import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
@@ -54,9 +53,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static com.epam.reportportal.test.TestUtils.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static com.epam.reportportal.test.TestUtils.simulateStartLaunchResponse;
+import static com.epam.reportportal.test.TestUtils.standardLaunchRequest;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -68,22 +69,13 @@ public class ReportPortalClientJoinTest {
 	private static final long WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
 
 	@Mock
-	ReportPortalClient rpClient;
-
+	private ReportPortalClient rpClient;
 	@Mock
-	LockFile lockFile;
-
-	private ExecutorService executorService = Executors.newFixedThreadPool(2);
-
-	@Rule
-	public MockitoRule mockitoRule = MockitoJUnit.rule();
-
-	@Rule
-	public ExpectedException exception = ExpectedException.none();
-
+	private LockFile lockFile;
 	private ListenerParameters params;
+	private ExecutorService executorService;
 
-	@Before
+	@BeforeEach
 	public void prepare() {
 		params = new ListenerParameters();
 		params.setClientJoin(true);
@@ -91,7 +83,7 @@ public class ReportPortalClientJoinTest {
 		executorService = Executors.newFixedThreadPool(2);
 	}
 
-	@After
+	@AfterEach
 	public void tearDown() throws InterruptedException {
 		executorService.shutdown();
 		executorService.awaitTermination(10, TimeUnit.SECONDS);
@@ -163,11 +155,9 @@ public class ReportPortalClientJoinTest {
 		}
 	}
 
-	private static List<Launch> createLaunches(int num, ReportPortalClient rpClient, ListenerParameters params, LockFile lockFile,
+	private static List<Launch> createLaunchesNoStart(int num, ReportPortalClient rpClient, ListenerParameters params, LockFile lockFile,
 			ExecutorService executor) {
-		List<Launch> result = new ArrayList<Launch>(num);
-		simulateStartLaunchResponse(rpClient);
-		simulateGetLaunchResponse(rpClient);
+		List<Launch> result = new ArrayList<>(num);
 		simulateObtainLaunchUuidResponse(lockFile);
 		for (int i = 0; i < num; i++) {
 			ReportPortal rp = new ReportPortal(rpClient, executor, params, lockFile);
@@ -176,9 +166,21 @@ public class ReportPortalClientJoinTest {
 		return result;
 	}
 
+	private static List<Launch> createLaunchesNoGetLaunch(int num, ReportPortalClient rpClient, ListenerParameters params, LockFile lockFile,
+			ExecutorService executor) {
+		simulateStartLaunchResponse(rpClient);
+		return createLaunchesNoStart(num, rpClient, params, lockFile, executor);
+	}
+
+	private static List<Launch> createLaunches(int num, ReportPortalClient rpClient, ListenerParameters params, LockFile lockFile,
+			ExecutorService executor) {
+		simulateGetLaunchResponse(rpClient);
+		return createLaunchesNoGetLaunch(num, rpClient, params, lockFile, executor);
+	}
+
 	@Test
 	public void test_two_launches_have_correct_class_names() {
-		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executorService);
+		List<Launch> launches = createLaunchesNoStart(2, rpClient, params, lockFile, executorService);
 
 		assertThat(launches.get(0).getClass().getCanonicalName(), Matchers.endsWith("PrimaryLaunch"));
 		assertThat(launches.get(1).getClass().getCanonicalName(), Matchers.endsWith("SecondaryLaunch"));
@@ -196,7 +198,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_primary_launch_start_launch_request() {
-		List<Launch> launches = createLaunches(1, rpClient, params, lockFile, executorService);
+		List<Launch> launches = createLaunchesNoGetLaunch(1, rpClient, params, lockFile, executorService);
 		launches.get(0).start();
 
 		ArgumentCaptor<String> passedUuid = ArgumentCaptor.forClass(String.class);
@@ -207,7 +209,7 @@ public class ReportPortalClientJoinTest {
 
 		StartLaunchRQ startLaunch = sentUuid.getValue();
 
-		assertThat(startLaunch.getUuid(), Matchers.equalTo(passedUuid.getValue()));
+		assertThat(startLaunch.getUuid(), equalTo(passedUuid.getValue()));
 	}
 
 	@Test
@@ -217,7 +219,7 @@ public class ReportPortalClientJoinTest {
 		String firstUuid = getId(launches.get(0).start());
 		String secondUuid = getId(launches.get(1).start());
 
-		assertEquals(secondUuid, firstUuid);
+		assertThat(firstUuid, equalTo(secondUuid));
 	}
 
 	private static FinishExecutionRQ standardLaunchFinish() {
@@ -232,6 +234,11 @@ public class ReportPortalClientJoinTest {
 		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executorService);
 		launches.get(0).start();
 		launches.get(1).start();
+
+		when(rpClient.finishLaunch(
+				any(),
+				any(FinishExecutionRQ.class)
+		)).thenReturn(Maybe.create(e -> e.onSuccess(new OperationCompletionRS())));
 
 		launches.get(0).finish(standardLaunchFinish());
 		launches.get(1).finish(standardLaunchFinish());
@@ -249,17 +256,18 @@ public class ReportPortalClientJoinTest {
 		Launch firstLaunch = rp1.newLaunch(standardLaunchRequest(params));
 		Launch secondLaunch = rp2.newLaunch(standardLaunchRequest(params));
 
-		assertThat(firstLaunch.getClass().getCanonicalName(), Matchers.equalTo(LaunchImpl.class.getCanonicalName()));
-		assertThat(secondLaunch.getClass().getCanonicalName(), Matchers.equalTo(LaunchImpl.class.getCanonicalName()));
+		assertThat(firstLaunch.getClass().getCanonicalName(), equalTo(LaunchImpl.class.getCanonicalName()));
+		assertThat(secondLaunch.getClass().getCanonicalName(), equalTo(LaunchImpl.class.getCanonicalName()));
 	}
 
 	@Test
 	public void test_rp_client_throws_error_in_case_of_lock_file_error() {
 		ReportPortal rp1 = new ReportPortal(rpClient, executorService, params, lockFile);
 
-		exception.expect(InternalReportPortalClientException.class);
-		exception.expectMessage("Unable to create a new launch: unable to read/write lock file.");
-		Launch firstLaunch = rp1.newLaunch(standardLaunchRequest(params));
+		InternalReportPortalClientException exc = Assertions.assertThrows(InternalReportPortalClientException.class,
+				() -> rp1.newLaunch(standardLaunchRequest(params))
+		);
+		assertThat(exc.getMessage(), equalTo("Unable to create a new launch: unable to read/write lock file."));
 	}
 
 	private static StartTestItemRQ standardItemRequest() {
@@ -303,12 +311,13 @@ public class ReportPortalClientJoinTest {
 		Maybe<String> rs = launches.get(1).startTestItem(standardItemRequest());
 		String testItemId = getId(rs);
 
-		assertThat(testItemId, Matchers.equalTo(itemUuid));
+		assertThat(testItemId, equalTo(itemUuid));
 	}
 
 	@Test
 	public void test_secondary_launch_call_get_launch_by_uuid() {
-		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executorService);
+		List<Launch> launches = createLaunchesNoStart(2, rpClient, params, lockFile, executorService);
+		simulateGetLaunchResponse(rpClient);
 		launches.get(1).start();
 
 		ArgumentCaptor<String> obtainUuids = ArgumentCaptor.forClass(String.class);
@@ -317,7 +326,7 @@ public class ReportPortalClientJoinTest {
 		ArgumentCaptor<String> sentUuid = ArgumentCaptor.forClass(String.class);
 		verify(rpClient, after(WAIT_TIMEOUT * 2).times(1)).getLaunchByUuid(sentUuid.capture());
 
-		assertThat(sentUuid.getValue(), Matchers.equalTo(obtainUuids.getAllValues().get(0)));
+		assertThat(sentUuid.getValue(), equalTo(obtainUuids.getAllValues().get(0)));
 	}
 
 	private static Maybe<LaunchResource> getLaunchErrorResponse() {
@@ -367,7 +376,6 @@ public class ReportPortalClientJoinTest {
 	public void test_secondary_launch_does_not_wait_get_launch_by_uuid_correct_response_for_v2() {
 		int num = 2;
 		simulateObtainLaunchUuidResponse(lockFile);
-		simulateGetLaunchByUuidResponse(rpClient);
 		params.setAsyncReporting(true);
 		List<Launch> launches = new ArrayList<Launch>(num);
 		for (int i = 0; i < num; i++) {
@@ -379,4 +387,20 @@ public class ReportPortalClientJoinTest {
 		verify(rpClient, after(WAIT_TIMEOUT).times(0)).getLaunchByUuid(anyString());
 	}
 
+	@Test
+	public void test_two_launches_have_the_same_executors() {
+		List<Launch> launches = createLaunchesNoStart(2, rpClient, params, lockFile, executorService);
+
+		assertThat(((LaunchImpl)launches.get(0)).getExecutor(), sameInstance(executorService));
+		assertThat(((LaunchImpl)launches.get(1)).getExecutor(), sameInstance(executorService));
+	}
+
+	@Test
+	public void test_two_launches_have_the_same_scheduler() {
+		List<Launch> launches = createLaunchesNoStart(2, rpClient, params, lockFile, executorService);
+
+		Scheduler scheduler1 = ((LaunchImpl)launches.get(0)).getScheduler();
+		Scheduler scheduler2 = ((LaunchImpl)launches.get(1)).getScheduler();
+		assertThat(scheduler1, sameInstance(scheduler2));
+	}
 }
