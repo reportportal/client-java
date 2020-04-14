@@ -32,6 +32,7 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,6 +51,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.test.TestUtils.*;
@@ -71,8 +73,7 @@ public class ReportPortalClientJoinTest {
 	@Mock
 	LockFile lockFile;
 
-	@Mock
-	ExecutorService executorService;
+	private ExecutorService executorService = Executors.newFixedThreadPool(2);
 
 	@Rule
 	public MockitoRule mockitoRule = MockitoJUnit.rule();
@@ -87,6 +88,13 @@ public class ReportPortalClientJoinTest {
 		params = new ListenerParameters();
 		params.setClientJoin(true);
 		params.setEnable(Boolean.TRUE);
+		executorService = Executors.newFixedThreadPool(2);
+	}
+
+	@After
+	public void tearDown() throws InterruptedException {
+		executorService.shutdown();
+		executorService.awaitTermination(10, TimeUnit.SECONDS);
 	}
 
 	private static void simulateObtainLaunchUuidResponse(final LockFile lockFile) {
@@ -307,7 +315,7 @@ public class ReportPortalClientJoinTest {
 		verify(lockFile, timeout(WAIT_TIMEOUT).times(2)).obtainLaunchUuid(obtainUuids.capture());
 
 		ArgumentCaptor<String> sentUuid = ArgumentCaptor.forClass(String.class);
-		verify(rpClient, after(WAIT_TIMEOUT * 2).times(2)).getLaunchByUuid(sentUuid.capture());
+		verify(rpClient, after(WAIT_TIMEOUT * 2).times(1)).getLaunchByUuid(sentUuid.capture());
 
 		assertThat(sentUuid.getValue(), Matchers.equalTo(obtainUuids.getAllValues().get(0)));
 	}

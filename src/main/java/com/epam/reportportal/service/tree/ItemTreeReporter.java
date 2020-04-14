@@ -22,14 +22,12 @@ import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.utils.MimeTypeDetector;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.*;
-import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import io.reactivex.Maybe;
-import io.reactivex.MaybeSource;
-import io.reactivex.functions.Function;
-import io.reactivex.schedulers.Schedulers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,6 +44,7 @@ import java.util.Date;
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
 public class ItemTreeReporter {
+	private static final Logger LOGGER = LoggerFactory.getLogger(ItemTreeReporter.class);
 
 	private ItemTreeReporter() {
 		//static only
@@ -54,17 +53,15 @@ public class ItemTreeReporter {
 	/**
 	 * @param reportPortalClient {@link ReportPortalClient}
 	 * @param startTestItemRQ    {@link StartTestItemRQ}
-	 * @param launchId           Launch id
+	 * @param launchUuid         Launch UUID
 	 * @param testItemLeaf       {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
-	 * @return {@link Maybe} containing item id
+	 * @return {@link Maybe} containing item UUID
 	 */
 	public static Maybe<String> startItem(ReportPortalClient reportPortalClient, final StartTestItemRQ startTestItemRQ,
-			final Maybe<String> launchId, final TestItemTree.TestItemLeaf testItemLeaf) {
+			final Maybe<String> launchUuid, final TestItemTree.TestItemLeaf testItemLeaf) {
 		final Maybe<String> parent = testItemLeaf.getParentId();
-		if (parent != null && launchId != null) {
-			Maybe<String> itemId = sendStartItemRequest(reportPortalClient, launchId, parent, startTestItemRQ);
-			itemId.subscribeOn(Schedulers.io()).subscribe();
-			return itemId;
+		if (parent != null && launchUuid != null) {
+			return sendStartItemRequest(reportPortalClient, launchUuid, parent, startTestItemRQ);
 		} else {
 			return Maybe.empty();
 		}
@@ -74,35 +71,24 @@ public class ItemTreeReporter {
 	/**
 	 * @param reportPortalClient {@link ReportPortalClient}
 	 * @param finishTestItemRQ   {@link FinishTestItemRQ}
-	 * @param launchId           Launch id
+	 * @param launchUuid         Launch UUID
 	 * @param testItemLeaf       {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
-	 * @return {@link Maybe} containing item id
+	 * @return {@link Maybe} containing item UUID
 	 */
 	public static Maybe<OperationCompletionRS> finishItem(final ReportPortalClient reportPortalClient,
-			final FinishTestItemRQ finishTestItemRQ, final Maybe<String> launchId, final TestItemTree.TestItemLeaf testItemLeaf) {
+			final FinishTestItemRQ finishTestItemRQ, final Maybe<String> launchUuid, final TestItemTree.TestItemLeaf testItemLeaf) {
 		final Maybe<String> item = testItemLeaf.getItemId();
-		if (item != null && launchId != null) {
-			return launchId.flatMap(new Function<String, MaybeSource<OperationCompletionRS>>() {
-				@Override
-				public MaybeSource<OperationCompletionRS> apply(final String launchId) {
-					finishTestItemRQ.setLaunchUuid(launchId);
-					Maybe<OperationCompletionRS> finishResponse = testItemLeaf.getFinishResponse();
-					if (finishResponse != null) {
-						return finishResponse.flatMap(new Function<OperationCompletionRS, MaybeSource<OperationCompletionRS>>() {
-							@Override
-							public MaybeSource<OperationCompletionRS> apply(OperationCompletionRS operationCompletionRS) {
-								return sendFinishItemRequest(item, finishTestItemRQ, reportPortalClient);
-							}
-						});
-					} else {
-						return sendFinishItemRequest(item, finishTestItemRQ, reportPortalClient);
-					}
-				}
-			}).subscribeOn(Schedulers.io());
-		} else {
+		final Maybe<OperationCompletionRS> finishResponse = testItemLeaf.getFinishResponse();
+		if (item == null || launchUuid == null) {
 			return Maybe.empty();
 		}
-
+		if (testItemLeaf.getFinishResponse() != null) {
+			Throwable t = finishResponse.ignoreElement().blockingGet(); //  ensure we are the last update in the chain
+			if (t != null) {
+				LOGGER.warn("A main item finished with error", t);
+			}
+		}
+		return sendFinishItemRequest(reportPortalClient, launchUuid, item, finishTestItemRQ);
 	}
 
 	/**
@@ -110,15 +96,15 @@ public class ItemTreeReporter {
 	 * @param level              Log level
 	 * @param message            Log message
 	 * @param logTime            Log time
-	 * @param launchId           Launch id
+	 * @param launchUuid         Launch UUID
 	 * @param testItemLeaf       {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
 	 * @return True if request is sent otherwise false
 	 */
 	public static boolean sendLog(final ReportPortalClient reportPortalClient, final String level, final String message, final Date logTime,
-			Maybe<String> launchId, TestItemTree.TestItemLeaf testItemLeaf) {
+			Maybe<String> launchUuid, TestItemTree.TestItemLeaf testItemLeaf) {
 		Maybe<String> itemId = testItemLeaf.getItemId();
-		if (launchId != null && itemId != null) {
-			sendLogRequest(reportPortalClient, launchId, itemId, level, message, logTime).subscribe();
+		if (launchUuid != null && itemId != null) {
+			sendLogRequest(reportPortalClient, launchUuid, itemId, level, message, logTime).subscribe();
 			return true;
 		} else {
 			return false;
@@ -130,88 +116,56 @@ public class ItemTreeReporter {
 	 * @param level              Log level
 	 * @param message            Log message
 	 * @param logTime            Log time
-	 * @param launchId           Launch id
+	 * @param file               a file to attach to the log message
+	 * @param launchUuid         Launch UUID
 	 * @param testItemLeaf       {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
 	 * @return True if request is sent otherwise false
 	 */
 	public static boolean sendLog(final ReportPortalClient reportPortalClient, final String level, final String message, final Date logTime,
-			final File file, Maybe<String> launchId, TestItemTree.TestItemLeaf testItemLeaf) {
+			final File file, Maybe<String> launchUuid, TestItemTree.TestItemLeaf testItemLeaf) {
 		Maybe<String> itemId = testItemLeaf.getItemId();
-		if (launchId != null && itemId != null) {
-			sendLogMultiPartRequest(reportPortalClient, launchId, itemId, level, message, logTime, file).subscribe();
+		if (launchUuid != null && itemId != null) {
+			sendLogMultiPartRequest(reportPortalClient, launchUuid, itemId, level, message, logTime, file).subscribe();
 			return true;
 		} else {
 			return false;
 		}
 	}
 
-	private static Maybe<String> sendStartItemRequest(final ReportPortalClient reportPortalClient, Maybe<String> launchId,
+	private static Maybe<String> sendStartItemRequest(final ReportPortalClient reportPortalClient, Maybe<String> launchUuid,
 			final Maybe<String> parent, final StartTestItemRQ startTestItemRQ) {
-		return launchId.flatMap(new Function<String, MaybeSource<String>>() {
-			@Override
-			public MaybeSource<String> apply(String launchId) {
-				return parent.flatMap(new Function<String, MaybeSource<String>>() {
-					@Override
-					public MaybeSource<String> apply(String parentId) {
-						return reportPortalClient.startTestItem(parentId, startTestItemRQ).map(new Function<ItemCreatedRS, String>() {
-							@Override
-							public String apply(ItemCreatedRS itemCreatedRS) {
-								return itemCreatedRS.getId();
-							}
-						});
-					}
-				});
-			}
-		}).cache();
+		startTestItemRQ.setLaunchUuid(launchUuid.blockingGet());
+		return reportPortalClient.startTestItem(parent.blockingGet(), startTestItemRQ).map(EntryCreatedAsyncRS::getId).cache();
 	}
 
-	private static Maybe<OperationCompletionRS> sendFinishItemRequest(Maybe<String> item, final FinishTestItemRQ finishTestItemRQ,
-			final ReportPortalClient reportPortalClient) {
-		return item.flatMap(new Function<String, MaybeSource<OperationCompletionRS>>() {
-			@Override
-			public MaybeSource<OperationCompletionRS> apply(final String itemId) {
-				return reportPortalClient.finishTestItem(itemId, finishTestItemRQ);
-			}
-		});
+	private static Maybe<OperationCompletionRS> sendFinishItemRequest(final ReportPortalClient reportPortalClient, Maybe<String> launchUuid,
+			Maybe<String> item, final FinishTestItemRQ finishTestItemRQ) {
+		finishTestItemRQ.setLaunchUuid(launchUuid.blockingGet());
+		return reportPortalClient.finishTestItem(item.blockingGet(), finishTestItemRQ);
 	}
 
-	private static Maybe<EntryCreatedAsyncRS> sendLogRequest(final ReportPortalClient reportPortalClient, Maybe<String> launchId,
-			final Maybe<String> itemId, final String level, final String message, final Date logTime) {
-		return launchId.flatMap(new Function<String, MaybeSource<EntryCreatedAsyncRS>>() {
-			@Override
-			public MaybeSource<EntryCreatedAsyncRS> apply(final String launchId) {
-				return itemId.flatMap(new Function<String, MaybeSource<EntryCreatedAsyncRS>>() {
-					@Override
-					public MaybeSource<EntryCreatedAsyncRS> apply(String itemId) {
-						SaveLogRQ saveLogRequest = createSaveLogRequest(launchId, itemId, level, message, logTime);
-						return reportPortalClient.log(saveLogRequest);
-					}
-				});
-			}
-		}).observeOn(Schedulers.io());
+	private static Maybe<EntryCreatedAsyncRS> sendLogRequest(final ReportPortalClient reportPortalClient, Maybe<String> launchUuid,
+			final Maybe<String> itemUuid, final String level, final String message, final Date logTime) {
+		SaveLogRQ saveLogRequest = createSaveLogRequest(launchUuid.blockingGet(), itemUuid.blockingGet(), level, message, logTime);
+		return reportPortalClient.log(saveLogRequest);
 	}
 
-	private static Maybe<BatchSaveOperatingRS> sendLogMultiPartRequest(final ReportPortalClient reportPortalClient, Maybe<String> launchId,
-			final Maybe<String> itemId, final String level, final String message, final Date logTime, final File file) {
-		return launchId.flatMap(new Function<String, MaybeSource<BatchSaveOperatingRS>>() {
-			@Override
-			public MaybeSource<BatchSaveOperatingRS> apply(final String launchId) {
-				return itemId.flatMap(new Function<String, MaybeSource<BatchSaveOperatingRS>>() {
-					@Override
-					public MaybeSource<BatchSaveOperatingRS> apply(String itemId) throws Exception {
-						SaveLogRQ saveLogRequest = createSaveLogRequest(launchId, itemId, level, message, logTime);
-						saveLogRequest.setFile(createFileModel(file));
-						MultiPartRequest multiPartRequest = HttpRequestUtils.buildLogMultiPartRequest(Lists.newArrayList(saveLogRequest));
-						return reportPortalClient.log(multiPartRequest);
-					}
-				});
-			}
-		}).observeOn(Schedulers.io());
+	private static Maybe<BatchSaveOperatingRS> sendLogMultiPartRequest(final ReportPortalClient reportPortalClient,
+			Maybe<String> launchUuid, final Maybe<String> itemId, final String level, final String message, final Date logTime,
+			final File file) {
+		SaveLogRQ saveLogRequest = createSaveLogRequest(launchUuid.blockingGet(), itemId.blockingGet(), level, message, logTime);
+		try {
+			saveLogRequest.setFile(createFileModel(file));
+		} catch (IOException e) {
+			return Maybe.error(e);
+		}
+		MultiPartRequest multiPartRequest = HttpRequestUtils.buildLogMultiPartRequest(Lists.newArrayList(saveLogRequest));
+		return reportPortalClient.log(multiPartRequest);
 	}
 
-	private static SaveLogRQ createSaveLogRequest(String launchId, String itemId, String level, String message, Date logTime) {
+	private static SaveLogRQ createSaveLogRequest(String launchUuid, String itemId, String level, String message, Date logTime) {
 		SaveLogRQ saveLogRQ = new SaveLogRQ();
-		saveLogRQ.setLaunchUuid(launchId);
+		saveLogRQ.setLaunchUuid(launchUuid);
 		saveLogRQ.setItemUuid(itemId);
 		saveLogRQ.setLevel(level);
 		saveLogRQ.setLogTime(logTime);
