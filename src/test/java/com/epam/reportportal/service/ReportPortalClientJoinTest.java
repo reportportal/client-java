@@ -86,7 +86,9 @@ public class ReportPortalClientJoinTest {
 	@AfterEach
 	public void tearDown() throws InterruptedException {
 		executorService.shutdown();
-		executorService.awaitTermination(10, TimeUnit.SECONDS);
+		if(!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
+			executorService.shutdownNow();
+		}
 	}
 
 	private static void simulateObtainLaunchUuidResponse(final LockFile lockFile) {

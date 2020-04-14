@@ -64,8 +64,11 @@ public class ItemLoggingContextMultiThreadTest {
 	}
 
 	@AfterEach
-	public void tearDown() {
-		clientExecutorService.shutdownNow();
+	public void tearDown() throws InterruptedException {
+		clientExecutorService.shutdown();
+		if(!clientExecutorService.awaitTermination(10, TimeUnit.SECONDS)) {
+			clientExecutorService.shutdownNow();
+		}
 	}
 
 	private static class TestNgTest implements Callable<String> {
