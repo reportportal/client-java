@@ -244,7 +244,7 @@ public class LaunchImpl extends Launch {
 			}
 		}).cache();
 		testItem.subscribeOn(scheduler).subscribe(logMaybeResults("Start test item"));
-		QUEUE.getUnchecked(testItem).addToQueue(testItem.ignoreElement());
+		QUEUE.getUnchecked(testItem).addToQueue(testItem.ignoreElement().onErrorComplete());
 		LoggingContext.init(this.launch,
 				testItem,
 				this.rpClient,
@@ -288,7 +288,7 @@ public class LaunchImpl extends Launch {
 			}
 		}).cache();
 		itemId.subscribeOn(scheduler).subscribe(logMaybeResults("Start test item"));
-		QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement());
+		QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement().onErrorComplete());
 		LoggingContext.init(this.launch,
 				itemId,
 				this.rpClient,
@@ -302,12 +302,13 @@ public class LaunchImpl extends Launch {
 	/**
 	 * Finishes Test Item in ReportPortal. Non-blocking. Schedules finish after success of all child items
 	 *
-	 * @param itemId Item ID promise
+	 * @param item Item UUID promise
 	 * @param rq     Finish request
 	 * @return a Finish Item response promise
 	 */
-	public Maybe<OperationCompletionRS> finishTestItem(final Maybe<String> itemId, final FinishTestItemRQ rq) {
-		Objects.requireNonNull(itemId, "ItemID should not be null");
+	public Maybe<OperationCompletionRS> finishTestItem(@NotNull final Maybe<String> item, @NotNull final FinishTestItemRQ rq) {
+		Objects.requireNonNull(item, "ItemID should not be null");
+		Objects.requireNonNull(rq, "FinishTestItemRQ should not be null");
 
 		if (Statuses.SKIPPED.equals(rq.getStatus()) && !getParameters().getSkippedAnIssue()) {
 			Issue issue = new Issue();
@@ -317,47 +318,38 @@ public class LaunchImpl extends Launch {
 
 		QUEUE.getUnchecked(launch).addToQueue(LoggingContext.complete());
 
-		LaunchImpl.TreeItem treeItem = QUEUE.getIfPresent(itemId);
+		LaunchImpl.TreeItem treeItem = QUEUE.getIfPresent(item);
 		if (null == treeItem) {
 			treeItem = new LaunchImpl.TreeItem();
-			LOGGER.error("Item {} not found in the cache", itemId);
+			LOGGER.error("Item {} not found in the cache", item);
 		}
 
 		//wait for the children to complete
 		Maybe<OperationCompletionRS> finishResponse = this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
 			@Override
 			public Maybe<OperationCompletionRS> apply(final String launchId) {
-				return itemId.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
-					@Override
-					public Maybe<OperationCompletionRS> apply(String itemId) {
-						rq.setLaunchUuid(launchId);
-						return rpClient.finishTestItem(itemId, rq)
-								.retry(TEST_ITEM_FINISH_REQUEST_RETRY)
-								.doOnSuccess(LOG_SUCCESS)
-								.doOnError(LOG_ERROR);
-					}
+				return item.flatMap((Function<String, Maybe<OperationCompletionRS>>) itemId -> {
+					rq.setLaunchUuid(launchId);
+					return rpClient.finishTestItem(itemId, rq)
+							.retry(TEST_ITEM_FINISH_REQUEST_RETRY)
+							.doOnSuccess(LOG_SUCCESS)
+							.doOnError(LOG_ERROR);
 				});
 			}
 		}).cache();
 		final Completable finishCompletion = Completable.concat(treeItem.getChildren())
 				.andThen(finishResponse)
-				.doAfterSuccess(new Consumer<OperationCompletionRS>() {
-					@Override
-					public void accept(OperationCompletionRS operationCompletionRS) {
-						//cleanup children
-						QUEUE.invalidate(itemId);
-					}
-				})
+				.doAfterTerminate(() -> QUEUE.invalidate(item)) //cleanup children
 				.ignoreElement()
 				.cache();
 		finishCompletion.subscribeOn(scheduler).subscribe(logCompletableResults("Finish test item"));
 		//find parent and add to its queue
 		final Maybe<String> parent = treeItem.getParent();
 		if (null != parent) {
-			QUEUE.getUnchecked(parent).addToQueue(finishCompletion);
+			QUEUE.getUnchecked(parent).addToQueue(finishCompletion.onErrorComplete());
 		} else {
 			//seems like this is root item
-			QUEUE.getUnchecked(this.launch).addToQueue(finishCompletion);
+			QUEUE.getUnchecked(this.launch).addToQueue(finishCompletion.onErrorComplete());
 		}
 
 		return finishResponse;
