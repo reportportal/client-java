@@ -21,6 +21,7 @@ import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.ta.reportportal.ws.model.BatchElementCreatedRS;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
+import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -55,7 +56,7 @@ public class TestUtils {
 		return getConstantMaybe(rs);
 	}
 
-	private static <T> Maybe<T> getConstantMaybe(final T rs) {
+	public static <T> Maybe<T> getConstantMaybe(final T rs) {
 		return Maybe.create(emitter -> {
 			emitter.onSuccess(rs);
 			emitter.onComplete();
@@ -103,7 +104,7 @@ public class TestUtils {
 	public static StartTestItemRQ standardStartSuiteRequest() {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setStartTime(Calendar.getInstance().getTime());
-		String id = System.currentTimeMillis() + "-" + Thread.currentThread().getId() + "-" + ThreadLocalRandom.current().nextInt(9999);
+		String id = generateUniqueId();
 		rq.setName("Suite_" + id);
 		rq.setDescription("Suite description");
 		rq.setUniqueId(id);
@@ -114,12 +115,32 @@ public class TestUtils {
 	public static StartTestItemRQ standardStartTestRequest() {
 		StartTestItemRQ rq = new StartTestItemRQ();
 		rq.setStartTime(Calendar.getInstance().getTime());
-		String id = System.currentTimeMillis() + "-" + Thread.currentThread().getId() + "-" + ThreadLocalRandom.current().nextInt(9999);
+		String id = generateUniqueId();
 		rq.setName("Test_" + id);
 		rq.setDescription("Test description");
 		rq.setUniqueId(id);
 		rq.setType("TEST");
 		return rq;
+	}
+
+	public static StartTestItemRQ standardStartStepRequest() {
+		StartTestItemRQ rq = new StartTestItemRQ();
+		rq.setStartTime(Calendar.getInstance().getTime());
+		String id = generateUniqueId();
+		rq.setName("Step_" + id);
+		rq.setDescription("Test step description");
+		rq.setUniqueId(id);
+		rq.setType("STEP");
+		return rq;
+	}
+
+	/**
+	 * Generates a unique ID shorter than UUID based on current time in milliseconds and thread ID.
+	 *
+	 * @return a unique ID string
+	 */
+	public static String generateUniqueId() {
+		return System.currentTimeMillis() + "-" + Thread.currentThread().getId() + "-" + ThreadLocalRandom.current().nextInt(9999);
 	}
 
 	public static Maybe<BatchSaveOperatingRS> batchLogResponse(List<String> ids) {
@@ -128,6 +149,7 @@ public class TestUtils {
 		return getConstantMaybe(rs);
 	}
 
+	@SuppressWarnings("unchecked")
 	public static void simulateBatchLogResponse(final ReportPortalClient client) {
 		when(client.log(any(MultiPartRequest.class))).then((Answer<Maybe<BatchSaveOperatingRS>>) invocation -> {
 			MultiPartRequest rq = invocation.getArgument(0);
@@ -142,4 +164,10 @@ public class TestUtils {
 		});
 	}
 
+	public static FinishTestItemRQ positiveFinishRequest() {
+		FinishTestItemRQ rq = new FinishTestItemRQ();
+		rq.setEndTime(Calendar.getInstance().getTime());
+		rq.setStatus("PASSED");
+		return rq;
+	}
 }
