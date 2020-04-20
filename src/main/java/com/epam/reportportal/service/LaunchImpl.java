@@ -17,6 +17,7 @@ package com.epam.reportportal.service;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.utils.RetryWithDelay;
@@ -252,6 +253,7 @@ public class LaunchImpl extends Launch {
 				getParameters().getBatchLogsSize(),
 				getParameters().isConvertImage()
 		);
+		getStepReporter().setParent(testItem);
 		return testItem;
 	}
 
@@ -296,6 +298,7 @@ public class LaunchImpl extends Launch {
 				getParameters().getBatchLogsSize(),
 				getParameters().isConvertImage()
 		);
+		getStepReporter().setParent(itemId);
 		return itemId;
 	}
 
@@ -310,7 +313,7 @@ public class LaunchImpl extends Launch {
 		Objects.requireNonNull(item, "ItemID should not be null");
 		Objects.requireNonNull(rq, "FinishTestItemRQ should not be null");
 
-		if (Statuses.SKIPPED.equals(rq.getStatus()) && !getParameters().getSkippedAnIssue()) {
+		if (ItemStatus.SKIPPED.name().equals(rq.getStatus()) && !getParameters().getSkippedAnIssue()) {
 			Issue issue = new Issue();
 			issue.setIssueType(NOT_ISSUE);
 			rq.setIssue(issue);
@@ -351,6 +354,9 @@ public class LaunchImpl extends Launch {
 			//seems like this is root item
 			QUEUE.getUnchecked(this.launch).addToQueue(finishCompletion.onErrorComplete());
 		}
+
+		getStepReporter().finishPreviousStep();
+		getStepReporter().removeParent();
 
 		return finishResponse;
 	}

@@ -17,8 +17,8 @@ package com.epam.reportportal.service;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.listeners.Statuses;
 import com.epam.ta.reportportal.ws.model.ErrorRS;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
@@ -227,7 +227,7 @@ public class ReportPortalClientJoinTest {
 	private static FinishExecutionRQ standardLaunchFinish() {
 		FinishExecutionRQ rq = new FinishExecutionRQ();
 		rq.setEndTime(Calendar.getInstance().getTime());
-		rq.setStatus(Statuses.PASSED);
+		rq.setStatus(ItemStatus.PASSED.name());
 		return rq;
 	}
 
