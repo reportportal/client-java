@@ -119,6 +119,7 @@ public class ItemLoggingContextMultiThreadTest {
 	 * The test is failing if there is a {@link InheritableThreadLocal} is used in {@link LoggingContext} class.
 	 */
 	@Test
+	@SuppressWarnings("unchecked")
 	public void test_main_and_other_threads_have_different_logging_contexts() throws InterruptedException {
 		// Main thread starts launch and suite
 		final Launch launch = rp.newLaunch(standardLaunchRequest(params));
