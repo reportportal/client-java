@@ -54,15 +54,11 @@ public class LaunchTest {
 	private ReportPortalClient rpClient;
 
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
-	private final ListenerParameters params = new ListenerParameters();
 
 	@BeforeEach
 	public void prepare() {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
-
-		params.setLaunchName("My-test-launch" + generateUniqueId());
-		params.setEnable(Boolean.TRUE);
 	}
 
 	@AfterEach
@@ -77,7 +73,7 @@ public class LaunchTest {
 	public void launch_should_finish_all_items_even_if_one_of_finishes_failed() {
 		simulateStartChildTestItemResponse(rpClient);
 
-		Launch launch = new LaunchImpl(rpClient, params, standardLaunchRequest(params), executor);
+		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor);
 
 		Maybe<String> launchUuid = launch.start();
 		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
@@ -102,7 +98,7 @@ public class LaunchTest {
 
 	@Test
 	public void launch_should_finish_all_items_even_if_one_of_starts_failed() {
-		Launch launch = new LaunchImpl(rpClient, params, standardLaunchRequest(params), executor);
+		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor);
 
 		Maybe<String> launchUuid = launch.start();
 		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());

@@ -21,13 +21,11 @@ import com.epam.reportportal.listeners.LogLevel;
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
-import com.epam.reportportal.utils.files.Location;
+import com.epam.reportportal.utils.files.Utils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.google.common.base.Function;
-import com.google.common.collect.Queues;
-import com.google.common.collect.Sets;
 import io.reactivex.Maybe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +34,8 @@ import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import static com.google.common.base.Throwables.getStackTraceAsString;
 import static java.util.Optional.ofNullable;
@@ -55,32 +55,16 @@ public class StepReporter {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(StepReporter.class);
 
-	private static StepReporter instance;
+	private final Deque<Maybe<String>> parent = new ConcurrentLinkedDeque<>();
 
-	private final ThreadLocal<Maybe<String>> parent;
+	private final Deque<StepEntry> steps = new ConcurrentLinkedDeque<>();;
 
-	private final ThreadLocal<Deque<StepEntry>> steps;
-
-	private final ThreadLocal<Set<Maybe<String>>> parentFailures;
+	private final Set<Maybe<String>> parentFailures = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
 	private final Launch launch;
 
 	public StepReporter(Launch currentLaunch) {
 		launch = currentLaunch;
-		parent = new InheritableThreadLocal<Maybe<String>>() {
-			@Override
-			protected Maybe<String> initialValue() {
-				return Maybe.empty();
-			}
-		};
-		steps = new InheritableThreadLocal<Deque<StepEntry>>() {
-
-			@Override
-			protected Deque<StepEntry> initialValue() {
-				return Queues.newArrayDeque();
-			}
-		};
-		parentFailures = ThreadLocal.withInitial(Sets::newHashSet);
 	}
 
 	private static class StepEntry {
@@ -107,27 +91,31 @@ public class StepReporter {
 		}
 	}
 
-	public void setParent(final Maybe<String> parent) {
-		if (parent != null) {
-			this.parent.set(parent);
+	public void setParent(final Maybe<String> parentUuid) {
+		if (parentUuid != null) {
+			parent.add(parentUuid);
 		}
 	}
 
-	public Maybe<String> removeParent() {
-		Maybe<String> parent = this.parent.get();
-		this.parent.set(Maybe.empty());
-		return parent;
+	public Maybe<String> getParent() {
+		return parent.peekLast();
+	}
+
+	public void removeParent(final Maybe<String> parentUuid) {
+		if (parentUuid != null) {
+			parent.removeLastOccurrence(parentUuid);
+		}
 	}
 
 	public boolean isParentFailed(final Maybe<String> parentId) {
-		if (parentFailures.get().contains(parentId)) {
-			parentFailures.get().remove(parentId);
+		if (parentFailures.contains(parentId)) {
+			parentFailures.remove(parentId);
 			return true;
 		}
 		return false;
 	}
 
-	private void sendStep(final ItemStatus status, final String name, final Runnable actions) {
+	protected void sendStep(final ItemStatus status, final String name, final Runnable actions) {
 		StartTestItemRQ rq = buildStartStepRequest(name);
 		Maybe<String> stepId = startStepRequest(rq);
 		if (actions != null) {
@@ -179,22 +167,26 @@ public class StepReporter {
 		});
 	}
 
-	public Optional<StepEntry> finishPreviousStep() {
-		return ofNullable(steps.get().poll()).map(stepEntry -> {
+	private Optional<StepEntry> finishPreviousStepInternal() {
+		return ofNullable(steps.poll()).map(stepEntry -> {
 			launch.finishTestItem(stepEntry.getItemId(), stepEntry.getFinishTestItemRQ());
 			return stepEntry;
 		});
 	}
 
+	public void finishPreviousStep(){
+		finishPreviousStepInternal();
+	}
+
 	private Maybe<String> startStepRequest(final StartTestItemRQ startTestItemRQ) {
-		finishPreviousStep().ifPresent(e -> {
+		finishPreviousStepInternal().ifPresent(e -> {
 			Date previousDate = e.getTimestamp();
 			Date currentDate = startTestItemRQ.getStartTime();
 			if (!previousDate.before(currentDate)) {
 				startTestItemRQ.setStartTime(new Date(previousDate.getTime() + 1));
 			}
 		});
-		return launch.startTestItem(parent.get(), startTestItemRQ);
+		return launch.startTestItem(parent.getLast(), startTestItemRQ);
 	}
 
 	private StartTestItemRQ buildStartStepRequest(String name) {
@@ -208,9 +200,9 @@ public class StepReporter {
 
 	private void finishStepRequest(Maybe<String> stepId, ItemStatus status, Date timestamp) {
 		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status, Calendar.getInstance().getTime());
-		steps.get().add(new StepEntry(stepId, timestamp, finishTestItemRQ));
+		steps.add(new StepEntry(stepId, timestamp, finishTestItemRQ));
 		if (ItemStatus.FAILED == status) {
-			parentFailures.get().add(parent.get());
+			parentFailures.add(parent.getLast());
 		}
 	}
 
@@ -252,7 +244,7 @@ public class StepReporter {
 	}
 
 	private SaveLogRQ.File createFileModel(File file) throws IOException {
-		TypeAwareByteSource dataSource = Location.locateFile(file);
+		TypeAwareByteSource dataSource = Utils.getFile(file);
 		SaveLogRQ.File fileModel = new SaveLogRQ.File();
 		fileModel.setContent(dataSource.read());
 		fileModel.setContentType(dataSource.getMediaType());

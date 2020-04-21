@@ -43,24 +43,25 @@ import static org.mockito.Mockito.*;
 
 public class ItemLoggingContextMultiThreadTest {
 
+	private static final ListenerParameters PARAMS = standardParameters();
+	static {
+		PARAMS.setBatchLogsSize(2);
+	}
+
 	@Mock
 	private ReportPortalClient rpClient;
 	private ExecutorService clientExecutorService;
-	private ListenerParameters params;
+
 	private ReportPortal rp;
 
 	@BeforeEach
 	public void prepare() {
 		clientExecutorService = Executors.newFixedThreadPool(2);
-		params = new ListenerParameters();
-		params.setEnable(Boolean.TRUE);
-		params.setClientJoin(false);
-		params.setBatchLogsSize(2);
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
 		simulateBatchLogResponse(rpClient);
-		rp = new ReportPortal(rpClient, clientExecutorService, params, null);
+		rp = new ReportPortal(rpClient, clientExecutorService, PARAMS, null);
 	}
 
 	@AfterEach
@@ -72,8 +73,8 @@ public class ItemLoggingContextMultiThreadTest {
 	}
 
 	private static class TestNgTest implements Callable<String> {
-		private Launch launch;
-		private Maybe<String> suiteRs;
+		private final Launch launch;
+		private final Maybe<String> suiteRs;
 
 		public TestNgTest(Launch l, Maybe<String> s) {
 			launch = l;
@@ -122,7 +123,7 @@ public class ItemLoggingContextMultiThreadTest {
 	@SuppressWarnings("unchecked")
 	public void test_main_and_other_threads_have_different_logging_contexts() throws InterruptedException {
 		// Main thread starts launch and suite
-		final Launch launch = rp.newLaunch(standardLaunchRequest(params));
+		final Launch launch = rp.newLaunch(standardLaunchRequest(PARAMS));
 		launch.start();
 		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
 
@@ -152,12 +153,10 @@ public class ItemLoggingContextMultiThreadTest {
 		// Verify 10 log are logged and save their requests
 		ArgumentCaptor<MultiPartRequest> obtainLogs = ArgumentCaptor.forClass(MultiPartRequest.class);
 		verify(rpClient, times(10)).log(obtainLogs.capture());
-		obtainLogs.getAllValues().forEach(rq -> {
-			rq.getSerializedRQs().forEach(rqm -> ((List<SaveLogRQ>) rqm.getRequest()).forEach(log -> {
-				String logItemId = log.getItemUuid();
-				String logMessage = log.getMessage();
-				assertThat("First logItemUUID equals to first test UUID", logMessage, Matchers.endsWith(logItemId));
-			}));
-		});
+		obtainLogs.getAllValues().forEach(rq -> rq.getSerializedRQs().forEach(rqm -> ((List<SaveLogRQ>) rqm.getRequest()).forEach(log -> {
+			String logItemId = log.getItemUuid();
+			String logMessage = log.getMessage();
+			assertThat("First logItemUUID equals to first test UUID", logMessage, Matchers.endsWith(logItemId));
+		})));
 	}
 }

@@ -39,8 +39,8 @@ public abstract class Launch {
 
 	Launch(ListenerParameters parameters) {
 		this.parameters = parameters;
-		CURRENT_LAUNCH.set(this);
 		stepReporter = new StepReporter(this);
+		CURRENT_LAUNCH.set(this);
 	}
 
 	abstract public Maybe<String> start();
