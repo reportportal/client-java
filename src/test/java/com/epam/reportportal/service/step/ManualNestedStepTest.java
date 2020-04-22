@@ -167,6 +167,8 @@ public class ManualNestedStepTest {
 	public void verify_failed_nested_step_marks_parent_test_as_failed_nested_finish() {
 		String stepName = UUID.randomUUID().toString();
 		sr.sendStep(ItemStatus.FAILED, stepName);
+
+		verify(client, timeout(1000).times(1)).startTestItem(eq(testMethodUuid), any());
 		sr.finishPreviousStep();
 
 		ArgumentCaptor<FinishTestItemRQ> finishStepCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
