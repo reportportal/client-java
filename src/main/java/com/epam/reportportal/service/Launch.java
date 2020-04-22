@@ -16,6 +16,7 @@
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.step.StepReporter;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
@@ -28,12 +29,18 @@ import org.slf4j.LoggerFactory;
  * @author Andrei Varabyeu
  */
 public abstract class Launch {
+	private static final ThreadLocal<Launch> CURRENT_LAUNCH = new InheritableThreadLocal<>();
+
 	static final Logger LOGGER = LoggerFactory.getLogger(Launch.class);
 
 	private final ListenerParameters parameters;
 
+	private final StepReporter stepReporter;
+
 	Launch(ListenerParameters parameters) {
 		this.parameters = parameters;
+		stepReporter = new StepReporter(this);
+		CURRENT_LAUNCH.set(this);
 	}
 
 	abstract public Maybe<String> start();
@@ -82,6 +89,24 @@ public abstract class Launch {
 
 	public ListenerParameters getParameters() {
 		return this.parameters;
+	}
+
+	/**
+	 * Returns a current launch in a link to the current thread.
+	 *
+	 * @return launch instance
+	 */
+	public static Launch currentLaunch() {
+		return CURRENT_LAUNCH.get();
+	}
+
+	/**
+	 * Returns Nested Step reporter for the current launch.
+	 *
+	 * @return a {@link StepReporter} instance
+	 */
+	public StepReporter getStepReporter() {
+		return stepReporter;
 	}
 
 	/**

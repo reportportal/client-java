@@ -62,6 +62,7 @@ public class LockFileTest {
 		ListenerParameters params = new ListenerParameters();
 		params.setLockFileName(lockFileName);
 		params.setSyncFileName(syncFileName);
+		params.setEnable(Boolean.TRUE);
 		return params;
 	}
 
@@ -147,12 +148,7 @@ public class LockFileTest {
 	}
 
 	private <T> Supplier<T> singletonSupplier(final T value) {
-		return new Supplier<T>() {
-			@Override
-			public T get() {
-				return value;
-			}
-		};
+		return () -> value;
 	}
 
 	private ExecutorService testExecutor(final int threadNum) {

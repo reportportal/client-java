@@ -15,14 +15,14 @@
  */
 package com.epam.reportportal.listeners;
 
+import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import org.junit.jupiter.api.Test;
 
 import static com.epam.ta.reportportal.ws.model.launch.Mode.DEBUG;
 import static com.epam.ta.reportportal.ws.model.launch.Mode.DEFAULT;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 
 public class ListenerParametersTest {
 
@@ -40,4 +40,24 @@ public class ListenerParametersTest {
 		assertThat(listenerParameters.getBaseUrl(), nullValue());
 	}
 
+	@Test
+	public void parametersCloneTest() {
+		ListenerParameters params = TestUtils.STANDARD_PARAMETERS;
+		ListenerParameters paramsClone = params.clone();
+
+		assertThat(paramsClone, not(sameInstance(params)));
+		assertThat(paramsClone.getLaunchName(), equalTo(params.getLaunchName()));
+		assertThat(paramsClone.getEnable(), equalTo(params.getEnable()));
+		assertThat(paramsClone.getClientJoin(), equalTo(params.getClientJoin()));
+		assertThat(paramsClone.getBatchLogsSize(), equalTo(params.getBatchLogsSize()));
+	}
+
+	/*
+	 * We heavily rely on a fact that ListenerParameters is a POJO with no additional hidden logic and has a public constructor with no
+	 * parameters. Eg. a clone test above.
+	 */
+	@Test
+	public void parametersShouldHaveEmptyPublicConstructor() throws NoSuchMethodException {
+		ListenerParameters.class.getConstructor();
+	}
 }

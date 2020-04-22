@@ -17,8 +17,8 @@ package com.epam.reportportal.service;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.listeners.Statuses;
 import com.epam.reportportal.utils.RetryWithDelay;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
@@ -52,18 +52,10 @@ public class LaunchImpl extends Launch {
 
 	private static final Map<ExecutorService, Scheduler> SCHEDULERS = new ConcurrentHashMap<>();
 
-	private static final Function<ItemCreatedRS, String> TO_ID = new Function<ItemCreatedRS, String>() {
-		@Override
-		public String apply(ItemCreatedRS rs) {
-			return rs.getId();
-		}
-	};
-	private static final Consumer<StartLaunchRS> LAUNCH_SUCCESS_CONSUMER = new Consumer<StartLaunchRS>() {
-		@Override
-		public void accept(StartLaunchRS rs) throws Exception {
-			logCreated("launch").accept(rs);
-			System.setProperty("rp.launch.id", String.valueOf(rs.getId()));
-		}
+	private static final Function<ItemCreatedRS, String> TO_ID = EntryCreatedAsyncRS::getId;
+	private static final Consumer<StartLaunchRS> LAUNCH_SUCCESS_CONSUMER = rs -> {
+		logCreated("launch").accept(rs);
+		System.setProperty("rp.launch.id", String.valueOf(rs.getId()));
 	};
 
 	private static final int DEFAULT_RETRY_COUNT = 5;
@@ -108,7 +100,7 @@ public class LaunchImpl extends Launch {
 	private final ExecutorService executor;
 	private final Scheduler scheduler;
 
-	LaunchImpl(@NotNull final ReportPortalClient reportPortalClient, @NotNull final ListenerParameters parameters,
+	protected LaunchImpl(@NotNull final ReportPortalClient reportPortalClient, @NotNull final ListenerParameters parameters,
 			@NotNull final StartLaunchRQ rq, @NotNull final ExecutorService executorService) {
 		super(parameters);
 		rpClient = Objects.requireNonNull(reportPortalClient, "RestEndpoint shouldn't be NULL");
@@ -148,7 +140,7 @@ public class LaunchImpl extends Launch {
 		}).cache();
 	}
 
-	LaunchImpl(@NotNull final ReportPortalClient reportPortalClient, @NotNull final ListenerParameters parameters,
+	protected LaunchImpl(@NotNull final ReportPortalClient reportPortalClient, @NotNull final ListenerParameters parameters,
 			@NotNull final Maybe<String> launchMaybe, @NotNull final ExecutorService executorService) {
 		super(parameters);
 		rpClient = Objects.requireNonNull(reportPortalClient, "RestEndpoint shouldn't be NULL");
@@ -189,7 +181,6 @@ public class LaunchImpl extends Launch {
 	 * @return Launch ID promise
 	 */
 	public Maybe<String> start() {
-
 		launch.subscribe(logMaybeResults("Launch start"));
 		LaunchLoggingContext.init(this.launch,
 				this.rpClient,
@@ -199,7 +190,6 @@ public class LaunchImpl extends Launch {
 		);
 
 		return this.launch;
-
 	}
 
 	/**
@@ -235,7 +225,7 @@ public class LaunchImpl extends Launch {
 	 */
 	public Maybe<String> startTestItem(final StartTestItemRQ rq) {
 
-		final Maybe<String> testItem = this.launch.flatMap(new Function<String, Maybe<String>>() {
+		final Maybe<String> testItem = launch.flatMap(new Function<String, Maybe<String>>() {
 			@Override
 			public Maybe<String> apply(String launchId) {
 				rq.setLaunchUuid(launchId);
@@ -245,13 +235,14 @@ public class LaunchImpl extends Launch {
 		}).cache();
 		testItem.subscribeOn(scheduler).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(testItem).addToQueue(testItem.ignoreElement().onErrorComplete());
-		LoggingContext.init(this.launch,
+		LoggingContext.init(launch,
 				testItem,
-				this.rpClient,
+				rpClient,
 				scheduler,
 				getParameters().getBatchLogsSize(),
 				getParameters().isConvertImage()
 		);
+		getStepReporter().setParent(testItem);
 		return testItem;
 	}
 
@@ -274,7 +265,7 @@ public class LaunchImpl extends Launch {
 		if (null == parentId) {
 			return startTestItem(rq);
 		}
-		final Maybe<String> itemId = this.launch.flatMap(new Function<String, Maybe<String>>() {
+		final Maybe<String> itemId = launch.flatMap(new Function<String, Maybe<String>>() {
 			@Override
 			public Maybe<String> apply(final String launchId) {
 				return parentId.flatMap(new Function<String, MaybeSource<String>>() {
@@ -282,20 +273,24 @@ public class LaunchImpl extends Launch {
 					public MaybeSource<String> apply(String parentId) {
 						rq.setLaunchUuid(launchId);
 						LOGGER.debug("Starting test item..." + Thread.currentThread().getName());
-						return rpClient.startTestItem(parentId, rq).retry(DEFAULT_REQUEST_RETRY).doOnSuccess(logCreated("item")).map(TO_ID);
+						Maybe<ItemCreatedRS> result = rpClient.startTestItem(parentId, rq);
+						result = result.retry(DEFAULT_REQUEST_RETRY);
+						result = result.doOnSuccess(logCreated("item"));
+						return result.map(TO_ID);
 					}
 				});
 			}
 		}).cache();
 		itemId.subscribeOn(scheduler).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement().onErrorComplete());
-		LoggingContext.init(this.launch,
+		LoggingContext.init(launch,
 				itemId,
-				this.rpClient,
+				rpClient,
 				scheduler,
 				getParameters().getBatchLogsSize(),
 				getParameters().isConvertImage()
 		);
+		getStepReporter().setParent(itemId);
 		return itemId;
 	}
 
@@ -310,7 +305,7 @@ public class LaunchImpl extends Launch {
 		Objects.requireNonNull(item, "ItemID should not be null");
 		Objects.requireNonNull(rq, "FinishTestItemRQ should not be null");
 
-		if (Statuses.SKIPPED.equals(rq.getStatus()) && !getParameters().getSkippedAnIssue()) {
+		if (ItemStatus.SKIPPED.name().equals(rq.getStatus()) && !getParameters().getSkippedAnIssue()) {
 			Issue issue = new Issue();
 			issue.setIssueType(NOT_ISSUE);
 			rq.setIssue(issue);
@@ -352,31 +347,34 @@ public class LaunchImpl extends Launch {
 			QUEUE.getUnchecked(this.launch).addToQueue(finishCompletion.onErrorComplete());
 		}
 
+		getStepReporter().finishPreviousStep();
+		getStepReporter().removeParent(item);
+
 		return finishResponse;
 	}
 
 	/**
 	 * Wrapper around TestItem entity to be able to track parent and children items
 	 */
-	static class TreeItem {
+	protected static class TreeItem {
 		private volatile Maybe<String> parent;
-		private List<Completable> children = new CopyOnWriteArrayList<Completable>();
+		private final List<Completable> children = new CopyOnWriteArrayList<Completable>();
 
-		LaunchImpl.TreeItem withParent(Maybe<String> parent) {
+		public LaunchImpl.TreeItem withParent(Maybe<String> parent) {
 			this.parent = parent;
 			return this;
 		}
 
-		LaunchImpl.TreeItem addToQueue(Completable completable) {
+		public LaunchImpl.TreeItem addToQueue(Completable completable) {
 			this.children.add(completable);
 			return this;
 		}
 
-		List<Completable> getChildren() {
+		public List<Completable> getChildren() {
 			return newArrayList(this.children);
 		}
 
-		Maybe<String> getParent() {
+		public Maybe<String> getParent() {
 			return parent;
 		}
 	}

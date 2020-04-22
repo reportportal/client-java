@@ -40,7 +40,7 @@ public class PropertiesLoader {
 	public static final String PATH = "./reportportal.properties";
 	public static final Charset STANDARD_CHARSET = StandardCharsets.UTF_8;
 
-	private Supplier<Properties> propertiesSupplier;
+	private final Supplier<Properties> propertiesSupplier;
 
 	/**
 	 * Loads properties from default location

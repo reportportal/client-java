@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 EPAM Systems
+ * Copyright 2020 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.epam.reportportal.listeners;
 
 /**
- * Possible statuses of finished test methods.
- * @deprecated use {@link ItemStatus} enumeration instead of this class. Since a backend does not currently support custom statuses.
+ * All possible statuses of test method finish supported by a backend.
  */
-@Deprecated
-public final class Statuses {
-
-	private Statuses() {
-
-	}
-
-	public static final String PASSED = ItemStatus.PASSED.name();
-	public static final String FAILED = ItemStatus.FAILED.name();
-	public static final String SKIPPED = ItemStatus.SKIPPED.name();
+public enum ItemStatus {
+	PASSED,
+	FAILED,
+	STOPPED,
+	SKIPPED,
+	RESETED,
+	CANCELLED
 }
