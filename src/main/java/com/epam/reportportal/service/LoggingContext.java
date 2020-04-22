@@ -19,6 +19,7 @@ import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
+import com.google.common.io.ByteSource;
 import io.reactivex.*;
 import io.reactivex.functions.Function;
 import io.reactivex.subjects.PublishSubject;
@@ -32,7 +33,6 @@ import static com.epam.reportportal.service.LoggingCallback.LOG_ERROR;
 import static com.epam.reportportal.utils.SubscriptionUtils.logFlowableResults;
 import static com.epam.reportportal.utils.files.ImageConverter.convert;
 import static com.epam.reportportal.utils.files.ImageConverter.isImage;
-import static com.google.common.io.ByteSource.wrap;
 
 /**
  * Logging context holds thread-local context for logging and converts
@@ -137,7 +137,7 @@ public class LoggingContext {
 			rq.setLaunchUuid(launchId);
 			SaveLogRQ.File file = rq.getFile();
 			if (convertImages && null != file && isImage(file.getContentType())) {
-				final TypeAwareByteSource source = convert(wrap(file.getContent()));
+				final TypeAwareByteSource source = convert(ByteSource.wrap(file.getContent()));
 				file.setContent(source.read());
 				file.setContentType(source.getMediaType());
 			}
