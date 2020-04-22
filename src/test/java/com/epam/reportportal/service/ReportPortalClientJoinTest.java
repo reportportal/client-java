@@ -19,6 +19,8 @@ import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.launch.PrimaryLaunch;
+import com.epam.reportportal.service.launch.SecondaryLaunch;
 import com.epam.ta.reportportal.ws.model.ErrorRS;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
@@ -184,8 +186,8 @@ public class ReportPortalClientJoinTest {
 	public void test_two_launches_have_correct_class_names() {
 		List<Launch> launches = createLaunchesNoStart(2, rpClient, params, lockFile, executor);
 
-		assertThat(launches.get(0).getClass().getCanonicalName(), Matchers.endsWith("PrimaryLaunch"));
-		assertThat(launches.get(1).getClass().getCanonicalName(), Matchers.endsWith("SecondaryLaunch"));
+		assertThat(launches.get(0).getClass().getCanonicalName(), Matchers.equalTo(PrimaryLaunch.class.getCanonicalName()));
+		assertThat(launches.get(1).getClass().getCanonicalName(), Matchers.equalTo(SecondaryLaunch.class.getCanonicalName()));
 	}
 
 	@Test
@@ -370,7 +372,6 @@ public class ReportPortalClientJoinTest {
 		launches.get(1).start();
 
 		verify(lockFile, timeout(WAIT_TIMEOUT).times(2)).obtainLaunchUuid(anyString());
-
 		verify(rpClient, after(WAIT_TIMEOUT * 3).times(3)).getLaunchByUuid(anyString());
 	}
 

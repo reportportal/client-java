@@ -100,7 +100,7 @@ public class LaunchImpl extends Launch {
 	private final ExecutorService executor;
 	private final Scheduler scheduler;
 
-	LaunchImpl(@NotNull final ReportPortalClient reportPortalClient, @NotNull final ListenerParameters parameters,
+	protected LaunchImpl(@NotNull final ReportPortalClient reportPortalClient, @NotNull final ListenerParameters parameters,
 			@NotNull final StartLaunchRQ rq, @NotNull final ExecutorService executorService) {
 		super(parameters);
 		rpClient = Objects.requireNonNull(reportPortalClient, "RestEndpoint shouldn't be NULL");
@@ -140,7 +140,7 @@ public class LaunchImpl extends Launch {
 		}).cache();
 	}
 
-	LaunchImpl(@NotNull final ReportPortalClient reportPortalClient, @NotNull final ListenerParameters parameters,
+	protected LaunchImpl(@NotNull final ReportPortalClient reportPortalClient, @NotNull final ListenerParameters parameters,
 			@NotNull final Maybe<String> launchMaybe, @NotNull final ExecutorService executorService) {
 		super(parameters);
 		rpClient = Objects.requireNonNull(reportPortalClient, "RestEndpoint shouldn't be NULL");
@@ -181,7 +181,6 @@ public class LaunchImpl extends Launch {
 	 * @return Launch ID promise
 	 */
 	public Maybe<String> start() {
-
 		launch.subscribe(logMaybeResults("Launch start"));
 		LaunchLoggingContext.init(this.launch,
 				this.rpClient,
@@ -191,7 +190,6 @@ public class LaunchImpl extends Launch {
 		);
 
 		return this.launch;
-
 	}
 
 	/**
@@ -358,25 +356,25 @@ public class LaunchImpl extends Launch {
 	/**
 	 * Wrapper around TestItem entity to be able to track parent and children items
 	 */
-	static class TreeItem {
+	protected static class TreeItem {
 		private volatile Maybe<String> parent;
-		private List<Completable> children = new CopyOnWriteArrayList<Completable>();
+		private final List<Completable> children = new CopyOnWriteArrayList<Completable>();
 
-		LaunchImpl.TreeItem withParent(Maybe<String> parent) {
+		public LaunchImpl.TreeItem withParent(Maybe<String> parent) {
 			this.parent = parent;
 			return this;
 		}
 
-		LaunchImpl.TreeItem addToQueue(Completable completable) {
+		public LaunchImpl.TreeItem addToQueue(Completable completable) {
 			this.children.add(completable);
 			return this;
 		}
 
-		List<Completable> getChildren() {
+		public List<Completable> getChildren() {
 			return newArrayList(this.children);
 		}
 
-		Maybe<String> getParent() {
+		public Maybe<String> getParent() {
 			return parent;
 		}
 	}

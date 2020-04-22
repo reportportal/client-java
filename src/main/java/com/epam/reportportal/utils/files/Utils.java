@@ -43,7 +43,7 @@ public class Utils {
 	private static final int READ_BUFFER = 10 * KILOBYTE;
 
 	/**
-	 * Reads an <code>InputStream</code> into a <code>String</code>. Uses UTF-8 encoding and 10 kilobytes buffer by
+	 * Reads an {@link InputStream} into a <code>String</code>. Uses UTF-8 encoding and 10 kilobytes buffer by
 	 * default.
 	 *
 	 * @param is a stream to read from
@@ -64,23 +64,23 @@ public class Utils {
 	}
 
 	/**
-	 * Reads an <code>InputStream</code> into an array of bytes. Uses 10 kilobytes buffer by default.
+	 * Reads an {@link InputStream} into an array of bytes. Uses 10 kilobytes buffer by default.
 	 *
 	 * @param is a stream to read from
 	 * @return the result
 	 */
-	public static byte[] readInputStreamToBytes(InputStream is) throws IOException {
+	public static byte[] readInputStreamToBytes(@NotNull InputStream is) throws IOException {
 		return readInputStreamToBytes(is, READ_BUFFER);
 	}
 
 	/**
-	 * Reads an <code>InputStream</code> into an array of bytes.
+	 * Reads an {@link InputStream} into an array of bytes.
 	 *
 	 * @param is         a stream to read from
 	 * @param bufferSize size of read buffer in bytes
 	 * @return the result
 	 */
-	public static byte[] readInputStreamToBytes(InputStream is, int bufferSize) throws IOException {
+	public static byte[] readInputStreamToBytes(@NotNull InputStream is, int bufferSize) throws IOException {
 		ReadableByteChannel channel = Channels.newChannel(is);
 		ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -94,16 +94,26 @@ public class Utils {
 	}
 
 	/**
+	 * Reads a {@link File} into an array of bytes.
+	 *
+	 * @param file a file to read
+	 * @return the result
+	 */
+	public static byte[] readFileToBytes(@NotNull File file) throws IOException {
+		return readInputStreamToBytes(new FileInputStream(file));
+	}
+
+	/**
 	 * Locates and reads a file either by a direct path or by a relative path in classpath.
 	 *
 	 * @param file a file to locate and read
 	 * @return file data and type
 	 * @throws IOException in case of read error or file not found
 	 */
-	public static TypeAwareByteSource getFile(File file) throws IOException {
+	public static TypeAwareByteSource getFile(@NotNull File file) throws IOException {
 		byte[] data;
 		if (file.exists() && file.isFile()) {
-			data = readInputStreamToBytes(new FileInputStream(file));
+			data = readFileToBytes(file);
 		} else {
 			String path = file.getPath();
 			InputStream resource = Thread.currentThread().getContextClassLoader().getResourceAsStream(path);

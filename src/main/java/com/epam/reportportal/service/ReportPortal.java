@@ -25,22 +25,17 @@ import com.epam.reportportal.restendpoint.http.RestEndpoints;
 import com.epam.reportportal.restendpoint.serializer.ByteArraySerializer;
 import com.epam.reportportal.restendpoint.serializer.Serializer;
 import com.epam.reportportal.restendpoint.serializer.json.JacksonSerializer;
+import com.epam.reportportal.service.launch.PrimaryLaunch;
+import com.epam.reportportal.service.launch.SecondaryLaunch;
 import com.epam.reportportal.utils.SslUtils;
-import com.epam.reportportal.utils.Waiter;
 import com.epam.reportportal.utils.properties.ListenerProperty;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
-import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
-import com.epam.ta.reportportal.ws.model.launch.LaunchResource;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.reactivex.Completable;
 import io.reactivex.Maybe;
-import io.reactivex.MaybeEmitter;
-import io.reactivex.MaybeOnSubscribe;
-import io.reactivex.disposables.Disposable;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -62,14 +57,16 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
-import java.util.Queue;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static com.epam.reportportal.service.LaunchLoggingContext.DEFAULT_LAUNCH_KEY;
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
-import static com.google.common.io.Files.toByteArray;
+import static com.epam.reportportal.utils.files.Utils.readFileToBytes;
 
 /**
  * Default ReportPortal Reporter implementation. Uses
@@ -82,10 +79,10 @@ public class ReportPortal {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportPortal.class);
 	private static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
 
-	private volatile String instanceUuid = UUID.randomUUID().toString();
+	private final AtomicReference<String> instanceUuid = new AtomicReference<>(UUID.randomUUID().toString());
 
-	private ListenerParameters parameters;
-	private LockFile lockFile;
+	private final ListenerParameters parameters;
+	private final LockFile lockFile;
 	private final ReportPortalClient rpClient;
 	private final ExecutorService executor;
 
@@ -112,6 +109,37 @@ public class ReportPortal {
 		}
 
 		return getLaunch(rq);
+	}
+
+	private Launch getLaunch(StartLaunchRQ rq) {
+		if (lockFile == null) {
+			// do not use multi-client mode
+			return new LaunchImpl(rpClient, parameters, rq, executor);
+		}
+
+		final String uuid = lockFile.obtainLaunchUuid(instanceUuid.get());
+		if (uuid == null) {
+			// timeout locking on file or interrupted
+			throw new InternalReportPortalClientException("Unable to create a new launch: unable to read/write lock file.");
+		}
+
+		if (instanceUuid.get().equals(uuid)) {
+			// We got our own UUID as launch UUID, that means we are primary launch.
+			ObjectMapper objectMapper = new ObjectMapper();
+			try {
+				StartLaunchRQ rqCopy = objectMapper.readValue(objectMapper.writeValueAsString(rq), StartLaunchRQ.class);
+				rqCopy.setUuid(uuid);
+				return new PrimaryLaunch(rpClient, parameters, rqCopy, executor, lockFile, instanceUuid);
+			} catch (IOException e) {
+				throw new InternalReportPortalClientException("Unable to clone start launch request:", e);
+			}
+		} else {
+			Maybe<String> launch = Maybe.create(emitter -> {
+				emitter.onSuccess(uuid);
+				emitter.onComplete();
+			});
+			return new SecondaryLaunch(rpClient, parameters, launch, executor, lockFile, instanceUuid);
+		}
 	}
 
 	/**
@@ -262,7 +290,7 @@ public class ReportPortal {
 		try {
 			SaveLogRQ.File f = new SaveLogRQ.File();
 			f.setContentType(detect(file));
-			f.setContent(toByteArray(file));
+			f.setContent(readFileToBytes(file));
 
 			f.setName(UUID.randomUUID().toString());
 			rq.setFile(f);
@@ -512,118 +540,5 @@ public class ReportPortal {
 
 	private static ExecutorService buildExecutorService(ListenerParameters params) {
 		return Executors.newFixedThreadPool(params.getIoPoolSize(), new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build());
-	}
-
-	private class SecondaryLaunch extends LaunchImpl {
-		private final ReportPortalClient rpClient;
-
-		SecondaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch, ExecutorService executorService) {
-			super(rpClient, parameters, launch, executorService);
-			this.rpClient = rpClient;
-		}
-
-		private void waitForLaunchStart() {
-			new Waiter("Wait for Launch start").pollingEvery(1, TimeUnit.SECONDS).timeoutFail().till(new Callable<Boolean>() {
-				private volatile Boolean result = null;
-				private final Queue<Disposable> disposables = new ConcurrentLinkedQueue<>();
-
-				@Override
-				public Boolean call() {
-					if (result == null) {
-						disposables.add(launch.subscribe(uuid -> {
-							Maybe<LaunchResource> maybeRs = rpClient.getLaunchByUuid(uuid);
-							if (maybeRs != null) {
-								disposables.add(maybeRs.subscribe(
-										launchResource -> result = Boolean.TRUE,
-										throwable -> LOGGER.debug("Unable to get a Launch: " + throwable.getLocalizedMessage(), throwable)
-								));
-							} else {
-								LOGGER.debug("RP Client returned 'null' response on get Launch by UUID call");
-							}
-						}));
-					} else {
-						Disposable disposable;
-						while ((disposable = disposables.poll()) != null) {
-							disposable.dispose();
-						}
-					}
-					return result;
-				}
-			});
-		}
-
-		@Override
-		public Maybe<String> start() {
-			if (!parameters.isAsyncReporting()) {
-				waitForLaunchStart();
-			}
-			return super.start();
-		}
-
-		@Override
-		public void finish(final FinishExecutionRQ rq) {
-			QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
-			try {
-				Throwable throwable = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren()).
-						timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
-				if (throwable != null) {
-					LOGGER.error("Unable to finish secondary launch in ReportPortal", throwable);
-				}
-			} finally {
-				rpClient.close();
-				// ignore that call, since only primary launch should finish it
-				lockFile.finishInstanceUuid(instanceUuid);
-			}
-		}
-	}
-
-	private class PrimaryLaunch extends LaunchImpl {
-		PrimaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, StartLaunchRQ launch, ExecutorService executorService) {
-			super(rpClient, parameters, launch, executorService);
-		}
-
-		@Override
-		public void finish(final FinishExecutionRQ rq) {
-			try {
-				super.finish(rq);
-			} finally {
-				lockFile.finishInstanceUuid(instanceUuid);
-				instanceUuid = UUID.randomUUID().toString();
-			}
-		}
-	}
-
-	private Launch getLaunch(StartLaunchRQ rq) {
-		if (lockFile == null) {
-			// do not use multi-client mode
-			return new LaunchImpl(rpClient, parameters, rq, executor);
-		}
-
-		final String uuid = lockFile.obtainLaunchUuid(instanceUuid);
-		if (uuid == null) {
-			// timeout locking on file or interrupted
-			throw new InternalReportPortalClientException("Unable to create a new launch: unable to read/write lock file.");
-		}
-
-		if (instanceUuid.equals(uuid)) {
-			// We got our own UUID as launch UUID, that means we are primary launch.
-			ObjectMapper objectMapper = new ObjectMapper();
-			try {
-				StartLaunchRQ rqCopy = objectMapper.readValue(objectMapper.writeValueAsString(rq), StartLaunchRQ.class);
-				rqCopy.setUuid(uuid);
-				return new PrimaryLaunch(rpClient, parameters, rqCopy, executor);
-			} catch (IOException e) {
-				throw new InternalReportPortalClientException("Unable to clone start launch request:", e);
-			}
-		} else {
-			Maybe<String> launch = Maybe.create(new MaybeOnSubscribe<String>() {
-				@Override
-				public void subscribe(final MaybeEmitter<String> emitter) {
-					emitter.onSuccess(uuid);
-					emitter.onComplete();
-				}
-			});
-			return new SecondaryLaunch(rpClient, parameters, launch, executor);
-		}
 	}
 }

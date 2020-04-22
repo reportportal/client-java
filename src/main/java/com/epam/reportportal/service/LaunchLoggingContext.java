@@ -46,7 +46,7 @@ import static com.google.common.io.ByteSource.wrap;
  * @author <a href="mailto:ihar_kahadouski@epam.com">Ihar Kahadouski</a>
  * @see #init(Maybe, ReportPortalClient, Scheduler)
  */
-class LaunchLoggingContext {
+public class LaunchLoggingContext {
 
 	/* default back-pressure buffer size */
 	private static final int DEFAULT_BUFFER_SIZE = 10;
@@ -109,7 +109,7 @@ class LaunchLoggingContext {
 	 *
 	 * @return Waiting queue to be able to track request sending completion
 	 */
-	static Completable complete() {
+	public static Completable complete() {
 		final LaunchLoggingContext loggingContext = loggingContextMap.get(DEFAULT_LAUNCH_KEY);
 		if (null != loggingContext) {
 			return loggingContext.completed();
