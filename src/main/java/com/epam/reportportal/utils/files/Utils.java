@@ -48,6 +48,7 @@ public class Utils {
 	 *
 	 * @param is a stream to read from
 	 * @return the result
+	 * @throws IOException in case of a read error
 	 */
 	public static String readInputStreamToString(@NotNull InputStream is) throws IOException {
 		byte[] bytes = readInputStreamToBytes(is);
@@ -68,6 +69,7 @@ public class Utils {
 	 *
 	 * @param is a stream to read from
 	 * @return the result
+	 * @throws IOException in case of a read error
 	 */
 	public static byte[] readInputStreamToBytes(@NotNull InputStream is) throws IOException {
 		return readInputStreamToBytes(is, READ_BUFFER);
@@ -79,6 +81,7 @@ public class Utils {
 	 * @param is         a stream to read from
 	 * @param bufferSize size of read buffer in bytes
 	 * @return the result
+	 * @throws IOException in case of a read error
 	 */
 	public static byte[] readInputStreamToBytes(@NotNull InputStream is, int bufferSize) throws IOException {
 		ReadableByteChannel channel = Channels.newChannel(is);
@@ -98,6 +101,7 @@ public class Utils {
 	 *
 	 * @param file a file to read
 	 * @return the result
+	 * @throws IOException in case of a read error, or a file not found
 	 */
 	public static byte[] readFileToBytes(@NotNull File file) throws IOException {
 		return readInputStreamToBytes(new FileInputStream(file));
@@ -108,7 +112,7 @@ public class Utils {
 	 *
 	 * @param file a file to locate and read
 	 * @return file data and type
-	 * @throws IOException in case of read error or file not found
+	 * @throws IOException in case of a read error, or a file not found
 	 */
 	public static TypeAwareByteSource getFile(@NotNull File file) throws IOException {
 		byte[] data;

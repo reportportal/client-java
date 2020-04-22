@@ -17,14 +17,14 @@
 package com.epam.reportportal.service.step;
 
 import com.epam.reportportal.listeners.ItemStatus;
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
-import com.epam.ta.reportportal.ws.model.*;
+import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
+import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
+import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
-import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +42,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -91,7 +92,6 @@ public class ManualNestedStepTest {
 
 	@AfterEach
 	public void cleanup() throws InterruptedException {
-		launch.finishTestItem(testMethodUuidMaybe, TestUtils.positiveFinishRequest());
 		executor.shutdown();
 		if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
 			executor.shutdownNow();
@@ -109,6 +109,7 @@ public class ManualNestedStepTest {
 
 		StartTestItemRQ nestedStep = stepCaptor.getValue();
 		assertThat(nestedStep.getName(), equalTo(stepName));
+		sr.finishPreviousStep();
 	}
 
 	@Test
@@ -127,10 +128,12 @@ public class ManualNestedStepTest {
 		ArgumentCaptor<FinishTestItemRQ> finishStepCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
 		verify(client, after(1000).times(1)).finishTestItem(finishStepUuidCaptor.capture(), finishStepCaptor.capture());
 
-		List<String> parentUuids = stepParentUuidCaptor.getAllValues().subList(0, 3); // I believe due to mockito bug there are over 9000 items in this list
+		List<String> parentUuids = stepParentUuidCaptor.getAllValues()
+				.subList(0, 3); // I believe due to mockito bug there are over 9000 items in this list
 		assertThat(parentUuids, contains(equalTo(testClassUuid), equalTo(testMethodUuid), equalTo(testMethodUuid)));
 
-		List<StartTestItemRQ> nestedSteps = stepCaptor.getAllValues().subList(0, 3); // I believe due to mockito bug there are over 9000 items in this list
+		List<StartTestItemRQ> nestedSteps = stepCaptor.getAllValues()
+				.subList(0, 3); // I believe due to mockito bug there are over 9000 items in this list
 		assertThat(nestedSteps.get(1).getName(), equalTo(stepName));
 		assertThat(nestedSteps.get(2).getName(), equalTo(stepName2));
 
@@ -139,5 +142,33 @@ public class ManualNestedStepTest {
 
 		FinishTestItemRQ finishRq = finishStepCaptor.getValue();
 		assertThat(finishRq.getStatus(), equalTo(ItemStatus.PASSED.name()));
+	}
+
+	@Test
+	public void verify_failed_nested_step_marks_parent_test_as_failed_parent_finish() {
+		String stepName = UUID.randomUUID().toString();
+		sr.sendStep(ItemStatus.FAILED, stepName);
+		sr.finishPreviousStep();
+
+		assertThat("StepReporter should save parent failures", sr.isFailed(testMethodUuidMaybe), equalTo(Boolean.TRUE));
+
+		launch.finishTestItem(testMethodUuidMaybe, TestUtils.positiveFinishRequest());
+		ArgumentCaptor<FinishTestItemRQ> finishStepCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(client, timeout(1000).times(1)).finishTestItem(eq(testMethodUuid), finishStepCaptor.capture());
+
+		assertThat(
+				"Parent test should fail if a nested step failed",
+				finishStepCaptor.getValue().getStatus(),
+				equalTo(ItemStatus.FAILED.name())
+		);
+	}
+
+	@Test
+	public void verify_failed_nested_step_marks_parent_test_as_failed_nested_finish() {
+		String stepName = UUID.randomUUID().toString();
+		sr.sendStep(ItemStatus.FAILED, stepName);
+		sr.finishPreviousStep();
+
+		assertThat("StepReporter should save parent failures", sr.isFailed(testMethodUuidMaybe), equalTo(Boolean.TRUE));
 	}
 }

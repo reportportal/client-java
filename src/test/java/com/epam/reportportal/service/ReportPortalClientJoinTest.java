@@ -36,10 +36,7 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
@@ -67,6 +64,7 @@ import static org.mockito.Mockito.*;
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ReportPortalClientJoinTest {
 	private static final long WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
 
