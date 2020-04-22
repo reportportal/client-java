@@ -45,9 +45,9 @@ shadowJar {
         include(dependency('org.apache.httpcomponents:httpcore'))
         include(dependency('commons-logging:commons-logging'))
         include(dependency('com.google.guava:guava'))
-
     }
-    archiveClassifier.set(null)
+
+    classifier = null
     relocate 'org.apache.http', 'rp.org.apache.http'
     relocate 'com.google.common', 'rp.com.google.common'
     relocate 'com.google.thirdparty', 'rp.com.google.thirdparty'

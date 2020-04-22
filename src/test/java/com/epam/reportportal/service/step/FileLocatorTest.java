@@ -75,19 +75,11 @@ public class FileLocatorTest {
 		when(rpClient.startTestItem(eq(testMethodUuid),
 				any()
 		)).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> maybeSupplier.get());
-		when(rpClient.finishTestItem(any(String.class),
-				any(FinishTestItemRQ.class)
-		)).thenReturn(TestUtils.getConstantMaybe(new OperationCompletionRS()));
 
 		ReportPortal rp = ReportPortal.create(rpClient, TestUtils.STANDARD_PARAMETERS);
 		launch = rp.withLaunch(launchUuid);
 		testMethodUuidMaybe = launch.startTestItem(TestUtils.getConstantMaybe(testClassUuid), TestUtils.standardStartStepRequest());
 		sr = launch.getStepReporter();
-	}
-
-	@AfterEach
-	public void cleanup() {
-		launch.finishTestItem(testMethodUuidMaybe, TestUtils.positiveFinishRequest());
 	}
 
 	@Test
