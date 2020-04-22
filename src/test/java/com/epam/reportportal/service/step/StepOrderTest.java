@@ -25,7 +25,6 @@ import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import io.reactivex.Maybe;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -54,8 +53,6 @@ public class StepOrderTest {
 	@Mock
 	private ReportPortalClient client;
 
-	private Launch launch;
-	private Maybe<String> testMethodUuidMaybe;
 	private StepReporter sr;
 
 	private final List<Maybe<ItemCreatedRS>> createdStepsList = new ArrayList<>();
@@ -72,19 +69,17 @@ public class StepOrderTest {
 		when(client.startTestItem(eq(testClassUuid), any())).thenReturn(testMethodCreatedMaybe);
 
 		// mock start nested steps
-		when(client.startTestItem(
-				eq(testMethodUuid),
+		when(client.startTestItem(eq(testMethodUuid),
 				any()
 		)).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> createdStepsList.get(counter.getAndIncrement()));
 		// mock finish nested steps
-		when(client.finishTestItem(
-				any(String.class),
+		when(client.finishTestItem(any(String.class),
 				any(FinishTestItemRQ.class)
 		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> TestUtils.getConstantMaybe(new OperationCompletionRS()));
 
 		ReportPortal rp = ReportPortal.create(client, TestUtils.STANDARD_PARAMETERS);
-		launch = rp.withLaunch(launchUuid);
-		testMethodUuidMaybe = launch.startTestItem(TestUtils.getConstantMaybe(testClassUuid), TestUtils.standardStartStepRequest());
+		Launch launch = rp.withLaunch(launchUuid);
+		launch.startTestItem(TestUtils.getConstantMaybe(testClassUuid), TestUtils.standardStartStepRequest());
 		sr = launch.getStepReporter();
 	}
 
@@ -107,8 +102,7 @@ public class StepOrderTest {
 		List<StartTestItemRQ> rqs = stepCaptor.getAllValues();
 		assertThat(rqs, hasSize(stepNum));
 		for (int i = 1; i < stepNum; i++) {
-			assertThat(
-					"Each nested step should not complete in the same millisecond, iteration: " + i,
+			assertThat("Each nested step should not complete in the same millisecond, iteration: " + i,
 					rqs.get(i - 1).getStartTime(),
 					not(equalTo(rqs.get(i).getStartTime()))
 			);
