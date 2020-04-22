@@ -17,7 +17,6 @@
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.exception.ReportPortalException;
-import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.ta.reportportal.ws.model.ErrorRS;
 import com.epam.ta.reportportal.ws.model.ErrorType;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;

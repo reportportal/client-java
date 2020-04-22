@@ -48,6 +48,7 @@ import static org.hamcrest.Matchers.*;
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class LockFileTest {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LockFileTest.class);
 	private static final String LOCK_FILE_NAME_PATTERN = "%s.reportportal.lock";

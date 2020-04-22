@@ -42,13 +42,13 @@ import static java.util.Optional.ofNullable;
 
 /**
  * A class for manual nested step reporting.
- *
+ * <p>
  * Usage:
  * <code>
- *	StepReporter stepReporter = Launch.currentLaunch().getStepReporter();
- *	stepReporter.sendStep("My step name");
- *  // step actions
- *	stepReporter.sendStep(ItemStatus.FAILED, "My failure step name", new File("screenshot/fail.jpg"));
+ * StepReporter stepReporter = Launch.currentLaunch().getStepReporter();
+ * stepReporter.sendStep("My step name");
+ * // step actions
+ * stepReporter.sendStep(ItemStatus.FAILED, "My failure step name", new File("screenshot/fail.jpg"));
  * </code>
  */
 public class StepReporter {
@@ -57,7 +57,8 @@ public class StepReporter {
 
 	private final Deque<Maybe<String>> parent = new ConcurrentLinkedDeque<>();
 
-	private final Deque<StepEntry> steps = new ConcurrentLinkedDeque<>();;
+	private final Deque<StepEntry> steps = new ConcurrentLinkedDeque<>();
+	;
 
 	private final Set<Maybe<String>> parentFailures = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -104,15 +105,12 @@ public class StepReporter {
 	public void removeParent(final Maybe<String> parentUuid) {
 		if (parentUuid != null) {
 			parent.removeLastOccurrence(parentUuid);
+			parentFailures.remove(parentUuid);
 		}
 	}
 
-	public boolean isParentFailed(final Maybe<String> parentId) {
-		if (parentFailures.contains(parentId)) {
-			parentFailures.remove(parentId);
-			return true;
-		}
-		return false;
+	public boolean isFailed(final Maybe<String> parentId) {
+		return parentFailures.contains(parentId);
 	}
 
 	protected void sendStep(final ItemStatus status, final String name, final Runnable actions) {
@@ -135,8 +133,7 @@ public class StepReporter {
 	}
 
 	public void sendStep(final @NotNull ItemStatus status, final String name, final Throwable throwable) {
-		sendStep(
-				status,
+		sendStep(status,
 				name,
 				() -> ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(itemId, LogLevel.ERROR, throwable))
 		);
@@ -149,8 +146,7 @@ public class StepReporter {
 	public void sendStep(final @NotNull ItemStatus status, final String name, final File... files) {
 		sendStep(status, name, () -> {
 			for (final File file : files) {
-				ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(
-						itemId,
+				ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(itemId,
 						file.getName(),
 						LogLevel.INFO,
 						file
@@ -174,8 +170,12 @@ public class StepReporter {
 		});
 	}
 
-	public void finishPreviousStep(){
-		finishPreviousStepInternal();
+	public void finishPreviousStep() {
+		finishPreviousStepInternal().ifPresent(e -> {
+			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
+				parentFailures.add(parent.getLast());
+			}
+		});
 	}
 
 	private Maybe<String> startStepRequest(final StartTestItemRQ startTestItemRQ) {
@@ -184,6 +184,9 @@ public class StepReporter {
 			Date currentDate = startTestItemRQ.getStartTime();
 			if (!previousDate.before(currentDate)) {
 				startTestItemRQ.setStartTime(new Date(previousDate.getTime() + 1));
+			}
+			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
+				parentFailures.add(parent.getLast());
 			}
 		});
 		return launch.startTestItem(parent.getLast(), startTestItemRQ);
@@ -201,9 +204,6 @@ public class StepReporter {
 	private void finishStepRequest(Maybe<String> stepId, ItemStatus status, Date timestamp) {
 		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status, Calendar.getInstance().getTime());
 		steps.add(new StepEntry(stepId, timestamp, finishTestItemRQ));
-		if (ItemStatus.FAILED == status) {
-			parentFailures.add(parent.getLast());
-		}
 	}
 
 	private FinishTestItemRQ buildFinishTestItemRequest(ItemStatus status, Date endTime) {

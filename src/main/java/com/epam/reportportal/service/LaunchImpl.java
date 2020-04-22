@@ -235,13 +235,7 @@ public class LaunchImpl extends Launch {
 		}).cache();
 		testItem.subscribeOn(scheduler).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(testItem).addToQueue(testItem.ignoreElement().onErrorComplete());
-		LoggingContext.init(launch,
-				testItem,
-				rpClient,
-				scheduler,
-				getParameters().getBatchLogsSize(),
-				getParameters().isConvertImage()
-		);
+		LoggingContext.init(launch, testItem, rpClient, scheduler, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
 		getStepReporter().setParent(testItem);
 		return testItem;
 	}
@@ -283,13 +277,7 @@ public class LaunchImpl extends Launch {
 		}).cache();
 		itemId.subscribeOn(scheduler).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement().onErrorComplete());
-		LoggingContext.init(launch,
-				itemId,
-				rpClient,
-				scheduler,
-				getParameters().getBatchLogsSize(),
-				getParameters().isConvertImage()
-		);
+		LoggingContext.init(launch, itemId, rpClient, scheduler, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
 		getStepReporter().setParent(itemId);
 		return itemId;
 	}
@@ -298,7 +286,7 @@ public class LaunchImpl extends Launch {
 	 * Finishes Test Item in ReportPortal. Non-blocking. Schedules finish after success of all child items
 	 *
 	 * @param item Item UUID promise
-	 * @param rq     Finish request
+	 * @param rq   Finish request
 	 * @return a Finish Item response promise
 	 */
 	public Maybe<OperationCompletionRS> finishTestItem(@NotNull final Maybe<String> item, @NotNull final FinishTestItemRQ rq) {
@@ -319,20 +307,21 @@ public class LaunchImpl extends Launch {
 			LOGGER.error("Item {} not found in the cache", item);
 		}
 
+		if (getStepReporter().isFailed(item)) {
+			rq.setStatus(ItemStatus.FAILED.name());
+		}
+
 		//wait for the children to complete
-		Maybe<OperationCompletionRS> finishResponse = this.launch.flatMap(new Function<String, Maybe<OperationCompletionRS>>() {
-			@Override
-			public Maybe<OperationCompletionRS> apply(final String launchId) {
-				return item.flatMap((Function<String, Maybe<OperationCompletionRS>>) itemId -> {
+		Maybe<OperationCompletionRS> finishResponse = this.launch.flatMap((Function<String, Maybe<OperationCompletionRS>>) launchId -> item.flatMap(
+				(Function<String, Maybe<OperationCompletionRS>>) itemId -> {
 					rq.setLaunchUuid(launchId);
 					return rpClient.finishTestItem(itemId, rq)
 							.retry(TEST_ITEM_FINISH_REQUEST_RETRY)
 							.doOnSuccess(LOG_SUCCESS)
 							.doOnError(LOG_ERROR);
-				});
-			}
-		}).cache();
-		final Completable finishCompletion = Completable.concat(treeItem.getChildren())
+				})).cache();
+
+		Completable finishCompletion = Completable.concat(treeItem.getChildren())
 				.andThen(finishResponse)
 				.doAfterTerminate(() -> QUEUE.invalidate(item)) //cleanup children
 				.ignoreElement()
@@ -347,7 +336,6 @@ public class LaunchImpl extends Launch {
 			QUEUE.getUnchecked(this.launch).addToQueue(finishCompletion.onErrorComplete());
 		}
 
-		getStepReporter().finishPreviousStep();
 		getStepReporter().removeParent(item);
 
 		return finishResponse;
