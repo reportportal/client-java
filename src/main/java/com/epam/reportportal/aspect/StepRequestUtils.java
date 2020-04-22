@@ -19,6 +19,7 @@ package com.epam.reportportal.aspect;
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.UniqueID;
 import com.epam.reportportal.annotations.attribute.Attributes;
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -60,10 +61,10 @@ class StepRequestUtils {
 		return request;
 	}
 
-	static FinishTestItemRQ buildFinishStepRequest(String status, Date endTime) {
+	static FinishTestItemRQ buildFinishStepRequest(ItemStatus status, Date endTime) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(endTime);
-		rq.setStatus(status);
+		rq.setStatus(status.name());
 		return rq;
 	}
 

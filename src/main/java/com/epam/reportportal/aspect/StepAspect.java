@@ -17,7 +17,7 @@
 package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
-import com.epam.reportportal.listeners.Statuses;
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
@@ -42,23 +42,23 @@ import static com.google.common.base.Throwables.getStackTraceAsString;
 @Aspect
 public class StepAspect {
 
-	private static InheritableThreadLocal<String> currentLaunchId = new InheritableThreadLocal<>();
+	private static final InheritableThreadLocal<String> currentLaunchId = new InheritableThreadLocal<>();
 
-	private static InheritableThreadLocal<Map<String, Launch>> launchMap = new InheritableThreadLocal<Map<String, Launch>>() {
+	private static final InheritableThreadLocal<Map<String, Launch>> launchMap = new InheritableThreadLocal<Map<String, Launch>>() {
 		@Override
 		protected Map<String, Launch> initialValue() {
 			return new HashMap<>();
 		}
 	};
 
-	private static InheritableThreadLocal<Deque<Maybe<String>>> stepStack = new InheritableThreadLocal<Deque<Maybe<String>>>() {
+	private static final InheritableThreadLocal<Deque<Maybe<String>>> stepStack = new InheritableThreadLocal<Deque<Maybe<String>>>() {
 		@Override
 		protected Deque<Maybe<String>> initialValue() {
 			return Queues.newArrayDeque();
 		}
 	};
 
-	private static InheritableThreadLocal<Maybe<String>> parentId = new InheritableThreadLocal<>();
+	private static final InheritableThreadLocal<Maybe<String>> parentId = new InheritableThreadLocal<>();
 
 	@Pointcut("@annotation(step)")
 	public void withStepAnnotation(Step step) {
@@ -96,7 +96,9 @@ public class StepAspect {
 			if (stepId == null) {
 				return;
 			}
-			FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(Statuses.PASSED, Calendar.getInstance().getTime());
+			FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(ItemStatus.PASSED,
+					Calendar.getInstance().getTime()
+			);
 			launchMap.get().get(currentLaunchId.get()).finishTestItem(stepId, finishStepRequest);
 		}
 	}
@@ -126,25 +128,28 @@ public class StepAspect {
 				return rq;
 			});
 
-			FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(Statuses.FAILED, Calendar.getInstance().getTime());
+			FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(
+					ItemStatus.FAILED,
+					Calendar.getInstance().getTime()
+			);
 
 			while (stepId != null) {
 				launchMap.get().get(currentLaunchId.get()).finishTestItem(stepId, finishStepRequest);
 				stepId = stepStack.get().poll();
 			}
 
-			FinishTestItemRQ finishParentRequest = buildFinishParentRequest(Statuses.FAILED, Calendar.getInstance().getTime());
+			FinishTestItemRQ finishParentRequest = buildFinishParentRequest(ItemStatus.FAILED, Calendar.getInstance().getTime());
 			launchMap.get().get(currentLaunchId.get()).finishTestItem(parentId.get(), finishParentRequest);
 		}
 
 	}
 
-	private FinishTestItemRQ buildFinishParentRequest(String status, Date endTime) {
+	private FinishTestItemRQ buildFinishParentRequest(ItemStatus status, Date endTime) {
 		FinishTestItemRQ rq = new FinishTestItemRQ();
 		rq.setEndTime(endTime);
-		rq.setStatus(status);
+		rq.setStatus(status.name());
 		// Allows indicate that SKIPPED is not to investigate items for WS
-		if (Statuses.SKIPPED.equals(status) && !Optional.ofNullable(launchMap.get()
+		if (ItemStatus.SKIPPED == status && !Optional.ofNullable(launchMap.get()
 				.get(currentLaunchId.get())
 				.getParameters()
 				.getSkippedAnIssue()).orElse(false)) {

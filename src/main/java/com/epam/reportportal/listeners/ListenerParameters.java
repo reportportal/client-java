@@ -23,6 +23,8 @@ import com.epam.ta.reportportal.ws.model.launch.Mode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
 
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -31,7 +33,7 @@ import static com.epam.reportportal.utils.properties.ListenerProperty.*;
 /**
  * Report portal listeners parameters
  */
-public class ListenerParameters {
+public class ListenerParameters implements Cloneable {
 
 	private static final int DEFAULT_REPORTING_TIMEOUT = 5 * 60;
 	private static final int DEFAULT_IO_POOL_SIZE = 100;
@@ -375,6 +377,23 @@ public class ListenerParameters {
 	@VisibleForTesting
 	Mode parseLaunchMode(String mode) {
 		return Mode.isExists(mode) ? Mode.valueOf(mode.toUpperCase()) : Mode.DEFAULT;
+	}
+
+	@Override
+	public ListenerParameters clone() {
+		final ListenerParameters clone = new ListenerParameters();
+		Arrays.stream(getClass().getDeclaredFields()).forEach(f -> {
+			if(Modifier.isFinal(f.getModifiers())) {
+				return; // skip constants
+			}
+			try {
+				f.set(clone, f.get(this));
+			} catch (IllegalAccessException e) {
+				// actually, we are calling field set from within the class, so that should not happen, unless we try to set final fields
+				throw new IllegalStateException(e);
+			}
+		});
+		return clone;
 	}
 
 	@Override

@@ -45,8 +45,8 @@ shadowJar {
         include(dependency('org.apache.httpcomponents:httpcore'))
         include(dependency('commons-logging:commons-logging'))
         include(dependency('com.google.guava:guava'))
-
     }
+
     classifier = null
     relocate 'org.apache.http', 'rp.org.apache.http'
     relocate 'com.google.common', 'rp.com.google.common'
@@ -81,14 +81,10 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-params:5.6.0'
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
 
-
-    testImplementation 'com.tngtech.java:junit-dataprovider:1.13.1'
-
     testImplementation 'org.hamcrest:hamcrest-core:2.2'
     testImplementation 'org.mockito:mockito-core:3.3.3'
     testImplementation 'org.mockito:mockito-junit-jupiter:3.3.3'
     testImplementation 'ch.qos.logback:logback-classic:1.2.3'
-    testImplementation 'org.objenesis:objenesis:2.6'
     testImplementation ('org.awaitility:awaitility:4.0.2') {
         exclude group: 'org.hamcrest'
     }
@@ -98,6 +94,7 @@ dependencies {
 test{
     useJUnitPlatform()
     systemProperty("file.encoding", "utf-8")
+    forkEvery(1)
     maxParallelForks(5)
     outputs.upToDateWhen {false}
 }

@@ -21,8 +21,12 @@ import com.google.common.io.ByteSource;
 import com.google.common.io.Resources;
 import org.junit.jupiter.api.Test;
 
+import java.io.InputStream;
+import java.net.URL;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * @author Andrei Varabyeu
@@ -31,9 +35,11 @@ public class ImageConverterTest {
 	@Test
 	public void isImage() throws Exception {
 		final String resourceName = "defaultUserPhoto.jpg";
-		final ByteSource byteSource = Resources.asByteSource(Resources.getResource(resourceName));
+		InputStream stream = ImageConverterTest.class.getClassLoader().getResourceAsStream(resourceName);
+		assertThat("Image not found in path: " + resourceName, stream, notNullValue());
+		byte[] data = Utils.readInputStreamToBytes(stream);
+		final ByteSource byteSource = ByteSource.wrap(data);
 		boolean r = ImageConverter.isImage(new TypeAwareByteSource(byteSource, MimeTypeDetector.detect(byteSource, resourceName)));
 		assertThat("Incorrect image type detection", r, equalTo(true));
 	}
-
 }

@@ -47,7 +47,18 @@ import static org.mockito.Mockito.when;
 public class TestUtils {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TestUtils.class);
 
+	public static final ListenerParameters STANDARD_PARAMETERS = standardParameters();
+
 	private TestUtils() {
+	}
+
+	public static ListenerParameters standardParameters() {
+		ListenerParameters result = new ListenerParameters();
+		result.setClientJoin(false);
+		result.setBatchLogsSize(1);
+		result.setLaunchName("My-test-launch" + generateUniqueId());
+		result.setEnable(true);
+		return result;
 	}
 
 	public static Maybe<StartLaunchRS> startLaunchResponse(String id) {
