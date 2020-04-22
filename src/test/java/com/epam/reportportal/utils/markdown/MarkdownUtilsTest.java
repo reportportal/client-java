@@ -15,23 +15,25 @@
  */
 package com.epam.reportportal.utils.markdown;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static com.epam.reportportal.utils.markdown.MarkdownUtils.asCode;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 /**
  * @author Andrei Varabyeu
  */
 public class MarkdownUtilsTest {
+
 	@Test
 	public void asMarkdown() throws Exception {
-		Assert.assertEquals("Incorrect markdown prefix", "!!!MARKDOWN_MODE!!!hello", MarkdownUtils.asMarkdown("hello"));
+		assertThat("Incorrect markdown prefix", MarkdownUtils.asMarkdown("hello"), equalTo("!!!MARKDOWN_MODE!!!hello"));
 	}
 
 	@Test
 	public void toMarkdownScript() throws Exception {
-		Assert.assertEquals("Incorrect markdown prefix", "!!!MARKDOWN_MODE!!!```groovy\nhello\n```", asCode("groovy", "hello"));
+		assertThat("Incorrect markdown prefix", asCode("groovy", "hello"), equalTo("!!!MARKDOWN_MODE!!!```groovy\nhello\n```"));
 	}
 
 }

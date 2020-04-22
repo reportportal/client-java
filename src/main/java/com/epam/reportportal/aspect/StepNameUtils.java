@@ -19,13 +19,13 @@ package com.epam.reportportal.aspect;
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.StepTemplateConfig;
 import com.epam.reportportal.utils.StepTemplateUtils;
-import com.google.common.collect.ImmutableMap;
 import io.reactivex.annotations.Nullable;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -61,16 +61,15 @@ class StepNameUtils {
 		return stringBuffer.toString();
 	}
 
-	private static Map<String, Object> createParamsMapping(StepTemplateConfig templateConfig, MethodSignature signature,
-			final Object... args) {
-		int paramsCount = Math.max(signature.getParameterNames().length, args.length);
-		ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
-		builder.put(templateConfig.methodNameTemplate(), signature.getMethod().getName());
+	static Map<String, Object> createParamsMapping(StepTemplateConfig templateConfig, MethodSignature signature, final Object... args) {
+		int paramsCount = Math.min(signature.getParameterNames().length, args.length);
+		Map<String, Object> paramsMapping = new HashMap<>();
+		paramsMapping.put(templateConfig.methodNameTemplate(), signature.getMethod().getName());
 		for (int i = 0; i < paramsCount; i++) {
-			builder.put(signature.getParameterNames()[i], args[i]);
-			builder.put(Integer.toString(i), args[i]);
+			paramsMapping.put(signature.getParameterNames()[i], args[i]);
+			paramsMapping.put(Integer.toString(i), args[i]);
 		}
-		return builder.build();
+		return paramsMapping;
 	}
 
 	@Nullable

@@ -113,9 +113,9 @@ public class ListenerParameters {
 
 	public ListenerParameters(PropertiesLoader properties) {
 		this.description = properties.getProperty(DESCRIPTION);
-		this.apiKey = properties.getProperty(API_KEY, properties.getProperty(UUID)).trim();
-		this.baseUrl = properties.getProperty(BASE_URL).trim();
-		this.projectName = properties.getProperty(PROJECT_NAME).trim();
+		this.apiKey = properties.getProperty(UUID) != null ? properties.getProperty(API_KEY, properties.getProperty(UUID)).trim() : null;
+		this.baseUrl = properties.getProperty(BASE_URL) != null ? properties.getProperty(BASE_URL).trim() : null;
+		this.projectName = properties.getProperty(PROJECT_NAME) != null ? properties.getProperty(PROJECT_NAME).trim() : null;
 		this.launchName = properties.getProperty(LAUNCH_NAME);
 		this.attributes = AttributeParser.parseAsSet(properties.getProperty(LAUNCH_ATTRIBUTES));
 		this.launchRunningMode = parseLaunchMode(properties.getProperty(MODE));

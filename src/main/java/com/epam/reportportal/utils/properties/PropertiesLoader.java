@@ -22,6 +22,7 @@ import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -170,7 +171,7 @@ public class PropertiesLoader {
 		Properties props = new Properties();
 		Optional<URL> propertyFile = getResource(resource);
 		if (propertyFile.isPresent()) {
-			try(InputStream is = propertyFile.get().openStream()){
+			try (InputStream is = propertyFile.get().openStream()) {
 				props.load(new InputStreamReader(is, STANDARD_CHARSET));
 			}
 		}
@@ -228,11 +229,30 @@ public class PropertiesLoader {
 	 */
 	@VisibleForTesting
 	static void overrideWith(Properties source, Map<String, String> overrides) {
+		Map<String, String> overridesNormalized = normalizeOverrides(overrides);
 		for (ListenerProperty listenerProperty : values()) {
-			if (overrides.get(listenerProperty.getPropertyName()) != null) {
-				source.setProperty(listenerProperty.getPropertyName(), overrides.get(listenerProperty.getPropertyName()));
+			if (overridesNormalized.get(listenerProperty.getPropertyName()) != null) {
+				source.setProperty(listenerProperty.getPropertyName(), overridesNormalized.get(listenerProperty.getPropertyName()));
 			}
 		}
+	}
+
+	/**
+	 * replace underscores with dots (dots are normally not allowed in spring boot variables, so like in spring boot,
+	 * underscores can be used.
+	 *
+	 * @param overrides
+	 * @return the overrides without underscores and with dots.
+	 */
+	private static Map<String, String> normalizeOverrides(Map<String, String> overrides) {
+		Map<String, String> normalizedSet = new HashMap<>();
+		for (Map.Entry<String, String> entry : overrides.entrySet()) {
+			if (entry.getKey() != null) {
+				String key = entry.getKey().replace("_", ".");
+				normalizedSet.put(key, entry.getValue());
+			}
+		}
+		return normalizedSet;
 	}
 
 	/**

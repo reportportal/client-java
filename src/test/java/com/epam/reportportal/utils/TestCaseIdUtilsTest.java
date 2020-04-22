@@ -19,10 +19,13 @@ package com.epam.reportportal.utils;
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.TestCaseIdKey;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -40,9 +43,8 @@ public class TestCaseIdUtilsTest {
 		String expectedTestCaseId = "5";
 		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getParameterizedTestCaseId(method, "firstParam", expectedTestCaseId);
 
-		Assert.assertNotNull(testCaseIdEntry);
-		Assert.assertEquals(expectedTestCaseId.hashCode(), (int) testCaseIdEntry.getHash());
-		Assert.assertEquals(expectedTestCaseId, testCaseIdEntry.getId());
+		assertThat(testCaseIdEntry, notNullValue());
+		assertThat(testCaseIdEntry.getId(), equalTo(expectedTestCaseId));
 	}
 
 }
