@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.*;
+import static java.util.Optional.ofNullable;
 
 /**
  * Report portal listeners parameters
@@ -115,7 +116,7 @@ public class ListenerParameters implements Cloneable {
 
 	public ListenerParameters(PropertiesLoader properties) {
 		this.description = properties.getProperty(DESCRIPTION);
-		this.apiKey = properties.getProperty(UUID) != null ? properties.getProperty(API_KEY, properties.getProperty(UUID)).trim() : null;
+		this.apiKey = ofNullable(properties.getProperty(API_KEY, properties.getProperty(UUID))).map(String::trim).orElse(null);
 		this.baseUrl = properties.getProperty(BASE_URL) != null ? properties.getProperty(BASE_URL).trim() : null;
 		this.projectName = properties.getProperty(PROJECT_NAME) != null ? properties.getProperty(PROJECT_NAME).trim() : null;
 		this.launchName = properties.getProperty(LAUNCH_NAME);
@@ -383,7 +384,7 @@ public class ListenerParameters implements Cloneable {
 	public ListenerParameters clone() {
 		final ListenerParameters clone = new ListenerParameters();
 		Arrays.stream(getClass().getDeclaredFields()).forEach(f -> {
-			if(Modifier.isFinal(f.getModifiers())) {
+			if (Modifier.isFinal(f.getModifiers())) {
 				return; // skip constants
 			}
 			try {
