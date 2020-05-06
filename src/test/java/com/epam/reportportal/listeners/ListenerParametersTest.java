@@ -23,6 +23,7 @@ import static com.epam.ta.reportportal.ws.model.launch.Mode.DEBUG;
 import static com.epam.ta.reportportal.ws.model.launch.Mode.DEFAULT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ListenerParametersTest {
 
@@ -38,6 +39,23 @@ public class ListenerParametersTest {
 		ListenerParameters listenerParameters = new ListenerParameters(properties);
 
 		assertThat(listenerParameters.getBaseUrl(), nullValue());
+		assertThat(listenerParameters.getApiKey(), nullValue());
+	}
+
+	@Test
+	public void testOnlyApiKeyProvided() {
+		PropertiesLoader properties = PropertiesLoader.load("reportportal-api-key.properties");
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		assertEquals("test-api-key", listenerParameters.getApiKey());
+	}
+
+	@Test
+	public void testOnlyUuidProvided() {
+		PropertiesLoader properties = PropertiesLoader.load("reportportal-uuid.properties");
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		assertEquals("test-uuid", listenerParameters.getApiKey());
 	}
 
 	@Test
