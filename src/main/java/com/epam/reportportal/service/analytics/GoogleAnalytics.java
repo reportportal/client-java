@@ -24,12 +24,14 @@ import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,23 +94,29 @@ public class GoogleAnalytics implements Closeable {
 		this.httpClient = httpClient;
 	}
 
-	public Maybe<HttpResponse> send(AnalyticsItem item) {
-		return Maybe.create((MaybeOnSubscribe<HttpResponse>) emitter -> {
+	public Maybe<Boolean> send(AnalyticsItem item) {
+		return Maybe.create((MaybeOnSubscribe<Boolean>) emitter -> {
+			HttpPost httpPost = buildPostRequest(item);
+			HttpResponse response = httpClient.execute(httpPost);
 			try {
-				List<NameValuePair> nameValuePairs = PARAMETERS_CONVERTER.apply(item.getParams());
-				nameValuePairs.addAll(defaultRequestParams);
-
-				UrlEncodedFormEntity entity = new UrlEncodedFormEntity(nameValuePairs, StandardCharsets.UTF_8);
-				HttpPost httpPost = new HttpPost(baseUrl);
-				httpPost.setEntity(entity);
-				HttpResponse response = httpClient.execute(httpPost);
-				emitter.onSuccess(response);
-			} catch (Throwable exception) {
-				emitter.onError(exception);
+				EntityUtils.consumeQuietly(response.getEntity());
+				emitter.onSuccess(true);
+			} finally {
+				if (response instanceof CloseableHttpResponse) {
+					((CloseableHttpResponse) response).close();
+				}
 			}
-
 		}).subscribeOn(scheduler).cache();
 
+	}
+
+	private HttpPost buildPostRequest(AnalyticsItem item) {
+		List<NameValuePair> nameValuePairs = PARAMETERS_CONVERTER.apply(item.getParams());
+		nameValuePairs.addAll(defaultRequestParams);
+		UrlEncodedFormEntity entity = new UrlEncodedFormEntity(nameValuePairs, StandardCharsets.UTF_8);
+		HttpPost httpPost = new HttpPost(baseUrl);
+		httpPost.setEntity(entity);
+		return httpPost;
 	}
 
 	@Override
