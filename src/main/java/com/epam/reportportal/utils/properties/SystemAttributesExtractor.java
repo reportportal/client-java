@@ -189,35 +189,4 @@ public class SystemAttributesExtractor {
 			return Optional.empty();
 		}
 	}
-
-	private enum DefaultProperties implements PropertyHolder {
-		OS("os", true, "os.name", "os.arch", "os.version"),
-		JVM("jvm", true, "java.vm.name", "java.version", "java.class.version"),
-		AGENT("agent", false, "agent.name", "agent.version");
-
-		private String name;
-		private boolean internal;
-		private String[] propertyKeys;
-
-		DefaultProperties(String name, boolean internal, String... propertyKeys) {
-			this.name = name;
-			this.internal = internal;
-			this.propertyKeys = propertyKeys;
-		}
-
-		@Override
-		public String getName() {
-			return name;
-		}
-
-		@Override
-		public boolean isInternal() {
-			return internal;
-		}
-
-		@Override
-		public String[] getPropertyKeys() {
-			return propertyKeys;
-		}
-	}
 }
