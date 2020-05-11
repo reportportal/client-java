@@ -35,7 +35,6 @@ import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 
 import javax.validation.constraints.NotNull;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -198,11 +197,9 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @param rq Finish RQ
 	 */
-	public void finish(final FinishExecutionRQ rq, final Completable... dependencies) {
+	public void finish(final FinishExecutionRQ rq) {
 		QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
-		List<Completable> children = QUEUE.getUnchecked(this.launch).getChildren();
-		Collections.addAll(children, dependencies);
-		final Completable finish = Completable.concat(children)
+		final Completable finish = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren())
 				.andThen(this.launch.map(id -> rpClient.finishLaunch(id, rq)
 						.retry(DEFAULT_REQUEST_RETRY)
 						.doOnSuccess(LOG_SUCCESS)

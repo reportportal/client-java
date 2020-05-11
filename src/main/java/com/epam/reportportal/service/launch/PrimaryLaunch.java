@@ -23,7 +23,6 @@ import com.epam.reportportal.service.LockFile;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
-import io.reactivex.Completable;
 
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -44,9 +43,9 @@ public class PrimaryLaunch extends LaunchImpl {
 	}
 
 	@Override
-	public void finish(final FinishExecutionRQ rq, final Completable... dependencies) {
+	public void finish(final FinishExecutionRQ rq) {
 		try {
-			super.finish(rq, dependencies);
+			super.finish(rq);
 		} finally {
 			lockFile.finishInstanceUuid(instanceUuid.get());
 			instanceUuid.set(UUID.randomUUID().toString());

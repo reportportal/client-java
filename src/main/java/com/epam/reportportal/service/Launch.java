@@ -21,7 +21,6 @@ import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
-import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +50,7 @@ public abstract class Launch {
 	 *
 	 * @param rq Finish RQ
 	 */
-	abstract public void finish(final FinishExecutionRQ rq, final Completable... dependencies);
+	abstract public void finish(final FinishExecutionRQ rq);
 
 	/**
 	 * Starts new test item in ReportPortal asynchronously (non-blocking)
@@ -121,7 +120,7 @@ public abstract class Launch {
 		}
 
 		@Override
-		public void finish(FinishExecutionRQ rq, final Completable... dependencies) {
+		public void finish(FinishExecutionRQ rq) {
 
 		}
 

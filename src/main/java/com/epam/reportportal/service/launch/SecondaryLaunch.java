@@ -91,7 +91,7 @@ public class SecondaryLaunch extends LaunchImpl {
 	}
 
 	@Override
-	public void finish(final FinishExecutionRQ rq, final Completable... dependencies) {
+	public void finish(final FinishExecutionRQ rq) {
 		QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
 		try {
 			Throwable throwable = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren()).
