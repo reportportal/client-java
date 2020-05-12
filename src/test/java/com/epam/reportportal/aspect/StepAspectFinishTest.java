@@ -60,7 +60,7 @@ public class StepAspectFinishTest {
 	}
 
 	/*
-	 * Do not finish parent step inside nested step, leads to issue: https://github.com/reportportal/agent-java-testNG/issues/97
+	 * Do not finish parent step inside nested step, leads to issue: https://github.com/reportportal/client-java/issues/97
 	 */
 	@Test
 	@SuppressWarnings("unchecked")
@@ -82,7 +82,7 @@ public class StepAspectFinishTest {
 	}
 
 	/*
-	 * Do not finish parent step inside nested step, leads to issue: https://github.com/reportportal/agent-java-testNG/issues/97
+	 * Do not finish parent step inside nested step, leads to issue: https://github.com/reportportal/client-java/issues/97
 	 */
 	@Test
 	@SuppressWarnings("unchecked")
