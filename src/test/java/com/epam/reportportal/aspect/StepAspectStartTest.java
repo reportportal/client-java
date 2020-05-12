@@ -38,7 +38,7 @@ import static org.mockito.Mockito.verify;
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
-public class StepAspectTest {
+public class StepAspectStartTest {
 	private String parentId = UUID.randomUUID().toString();
 	private String itemUuid = UUID.randomUUID().toString();
 	private Maybe<String> parentIdMaybe = StepAspectCommon.getMaybe(parentId);

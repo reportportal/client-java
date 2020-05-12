@@ -22,7 +22,6 @@ import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
-import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.google.common.collect.Queues;
 import io.reactivex.Maybe;
@@ -30,10 +29,11 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.MethodSignature;
 
-import java.util.*;
-import java.util.function.Function;
+import java.util.Calendar;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.Map;
 
-import static com.epam.reportportal.service.LaunchImpl.NOT_ISSUE;
 import static com.google.common.base.Throwables.getStackTraceAsString;
 
 /**
@@ -113,7 +113,7 @@ public class StepAspect {
 				return;
 			}
 
-			ReportPortal.emitLog((Function<String, SaveLogRQ>) itemUuid -> {
+			ReportPortal.emitLog(itemUuid -> {
 				SaveLogRQ rq = new SaveLogRQ();
 				rq.setItemUuid(itemUuid);
 				rq.setLevel("ERROR");
@@ -128,8 +128,7 @@ public class StepAspect {
 				return rq;
 			});
 
-			FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(
-					ItemStatus.FAILED,
+			FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(ItemStatus.FAILED,
 					Calendar.getInstance().getTime()
 			);
 
@@ -137,31 +136,8 @@ public class StepAspect {
 				launchMap.get().get(currentLaunchId.get()).finishTestItem(stepId, finishStepRequest);
 				stepId = stepStack.get().poll();
 			}
-
-			FinishTestItemRQ finishParentRequest = buildFinishParentRequest(ItemStatus.FAILED, Calendar.getInstance().getTime());
-			launchMap.get().get(currentLaunchId.get()).finishTestItem(parentId.get(), finishParentRequest);
 		}
 
-	}
-
-	private FinishTestItemRQ buildFinishParentRequest(ItemStatus status, Date endTime) {
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setEndTime(endTime);
-		rq.setStatus(status.name());
-		// Allows indicate that SKIPPED is not to investigate items for WS
-		if (ItemStatus.SKIPPED == status && !Optional.ofNullable(launchMap.get()
-				.get(currentLaunchId.get())
-				.getParameters()
-				.getSkippedAnIssue()).orElse(false)) {
-			Issue issue = new Issue();
-			issue.setIssueType(NOT_ISSUE);
-			rq.setIssue(issue);
-		}
-		return rq;
-	}
-
-	public static void setCurrentLaunchId(String id) {
-		currentLaunchId.set(id);
 	}
 
 	public static void addLaunch(String key, Launch launch) {
