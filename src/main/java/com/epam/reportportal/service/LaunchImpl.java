@@ -37,13 +37,12 @@ import io.reactivex.schedulers.Schedulers;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.*;
 
 import static com.epam.reportportal.service.LoggingCallback.*;
-import static com.epam.reportportal.utils.SubscriptionUtils.logCompletableResults;
-import static com.epam.reportportal.utils.SubscriptionUtils.logMaybeResults;
+import static com.epam.reportportal.utils.SubscriptionUtils.*;
 import static com.google.common.collect.Lists.newArrayList;
+import static java.util.Objects.requireNonNull;
 
 /**
  * @author Andrei Varabyeu
@@ -103,9 +102,9 @@ public class LaunchImpl extends Launch {
 	protected LaunchImpl(@NotNull final ReportPortalClient reportPortalClient, @NotNull final ListenerParameters parameters,
 			@NotNull final StartLaunchRQ rq, @NotNull final ExecutorService executorService) {
 		super(parameters);
-		rpClient = Objects.requireNonNull(reportPortalClient, "RestEndpoint shouldn't be NULL");
-		Objects.requireNonNull(parameters, "Parameters shouldn't be NULL");
-		executor = Objects.requireNonNull(executorService);
+		rpClient = requireNonNull(reportPortalClient, "RestEndpoint shouldn't be NULL");
+		requireNonNull(parameters, "Parameters shouldn't be NULL");
+		executor = requireNonNull(executorService);
 		scheduler = createScheduler(executor);
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
@@ -143,9 +142,9 @@ public class LaunchImpl extends Launch {
 	protected LaunchImpl(@NotNull final ReportPortalClient reportPortalClient, @NotNull final ListenerParameters parameters,
 			@NotNull final Maybe<String> launchMaybe, @NotNull final ExecutorService executorService) {
 		super(parameters);
-		rpClient = Objects.requireNonNull(reportPortalClient, "RestEndpoint shouldn't be NULL");
-		Objects.requireNonNull(parameters, "Parameters shouldn't be NULL");
-		executor = Objects.requireNonNull(executorService);
+		rpClient = requireNonNull(reportPortalClient, "RestEndpoint shouldn't be NULL");
+		requireNonNull(parameters, "Parameters shouldn't be NULL");
+		executor = requireNonNull(executorService);
 		scheduler = createScheduler(executor);
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
@@ -217,6 +216,11 @@ public class LaunchImpl extends Launch {
 		}
 	}
 
+	private static <T> Maybe<T> createErrorResponse(Throwable cause) {
+		LOGGER.error(cause.getMessage(), cause);
+		return createConstantMaybe(cause);
+	}
+
 	/**
 	 * Starts new test item in ReportPortal asynchronously (non-blocking)
 	 *
@@ -224,15 +228,19 @@ public class LaunchImpl extends Launch {
 	 * @return Test Item ID promise
 	 */
 	public Maybe<String> startTestItem(final StartTestItemRQ rq) {
+		if (rq == null) {
+			/*
+			 * This usually happens when we have a bug inside an agent or supported framework. But in any case we shouldn't rise an exception,
+			 * since we are reporting tool and our problems	should not fail launches.
+			 */
+			return createErrorResponse(new NullPointerException("StartTestItemRQ should not be null"));
+		}
 
-		final Maybe<String> testItem = launch.flatMap(new Function<String, Maybe<String>>() {
-			@Override
-			public Maybe<String> apply(String launchId) {
-				rq.setLaunchUuid(launchId);
-				return rpClient.startTestItem(rq).retry(DEFAULT_REQUEST_RETRY).doOnSuccess(logCreated("item")).map(TO_ID);
-
-			}
+		Maybe<String> testItem = launch.flatMap((Function<String, Maybe<String>>) launchId -> {
+			rq.setLaunchUuid(launchId);
+			return rpClient.startTestItem(rq).retry(DEFAULT_REQUEST_RETRY).doOnSuccess(logCreated("item")).map(TO_ID);
 		}).cache();
+
 		testItem.subscribeOn(scheduler).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(testItem).addToQueue(testItem.ignoreElement().onErrorComplete());
 		LoggingContext.init(launch, testItem, rpClient, scheduler, getParameters().getBatchLogsSize(), getParameters().isConvertImage());
@@ -241,12 +249,7 @@ public class LaunchImpl extends Launch {
 	}
 
 	public Maybe<String> startTestItem(final Maybe<String> parentId, final Maybe<String> retryOf, final StartTestItemRQ rq) {
-		return retryOf.flatMap(new Function<String, Maybe<String>>() {
-			@Override
-			public Maybe<String> apply(String s) {
-				return startTestItem(parentId, rq);
-			}
-		}).cache();
+		return retryOf.flatMap((Function<String, Maybe<String>>) s -> startTestItem(parentId, rq)).cache();
 	}
 
 	/**
@@ -289,9 +292,17 @@ public class LaunchImpl extends Launch {
 	 * @param rq   Finish request
 	 * @return a Finish Item response promise
 	 */
-	public Maybe<OperationCompletionRS> finishTestItem(@NotNull final Maybe<String> item, @NotNull final FinishTestItemRQ rq) {
-		Objects.requireNonNull(item, "ItemID should not be null");
-		Objects.requireNonNull(rq, "FinishTestItemRQ should not be null");
+	public Maybe<OperationCompletionRS> finishTestItem(final Maybe<String> item, final FinishTestItemRQ rq) {
+		if (item == null) {
+			/*
+			 * This usually happens when we have a bug inside an agent or supported framework. But in any case we shouldn't rise an exception,
+			 * since we are reporting tool and our problems	should not fail launches.
+			 */
+			return createErrorResponse(new NullPointerException("ItemID should not be null"));
+		}
+		if (rq == null) {
+			return createErrorResponse(new NullPointerException("FinishTestItemRQ should not be null"));
+		}
 
 		if (ItemStatus.SKIPPED.name().equals(rq.getStatus()) && !getParameters().getSkippedAnIssue()) {
 			Issue issue = new Issue();
@@ -346,7 +357,7 @@ public class LaunchImpl extends Launch {
 	 */
 	protected static class TreeItem {
 		private volatile Maybe<String> parent;
-		private final List<Completable> children = new CopyOnWriteArrayList<Completable>();
+		private final List<Completable> children = new CopyOnWriteArrayList<>();
 
 		public LaunchImpl.TreeItem withParent(Maybe<String> parent) {
 			this.parent = parent;

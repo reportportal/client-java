@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static java.util.Optional.ofNullable;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -53,7 +54,7 @@ public class FileLocatorTest {
 	private final String testLaunchUuid = "launch" + UUID.randomUUID().toString().substring(6);
 	private final String testClassUuid = "class" + UUID.randomUUID().toString().substring(5);
 	private final String testMethodUuid = "test" + UUID.randomUUID().toString().substring(4);
-	private final Maybe<String> launchUuid = TestUtils.getConstantMaybe(testLaunchUuid);
+	private final Maybe<String> launchUuid = createConstantMaybe(testLaunchUuid);
 
 	@Mock
 	private ReportPortalClient rpClient;
@@ -62,14 +63,14 @@ public class FileLocatorTest {
 
 	private final Supplier<Maybe<ItemCreatedRS>> maybeSupplier = () -> {
 		String uuid = UUID.randomUUID().toString();
-		return TestUtils.getConstantMaybe(new ItemCreatedRS(uuid, uuid));
+		return createConstantMaybe(new ItemCreatedRS(uuid, uuid));
 	};
 
 	@BeforeEach
 	public void initMocks() {
-		Maybe<ItemCreatedRS> testMethodCreatedMaybe = TestUtils.getConstantMaybe(new ItemCreatedRS(testMethodUuid, testMethodUuid));
+		Maybe<ItemCreatedRS> testMethodCreatedMaybe = createConstantMaybe(new ItemCreatedRS(testMethodUuid, testMethodUuid));
 		when(rpClient.startTestItem(eq(testClassUuid), any())).thenReturn(testMethodCreatedMaybe);
-		when(rpClient.log(any(MultiPartRequest.class))).thenReturn(TestUtils.getConstantMaybe(new BatchSaveOperatingRS()));
+		when(rpClient.log(any(MultiPartRequest.class))).thenReturn(createConstantMaybe(new BatchSaveOperatingRS()));
 
 		// mock start nested steps
 		when(rpClient.startTestItem(eq(testMethodUuid),
@@ -78,7 +79,7 @@ public class FileLocatorTest {
 
 		ReportPortal rp = ReportPortal.create(rpClient, TestUtils.STANDARD_PARAMETERS);
 		Launch launch = rp.withLaunch(launchUuid);
-		launch.startTestItem(TestUtils.getConstantMaybe(testClassUuid), TestUtils.standardStartStepRequest());
+		launch.startTestItem(createConstantMaybe(testClassUuid), TestUtils.standardStartStepRequest());
 		sr = launch.getStepReporter();
 	}
 
@@ -90,8 +91,7 @@ public class FileLocatorTest {
 		verify(rpClient, timeout(1000).times(1)).log(logCaptor.capture());
 
 		MultiPartRequest logRq = logCaptor.getValue();
-		verifyFile(
-				logRq,
+		verifyFile(logRq,
 				Utils.readInputStreamToBytes(ofNullable(getClass().getClassLoader().getResourceAsStream("pug/lucky.jpg")).orElse(
 						EMPTY_STREAM)),
 				"lucky.jpg"
@@ -106,8 +106,7 @@ public class FileLocatorTest {
 		verify(rpClient, timeout(1000).times(1)).log(logCaptor.capture());
 
 		MultiPartRequest logRq = logCaptor.getValue();
-		verifyFile(
-				logRq,
+		verifyFile(logRq,
 				Utils.readInputStreamToBytes(ofNullable(getClass().getClassLoader().getResourceAsStream("pug/unlucky.jpg")).orElse(
 						EMPTY_STREAM)),
 				"unlucky.jpg"

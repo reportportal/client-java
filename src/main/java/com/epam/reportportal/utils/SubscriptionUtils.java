@@ -17,6 +17,7 @@ package com.epam.reportportal.utils;
 
 import io.reactivex.CompletableObserver;
 import io.reactivex.FlowableSubscriber;
+import io.reactivex.Maybe;
 import io.reactivex.MaybeObserver;
 import io.reactivex.disposables.Disposable;
 import org.reactivestreams.Subscription;
@@ -101,5 +102,19 @@ public class SubscriptionUtils {
 				LOGGER.debug("{} completed", type);
 			}
 		};
+	}
+
+	public static <T> Maybe<T> createConstantMaybe(final T rs) {
+		return Maybe.create(emitter -> {
+			emitter.onSuccess(rs);
+			emitter.onComplete();
+		});
+	}
+
+	public static <T> Maybe<T> createConstantMaybe(final Throwable exception) {
+		return Maybe.create(emitter -> {
+			emitter.onError(exception);
+			emitter.onComplete();
+		});
 	}
 }
