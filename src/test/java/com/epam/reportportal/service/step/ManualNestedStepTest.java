@@ -41,6 +41,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
@@ -53,7 +54,7 @@ public class ManualNestedStepTest {
 	private final String testLaunchUuid = "launch" + UUID.randomUUID().toString().substring(6);
 	private final String testClassUuid = "class" + UUID.randomUUID().toString().substring(5);
 	private final String testMethodUuid = "test" + UUID.randomUUID().toString().substring(4);
-	private final Maybe<String> launchUuid = TestUtils.getConstantMaybe(testLaunchUuid);
+	private final Maybe<String> launchUuid = createConstantMaybe(testLaunchUuid);
 
 	@Mock
 	private ReportPortalClient client;
@@ -66,14 +67,14 @@ public class ManualNestedStepTest {
 	private final List<Maybe<ItemCreatedRS>> createdStepsList = new ArrayList<>();
 	private final Supplier<Maybe<ItemCreatedRS>> maybeSupplier = () -> {
 		String uuid = UUID.randomUUID().toString();
-		Maybe<ItemCreatedRS> maybe = TestUtils.getConstantMaybe(new ItemCreatedRS(uuid, uuid));
+		Maybe<ItemCreatedRS> maybe = createConstantMaybe(new ItemCreatedRS(uuid, uuid));
 		createdStepsList.add(maybe);
 		return maybe;
 	};
 
 	@BeforeEach
 	public void initMocks() {
-		Maybe<ItemCreatedRS> testMethodCreatedMaybe = TestUtils.getConstantMaybe(new ItemCreatedRS(testMethodUuid, testMethodUuid));
+		Maybe<ItemCreatedRS> testMethodCreatedMaybe = createConstantMaybe(new ItemCreatedRS(testMethodUuid, testMethodUuid));
 		when(client.startTestItem(eq(testClassUuid), any())).thenReturn(testMethodCreatedMaybe);
 
 		// mock start nested steps
@@ -81,12 +82,12 @@ public class ManualNestedStepTest {
 		// mock finish nested steps
 		when(client.finishTestItem(any(String.class),
 				any(FinishTestItemRQ.class)
-		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> TestUtils.getConstantMaybe(new OperationCompletionRS()));
+		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> createConstantMaybe(new OperationCompletionRS()));
 
 		executor = Executors.newSingleThreadExecutor();
 		ReportPortal rp = ReportPortal.create(client, TestUtils.STANDARD_PARAMETERS, executor);
 		launch = rp.withLaunch(launchUuid);
-		testMethodUuidMaybe = launch.startTestItem(TestUtils.getConstantMaybe(testClassUuid), TestUtils.standardStartStepRequest());
+		testMethodUuidMaybe = launch.startTestItem(createConstantMaybe(testClassUuid), TestUtils.standardStartStepRequest());
 		sr = launch.getStepReporter();
 	}
 
@@ -156,8 +157,7 @@ public class ManualNestedStepTest {
 		ArgumentCaptor<FinishTestItemRQ> finishStepCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
 		verify(client, timeout(1000).times(1)).finishTestItem(eq(testMethodUuid), finishStepCaptor.capture());
 
-		assertThat(
-				"Parent test should fail if a nested step failed",
+		assertThat("Parent test should fail if a nested step failed",
 				finishStepCaptor.getValue().getStatus(),
 				equalTo(ItemStatus.FAILED.name())
 		);
@@ -172,7 +172,10 @@ public class ManualNestedStepTest {
 		sr.finishPreviousStep();
 
 		ArgumentCaptor<FinishTestItemRQ> finishStepCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(client, timeout(1000).times(1)).finishTestItem(eq(createdStepsList.get(0).blockingGet().getUniqueId()), finishStepCaptor.capture());
+		verify(client, timeout(1000).times(1)).finishTestItem(
+				eq(createdStepsList.get(0).blockingGet().getUniqueId()),
+				finishStepCaptor.capture()
+		);
 
 		assertThat(finishStepCaptor.getValue().getStatus(), equalTo(ItemStatus.FAILED.name()));
 		assertThat("StepReporter should save parent failures", sr.isFailed(testMethodUuidMaybe), equalTo(Boolean.TRUE));

@@ -33,21 +33,31 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.test.TestUtils.*;
+import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 public class LaunchTest {
 
-	private static final ErrorRS ERROR_RS;
+	private static final ErrorRS START_ERROR_RS;
+	private static final ErrorRS FINISH_ERROR_RS;
 
 	static {
-		ERROR_RS = new ErrorRS();
-		ERROR_RS.setErrorType(ErrorType.INCORRECT_REQUEST);
-		ERROR_RS.setMessage("Incorrect Request. [Value is not allowed for field 'status'.]");
+		START_ERROR_RS = new ErrorRS();
+		START_ERROR_RS.setErrorType(ErrorType.INCORRECT_REQUEST);
+		START_ERROR_RS.setMessage("Incorrect Request. [Value is not allowed for field 'status'.]");
+
+		FINISH_ERROR_RS = new ErrorRS();
+		FINISH_ERROR_RS.setErrorType(ErrorType.FINISH_TIME_EARLIER_THAN_START_TIME);
+		FINISH_ERROR_RS.setMessage(
+				"Finish time 'Thu Jan 01 00:00:00 UTC 1970' is earlier than start time 'Tue Aug 13 13:21:31 UTC 2019' for resource with ID '5d52b9899bd1160001b8f454'");
 	}
 
-	private static final ReportPortalException CLIENT_EXCEPTION = new ReportPortalException(400, "Bad Request", ERROR_RS);
+	private static final ReportPortalException START_CLIENT_EXCEPTION = new ReportPortalException(400, "Bad Request", START_ERROR_RS);
+
+	// taken from: https://github.com/reportportal/client-java/issues/99
+	private static final ReportPortalException FINISH_CLIENT_EXCEPTION = new ReportPortalException(406, "Not Acceptable", FINISH_ERROR_RS);
 
 	@Mock
 	private ReportPortalClient rpClient;
@@ -79,10 +89,10 @@ public class LaunchTest {
 		Maybe<String> testRs = launch.startTestItem(suiteRs, standardStartTestRequest());
 		Maybe<String> stepRs = launch.startTestItem(testRs, standardStartStepRequest());
 
-		when(rpClient.finishTestItem(eq(stepRs.blockingGet()), any())).thenThrow(CLIENT_EXCEPTION);
-		when(rpClient.finishTestItem(eq(testRs.blockingGet()), any())).thenReturn(getConstantMaybe(new OperationCompletionRS()));
-		when(rpClient.finishTestItem(eq(suiteRs.blockingGet()), any())).thenReturn(getConstantMaybe(new OperationCompletionRS()));
-		when(rpClient.finishLaunch(eq(launchUuid.blockingGet()), any())).thenReturn(getConstantMaybe(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(eq(stepRs.blockingGet()), any())).thenThrow(FINISH_CLIENT_EXCEPTION);
+		when(rpClient.finishTestItem(eq(testRs.blockingGet()), any())).thenReturn(createConstantMaybe(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(eq(suiteRs.blockingGet()), any())).thenReturn(createConstantMaybe(new OperationCompletionRS()));
+		when(rpClient.finishLaunch(eq(launchUuid.blockingGet()), any())).thenReturn(createConstantMaybe(new OperationCompletionRS()));
 
 		launch.finishTestItem(stepRs, positiveFinishRequest());
 		launch.finishTestItem(testRs, positiveFinishRequest());
@@ -105,12 +115,12 @@ public class LaunchTest {
 		when(rpClient.startTestItem(eq(suiteRs.blockingGet()), any())).thenReturn(startTestItemResponse(UUID.randomUUID().toString()));
 		Maybe<String> testRs = launch.startTestItem(suiteRs, standardStartTestRequest());
 
-		when(rpClient.startTestItem(eq(testRs.blockingGet()), any())).thenThrow(CLIENT_EXCEPTION);
+		when(rpClient.startTestItem(eq(testRs.blockingGet()), any())).thenThrow(START_CLIENT_EXCEPTION);
 		Maybe<String> stepRs = launch.startTestItem(testRs, standardStartStepRequest());
 
-		when(rpClient.finishTestItem(eq(testRs.blockingGet()), any())).thenReturn(getConstantMaybe(new OperationCompletionRS()));
-		when(rpClient.finishTestItem(eq(suiteRs.blockingGet()), any())).thenReturn(getConstantMaybe(new OperationCompletionRS()));
-		when(rpClient.finishLaunch(eq(launchUuid.blockingGet()), any())).thenReturn(getConstantMaybe(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(eq(testRs.blockingGet()), any())).thenReturn(createConstantMaybe(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(eq(suiteRs.blockingGet()), any())).thenReturn(createConstantMaybe(new OperationCompletionRS()));
+		when(rpClient.finishLaunch(eq(launchUuid.blockingGet()), any())).thenReturn(createConstantMaybe(new OperationCompletionRS()));
 
 		launch.finishTestItem(stepRs, positiveFinishRequest());
 		launch.finishTestItem(testRs, positiveFinishRequest());

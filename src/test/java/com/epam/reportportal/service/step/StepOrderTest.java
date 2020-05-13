@@ -37,6 +37,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
+import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.any;
@@ -47,7 +48,7 @@ public class StepOrderTest {
 	private final String testLaunchUuid = "launch" + UUID.randomUUID().toString().substring(6);
 	private final String testClassUuid = "class" + UUID.randomUUID().toString().substring(5);
 	private final String testMethodUuid = "test" + UUID.randomUUID().toString().substring(4);
-	private final Maybe<String> launchUuid = TestUtils.getConstantMaybe(testLaunchUuid);
+	private final Maybe<String> launchUuid = createConstantMaybe(testLaunchUuid);
 	private final AtomicInteger counter = new AtomicInteger();
 
 	@Mock
@@ -58,28 +59,30 @@ public class StepOrderTest {
 	private final List<Maybe<ItemCreatedRS>> createdStepsList = new ArrayList<>();
 	private final Supplier<Maybe<ItemCreatedRS>> maybeSupplier = () -> {
 		String uuid = UUID.randomUUID().toString();
-		Maybe<ItemCreatedRS> maybe = TestUtils.getConstantMaybe(new ItemCreatedRS(uuid, uuid));
+		Maybe<ItemCreatedRS> maybe = createConstantMaybe(new ItemCreatedRS(uuid, uuid));
 		createdStepsList.add(maybe);
 		return maybe;
 	};
 
 	@BeforeEach
 	public void initMocks() {
-		Maybe<ItemCreatedRS> testMethodCreatedMaybe = TestUtils.getConstantMaybe(new ItemCreatedRS(testMethodUuid, testMethodUuid));
+		Maybe<ItemCreatedRS> testMethodCreatedMaybe = createConstantMaybe(new ItemCreatedRS(testMethodUuid, testMethodUuid));
 		when(client.startTestItem(eq(testClassUuid), any())).thenReturn(testMethodCreatedMaybe);
 
 		// mock start nested steps
-		when(client.startTestItem(eq(testMethodUuid),
+		when(client.startTestItem(
+				eq(testMethodUuid),
 				any()
 		)).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> createdStepsList.get(counter.getAndIncrement()));
 		// mock finish nested steps
-		when(client.finishTestItem(any(String.class),
+		when(client.finishTestItem(
+				any(String.class),
 				any(FinishTestItemRQ.class)
-		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> TestUtils.getConstantMaybe(new OperationCompletionRS()));
+		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> createConstantMaybe(new OperationCompletionRS()));
 
 		ReportPortal rp = ReportPortal.create(client, TestUtils.STANDARD_PARAMETERS);
 		Launch launch = rp.withLaunch(launchUuid);
-		launch.startTestItem(TestUtils.getConstantMaybe(testClassUuid), TestUtils.standardStartStepRequest());
+		launch.startTestItem(createConstantMaybe(testClassUuid), TestUtils.standardStartStepRequest());
 		sr = launch.getStepReporter();
 	}
 
@@ -102,7 +105,8 @@ public class StepOrderTest {
 		List<StartTestItemRQ> rqs = stepCaptor.getAllValues();
 		assertThat(rqs, hasSize(stepNum));
 		for (int i = 1; i < stepNum; i++) {
-			assertThat("Each nested step should not complete in the same millisecond, iteration: " + i,
+			assertThat(
+					"Each nested step should not complete in the same millisecond, iteration: " + i,
 					rqs.get(i - 1).getStartTime(),
 					not(equalTo(rqs.get(i).getStartTime()))
 			);
