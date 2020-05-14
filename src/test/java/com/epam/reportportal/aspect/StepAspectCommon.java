@@ -20,6 +20,8 @@ import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.attribute.Attribute;
 import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.service.Launch;
+import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
+import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeEmitter;
@@ -32,20 +34,27 @@ import org.aspectj.lang.reflect.SourceLocation;
 import java.lang.reflect.Method;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.when;
 
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
 public class StepAspectCommon {
-	static void simulateStartItemResponse(Launch launch, Maybe<String> parentIdMaybe, final String itemUuid) {
-		when(launch.startTestItem(eq(parentIdMaybe), any(StartTestItemRQ.class))).thenReturn(Maybe.create(new MaybeOnSubscribe<String>() {
-			@Override
-			public void subscribe(MaybeEmitter<String> emitter) {
-				emitter.onSuccess(itemUuid);
-				emitter.onComplete();
-			}
+	static Maybe<String> simulateStartItemResponse(Launch launch, Maybe<String> parentIdMaybe, final String itemUuid) {
+		Maybe<String> itemIdMaybe = Maybe.create(emitter -> {
+			emitter.onSuccess(itemUuid);
+			emitter.onComplete();
+		});
+
+		when(launch.startTestItem(same(parentIdMaybe), any(StartTestItemRQ.class))).thenReturn(itemIdMaybe);
+		return itemIdMaybe;
+	}
+
+	static void simulateFinishItemResponse(Launch launch, Maybe<String> idMaybe) {
+		when(launch.finishTestItem(same(idMaybe), any(FinishTestItemRQ.class))).thenReturn(Maybe.create(emitter -> {
+			emitter.onSuccess(new OperationCompletionRS());
+			emitter.onComplete();
 		}));
 	}
 

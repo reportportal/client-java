@@ -21,6 +21,7 @@ import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.launch.PrimaryLaunch;
 import com.epam.reportportal.service.launch.SecondaryLaunch;
+import com.epam.reportportal.utils.SubscriptionUtils;
 import com.epam.ta.reportportal.ws.model.ErrorRS;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
@@ -29,8 +30,6 @@ import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.LaunchResource;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
-import io.reactivex.MaybeEmitter;
-import io.reactivex.MaybeOnSubscribe;
 import io.reactivex.Scheduler;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
@@ -54,6 +53,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.test.TestUtils.simulateStartLaunchResponse;
 import static com.epam.reportportal.test.TestUtils.standardLaunchRequest;
+import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
@@ -86,7 +86,7 @@ public class ReportPortalClientJoinTest {
 	@AfterEach
 	public void tearDown() throws InterruptedException {
 		executor.shutdown();
-		if(!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+		if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
 			executor.shutdownNow();
 		}
 	}
@@ -108,22 +108,12 @@ public class ReportPortalClientJoinTest {
 	private static Maybe<LaunchResource> getLaunchResponse(String id) {
 		final LaunchResource rs = new LaunchResource();
 		rs.setUuid(id);
-		return Maybe.create(new MaybeOnSubscribe<LaunchResource>() {
-			@Override
-			public void subscribe(final MaybeEmitter<LaunchResource> emitter) {
-				emitter.onSuccess(rs);
-				emitter.onComplete();
-			}
-		});
+		return createConstantMaybe(rs);
 	}
 
 	private static void simulateGetLaunchResponse(final ReportPortalClient client) {
-		when(client.getLaunchByUuid(anyString())).then(new Answer<Maybe<LaunchResource>>() {
-			@Override
-			public Maybe<LaunchResource> answer(InvocationOnMock invocation) {
-				return getLaunchResponse(invocation.getArgument(0).toString());
-			}
-		});
+		when(client.getLaunchByUuid(anyString())).then((Answer<Maybe<LaunchResource>>) invocation -> getLaunchResponse(invocation.getArgument(
+				0).toString()));
 	}
 
 	private static class StringConsumer implements Consumer<String> {
@@ -168,8 +158,8 @@ public class ReportPortalClientJoinTest {
 		return result;
 	}
 
-	private static List<Launch> createLaunchesNoGetLaunch(int num, ReportPortalClient rpClient, ListenerParameters params, LockFile lockFile,
-			ExecutorService executor) {
+	private static List<Launch> createLaunchesNoGetLaunch(int num, ReportPortalClient rpClient, ListenerParameters params,
+			LockFile lockFile, ExecutorService executor) {
 		simulateStartLaunchResponse(rpClient);
 		return createLaunchesNoStart(num, rpClient, params, lockFile, executor);
 	}
@@ -237,10 +227,7 @@ public class ReportPortalClientJoinTest {
 		launches.get(0).start();
 		launches.get(1).start();
 
-		when(rpClient.finishLaunch(
-				any(),
-				any(FinishExecutionRQ.class)
-		)).thenReturn(Maybe.create(e -> e.onSuccess(new OperationCompletionRS())));
+		when(rpClient.finishLaunch(any(), any(FinishExecutionRQ.class))).thenReturn(createConstantMaybe(new OperationCompletionRS()));
 
 		launches.get(0).finish(standardLaunchFinish());
 		launches.get(1).finish(standardLaunchFinish());
@@ -281,25 +268,14 @@ public class ReportPortalClientJoinTest {
 	}
 
 	private static void simulateStartItemResponse(final ReportPortalClient client, final String itemUuid) {
-		when(client.startTestItem(any(StartTestItemRQ.class))).then(new Answer<Maybe<ItemCreatedRS>>() {
-			@Override
-			public Maybe<ItemCreatedRS> answer(InvocationOnMock invocation) {
-				StartTestItemRQ rq = invocation.getArgument(0);
-				return standardItemResponse(itemUuid);
-			}
-		});
+		when(client.startTestItem(any(StartTestItemRQ.class))).then((Answer<Maybe<ItemCreatedRS>>) invocation -> standardItemResponse(
+				itemUuid));
 	}
 
 	private static Maybe<ItemCreatedRS> standardItemResponse(String id) {
-		final ItemCreatedRS rs = new ItemCreatedRS();
+		ItemCreatedRS rs = new ItemCreatedRS();
 		rs.setId(id);
-		return Maybe.create(new MaybeOnSubscribe<ItemCreatedRS>() {
-			@Override
-			public void subscribe(final MaybeEmitter<ItemCreatedRS> emitter) {
-				emitter.onSuccess(rs);
-				emitter.onComplete();
-			}
-		});
+		return createConstantMaybe(rs);
 	}
 
 	@Test
@@ -332,28 +308,14 @@ public class ReportPortalClientJoinTest {
 	}
 
 	private static Maybe<LaunchResource> getLaunchErrorResponse() {
-		return Maybe.create(new MaybeOnSubscribe<LaunchResource>() {
-			@Override
-			public void subscribe(final MaybeEmitter<LaunchResource> emitter) {
-				emitter.onError(new ReportPortalException(404, "Launch not found", new ErrorRS()));
-				emitter.onComplete();
-			}
-		});
+		return SubscriptionUtils.createConstantMaybe(new ReportPortalException(404, "Launch not found", new ErrorRS()));
 	}
 
 	private static void simulateGetLaunchByUuidResponse(ReportPortalClient client) {
-		Answer<Maybe<LaunchResource>> errorAnswer = new Answer<Maybe<LaunchResource>>() {
-			@Override
-			public Maybe<LaunchResource> answer(InvocationOnMock invocation) {
-				return getLaunchErrorResponse();
-			}
-		};
-		when(client.getLaunchByUuid(anyString())).then(errorAnswer).then(errorAnswer).then(new Answer<Maybe<LaunchResource>>() {
-			@Override
-			public Maybe<LaunchResource> answer(InvocationOnMock invocation) {
-				return getLaunchResponse(invocation.getArgument(0).toString());
-			}
-		});
+		Answer<Maybe<LaunchResource>> errorAnswer = invocation -> getLaunchErrorResponse();
+		when(client.getLaunchByUuid(anyString())).then(errorAnswer)
+				.then(errorAnswer)
+				.then((Answer<Maybe<LaunchResource>>) invocation -> getLaunchResponse(invocation.getArgument(0).toString()));
 	}
 
 	@Test
@@ -392,16 +354,16 @@ public class ReportPortalClientJoinTest {
 	public void test_two_launches_have_the_same_executors() {
 		List<Launch> launches = createLaunchesNoStart(2, rpClient, params, lockFile, executor);
 
-		assertThat(((LaunchImpl)launches.get(0)).getExecutor(), sameInstance(executor));
-		assertThat(((LaunchImpl)launches.get(1)).getExecutor(), sameInstance(executor));
+		assertThat(((LaunchImpl) launches.get(0)).getExecutor(), sameInstance(executor));
+		assertThat(((LaunchImpl) launches.get(1)).getExecutor(), sameInstance(executor));
 	}
 
 	@Test
 	public void test_two_launches_have_the_same_scheduler() {
 		List<Launch> launches = createLaunchesNoStart(2, rpClient, params, lockFile, executor);
 
-		Scheduler scheduler1 = ((LaunchImpl)launches.get(0)).getScheduler();
-		Scheduler scheduler2 = ((LaunchImpl)launches.get(1)).getScheduler();
+		Scheduler scheduler1 = ((LaunchImpl) launches.get(0)).getScheduler();
+		Scheduler scheduler2 = ((LaunchImpl) launches.get(1)).getScheduler();
 		assertThat(scheduler1, sameInstance(scheduler2));
 	}
 }

@@ -19,6 +19,7 @@ package com.epam.reportportal.test;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.utils.SubscriptionUtils;
 import com.epam.ta.reportportal.ws.model.BatchElementCreatedRS;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
@@ -64,14 +65,7 @@ public class TestUtils {
 	public static Maybe<StartLaunchRS> startLaunchResponse(String id) {
 		final StartLaunchRS rs = new StartLaunchRS();
 		rs.setId(id);
-		return getConstantMaybe(rs);
-	}
-
-	public static <T> Maybe<T> getConstantMaybe(final T rs) {
-		return Maybe.create(emitter -> {
-			emitter.onSuccess(rs);
-			emitter.onComplete();
-		});
+		return SubscriptionUtils.createConstantMaybe(rs);
 	}
 
 	public static void simulateStartLaunchResponse(final ReportPortalClient client) {
@@ -95,7 +89,7 @@ public class TestUtils {
 	public static Maybe<ItemCreatedRS> startTestItemResponse(String id) {
 		final ItemCreatedRS rs = new ItemCreatedRS();
 		rs.setId(id);
-		return getConstantMaybe(rs);
+		return SubscriptionUtils.createConstantMaybe(rs);
 	}
 
 	public static void simulateStartTestItemResponse(final ReportPortalClient client) {
@@ -157,7 +151,7 @@ public class TestUtils {
 	public static Maybe<BatchSaveOperatingRS> batchLogResponse(List<String> ids) {
 		final BatchSaveOperatingRS rs = new BatchSaveOperatingRS();
 		ids.forEach(i -> rs.addResponse(new BatchElementCreatedRS(i)));
-		return getConstantMaybe(rs);
+		return SubscriptionUtils.createConstantMaybe(rs);
 	}
 
 	@SuppressWarnings("unchecked")
