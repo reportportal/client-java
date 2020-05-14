@@ -117,7 +117,11 @@ public class StepReporter {
 		StartTestItemRQ rq = buildStartStepRequest(name);
 		Maybe<String> stepId = startStepRequest(rq);
 		if (actions != null) {
-			actions.run();
+			try {
+				actions.run();
+			} catch (Throwable e) {
+				LOGGER.error("Unable to process nested step: " + e.getLocalizedMessage(), e);
+			}
 		}
 		finishStepRequest(stepId, status, rq.getStartTime());
 	}
@@ -127,9 +131,23 @@ public class StepReporter {
 		});
 	}
 
+	public void sendStep(final String name, final String... logs) {
+		sendStep(ItemStatus.PASSED, name, logs);
+	}
+
 	public void sendStep(@NotNull final ItemStatus status, final String name) {
 		sendStep(status, name, () -> {
 		});
+	}
+
+	public void sendStep(@NotNull final ItemStatus status, final String name, final String... logs) {
+		Runnable actions = ofNullable(logs).map(l -> (Runnable) () -> Arrays.stream(l)
+				.forEach(log -> ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(itemId,
+						log,
+						LogLevel.INFO
+				)))).orElse(null);
+
+		sendStep(status, name, actions);
 	}
 
 	public void sendStep(final @NotNull ItemStatus status, final String name, final Throwable throwable) {
@@ -144,15 +162,14 @@ public class StepReporter {
 	}
 
 	public void sendStep(final @NotNull ItemStatus status, final String name, final File... files) {
-		sendStep(status, name, () -> {
-			for (final File file : files) {
-				ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(itemId,
-						file.getName(),
+		Runnable actions = ofNullable(files).map(f -> (Runnable) () -> Arrays.stream(f)
+				.forEach(file -> ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(itemId,
+						null,
 						LogLevel.INFO,
 						file
-				));
-			}
-		});
+				)))).orElse(null);
+
+		sendStep(status, name, actions);
 	}
 
 	public void sendStep(final @NotNull ItemStatus status, final String name, final Throwable throwable, final File... files) {
