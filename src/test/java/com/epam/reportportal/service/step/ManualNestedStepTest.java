@@ -17,15 +17,19 @@
 package com.epam.reportportal.service.step;
 
 import com.epam.reportportal.listeners.ItemStatus;
+import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
+import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
+import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +44,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -79,16 +85,18 @@ public class ManualNestedStepTest {
 
 		// mock start nested steps
 		when(client.startTestItem(eq(testMethodUuid), any())).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> maybeSupplier.get());
-		// mock finish nested steps
-		when(client.finishTestItem(any(String.class),
-				any(FinishTestItemRQ.class)
-		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> createConstantMaybe(new OperationCompletionRS()));
 
 		executor = Executors.newSingleThreadExecutor();
 		ReportPortal rp = ReportPortal.create(client, TestUtils.STANDARD_PARAMETERS, executor);
 		launch = rp.withLaunch(launchUuid);
 		testMethodUuidMaybe = launch.startTestItem(createConstantMaybe(testClassUuid), TestUtils.standardStartStepRequest());
 		sr = launch.getStepReporter();
+	}
+
+	public void mockFinishNestedStep() {
+		when(client.finishTestItem(any(String.class),
+				any(FinishTestItemRQ.class)
+		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> createConstantMaybe(new OperationCompletionRS()));
 	}
 
 	@AfterEach
@@ -110,11 +118,12 @@ public class ManualNestedStepTest {
 
 		StartTestItemRQ nestedStep = stepCaptor.getValue();
 		assertThat(nestedStep.getName(), equalTo(stepName));
-		sr.finishPreviousStep();
 	}
 
 	@Test
 	public void verify_two_nested_steps_report_on_the_same_level() {
+		mockFinishNestedStep();
+
 		String stepName = UUID.randomUUID().toString();
 		sr.sendStep(stepName);
 
@@ -147,6 +156,8 @@ public class ManualNestedStepTest {
 
 	@Test
 	public void verify_failed_nested_step_marks_parent_test_as_failed_parent_finish() {
+		mockFinishNestedStep();
+
 		String stepName = UUID.randomUUID().toString();
 		sr.sendStep(ItemStatus.FAILED, stepName);
 		sr.finishPreviousStep();
@@ -165,6 +176,8 @@ public class ManualNestedStepTest {
 
 	@Test
 	public void verify_failed_nested_step_marks_parent_test_as_failed_nested_finish() {
+		mockFinishNestedStep();
+
 		String stepName = UUID.randomUUID().toString();
 		sr.sendStep(ItemStatus.FAILED, stepName);
 
@@ -172,12 +185,43 @@ public class ManualNestedStepTest {
 		sr.finishPreviousStep();
 
 		ArgumentCaptor<FinishTestItemRQ> finishStepCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(client, timeout(1000).times(1)).finishTestItem(
-				eq(createdStepsList.get(0).blockingGet().getUniqueId()),
+		verify(client, timeout(1000).times(1)).finishTestItem(eq(createdStepsList.get(0).blockingGet().getUniqueId()),
 				finishStepCaptor.capture()
 		);
 
 		assertThat(finishStepCaptor.getValue().getStatus(), equalTo(ItemStatus.FAILED.name()));
 		assertThat("StepReporter should save parent failures", sr.isFailed(testMethodUuidMaybe), equalTo(Boolean.TRUE));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void verify_nested_step_with_a_batch_of_logs() {
+		when(client.log(any(MultiPartRequest.class))).thenReturn(createConstantMaybe(new BatchSaveOperatingRS()));
+
+		int logNumber = 3;
+
+		String stepName = UUID.randomUUID().toString();
+		String[] logs = IntStream.range(0, logNumber).mapToObj(i -> UUID.randomUUID().toString()).toArray(String[]::new);
+		sr.sendStep(stepName, logs);
+
+		ArgumentCaptor<StartTestItemRQ> stepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, timeout(1000).times(1)).startTestItem(eq(testMethodUuid), stepCaptor.capture());
+		ArgumentCaptor<MultiPartRequest> logCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
+		verify(client, timeout(1000).times(logNumber)).log(logCaptor.capture());
+
+		StartTestItemRQ nestedStep = stepCaptor.getValue();
+		assertThat(nestedStep.getName(), equalTo(stepName));
+
+		List<Pair<String, String>> logRequests = logCaptor.getAllValues()
+				.stream()
+				.flatMap(rq -> rq.getSerializedRQs().stream())
+				.flatMap(e -> ((List<SaveLogRQ>) e.getRequest()).stream())
+				.map(e -> Pair.of(e.getLevel(), e.getMessage()))
+				.collect(Collectors.toList());
+
+		IntStream.range(0, logNumber).forEach(i -> {
+			assertThat(logRequests.get(i).getKey(), equalTo("INFO"));
+			assertThat(logRequests.get(i).getValue(), equalTo(logs[i]));
+		});
 	}
 }

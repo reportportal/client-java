@@ -93,8 +93,7 @@ public class FileLocatorTest {
 		MultiPartRequest logRq = logCaptor.getValue();
 		verifyFile(logRq,
 				Utils.readInputStreamToBytes(ofNullable(getClass().getClassLoader().getResourceAsStream("pug/lucky.jpg")).orElse(
-						EMPTY_STREAM)),
-				"lucky.jpg"
+						EMPTY_STREAM))
 		);
 	}
 
@@ -108,8 +107,7 @@ public class FileLocatorTest {
 		MultiPartRequest logRq = logCaptor.getValue();
 		verifyFile(logRq,
 				Utils.readInputStreamToBytes(ofNullable(getClass().getClassLoader().getResourceAsStream("pug/unlucky.jpg")).orElse(
-						EMPTY_STREAM)),
-				"unlucky.jpg"
+						EMPTY_STREAM))
 		);
 	}
 
@@ -146,16 +144,15 @@ public class FileLocatorTest {
 		MultiPartRequest logRq = logCaptor.getValue();
 		verifyFile(logRq,
 				Utils.readInputStreamToBytes(ofNullable(getClass().getClassLoader().getResourceAsStream("pug/lucky.jpg")).orElse(
-						EMPTY_STREAM)),
-				testFile.getName()
+						EMPTY_STREAM))
 		);
 	}
 
-	private void verifyFile(MultiPartRequest logRq, byte[] data, String fileName) {
+	private void verifyFile(MultiPartRequest logRq, byte[] data) {
 		SaveLogRQ saveRq = verifyRq(logRq);
 
 		assertThat(saveRq.getFile(), notNullValue());
-		assertThat("File name is invalid", saveRq.getMessage(), equalTo(fileName));
+		assertThat("Do not publish file name as message", saveRq.getMessage(), nullValue());
 		SaveLogRQ.File file = saveRq.getFile();
 		assertThat("File binary content is invalid", file.getContent(), equalTo(data));
 	}
