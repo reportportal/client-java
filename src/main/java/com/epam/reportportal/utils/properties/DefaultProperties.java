@@ -17,7 +17,7 @@
 package com.epam.reportportal.utils.properties;
 
 /**
- * Default implementaion of {@link PropertyHolder} with attribute names that should be retrieved:
+ * Default implementation of {@link PropertyHolder} with attribute names that should be retrieved:
  * 1) internal - from the environment (OS, JVM)
  * 2) external - from `*.properties` file
  *

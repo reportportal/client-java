@@ -17,6 +17,10 @@
 package com.epam.reportportal.utils.properties;
 
 /**
+ * Implementation of the {@link PropertyHolder} with `client name and version` attribute names:
+ * 1) internal - from the environment (OS, JVM)
+ * 2) external - from `*.properties` file
+ *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
 public enum ClientProperties implements PropertyHolder {
