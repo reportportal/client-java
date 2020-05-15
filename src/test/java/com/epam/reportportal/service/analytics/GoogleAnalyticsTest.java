@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.concurrent.Executors;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
@@ -41,7 +42,7 @@ public class GoogleAnalyticsTest {
 	private final HttpClient httpClient = mock(HttpClient.class);
 
 	@Test
-	void send() throws IOException {
+	void sendRequestWithoutError() throws IOException {
 
 		when(httpClient.execute(any(HttpPost.class))).thenReturn(new BasicHttpResponse(new BasicStatusLine(HttpVersion.HTTP_1_0,
 				200,
@@ -54,5 +55,18 @@ public class GoogleAnalyticsTest {
 		verify(httpClient, times(1)).execute(any(HttpPost.class));
 
 		assertTrue(result);
+	}
+
+	@Test
+	void sendRequestErrorShouldNotThrowException() throws IOException {
+
+		when(httpClient.execute(any(HttpPost.class))).thenThrow(new RuntimeException("Internal error"));
+
+		GoogleAnalytics googleAnalytics = new GoogleAnalytics(scheduler, "id", httpClient);
+		Boolean result = googleAnalytics.send(new AnalyticsEvent(null, null, null)).blockingGet();
+
+		verify(httpClient, times(1)).execute(any(HttpPost.class));
+
+		assertFalse(result);
 	}
 }

@@ -96,16 +96,21 @@ public class GoogleAnalytics implements Closeable {
 
 	public Maybe<Boolean> send(AnalyticsItem item) {
 		return Maybe.create((MaybeOnSubscribe<Boolean>) emitter -> {
-			HttpPost httpPost = buildPostRequest(item);
-			HttpResponse response = httpClient.execute(httpPost);
 			try {
-				EntityUtils.consumeQuietly(response.getEntity());
-				emitter.onSuccess(true);
-			} finally {
-				if (response instanceof CloseableHttpResponse) {
-					((CloseableHttpResponse) response).close();
+				HttpPost httpPost = buildPostRequest(item);
+				HttpResponse response = httpClient.execute(httpPost);
+				try {
+					EntityUtils.consumeQuietly(response.getEntity());
+					emitter.onSuccess(true);
+				} finally {
+					if (response instanceof CloseableHttpResponse) {
+						((CloseableHttpResponse) response).close();
+					}
 				}
+			} catch (Throwable ex) {
+				emitter.onSuccess(false);
 			}
+
 		}).subscribeOn(scheduler).cache();
 
 	}
