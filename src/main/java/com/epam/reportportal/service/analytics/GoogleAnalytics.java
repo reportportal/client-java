@@ -64,20 +64,7 @@ public class GoogleAnalytics implements Closeable {
 	private final HttpClient httpClient;
 
 	public GoogleAnalytics(Scheduler scheduler, String trackingId) {
-		this.scheduler = scheduler;
-		this.baseUrl = DEFAULT_BASE_URL;
-		Collections.addAll(defaultRequestParams,
-				new BasicNameValuePair("de", "UTF-8"),
-				new BasicNameValuePair("v", "1"),
-				new BasicNameValuePair("cid", UUID.randomUUID().toString()),
-				new BasicNameValuePair("tid", trackingId)
-		);
-
-		PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
-		connectionManager.setDefaultMaxPerRoute(1);
-		HttpClientBuilder httpClientBuilder = HttpClients.custom().setConnectionManager(connectionManager);
-
-		this.httpClient = httpClientBuilder.build();
+		this(scheduler, trackingId, buildDefaultHttpClient());
 
 	}
 
@@ -92,6 +79,13 @@ public class GoogleAnalytics implements Closeable {
 		);
 
 		this.httpClient = httpClient;
+	}
+
+	private static HttpClient buildDefaultHttpClient() {
+		PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
+		connectionManager.setDefaultMaxPerRoute(1);
+		HttpClientBuilder httpClientBuilder = HttpClients.custom().setConnectionManager(connectionManager);
+		return httpClientBuilder.build();
 	}
 
 	public Maybe<Boolean> send(AnalyticsItem item) {
