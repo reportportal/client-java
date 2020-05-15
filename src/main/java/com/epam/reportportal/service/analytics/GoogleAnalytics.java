@@ -42,6 +42,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
+ * Google analytics asynchronous client. Required for sending analytics event to the resource identified by provided `trackingId`
+ *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
 public class GoogleAnalytics implements Closeable {
@@ -68,6 +70,17 @@ public class GoogleAnalytics implements Closeable {
 
 	}
 
+	/**
+	 * Adds set of mandatory parameters to the request params:
+	 * de - Encoding
+	 * v - Protocol version
+	 * cid - Client id
+	 * tid - Google analytics resource id
+	 *
+	 * @param scheduler  {@link Scheduler} for async requests processing
+	 * @param trackingId ID of the `Google analytics` resource
+	 * @param httpClient {@link HttpClient} instance
+	 */
 	public GoogleAnalytics(Scheduler scheduler, String trackingId, HttpClient httpClient) {
 		this.scheduler = scheduler;
 		this.baseUrl = DEFAULT_BASE_URL;
@@ -88,6 +101,12 @@ public class GoogleAnalytics implements Closeable {
 		return httpClientBuilder.build();
 	}
 
+	/**
+	 * Convert and send {@link AnalyticsItem} to the `Google analytics` instance. Quietly consumes exceptions to not affect reporting flow
+	 *
+	 * @param item {@link AnalyticsItem}
+	 * @return true - if successfully send, otherwise - false wrapped in the {@link Maybe}
+	 */
 	public Maybe<Boolean> send(AnalyticsItem item) {
 		return Maybe.create((MaybeOnSubscribe<Boolean>) emitter -> {
 			try {
@@ -102,6 +121,7 @@ public class GoogleAnalytics implements Closeable {
 					}
 				}
 			} catch (Throwable ex) {
+				LOGGER.error(ex.getMessage());
 				emitter.onSuccess(false);
 			}
 
