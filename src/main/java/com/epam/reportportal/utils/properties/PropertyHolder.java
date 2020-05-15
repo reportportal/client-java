@@ -17,6 +17,9 @@
 package com.epam.reportportal.utils.properties;
 
 /**
+ * Interface for containers with meta information that should be sent to the Report Portal instance via {@link com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ}
+ * using {@link SystemAttributesExtractor}
+ *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
 public interface PropertyHolder {

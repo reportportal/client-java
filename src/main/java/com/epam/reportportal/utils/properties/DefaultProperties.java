@@ -17,6 +17,10 @@
 package com.epam.reportportal.utils.properties;
 
 /**
+ * Default implementaion of {@link PropertyHolder} with attribute names that should be retrieved:
+ * 1) internal - from the environment (OS, JVM)
+ * 2) external - from `*.properties` file
+ *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
 public enum DefaultProperties implements PropertyHolder {
