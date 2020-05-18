@@ -164,7 +164,7 @@ public class StepReporter {
 	public void sendStep(final @NotNull ItemStatus status, final String name, final File... files) {
 		Runnable actions = ofNullable(files).map(f -> (Runnable) () -> Arrays.stream(f)
 				.forEach(file -> ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(itemId,
-						null,
+						"",
 						LogLevel.INFO,
 						file
 				)))).orElse(null);

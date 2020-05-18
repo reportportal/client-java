@@ -152,7 +152,7 @@ public class FileLocatorTest {
 		SaveLogRQ saveRq = verifyRq(logRq);
 
 		assertThat(saveRq.getFile(), notNullValue());
-		assertThat("Do not publish file name as message", saveRq.getMessage(), nullValue());
+		assertThat("Do not publish file name as message", saveRq.getMessage(), emptyString());
 		SaveLogRQ.File file = saveRq.getFile();
 		assertThat("File binary content is invalid", file.getContent(), equalTo(data));
 	}
