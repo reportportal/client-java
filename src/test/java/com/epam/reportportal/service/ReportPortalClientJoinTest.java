@@ -15,7 +15,6 @@
  */
 package com.epam.reportportal.service;
 
-import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
@@ -35,7 +34,10 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
@@ -250,13 +252,10 @@ public class ReportPortalClientJoinTest {
 	}
 
 	@Test
-	public void test_rp_client_throws_error_in_case_of_lock_file_error() {
+	public void test_rp_client_should_not_throw_errors_in_case_of_lock_file_error() {
 		ReportPortal rp1 = new ReportPortal(rpClient, executor, params, lockFile);
-
-		InternalReportPortalClientException exc = Assertions.assertThrows(InternalReportPortalClientException.class,
-				() -> rp1.newLaunch(standardLaunchRequest(params))
-		);
-		assertThat(exc.getMessage(), equalTo("Unable to create a new launch: unable to read/write lock file."));
+		Launch launch = rp1.newLaunch(standardLaunchRequest(params));
+		assertThat(launch.getClass().getCanonicalName(), equalTo(LaunchImpl.class.getCanonicalName()));
 	}
 
 	private static StartTestItemRQ standardItemRequest() {

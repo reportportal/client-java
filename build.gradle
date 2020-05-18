@@ -22,6 +22,12 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
+processResources {
+    filesMatching('client.properties') {
+        expand(project.properties)
+    }
+}
+
 sourceSets {
     main {
         compileClasspath += configurations.shadow
@@ -73,7 +79,7 @@ dependencies {
     shadow 'org.apache.tika:tika-core:1.4'
     shadow 'org.slf4j:slf4j-api:1.7.25'
 
-    testImplementation ('org.junit.platform:junit-platform-runner:1.6.0') {
+    testImplementation('org.junit.platform:junit-platform-runner:1.6.0') {
         exclude module: 'junit'
     }
     testImplementation 'org.junit.platform:junit-platform-launcher:1.6.0'
@@ -85,18 +91,18 @@ dependencies {
     testImplementation 'org.mockito:mockito-core:3.3.3'
     testImplementation 'org.mockito:mockito-junit-jupiter:3.3.3'
     testImplementation 'ch.qos.logback:logback-classic:1.2.3'
-    testImplementation ('org.awaitility:awaitility:4.0.2') {
+    testImplementation('org.awaitility:awaitility:4.0.2') {
         exclude group: 'org.hamcrest'
     }
     testImplementation 'org.apache.commons:commons-io:1.3.2'
 }
 
-test{
+test {
     useJUnitPlatform()
     systemProperty("file.encoding", "utf-8")
     forkEvery(1)
     maxParallelForks(5)
-    outputs.upToDateWhen {false}
+    outputs.upToDateWhen { false }
 }
 
 wrapper {

@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 import static java.util.Optional.ofNullable;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -44,6 +45,7 @@ public class SystemAttributesExtractorTest {
 		properties.put("os", Pattern.compile("^.+\\|.+\\|.+$"));
 		properties.put("jvm", Pattern.compile("^.+\\|.+\\|.+$"));
 		properties.put("agent", Pattern.compile("^test-agent\\|test-1\\.0$"));
+		properties.put("client", Pattern.compile("^java-client\\|test-1\\.0$"));
 	}
 
 	@Test
@@ -58,7 +60,9 @@ public class SystemAttributesExtractorTest {
 
 	@Test
 	public void testFromResource() {
-		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract("agent-test.properties", SystemAttributesExtractorTest.class.getClassLoader());
+		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract("agent-test.properties",
+				SystemAttributesExtractorTest.class.getClassLoader()
+		);
 		assertThat(attributes, hasSize(3));
 
 		ArrayList<ItemAttributesRQ> attributesList = new ArrayList<>(attributes);
@@ -100,6 +104,40 @@ public class SystemAttributesExtractorTest {
 		Pattern agentPattern = getPattern(agentAttribute);
 		assertThat(agentPattern, notNullValue());
 		assertThat(agentAttribute.getValue(), matchesRegex(agentPattern));
+	}
+
+	@Test
+	public void testFromResourceClientProperties() {
+		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract("client-test.properties",
+				SystemAttributesExtractorTest.class.getClassLoader(),
+				ClientProperties.values()
+		);
+		assertThat(attributes, hasSize(1));
+
+		ArrayList<ItemAttributesRQ> attributesList = new ArrayList<>(attributes);
+
+		ItemAttributesRQ clientAttribute = attributesList.get(0);
+
+		assertEquals("client", clientAttribute.getKey());
+		Pattern osPattern = getPattern(clientAttribute);
+		assertThat(osPattern, notNullValue());
+		assertThat(clientAttribute.getValue(), matchesRegex(osPattern));
+	}
+
+	@Test
+	public void testFromPathClientProperties() {
+		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract(Paths.get("./src/test/resources/client-test.properties"),
+				ClientProperties.values()
+		);
+		assertThat(attributes, hasSize(1));
+
+		ArrayList<ItemAttributesRQ> attributesList = new ArrayList<>(attributes);
+
+		ItemAttributesRQ clientAttribute = attributesList.get(0);
+		assertEquals("client", clientAttribute.getKey());
+		Pattern osPattern = getPattern(clientAttribute);
+		assertThat(osPattern, notNullValue());
+		assertThat(clientAttribute.getValue(), matchesRegex(osPattern));
 	}
 
 	private Pattern getPattern(ItemAttributesRQ attribute) {
