@@ -53,12 +53,29 @@ public class SystemAttributesExtractor {
 	 * Loads properties from the specified location
 	 *
 	 * @param resource Path to the resource in classpath
-	 * @param loader context class loader, which is used by a specific agent implementation
+	 * @param loader   context class loader, which is used by a specific agent implementation
 	 * @return {@link Set} of {@link ItemAttributesRQ}
 	 */
 	public static Set<ItemAttributesRQ> extract(final String resource, final ClassLoader loader) {
 		Set<ItemAttributesRQ> attributes = getInternalAttributes();
+		Properties properties = loadProperties(resource, loader);
+		attributes.addAll(getExternalAttributes(properties, DefaultProperties.values()));
+		return attributes;
+	}
 
+	/**
+	 * Loads properties from the specified location
+	 *
+	 * @param resource Path to the resource in classpath
+	 * @param loader   context class loader, which is used by a specific agent implementation
+	 * @return {@link Set} of {@link ItemAttributesRQ}
+	 */
+	public static Set<ItemAttributesRQ> extract(final String resource, final ClassLoader loader, final PropertyHolder... propertyHolders) {
+		Properties properties = loadProperties(resource, loader);
+		return getExternalAttributes(properties, propertyHolders);
+	}
+
+	private static Properties loadProperties(final String resource, final ClassLoader loader) {
 		Properties properties = new Properties();
 		ofNullable(loader).flatMap(l -> ofNullable(resource).flatMap(res -> ofNullable(l.getResourceAsStream(res))))
 				.ifPresent(resStream -> {
@@ -67,10 +84,8 @@ public class SystemAttributesExtractor {
 					} catch (IOException e) {
 						LOGGER.warn("Unable to load system properties file");
 					}
-		});
-
-		attributes.addAll(getExternalAttributes(properties));
-		return attributes;
+				});
+		return properties;
 	}
 
 	/**
@@ -81,7 +96,23 @@ public class SystemAttributesExtractor {
 	 */
 	public static Set<ItemAttributesRQ> extract(final Path path) {
 		Set<ItemAttributesRQ> attributes = getInternalAttributes();
+		Properties properties = loadProperties(path);
+		attributes.addAll(getExternalAttributes(properties, DefaultProperties.values()));
+		return attributes;
+	}
 
+	/**
+	 * Loads properties from the specified location
+	 *
+	 * @param path Path to the resource the file system
+	 * @return {@link Set} of {@link ItemAttributesRQ}
+	 */
+	public static Set<ItemAttributesRQ> extract(final Path path, final PropertyHolder... propertyHolders) {
+		Properties properties = loadProperties(path);
+		return getExternalAttributes(properties, propertyHolders);
+	}
+
+	private static Properties loadProperties(final Path path) {
 		Properties properties = new Properties();
 		ofNullable(path).ifPresent(p -> {
 			File file = p.toFile();
@@ -93,9 +124,7 @@ public class SystemAttributesExtractor {
 				}
 			}
 		});
-
-		attributes.addAll(getExternalAttributes(properties));
-		return attributes;
+		return properties;
 	}
 
 	private static Set<ItemAttributesRQ> getInternalAttributes() {
@@ -107,8 +136,9 @@ public class SystemAttributesExtractor {
 				.collect(Collectors.toSet());
 	}
 
-	private static Set<ItemAttributesRQ> getExternalAttributes(final Properties externalAttributes) {
-		return Arrays.stream(DefaultProperties.values())
+	private static Set<ItemAttributesRQ> getExternalAttributes(final Properties externalAttributes,
+			final PropertyHolder... propertyHolders) {
+		return Arrays.stream(propertyHolders)
 				.filter(defaultProperties -> !defaultProperties.isInternal())
 				.map(defaultProperty -> convert(defaultProperty.getName(), externalAttributes, defaultProperty.getPropertyKeys()))
 				.filter(Optional::isPresent)
@@ -157,34 +187,6 @@ public class SystemAttributesExtractor {
 			return Optional.of(new ItemAttributesRQ(attributeKey, StringUtils.join(values, ATTRIBUTE_VALUE_SEPARATOR), true));
 		} else {
 			return Optional.empty();
-		}
-	}
-
-	private enum DefaultProperties {
-		OS("os", true, "os.name", "os.arch", "os.version"),
-		JVM("jvm", true, "java.vm.name", "java.version", "java.class.version"),
-		AGENT("agent", false, "agent.name", "agent.version");
-
-		private String name;
-		private boolean internal;
-		private String[] propertyKeys;
-
-		DefaultProperties(String name, boolean internal, String... propertyKeys) {
-			this.name = name;
-			this.internal = internal;
-			this.propertyKeys = propertyKeys;
-		}
-
-		public String getName() {
-			return name;
-		}
-
-		public boolean isInternal() {
-			return internal;
-		}
-
-		public String[] getPropertyKeys() {
-			return propertyKeys;
 		}
 	}
 }
