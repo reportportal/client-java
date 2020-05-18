@@ -119,8 +119,9 @@ public class ReportPortal {
 
 		final String uuid = lockFile.obtainLaunchUuid(instanceUuid.get());
 		if (uuid == null) {
-			// timeout locking on file or interrupted
-			throw new InternalReportPortalClientException("Unable to create a new launch: unable to read/write lock file.");
+			// timeout locking on file or interrupted, anyway it should be logged already
+			// we continue to operate normally, since this flag is set by default and we shouldn't fail launches because of it
+			return new LaunchImpl(rpClient, parameters, rq, executor);
 		}
 
 		if (instanceUuid.get().equals(uuid)) {
