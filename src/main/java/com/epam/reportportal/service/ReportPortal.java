@@ -39,6 +39,8 @@ import io.reactivex.Maybe;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.CookieSpecs;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -67,6 +69,7 @@ import java.util.function.Function;
 import static com.epam.reportportal.service.LaunchLoggingContext.DEFAULT_LAUNCH_KEY;
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
 import static com.epam.reportportal.utils.files.Utils.readFileToBytes;
+import static java.util.Optional.ofNullable;
 
 /**
  * Default ReportPortal Reporter implementation. Uses
@@ -394,7 +397,7 @@ public class ReportPortal {
 
 		public ReportPortal build() {
 			try {
-				ListenerParameters params = null == this.parameters ? new ListenerParameters(defaultPropertiesLoader()) : this.parameters;
+				ListenerParameters params = ofNullable(this.parameters).orElse(new ListenerParameters(defaultPropertiesLoader()));
 				ExecutorService executorService = buildExecutorService(params);
 				return new ReportPortal(buildClient(ReportPortalClient.class, params, executorService),
 						executorService,
@@ -428,10 +431,9 @@ public class ReportPortal {
 		public <T extends ReportPortalClient> T buildClient(@NotNull final Class<T> clientType, @NotNull final ListenerParameters params,
 				@NotNull final ExecutorService executor) {
 			try {
-				HttpClient client = null == this.httpClient ?
-						defaultClient(params) :
-						this.httpClient.addInterceptorLast(new BearerAuthInterceptor(params.getApiKey())).build();
-
+				HttpClient client = ofNullable(this.httpClient)
+						.map(c -> (HttpClient) c.addInterceptorLast(new BearerAuthInterceptor(params.getApiKey())).build())
+						.orElse(defaultClient(params));
 				return RestEndpoints.forInterface(clientType, buildRestEndpoint(params, client, executor));
 			} catch (Exception e) {
 				String errMsg = "Cannot build ReportPortal client";
@@ -507,7 +509,8 @@ public class ReportPortal {
 
 			}
 
-			builder.setRetryHandler(new StandardHttpRequestRetryHandler(parameters.getTransferRetries(), true))
+			builder.setDefaultRequestConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build())
+					.setRetryHandler(new StandardHttpRequestRetryHandler(parameters.getTransferRetries(), true))
 					.setKeepAliveStrategy(new DefaultConnectionKeepAliveStrategy() {
 						@Override
 						public long getKeepAliveDuration(HttpResponse response, HttpContext context) {
@@ -523,7 +526,6 @@ public class ReportPortal {
 					.setConnectionTimeToLive(parameters.getMaxConnectionTtlMs(), TimeUnit.MILLISECONDS)
 					.evictIdleConnections(parameters.getMaxConnectionIdleTtlMs(), TimeUnit.MILLISECONDS);
 			return builder.addInterceptorLast(new BearerAuthInterceptor(parameters.getApiKey())).build();
-
 		}
 
 		protected LockFile buildLockFile(ListenerParameters parameters) {
