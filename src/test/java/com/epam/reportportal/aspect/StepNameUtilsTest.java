@@ -23,7 +23,6 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 
 import java.util.Arrays;
@@ -38,6 +37,8 @@ import static org.mockito.Mockito.when;
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
 public class StepNameUtilsTest {
+
+	private static final String STEP_NAME_PATTERN = "A test step value {0}";
 
 	@Mock
 	private MethodSignature methodSignature;
@@ -76,8 +77,8 @@ public class StepNameUtilsTest {
 
 	}
 
-	@Step("A test step value {0}")
-	private void stepWithAValueInName(String value)	{
+	@Step(STEP_NAME_PATTERN)
+	private void stepWithAValueInName(String value) {
 
 	}
 
@@ -89,11 +90,26 @@ public class StepNameUtilsTest {
 	@MethodSource("stepNameValues")
 	public void test_special_characters_in_step_name(String name) throws NoSuchMethodException {
 		when(methodSignature.getMethod()).thenReturn(this.getClass().getDeclaredMethod("stepWithAValueInName", String.class));
-		when(methodSignature.getParameterNames()).thenReturn(new String[]{"value"});
-		when(joinPoint.getArgs()).thenReturn(new String[]{name});
+		when(methodSignature.getParameterNames()).thenReturn(new String[] { "value" });
+		when(joinPoint.getArgs()).thenReturn(new String[] { name });
 
 		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class), methodSignature, joinPoint);
 		String expected = "A test step value " + (name == null ? "NULL" : name);
 		assertThat(result, equalTo(expected));
+	}
+
+	@Step(STEP_NAME_PATTERN)
+	private void stepWithAValueInNameNoParams() {
+
+	}
+
+	@Test
+	public void test_no_format_in_case_a_step_with_no_params() throws NoSuchMethodException {
+		when(methodSignature.getMethod()).thenReturn(this.getClass().getDeclaredMethod("stepWithAValueInNameNoParams"));
+		when(methodSignature.getParameterNames()).thenReturn(new String[0]);
+		when(joinPoint.getArgs()).thenReturn(new String[0]);
+
+		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class), methodSignature, joinPoint);
+		assertThat(result, equalTo(STEP_NAME_PATTERN));
 	}
 }
