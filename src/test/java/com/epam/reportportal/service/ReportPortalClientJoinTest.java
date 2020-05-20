@@ -34,10 +34,7 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
@@ -48,13 +45,11 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static com.epam.reportportal.test.TestUtils.simulateStartLaunchResponse;
-import static com.epam.reportportal.test.TestUtils.standardLaunchRequest;
+import static com.epam.reportportal.test.TestUtils.*;
 import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -70,27 +65,24 @@ import static org.mockito.Mockito.*;
 public class ReportPortalClientJoinTest {
 	private static final long WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
 
+	private final ExecutorService executor = Executors.newFixedThreadPool(2);
+
 	@Mock
 	private ReportPortalClient rpClient;
 	@Mock
 	private LockFile lockFile;
 	private ListenerParameters params;
-	private ExecutorService executor;
 
 	@BeforeEach
 	public void prepare() {
 		params = new ListenerParameters();
 		params.setClientJoin(true);
 		params.setEnable(Boolean.TRUE);
-		executor = Executors.newFixedThreadPool(2);
 	}
 
-	@AfterEach
-	public void tearDown() throws InterruptedException {
-		executor.shutdown();
-		if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
-			executor.shutdownNow();
-		}
+	@AfterAll
+	public void tearDown() {
+		shutdownExecutorService(executor);
 	}
 
 	private static void simulateObtainLaunchUuidResponse(final LockFile lockFile) {
@@ -138,12 +130,7 @@ public class ReportPortalClientJoinTest {
 			return Awaitility.await("Waiting for reactivex consumer")
 					.pollInterval(2, TimeUnit.MILLISECONDS)
 					.atMost(10, TimeUnit.SECONDS)
-					.until(new Callable<String>() {
-						@Override
-						public String call() {
-							return consumer.getResult();
-						}
-					}, Matchers.notNullValue());
+					.until(consumer::getResult, Matchers.notNullValue());
 		} finally {
 			disposable.dispose();
 		}
@@ -323,7 +310,7 @@ public class ReportPortalClientJoinTest {
 		simulateObtainLaunchUuidResponse(lockFile);
 		simulateGetLaunchByUuidResponse(rpClient);
 		params.setAsyncReporting(false);
-		List<Launch> launches = new ArrayList<Launch>(num);
+		List<Launch> launches = new ArrayList<>(num);
 		for (int i = 0; i < num; i++) {
 			ReportPortal rp = new ReportPortal(rpClient, executor, params, lockFile);
 			launches.add(rp.newLaunch(standardLaunchRequest(params)));
@@ -339,7 +326,7 @@ public class ReportPortalClientJoinTest {
 		int num = 2;
 		simulateObtainLaunchUuidResponse(lockFile);
 		params.setAsyncReporting(true);
-		List<Launch> launches = new ArrayList<Launch>(num);
+		List<Launch> launches = new ArrayList<>(num);
 		for (int i = 0; i < num; i++) {
 			ReportPortal rp = new ReportPortal(rpClient, executor, params, lockFile);
 			launches.add(rp.newLaunch(standardLaunchRequest(params)));

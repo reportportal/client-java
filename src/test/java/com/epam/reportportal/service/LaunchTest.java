@@ -30,7 +30,6 @@ import org.mockito.Mock;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.test.TestUtils.*;
 import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
@@ -71,11 +70,8 @@ public class LaunchTest {
 	}
 
 	@AfterEach
-	public void tearDown() throws InterruptedException {
-		executor.shutdown();
-		if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
-			executor.shutdownNow();
-		}
+	public void tearDown() {
+		shutdownExecutorService(executor);
 	}
 
 	@Test

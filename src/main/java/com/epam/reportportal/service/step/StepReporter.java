@@ -58,7 +58,6 @@ public class StepReporter {
 	private final Deque<Maybe<String>> parent = new ConcurrentLinkedDeque<>();
 
 	private final Deque<StepEntry> steps = new ConcurrentLinkedDeque<>();
-	;
 
 	private final Set<Maybe<String>> parentFailures = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -151,10 +150,7 @@ public class StepReporter {
 	}
 
 	public void sendStep(final @NotNull ItemStatus status, final String name, final Throwable throwable) {
-		sendStep(status,
-				name,
-				() -> ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(itemId, LogLevel.ERROR, throwable))
-		);
+		sendStep(status, name, () -> ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(itemId, throwable)));
 	}
 
 	public void sendStep(final String name, final File... files) {
@@ -175,7 +171,7 @@ public class StepReporter {
 	public void sendStep(final @NotNull ItemStatus status, final String name, final Throwable throwable, final File... files) {
 		sendStep(status, name, () -> {
 			for (final File file : files) {
-				ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(itemId, LogLevel.ERROR, throwable, file));
+				ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(itemId, throwable, file));
 			}
 		});
 	}
@@ -251,13 +247,13 @@ public class StepReporter {
 		return logRQ;
 	}
 
-	private SaveLogRQ buildSaveLogRequest(String itemId, LogLevel level, Throwable throwable, File file) {
+	private SaveLogRQ buildSaveLogRequest(String itemId, Throwable throwable, File file) {
 		String message = throwable != null ? getStackTraceAsString(throwable) : "Test has failed without exception";
-		return buildSaveLogRequest(itemId, message, level, file);
+		return buildSaveLogRequest(itemId, message, LogLevel.ERROR, file);
 	}
 
-	private SaveLogRQ buildSaveLogRequest(String itemId, LogLevel level, Throwable throwable) {
-		return buildSaveLogRequest(itemId, level, throwable, null);
+	private SaveLogRQ buildSaveLogRequest(String itemId, Throwable throwable) {
+		return buildSaveLogRequest(itemId, throwable, null);
 	}
 
 	private SaveLogRQ.File createFileModel(File file) throws IOException {

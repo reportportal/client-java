@@ -29,7 +29,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
-import java.util.*;
+import javax.annotation.Nonnull;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -44,6 +48,7 @@ import static org.mockito.Mockito.*;
 public class ItemLoggingContextMultiThreadTest {
 
 	private static final ListenerParameters PARAMS = standardParameters();
+
 	static {
 		PARAMS.setBatchLogsSize(2);
 	}
@@ -65,11 +70,8 @@ public class ItemLoggingContextMultiThreadTest {
 	}
 
 	@AfterEach
-	public void tearDown() throws InterruptedException {
-		clientExecutorService.shutdown();
-		if(!clientExecutorService.awaitTermination(10, TimeUnit.SECONDS)) {
-			clientExecutorService.shutdownNow();
-		}
+	public void tearDown() {
+		shutdownExecutorService(clientExecutorService);
 	}
 
 	private static class TestNgTest implements Callable<String> {
@@ -108,7 +110,7 @@ public class ItemLoggingContextMultiThreadTest {
 		}
 
 		@Override
-		public Thread newThread(Runnable r) {
+		public Thread newThread(@Nonnull Runnable r) {
 			return new Thread(r, name + threadNumber.getAndIncrement());
 		}
 	}
@@ -136,14 +138,13 @@ public class ItemLoggingContextMultiThreadTest {
 				new TestNGThreadFactory("test_logging_context")
 		);
 
-
-
 		// First and second threads start their items and log data
 		TestNgTest t1 = new TestNgTest(launch, suiteRs);
 		TestNgTest t2 = new TestNgTest(launch, suiteRs);
 		final List<Future<String>> results = pooledExecutor.invokeAll(Arrays.asList(t1, t2));
 
-		Awaitility.await("Wait until test finish").until(() -> results.stream().filter(Future::isDone).collect(Collectors.toList()), hasSize(2));
+		Awaitility.await("Wait until test finish")
+				.until(() -> results.stream().filter(Future::isDone).collect(Collectors.toList()), hasSize(2));
 
 		// Verify all item start requests passed
 		verify(rpClient, times(1)).startLaunch(any());
