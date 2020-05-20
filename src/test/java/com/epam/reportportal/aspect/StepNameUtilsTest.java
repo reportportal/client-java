@@ -82,7 +82,7 @@ public class StepNameUtilsTest {
 	}
 
 	private static Stream<String> stepNameValues() {
-		return Stream.of("aaaa", "/$^&^@#", null);
+		return Stream.of("aaaa", "/$^&^@#", null, "");
 	}
 
 	@ParameterizedTest

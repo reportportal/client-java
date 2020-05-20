@@ -76,11 +76,11 @@ class StepNameUtils {
 	private static String getReplacement(String templatePart, Map<String, Object> parametersMap, StepTemplateConfig templateConfig) {
 		String[] fields = templatePart.split("\\.");
 		String variableName = fields[0];
-		Object param = parametersMap.get(variableName);
-		if (param == null && !parametersMap.containsKey(variableName)) {
+		if (!parametersMap.containsKey(variableName)) {
 			LOGGER.error("Param - " + variableName + " was not found");
 			return null;
 		}
+		Object param = parametersMap.get(variableName);
 		try {
 			return StepTemplateUtils.retrieveValue(templateConfig, 1, fields, param);
 		} catch (NoSuchFieldException e) {
