@@ -61,7 +61,6 @@ import static org.mockito.Mockito.*;
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ReportPortalClientJoinTest {
 	private static final long WAIT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
 
@@ -80,7 +79,7 @@ public class ReportPortalClientJoinTest {
 		params.setEnable(Boolean.TRUE);
 	}
 
-	@AfterAll
+	@AfterEach
 	public void tearDown() {
 		shutdownExecutorService(executor);
 	}
