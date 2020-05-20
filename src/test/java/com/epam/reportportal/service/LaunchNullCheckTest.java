@@ -26,7 +26,6 @@ import org.mockito.Mock;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.test.TestUtils.*;
 
@@ -43,11 +42,8 @@ public class LaunchNullCheckTest {
 	}
 
 	@AfterEach
-	public void tearDown() throws InterruptedException {
-		executor.shutdown();
-		if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
-			executor.shutdownNow();
-		}
+	public void tearDown() {
+		shutdownExecutorService(executor);
 	}
 
 	// See https://github.com/reportportal/client-java/issues/99

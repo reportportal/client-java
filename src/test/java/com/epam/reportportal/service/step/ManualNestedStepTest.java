@@ -42,11 +42,11 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.epam.reportportal.test.TestUtils.shutdownExecutorService;
 import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -61,6 +61,7 @@ public class ManualNestedStepTest {
 	private final String testClassUuid = "class" + UUID.randomUUID().toString().substring(5);
 	private final String testMethodUuid = "test" + UUID.randomUUID().toString().substring(4);
 	private final Maybe<String> launchUuid = createConstantMaybe(testLaunchUuid);
+	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
 	@Mock
 	private ReportPortalClient client;
@@ -68,7 +69,6 @@ public class ManualNestedStepTest {
 	private Launch launch;
 	private Maybe<String> testMethodUuidMaybe;
 	private StepReporter sr;
-	private ExecutorService executor;
 
 	private final List<Maybe<ItemCreatedRS>> createdStepsList = new ArrayList<>();
 	private final Supplier<Maybe<ItemCreatedRS>> maybeSupplier = () -> {
@@ -81,15 +81,15 @@ public class ManualNestedStepTest {
 	@BeforeEach
 	public void initMocks() {
 		Maybe<ItemCreatedRS> testMethodCreatedMaybe = createConstantMaybe(new ItemCreatedRS(testMethodUuid, testMethodUuid));
-		when(client.startTestItem(eq(testClassUuid), any())).thenReturn(testMethodCreatedMaybe);
+		when(client.startTestItem(same(testClassUuid), any())).thenReturn(testMethodCreatedMaybe);
 
 		// mock start nested steps
-		when(client.startTestItem(eq(testMethodUuid), any())).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> maybeSupplier.get());
+		when(client.startTestItem(same(testMethodUuid), any())).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> maybeSupplier.get());
 
-		executor = Executors.newSingleThreadExecutor();
 		ReportPortal rp = ReportPortal.create(client, TestUtils.STANDARD_PARAMETERS, executor);
 		launch = rp.withLaunch(launchUuid);
 		testMethodUuidMaybe = launch.startTestItem(createConstantMaybe(testClassUuid), TestUtils.standardStartStepRequest());
+		testMethodUuidMaybe.blockingGet();
 		sr = launch.getStepReporter();
 	}
 
@@ -100,11 +100,8 @@ public class ManualNestedStepTest {
 	}
 
 	@AfterEach
-	public void cleanup() throws InterruptedException {
-		executor.shutdown();
-		if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
-			executor.shutdownNow();
-		}
+	public void cleanup() {
+		shutdownExecutorService(executor);
 	}
 
 	@Test

@@ -27,6 +27,8 @@ import java.util.Iterator;
  */
 public class StepTemplateUtils {
 
+	private static final String NULL_VALUE = "NULL";
+
 	private StepTemplateUtils() {
 		//static only
 	}
@@ -55,7 +57,7 @@ public class StepTemplateUtils {
 			throws NoSuchFieldException {
 
 		if (object == null) {
-			return "null";
+			return NULL_VALUE;
 		}
 
 		for (int i = index; i < fields.length; i++) {

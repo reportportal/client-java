@@ -37,7 +37,9 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
@@ -60,6 +62,16 @@ public class TestUtils {
 		result.setLaunchName("My-test-launch" + generateUniqueId());
 		result.setEnable(true);
 		return result;
+	}
+
+	public static void shutdownExecutorService(ExecutorService executor) {
+		executor.shutdown();
+		try {
+			if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+				executor.shutdownNow();
+			}
+		} catch (InterruptedException ignore) {
+		}
 	}
 
 	public static Maybe<StartLaunchRS> startLaunchResponse(String id) {
