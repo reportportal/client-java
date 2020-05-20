@@ -55,7 +55,7 @@ class StepNameUtils {
 		while (matcher.find()) {
 			String templatePart = matcher.group(1);
 			String replacement = getReplacement(templatePart, parametersMap, step.templateConfig());
-			matcher.appendReplacement(stringBuffer, replacement != null ? replacement : matcher.group(0));
+			matcher.appendReplacement(stringBuffer, Matcher.quoteReplacement(replacement != null ? replacement : matcher.group(0)));
 		}
 		matcher.appendTail(stringBuffer);
 		return stringBuffer.toString();
@@ -77,7 +77,7 @@ class StepNameUtils {
 		String[] fields = templatePart.split("\\.");
 		String variableName = fields[0];
 		Object param = parametersMap.get(variableName);
-		if (param == null) {
+		if (param == null && !parametersMap.containsKey(variableName)) {
 			LOGGER.error("Param - " + variableName + " was not found");
 			return null;
 		}

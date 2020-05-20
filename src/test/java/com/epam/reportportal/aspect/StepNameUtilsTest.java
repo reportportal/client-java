@@ -18,13 +18,17 @@ package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.StepTemplateConfig;
+import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -38,10 +42,8 @@ public class StepNameUtilsTest {
 	@Mock
 	private MethodSignature methodSignature;
 
-	@BeforeEach
-	public void init() throws NoSuchMethodException {
-		when(methodSignature.getMethod()).thenReturn(this.getClass().getDeclaredMethod("templateConfigMethod"));
-	}
+	@Mock
+	private JoinPoint joinPoint;
 
 	/**
 	 * @see <a href="https://github.com/reportportal/client-java/issues/73">Covers NPE issue fix</a>
@@ -50,6 +52,7 @@ public class StepNameUtilsTest {
 	public void createParamsMapping() throws NoSuchMethodException {
 
 		String[] namesArray = { "firstName", "secondName", "thirdName" };
+		when(methodSignature.getMethod()).thenReturn(this.getClass().getDeclaredMethod("templateConfigMethod"));
 		when(methodSignature.getParameterNames()).thenReturn(namesArray);
 
 		StepTemplateConfig templateConfig = this.getClass()
@@ -71,5 +74,26 @@ public class StepNameUtilsTest {
 	@Step(templateConfig = @StepTemplateConfig)
 	private void templateConfigMethod() {
 
+	}
+
+	@Step("A test step value {0}")
+	private void stepWithAValueInName(String value)	{
+
+	}
+
+	private static Stream<String> stepNameValues() {
+		return Stream.of("aaaa", "/$^&^@#", null);
+	}
+
+	@ParameterizedTest
+	@MethodSource("stepNameValues")
+	public void test_special_characters_in_step_name(String name) throws NoSuchMethodException {
+		when(methodSignature.getMethod()).thenReturn(this.getClass().getDeclaredMethod("stepWithAValueInName", String.class));
+		when(methodSignature.getParameterNames()).thenReturn(new String[]{"value"});
+		when(joinPoint.getArgs()).thenReturn(new String[]{name});
+
+		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class), methodSignature, joinPoint);
+		String expected = "A test step value " + (name == null ? "NULL" : name);
+		assertThat(result, equalTo(expected));
 	}
 }
