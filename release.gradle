@@ -1,3 +1,4 @@
+apply plugin: 'maven'
 apply plugin: 'maven-publish'
 
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -20,14 +21,23 @@ artifacts {
     archives shadowJar
 }
 
+def pomConfig = {
+    licenses {
+        license {
+            name "The Apache Software License, Version 2.0"
+            url "http://www.apache.org/licenses/LICENSE-2.0.txt"
+            distribution "repo"
+        }
+    }
+}
+
 publishing {
     publications {
         shadow(MavenPublication) { publication ->
             project.shadow.component(publication)
 
-//            artifact project.tasks.shadowJar
-            artifact project.tasks.javadocJar
-            artifact project.tasks.sourcesJar
+            groupId 'com.epam.reportportal'
+            artifactId "$project.name"
 
             pom.withXml {
                 def root = asNode()
@@ -38,11 +48,11 @@ publishing {
                 }.each() {
                     it.scope*.value = 'compile'
                 }
+                root.children().last() + pomConfig
             }
 
-            groupId 'com.epam.reportportal'
-            artifactId "$project.name"
-
+            artifact project.tasks.javadocJar
+            artifact project.tasks.sourcesJar
         }
     }
 }
