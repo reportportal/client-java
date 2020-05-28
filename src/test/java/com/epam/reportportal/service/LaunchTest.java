@@ -28,11 +28,14 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.epam.reportportal.test.TestUtils.*;
 import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -126,5 +129,43 @@ public class LaunchTest {
 		verify(rpClient, times(1)).finishTestItem(eq(testRs.blockingGet()), any());
 		verify(rpClient, times(1)).finishTestItem(eq(suiteRs.blockingGet()), any());
 		verify(rpClient, times(1)).finishLaunch(eq(launchUuid.blockingGet()), any());
+	}
+
+	@Test
+	public void launch_should_stick_to_every_thread_which_uses_it() throws ExecutionException, InterruptedException {
+		simulateStartChildTestItemResponse(rpClient);
+
+		// Verify Launch set on creation
+		ExecutorService launchCreateExecutor = Executors.newSingleThreadExecutor();
+		Launch launchOnCreate = launchCreateExecutor.submit(() -> new LaunchImpl(
+				rpClient,
+				STANDARD_PARAMETERS,
+				standardLaunchRequest(STANDARD_PARAMETERS),
+				executor
+		)).get();
+		Launch launchGet = launchCreateExecutor.submit(Launch::currentLaunch).get();
+		assertThat(launchGet, sameInstance(launchOnCreate));
+		shutdownExecutorService(launchCreateExecutor);
+
+		// Verify Launch set on start
+		ExecutorService launchStartExecutor = Executors.newSingleThreadExecutor();
+		launchStartExecutor.submit(launchOnCreate::start).get();
+		launchGet = launchStartExecutor.submit(Launch::currentLaunch).get();
+		assertThat(launchGet, sameInstance(launchOnCreate));
+		shutdownExecutorService(launchStartExecutor);
+
+		// Verify Launch set on start root test item
+		ExecutorService launchSuiteStartExecutor = Executors.newSingleThreadExecutor();
+		Maybe<String> parent = launchSuiteStartExecutor.submit(() -> launchOnCreate.startTestItem(standardStartSuiteRequest())).get();
+		launchGet = launchSuiteStartExecutor.submit(Launch::currentLaunch).get();
+		assertThat(launchGet, sameInstance(launchOnCreate));
+		shutdownExecutorService(launchSuiteStartExecutor);
+
+		// Verify Launch set on start child test item
+		ExecutorService launchChildStartExecutor = Executors.newSingleThreadExecutor();
+		launchChildStartExecutor.submit(() -> launchOnCreate.startTestItem(parent, standardStartTestRequest())).get();
+		launchGet = launchChildStartExecutor.submit(Launch::currentLaunch).get();
+		assertThat(launchGet, sameInstance(launchOnCreate));
+		shutdownExecutorService(launchChildStartExecutor);
 	}
 }

@@ -88,6 +88,8 @@ public abstract class Launch {
 	abstract public Maybe<OperationCompletionRS> finishTestItem(Maybe<String> itemId, final FinishTestItemRQ rq);
 
 	public ListenerParameters getParameters() {
+		// Sticking any thread which makes this call to the current Launch to be able to use Step Reporter and other methods
+		CURRENT_LAUNCH.set(this);
 		return this.parameters;
 	}
 
