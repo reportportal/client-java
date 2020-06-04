@@ -25,7 +25,6 @@ import com.epam.reportportal.utils.files.Utils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import com.google.common.base.Function;
 import io.reactivex.Maybe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -141,7 +140,7 @@ public class StepReporter {
 
 	public void sendStep(@NotNull final ItemStatus status, final String name, final String... logs) {
 		Runnable actions = ofNullable(logs).map(l -> (Runnable) () -> Arrays.stream(l)
-				.forEach(log -> ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(itemId,
+				.forEach(log -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId,
 						log,
 						LogLevel.INFO
 				)))).orElse(null);
@@ -150,7 +149,7 @@ public class StepReporter {
 	}
 
 	public void sendStep(final @NotNull ItemStatus status, final String name, final Throwable throwable) {
-		sendStep(status, name, () -> ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(itemId, throwable)));
+		sendStep(status, name, () -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, throwable)));
 	}
 
 	public void sendStep(final String name, final File... files) {
@@ -159,7 +158,7 @@ public class StepReporter {
 
 	public void sendStep(final @NotNull ItemStatus status, final String name, final File... files) {
 		Runnable actions = ofNullable(files).map(f -> (Runnable) () -> Arrays.stream(f)
-				.forEach(file -> ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(itemId,
+				.forEach(file -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId,
 						"",
 						LogLevel.INFO,
 						file
@@ -171,7 +170,7 @@ public class StepReporter {
 	public void sendStep(final @NotNull ItemStatus status, final String name, final Throwable throwable, final File... files) {
 		sendStep(status, name, () -> {
 			for (final File file : files) {
-				ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(itemId, throwable, file));
+				ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, throwable, file));
 			}
 		});
 	}
