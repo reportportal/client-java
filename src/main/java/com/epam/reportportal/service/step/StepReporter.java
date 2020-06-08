@@ -54,8 +54,12 @@ public class StepReporter {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(StepReporter.class);
 
+	// Do not use InheritableThreadLocal here, or it will be the same issue as here:
+	// https://github.com/reportportal/agent-java-testNG/issues/76
 	private final ThreadLocal<Deque<Maybe<String>>> parents = ThreadLocal.withInitial(ArrayDeque::new);
 
+	// Do not use InheritableThreadLocal here, or it will be the same issue as here:
+	// https://github.com/reportportal/agent-java-testNG/issues/76
 	private final ThreadLocal<Deque<StepEntry>> steps = ThreadLocal.withInitial(ArrayDeque::new);
 
 	private final Set<Maybe<String>> parentFailures = Collections.newSetFromMap(new ConcurrentHashMap<>());

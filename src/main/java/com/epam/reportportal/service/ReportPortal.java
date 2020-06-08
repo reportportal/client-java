@@ -377,6 +377,7 @@ public class ReportPortal {
 
 		private HttpClientBuilder httpClient;
 		private ListenerParameters parameters;
+		private ExecutorService executor;
 
 		public Builder withHttpClient(HttpClientBuilder client) {
 			this.httpClient = client;
@@ -388,10 +389,15 @@ public class ReportPortal {
 			return this;
 		}
 
+		public Builder withExecutorService(ExecutorService executor) {
+			this.executor = executor;
+			return this;
+		}
+
 		public ReportPortal build() {
 			try {
 				ListenerParameters params = ofNullable(this.parameters).orElse(new ListenerParameters(defaultPropertiesLoader()));
-				ExecutorService executorService = buildExecutorService(params);
+				ExecutorService executorService = executor == null ? buildExecutorService(params): executor;
 				return new ReportPortal(buildClient(ReportPortalClient.class, params, executorService),
 						executorService,
 						params,
