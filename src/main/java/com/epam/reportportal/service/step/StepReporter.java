@@ -54,7 +54,12 @@ public class StepReporter {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(StepReporter.class);
 
-	private final Deque<Maybe<String>> parent = new ConcurrentLinkedDeque<>();
+	private final ThreadLocal<Deque<Maybe<String>>> parents = new InheritableThreadLocal<Deque<Maybe<String>>>(){
+		@Override
+		protected Deque<Maybe<String>> initialValue(){
+			return new ArrayDeque<>();
+		}
+	};
 
 	private final Deque<StepEntry> steps = new ConcurrentLinkedDeque<>();
 
@@ -92,17 +97,17 @@ public class StepReporter {
 
 	public void setParent(final Maybe<String> parentUuid) {
 		if (parentUuid != null) {
-			parent.add(parentUuid);
+			parents.get().add(parentUuid);
 		}
 	}
 
 	public Maybe<String> getParent() {
-		return parent.peekLast();
+		return parents.get().peekLast();
 	}
 
 	public void removeParent(final Maybe<String> parentUuid) {
 		if (parentUuid != null) {
-			parent.removeLastOccurrence(parentUuid);
+			parents.get().removeLastOccurrence(parentUuid);
 			parentFailures.remove(parentUuid);
 		}
 	}
@@ -185,7 +190,7 @@ public class StepReporter {
 	public void finishPreviousStep() {
 		finishPreviousStepInternal().ifPresent(e -> {
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
-				parentFailures.add(parent.getLast());
+				parentFailures.add(parents.get().getLast());
 			}
 		});
 	}
@@ -198,10 +203,10 @@ public class StepReporter {
 				startTestItemRQ.setStartTime(new Date(previousDate.getTime() + 1));
 			}
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
-				parentFailures.add(parent.getLast());
+				parentFailures.add(parents.get().getLast());
 			}
 		});
-		return launch.startTestItem(parent.getLast(), startTestItemRQ);
+		return launch.startTestItem(parents.get().getLast(), startTestItemRQ);
 	}
 
 	private StartTestItemRQ buildStartStepRequest(String name) {
