@@ -54,14 +54,9 @@ public class StepReporter {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(StepReporter.class);
 
-	private final ThreadLocal<Deque<Maybe<String>>> parents = new InheritableThreadLocal<Deque<Maybe<String>>>(){
-		@Override
-		protected Deque<Maybe<String>> initialValue(){
-			return new ArrayDeque<>();
-		}
-	};
+	private final ThreadLocal<Deque<Maybe<String>>> parents = ThreadLocal.withInitial(ArrayDeque::new);
 
-	private final Deque<StepEntry> steps = new ConcurrentLinkedDeque<>();
+	private final ThreadLocal<Deque<StepEntry>> steps = ThreadLocal.withInitial(ArrayDeque::new);
 
 	private final Set<Maybe<String>> parentFailures = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -181,7 +176,7 @@ public class StepReporter {
 	}
 
 	private Optional<StepEntry> finishPreviousStepInternal() {
-		return ofNullable(steps.poll()).map(stepEntry -> {
+		return ofNullable(steps.get().poll()).map(stepEntry -> {
 			launch.finishTestItem(stepEntry.getItemId(), stepEntry.getFinishTestItemRQ());
 			return stepEntry;
 		});
@@ -220,7 +215,7 @@ public class StepReporter {
 
 	private void finishStepRequest(Maybe<String> stepId, ItemStatus status, Date timestamp) {
 		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status, Calendar.getInstance().getTime());
-		steps.add(new StepEntry(stepId, timestamp, finishTestItemRQ));
+		steps.get().add(new StepEntry(stepId, timestamp, finishTestItemRQ));
 	}
 
 	private FinishTestItemRQ buildFinishTestItemRequest(ItemStatus status, Date endTime) {
