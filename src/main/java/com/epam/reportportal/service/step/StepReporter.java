@@ -25,7 +25,6 @@ import com.epam.reportportal.utils.files.Utils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import com.google.common.base.Function;
 import io.reactivex.Maybe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,9 +54,13 @@ public class StepReporter {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(StepReporter.class);
 
-	private final Deque<Maybe<String>> parent = new ConcurrentLinkedDeque<>();
+	// Do not use InheritableThreadLocal here, or it will be the same issue as here:
+	// https://github.com/reportportal/agent-java-testNG/issues/76
+	private final ThreadLocal<Deque<Maybe<String>>> parents = ThreadLocal.withInitial(ArrayDeque::new);
 
-	private final Deque<StepEntry> steps = new ConcurrentLinkedDeque<>();
+	// Do not use InheritableThreadLocal here, or it will be the same issue as here:
+	// https://github.com/reportportal/agent-java-testNG/issues/76
+	private final ThreadLocal<Deque<StepEntry>> steps = ThreadLocal.withInitial(ArrayDeque::new);
 
 	private final Set<Maybe<String>> parentFailures = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -93,17 +96,17 @@ public class StepReporter {
 
 	public void setParent(final Maybe<String> parentUuid) {
 		if (parentUuid != null) {
-			parent.add(parentUuid);
+			parents.get().add(parentUuid);
 		}
 	}
 
 	public Maybe<String> getParent() {
-		return parent.peekLast();
+		return parents.get().peekLast();
 	}
 
 	public void removeParent(final Maybe<String> parentUuid) {
 		if (parentUuid != null) {
-			parent.removeLastOccurrence(parentUuid);
+			parents.get().removeLastOccurrence(parentUuid);
 			parentFailures.remove(parentUuid);
 		}
 	}
@@ -141,7 +144,7 @@ public class StepReporter {
 
 	public void sendStep(@NotNull final ItemStatus status, final String name, final String... logs) {
 		Runnable actions = ofNullable(logs).map(l -> (Runnable) () -> Arrays.stream(l)
-				.forEach(log -> ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(itemId,
+				.forEach(log -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId,
 						log,
 						LogLevel.INFO
 				)))).orElse(null);
@@ -150,7 +153,7 @@ public class StepReporter {
 	}
 
 	public void sendStep(final @NotNull ItemStatus status, final String name, final Throwable throwable) {
-		sendStep(status, name, () -> ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(itemId, throwable)));
+		sendStep(status, name, () -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, throwable)));
 	}
 
 	public void sendStep(final String name, final File... files) {
@@ -159,7 +162,7 @@ public class StepReporter {
 
 	public void sendStep(final @NotNull ItemStatus status, final String name, final File... files) {
 		Runnable actions = ofNullable(files).map(f -> (Runnable) () -> Arrays.stream(f)
-				.forEach(file -> ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(itemId,
+				.forEach(file -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId,
 						"",
 						LogLevel.INFO,
 						file
@@ -171,13 +174,13 @@ public class StepReporter {
 	public void sendStep(final @NotNull ItemStatus status, final String name, final Throwable throwable, final File... files) {
 		sendStep(status, name, () -> {
 			for (final File file : files) {
-				ReportPortal.emitLog((Function<String, SaveLogRQ>) itemId -> buildSaveLogRequest(itemId, throwable, file));
+				ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, throwable, file));
 			}
 		});
 	}
 
 	private Optional<StepEntry> finishPreviousStepInternal() {
-		return ofNullable(steps.poll()).map(stepEntry -> {
+		return ofNullable(steps.get().poll()).map(stepEntry -> {
 			launch.finishTestItem(stepEntry.getItemId(), stepEntry.getFinishTestItemRQ());
 			return stepEntry;
 		});
@@ -186,7 +189,7 @@ public class StepReporter {
 	public void finishPreviousStep() {
 		finishPreviousStepInternal().ifPresent(e -> {
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
-				parentFailures.add(parent.getLast());
+				parentFailures.add(parents.get().getLast());
 			}
 		});
 	}
@@ -199,10 +202,10 @@ public class StepReporter {
 				startTestItemRQ.setStartTime(new Date(previousDate.getTime() + 1));
 			}
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
-				parentFailures.add(parent.getLast());
+				parentFailures.add(parents.get().getLast());
 			}
 		});
-		return launch.startTestItem(parent.getLast(), startTestItemRQ);
+		return launch.startTestItem(parents.get().getLast(), startTestItemRQ);
 	}
 
 	private StartTestItemRQ buildStartStepRequest(String name) {
@@ -216,7 +219,7 @@ public class StepReporter {
 
 	private void finishStepRequest(Maybe<String> stepId, ItemStatus status, Date timestamp) {
 		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status, Calendar.getInstance().getTime());
-		steps.add(new StepEntry(stepId, timestamp, finishTestItemRQ));
+		steps.get().add(new StepEntry(stepId, timestamp, finishTestItemRQ));
 	}
 
 	private FinishTestItemRQ buildFinishTestItemRequest(ItemStatus status, Date endTime) {
