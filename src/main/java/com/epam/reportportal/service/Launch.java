@@ -16,6 +16,7 @@
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.step.DefaultStepReporter;
 import com.epam.reportportal.service.step.StepReporter;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
@@ -37,9 +38,15 @@ public abstract class Launch {
 
 	private final StepReporter stepReporter;
 
+	Launch(ListenerParameters parameters, StepReporter reporter) {
+		this.parameters = parameters;
+		stepReporter = reporter;
+		CURRENT_LAUNCH.set(this);
+	}
+
 	Launch(ListenerParameters parameters) {
 		this.parameters = parameters;
-		stepReporter = new StepReporter(this);
+		stepReporter = new DefaultStepReporter(this);
 		CURRENT_LAUNCH.set(this);
 	}
 
@@ -81,7 +88,8 @@ public abstract class Launch {
 
 	/**
 	 * Finishes Test Item in ReportPortal. Non-blocking. Schedules finish after success of all child items
-	 *  @param itemId Item ID promise
+	 *
+	 * @param itemId Item ID promise
 	 * @param rq     Finish request
 	 * @return Promise of Test Item finish response
 	 */
@@ -114,7 +122,7 @@ public abstract class Launch {
 	/**
 	 * Implementation for disabled Reporting
 	 */
-	public static final Launch NOOP_LAUNCH = new Launch(new ListenerParameters()) {
+	public static final Launch NOOP_LAUNCH = new Launch(new ListenerParameters(), StepReporter.NOOP_STEP_REPORTER) {
 
 		@Override
 		public Maybe<String> start() {
