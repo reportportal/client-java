@@ -40,10 +40,11 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static com.epam.reportportal.test.TestUtils.buildProcess;
 import static java.util.stream.Collectors.toList;
-import static org.apache.commons.lang3.StringUtils.*;
+import static org.apache.commons.lang3.StringUtils.isEmpty;
+import static org.apache.commons.lang3.StringUtils.join;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.*;
 
 /**
@@ -356,37 +357,6 @@ public class LockFileTest {
 	}
 
 	private static final Predicate<String> ANY_STRING_PREDICATE = input -> !isEmpty(input);
-
-	private static class ExecutableNotFoundException extends RuntimeException {
-		public ExecutableNotFoundException(String message) {
-			super(message);
-		}
-	}
-
-	private static String getPathToClass(Class<?> mainClass) {
-		return mainClass.getCanonicalName();
-	}
-
-	private static Process buildProcess(Class<?> mainClass, String... params) throws IOException {
-		String fileSeparator = System.getProperty("file.separator");
-		String javaHome = System.getProperty("java.home");
-		String executablePath = joinWith(fileSeparator, javaHome, "bin", "java");
-		File executableFile = new File(executablePath);
-		if (!executableFile.exists()) {
-			executablePath = executablePath + ".exe";
-			executableFile = new File(executablePath);
-			if (!executableFile.exists()) {
-				throw new ExecutableNotFoundException("Unable to find java executable file.");
-			}
-		}
-		List<String> paramList = new ArrayList<>();
-		paramList.add(executablePath);
-		paramList.add("-classpath");
-		paramList.add(System.getProperty("java.class.path"));
-		paramList.add(getPathToClass(mainClass));
-		paramList.addAll(Arrays.asList(params));
-		return new ProcessBuilder(paramList).start();
-	}
 
 	@Test
 	@Timeout(10)

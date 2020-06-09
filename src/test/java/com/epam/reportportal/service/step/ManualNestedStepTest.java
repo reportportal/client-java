@@ -84,7 +84,10 @@ public class ManualNestedStepTest {
 		when(client.startTestItem(same(testClassUuid), any())).thenReturn(testMethodCreatedMaybe);
 
 		// mock start nested steps
-		when(client.startTestItem(same(testMethodUuid), any())).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> maybeSupplier.get());
+		when(client.startTestItem(
+				same(testMethodUuid),
+				any()
+		)).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> maybeSupplier.get());
 
 		ReportPortal rp = ReportPortal.create(client, TestUtils.STANDARD_PARAMETERS, executor);
 		launch = rp.withLaunch(launchUuid);
