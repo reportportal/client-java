@@ -66,16 +66,16 @@ public class ReportPortalTest {
 			cal.add(Calendar.MINUTE, 2);
 			model.put("expire", sdf.format(cal.getTime()));
 
-			SocketUtils.ServerCallable servercallable = new SocketUtils.ServerCallable(ss, model, "files/socket_response.txt");
+			SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss, model, "files/socket_response.txt");
 			Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ())
 					.timeout(5, TimeUnit.SECONDS)
 					.blockingGet();
-			Pair<String, StartLaunchRS> result = SocketUtils.executeServerCallable(servercallable, clientCallable);
+			Pair<String, StartLaunchRS> result = SocketUtils.executeServerCallable(serverCallable, clientCallable);
 
 			assertThat(result.getValue(), notNullValue());
 			assertThat("First request should not contain cookie value", result.getKey(), not(containsString(COOKIE)));
 
-			result = SocketUtils.executeServerCallable(servercallable, clientCallable);
+			result = SocketUtils.executeServerCallable(serverCallable, clientCallable);
 
 			assertThat(result.getValue(), notNullValue());
 			assertThat("Second request should contain cookie value", result.getKey(), containsString(COOKIE));
