@@ -17,30 +17,30 @@ package com.epam.reportportal.service;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.util.test.SocketUtils;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
-import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TimeZone;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
-import static com.epam.reportportal.test.TestUtils.shutdownExecutorService;
 import static com.epam.reportportal.test.TestUtils.standardParameters;
+import static com.epam.reportportal.util.test.CommonUtils.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ReportPortalTest {
-	private static final String WEB_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss z";
 	private static final String COOKIE = "AWSALB=P7cqG8g/K70xHAKOUPrWrG0XgmhG8GJNinj8lDnKVyITyubAen2lBr+fSa/e2JAoGksQphtImp49rZxc41qdqUGvAc67SdZHY1BMFIHKzc8kyWc1oQjq6oI+s39U";
 
 	@Test
@@ -49,72 +49,39 @@ public class ReportPortalTest {
 		assertThrows(InternalReportPortalClientException.class, () -> ReportPortal.builder().defaultClient(listenerParameters));
 	}
 
-	private static final class ServerCallable implements Callable<String> {
-
-		private final ServerSocket ss;
-		private Socket s;
-
-		public ServerCallable(ServerSocket serverSocket) {
-			ss = serverSocket;
-		}
-
-		@Override
-		public String call() throws Exception {
-			if (s == null) {
-				s = ss.accept();
-			}
-			BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
-			StringBuilder builder = new StringBuilder();
-			String line;
-			do {
-				line = in.readLine();
-				if (line.equals("")) {
-					break;
-				}
-				builder.append(line);
-				builder.append(System.lineSeparator());
-			} while (true);
-			String rq = builder.toString();
-			SimpleDateFormat sdf = new SimpleDateFormat(WEB_DATE_FORMAT);
-			sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
-			Calendar cal = Calendar.getInstance();
-			cal.add(Calendar.MINUTE, 2);
-			String rs = IOUtils.toString(getClass().getClassLoader().getResourceAsStream("files/socket_response.txt"))
-					.replace("{date}", sdf.format(new Date()))
-					.replace("{cookie}", COOKIE)
-					.replace("{expire}", sdf.format(cal.getTime()));
-			IOUtils.write(rs, s.getOutputStream());
-			return rq;
-		}
-	}
-
 	@Test
-	public void test_rp_client_saves_and_bypasses_cookies() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-		ExecutorService serverExecutor = Executors.newSingleThreadExecutor();
-		ServerSocket ss = new ServerSocket(0);
+	public void test_rp_client_saves_and_bypasses_cookies() throws Exception {
+		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
 		ListenerParameters parameters = standardParameters();
 		parameters.setBaseUrl("http://localhost:" + ss.getLocalPort());
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
 		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
 		try {
-			ServerCallable callable = new ServerCallable(ss);
-			Future<String> future = serverExecutor.submit(callable);
-			StartLaunchRS rs = rpClient.startLaunch(new StartLaunchRQ()).timeout(10, TimeUnit.SECONDS).blockingGet();
-			String rq = future.get(10, TimeUnit.SECONDS);
+			Map<String, Object> model = new HashMap<>();
+			model.put("cookie", COOKIE);
+			SimpleDateFormat sdf = new SimpleDateFormat(SocketUtils.WEB_DATE_FORMAT);
+			sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+			Calendar cal = Calendar.getInstance();
+			model.put("date", sdf.format(cal.getTime()));
+			cal.add(Calendar.MINUTE, 2);
+			model.put("expire", sdf.format(cal.getTime()));
 
-			assertThat(rs, notNullValue());
-			assertThat("First request should not contain cookie value", rq, not(containsString(COOKIE)));
+			SocketUtils.ServerCallable servercallable = new SocketUtils.ServerCallable(ss, model, "files/socket_response.txt");
+			Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ())
+					.timeout(5, TimeUnit.SECONDS)
+					.blockingGet();
+			Pair<String, StartLaunchRS> result = SocketUtils.executeServerCallable(servercallable, clientCallable);
 
-			future = serverExecutor.submit(callable);
-			rs = rpClient.startLaunch(new StartLaunchRQ()).timeout(10, TimeUnit.SECONDS).blockingGet();
-			rq = future.get(10, TimeUnit.SECONDS);
+			assertThat(result.getValue(), notNullValue());
+			assertThat("First request should not contain cookie value", result.getKey(), not(containsString(COOKIE)));
 
-			assertThat(rs, notNullValue());
-			assertThat("Second request should contain cookie value", rq, containsString(COOKIE));
+			result = SocketUtils.executeServerCallable(servercallable, clientCallable);
+
+			assertThat(result.getValue(), notNullValue());
+			assertThat("Second request should contain cookie value", result.getKey(), containsString(COOKIE));
 		} finally {
 			rpClient.close();
 			ss.close();
-			shutdownExecutorService(serverExecutor);
 			shutdownExecutorService(clientExecutor);
 		}
 	}
