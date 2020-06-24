@@ -17,6 +17,7 @@
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.util.test.ProcessUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -40,7 +41,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static com.epam.reportportal.test.TestUtils.buildProcess;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.join;
@@ -366,8 +366,8 @@ public class LockFileTest {
 		LOGGER.info("Running two separate processes");
 		// @formatter:off
 		Pair<Process, Process> processes = ImmutablePair.of(
-				buildProcess(LockFileRunner.class, lockFileName, syncFileName, uuids.getKey()),
-				buildProcess(LockFileRunner.class, lockFileName, syncFileName, uuids.getValue())
+				ProcessUtils.buildProcess(LockFileRunner.class, lockFileName, syncFileName, uuids.getKey()),
+				ProcessUtils.buildProcess(LockFileRunner.class, lockFileName, syncFileName, uuids.getValue())
 		);
 		// @formatter:on
 
