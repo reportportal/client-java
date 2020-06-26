@@ -1,11 +1,15 @@
 # Changelog
 
-## 4.0.4
+## [Unreleased]
+### Added
+- AnalyticsService class to publish Google Analytics events
+
+## [4.0.4]
 
 ### Improvements
 * reportportal/reportportal#293 - Re-licence client side 
 
-## 4.0.0
+## [4.0.0]
 
 ### Improvements
 
@@ -13,7 +17,7 @@
 * Better extensibility
 
 
-## 3.0.3
+## [3.0.3]
 ##### Released: 9 June 2017
 
 ### Bugfixes

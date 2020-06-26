@@ -31,6 +31,9 @@ def pomConfig = {
     }
 }
 
+project.ext.githubUserName = project.hasProperty('githubUserName') ? githubUserName : ""
+project.ext.githubToken = project.hasProperty('githubToken') ? githubToken : ""
+
 publishing {
     publications {
         shadow(MavenPublication) { publication ->
@@ -55,6 +58,17 @@ publishing {
             artifact project.tasks.sourcesJar
         }
     }
+
+    repositories {
+        maven {
+            name = "TestNG GitHub Packages"
+            url = uri("https://maven.pkg.github.com/reportportal/client-java")
+            credentials {
+                username = githubUserName
+                password = githubToken
+            }
+        }
+    }
 }
 
 bintray {
@@ -76,4 +90,7 @@ bintray {
         licenses = ['Apache-2.0']
     }
 }
-afterReleaseBuild.dependsOn bintrayUpload
+
+def releaseDependencies = [bintrayUpload, publish]
+releaseDependencies.addAll(afterReleaseBuild.getDependsOn())
+afterReleaseBuild.setDependsOn(releaseDependencies)
