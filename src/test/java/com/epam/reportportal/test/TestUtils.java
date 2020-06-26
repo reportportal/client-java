@@ -57,6 +57,7 @@ public class TestUtils {
 		result.setClientJoin(false);
 		result.setBatchLogsSize(1);
 		result.setLaunchName("My-test-launch" + generateUniqueId());
+		result.setProjectName("unit-test");
 		result.setEnable(true);
 		return result;
 	}
