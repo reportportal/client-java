@@ -18,7 +18,6 @@ package com.epam.reportportal.service.analytics;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.analytics.item.AnalyticsEvent;
-import com.epam.reportportal.service.analytics.item.AnalyticsItem;
 import com.epam.reportportal.utils.properties.ClientProperties;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
@@ -34,8 +33,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static java.util.stream.Collectors.toList;
-
 public class AnalyticsService implements Closeable {
 
 	private static final String CLIENT_PROPERTIES_FILE = "client.properties";
@@ -43,29 +40,19 @@ public class AnalyticsService implements Closeable {
 
 	private final ExecutorService googleAnalyticsExecutor = Executors.newSingleThreadExecutor();
 	private final GoogleAnalytics googleAnalytics = new GoogleAnalytics(Schedulers.from(googleAnalyticsExecutor), "UA-96321031-1");
-	private final List<AnalyticsItem> analyticsItems = new CopyOnWriteArrayList<>();
 	private final List<Completable> dependencies = new CopyOnWriteArrayList<>();
 
 	private final ListenerParameters parameters;
-	private final Maybe<String> launchId;
 
-	public AnalyticsService(ListenerParameters listenerParameters, Maybe<String> launchIdMaybe) {
+	public AnalyticsService(ListenerParameters listenerParameters) {
 		this.parameters = listenerParameters;
-		this.launchId = launchIdMaybe;
 	}
 
 	protected GoogleAnalytics getGoogleAnalytics() {
 		return googleAnalytics;
 	}
 
-	public void send() {
-		dependencies.addAll(analyticsItems.stream()
-				.map(it -> launchId.flatMap(l -> getGoogleAnalytics().send(it)))
-				.map(Maybe::ignoreElement)
-				.collect(toList()));
-	}
-
-	public void addStartLaunchEvent(StartLaunchRQ rq) {
+	public void sendEvent(Maybe<String> launchIdMaybe, StartLaunchRQ rq) {
 		AnalyticsEvent.AnalyticsEventBuilder analyticsEventBuilder = AnalyticsEvent.builder();
 		analyticsEventBuilder.withAction(START_LAUNCH_EVENT_ACTION);
 		SystemAttributesExtractor.extract(CLIENT_PROPERTIES_FILE, getClass().getClassLoader(), ClientProperties.CLIENT)
@@ -78,7 +65,7 @@ public class AnalyticsService implements Closeable {
 				.filter(attribute -> attribute.isSystem() && DefaultProperties.AGENT.getName().equalsIgnoreCase(attribute.getKey()))
 				.findFirst()
 				.ifPresent(agentAttribute -> analyticsEventBuilder.withLabel(agentAttribute.getValue()));
-		analyticsItems.add(analyticsEventBuilder.build());
+		dependencies.add(launchIdMaybe.flatMap(l -> getGoogleAnalytics().send(analyticsEventBuilder.build())).ignoreElement());
 	}
 
 	@Override

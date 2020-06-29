@@ -22,7 +22,6 @@ import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
-import io.reactivex.Maybe;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -44,8 +43,8 @@ public class AnalyticsServiceTest {
 	private static class TestAnalyticsService extends AnalyticsService {
 		private GoogleAnalytics googleAnalytics;
 
-		public TestAnalyticsService(ListenerParameters listenerParameters, Maybe<String> launchIdMaybe) {
-			super(listenerParameters, launchIdMaybe);
+		public TestAnalyticsService(ListenerParameters listenerParameters) {
+			super(listenerParameters);
 		}
 
 		public void setGoogleAnalytics(GoogleAnalytics googleAnalytics) {
@@ -67,7 +66,7 @@ public class AnalyticsServiceTest {
 	@BeforeEach
 	public void setup() {
 		parameters = TestUtils.standardParameters();
-		service = new TestAnalyticsService(parameters, CommonUtils.createMaybe("launchId"));
+		service = new TestAnalyticsService(parameters);
 		service.setGoogleAnalytics(googleAnalytics);
 	}
 
@@ -76,8 +75,7 @@ public class AnalyticsServiceTest {
 		StartLaunchRQ launchRq = TestUtils.standardLaunchRequest(parameters);
 		launchRq.setAttributes(Collections.singleton(new ItemAttributesRQ("agent", "agent-java-testng|test-version-1", true)));
 
-		service.addStartLaunchEvent(launchRq);
-		service.send();
+		service.sendEvent(CommonUtils.createMaybe("launchId"), launchRq);
 		service.close();
 
 		ArgumentCaptor<AnalyticsItem> argumentCaptor = ArgumentCaptor.forClass(AnalyticsItem.class);
