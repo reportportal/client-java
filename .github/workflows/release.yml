@@ -24,7 +24,6 @@ env:
   GH_USER_NAME: github.actor
   CHANGE_LOG_FILE: CHANGELOG.md
   CHANGE_LOG_TMP_FILE: CHANGELOG_updated.md
-  README_VERSION_PLACEHOLDER: <artifact_version>
   VERSION_EXTRACT_PATTERN: (?<=\.)[0-9]+(?=-)(?!(?:[^-]*-)*(?:ALPHA|BETA|RC))|(?<=-ALPHA-)[0-9]+(?=-)|(?<=-BETA-)[0-9]+(?=-)|(?<=-RC-)[0-9]+(?=-)
 
 jobs:
