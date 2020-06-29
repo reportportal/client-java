@@ -32,11 +32,14 @@ import java.util.Collections;
 import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class AnalyticsServiceTest {
+
+	private static final String SEMANTIC_VERSION_PATTERN = "(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?";
+	private static final String FULL_PATTERN = "client-java\\|" + SEMANTIC_VERSION_PATTERN;
 
 	private static class TestAnalyticsService extends AnalyticsService {
 		private GoogleAnalytics googleAnalytics;
@@ -91,7 +94,7 @@ public class AnalyticsServiceTest {
 
 		assertThat(type, equalTo("event"));
 		assertThat(eventAction, equalTo("Start launch"));
-		assertThat(eventCategory, equalTo("${name}|${version}"));
+		assertThat(eventCategory, anyOf(equalTo("${name}|${version}"), matchesRegex(FULL_PATTERN)));
 		assertThat(eventLabel, equalTo("agent-java-testng|test-version-1"));
 	}
 
