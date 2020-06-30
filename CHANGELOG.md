@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.2]
 ### Added
 - AnalyticsService class to publish Google Analytics events
 - LaunchImpl now publish Analytics Events
