@@ -61,7 +61,7 @@ publishing {
 
     repositories {
         maven {
-            name = "TestNG GitHub Packages"
+            name = "Client GitHub Packages"
             url = uri("https://maven.pkg.github.com/reportportal/client-java")
             credentials {
                 username = githubUserName
