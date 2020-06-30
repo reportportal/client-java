@@ -20,17 +20,19 @@ import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.IntStream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.*;
 
 public class ParameterUtilsTest {
 
@@ -140,5 +142,24 @@ public class ParameterUtilsTest {
 			}
 			assertThat(p.getValue(), equalTo(v == null ? "NULL" : v.toString()));
 		});
+	}
+
+	public static Iterable<Object[]> typeConversion() {
+		List<Object[]> result = new ArrayList<>();
+		result.add(new Object[] { boolean.class, Boolean.class });
+		result.add(new Object[] { byte.class, Byte.class });
+		result.add(new Object[] { char.class, Character.class });
+		result.add(new Object[] { float.class, Float.class });
+		result.add(new Object[] { int.class, Integer.class });
+		result.add(new Object[] { long.class, Long.class });
+		result.add(new Object[] { short.class, Short.class });
+		result.add(new Object[] { double.class, Double.class });
+		return result;
+	}
+
+	@ParameterizedTest
+	@MethodSource("typeConversion")
+	public void test_type_conversion(Class<?> from, Class<?> to) {
+		assertThat(ParameterUtils.toBoxedType(from), sameInstance(to));
 	}
 }

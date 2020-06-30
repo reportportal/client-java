@@ -64,4 +64,38 @@ public class ParameterUtils {
 			return res;
 		}).collect(Collectors.toList());
 	}
+
+	/**
+	 * Converts primitive type to a corresponding boxed class, or returns the same instance if the input is not primitive.
+	 *
+	 * @param primitiveType a class which needs to be boxed
+	 * @return boxed class type
+	 */
+	public static Class<?> toBoxedType(@Nonnull Class<?> primitiveType) {
+		if (primitiveType.isPrimitive()) {
+			if (primitiveType == Boolean.TYPE) {
+				return Boolean.class;
+			} else if (primitiveType == Byte.TYPE) {
+				return Byte.class;
+			} else if (primitiveType == Character.TYPE) {
+				return Character.class;
+			} else if (primitiveType == Short.TYPE) {
+				return Short.class;
+			} else if (primitiveType == Integer.TYPE) {
+				return Integer.class;
+			} else if (primitiveType == Long.TYPE) {
+				return Long.class;
+			} else if (primitiveType == Float.TYPE) {
+				return Float.class;
+			} else if (primitiveType == Double.TYPE) {
+				return Double.class;
+			} else if (primitiveType == Void.TYPE) {
+				return Void.class;
+			} else {
+				return null;
+			}
+		} else {
+			return primitiveType;
+		}
+	}
 }
