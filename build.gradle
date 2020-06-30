@@ -59,11 +59,7 @@ shadowJar {
 }
 
 dependencies {
-    if (releaseMode) {
-        compile 'com.epam.reportportal:commons-model:5.0.0'
-    } else {
-        compile 'com.github.reportportal:commons-model:feec39f3'
-    }
+    compile 'com.epam.reportportal:commons-model:5.0.0'
 
     compile 'com.google.guava:guava:26.0-jre'
     compile 'com.epam.reportportal:restendpoint:0.2.14'
