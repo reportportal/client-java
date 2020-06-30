@@ -84,7 +84,8 @@ public class GoogleAnalytics implements Closeable {
 	public GoogleAnalytics(Scheduler scheduler, String trackingId, HttpClient httpClient) {
 		this.scheduler = scheduler;
 		this.baseUrl = DEFAULT_BASE_URL;
-		Collections.addAll(defaultRequestParams,
+		Collections.addAll(
+				defaultRequestParams,
 				new BasicNameValuePair("de", "UTF-8"),
 				new BasicNameValuePair("v", "1"),
 				new BasicNameValuePair("cid", UUID.randomUUID().toString()),

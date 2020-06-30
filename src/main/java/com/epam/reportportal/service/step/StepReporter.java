@@ -20,7 +20,7 @@ import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import io.reactivex.Maybe;
 
-import javax.validation.constraints.NotNull;
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.util.Date;
 
@@ -48,17 +48,17 @@ public interface StepReporter {
 
 	void sendStep(String name, String... logs);
 
-	void sendStep(@NotNull ItemStatus status, String name);
+	void sendStep(@Nonnull ItemStatus status, String name);
 
-	void sendStep(@NotNull ItemStatus status, String name, String... logs);
+	void sendStep(@Nonnull ItemStatus status, String name, String... logs);
 
-	void sendStep(@NotNull ItemStatus status, String name, Throwable throwable);
+	void sendStep(@Nonnull ItemStatus status, String name, Throwable throwable);
 
 	void sendStep(String name, File... files);
 
-	void sendStep(@NotNull ItemStatus status, String name, File... files);
+	void sendStep(@Nonnull ItemStatus status, String name, File... files);
 
-	void sendStep(@NotNull ItemStatus status, String name, Throwable throwable, File... files);
+	void sendStep(@Nonnull ItemStatus status, String name, Throwable throwable, File... files);
 
 	void finishPreviousStep();
 
@@ -104,17 +104,17 @@ public interface StepReporter {
 		@Override
 		public void sendStep(String name, String... logs) {}
 		@Override
-		public void sendStep(@NotNull ItemStatus status, String name) {}
+		public void sendStep(@Nonnull ItemStatus status, String name) {}
 		@Override
-		public void sendStep(@NotNull ItemStatus status, String name, String... logs) {}
+		public void sendStep(@Nonnull ItemStatus status, String name, String... logs) {}
 		@Override
-		public void sendStep(@NotNull ItemStatus status, String name, Throwable throwable) {}
+		public void sendStep(@Nonnull ItemStatus status, String name, Throwable throwable) {}
 		@Override
 		public void sendStep(String name, File... files) {}
 		@Override
-		public void sendStep(@NotNull ItemStatus status, String name, File... files) {}
+		public void sendStep(@Nonnull ItemStatus status, String name, File... files) {}
 		@Override
-		public void sendStep(@NotNull ItemStatus status, String name, Throwable throwable, File... files) {}
+		public void sendStep(@Nonnull ItemStatus status, String name, Throwable throwable, File... files) {}
 		@Override
 		public void finishPreviousStep() {}
 	};

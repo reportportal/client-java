@@ -33,6 +33,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static java.util.Optional.ofNullable;
+
 public class AnalyticsService implements Closeable {
 
 	private static final String CLIENT_PROPERTIES_FILE = "client.properties";
@@ -60,11 +62,9 @@ public class AnalyticsService implements Closeable {
 				.findFirst()
 				.ifPresent(clientAttribute -> analyticsEventBuilder.withCategory(clientAttribute.getValue()));
 
-		rq.getAttributes()
-				.stream()
+		ofNullable(rq.getAttributes()).flatMap(r -> r.stream()
 				.filter(attribute -> attribute.isSystem() && DefaultProperties.AGENT.getName().equalsIgnoreCase(attribute.getKey()))
-				.findFirst()
-				.ifPresent(agentAttribute -> analyticsEventBuilder.withLabel(agentAttribute.getValue()));
+				.findAny()).ifPresent(agentAttribute -> analyticsEventBuilder.withLabel(agentAttribute.getValue()));
 		dependencies.add(launchIdMaybe.flatMap(l -> getGoogleAnalytics().send(analyticsEventBuilder.build())).ignoreElement());
 	}
 

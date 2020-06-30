@@ -3,6 +3,10 @@
 ## [Unreleased]
 ### Added
 - AnalyticsService class to publish Google Analytics events
+- LaunchImpl now publish Analytics Events
+- ParameterUtils class which will be responsible for ParameterResource lists generation based on methods/constructors
+### Changed
+- @NotNull annotations replaced with @Nonnull as the latter is shorter and comes with Java SE
 
 ## [4.0.4]
 

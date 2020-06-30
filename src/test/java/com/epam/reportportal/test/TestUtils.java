@@ -19,11 +19,9 @@ package com.epam.reportportal.test;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.utils.SubscriptionUtils;
-import com.epam.ta.reportportal.ws.model.BatchElementCreatedRS;
-import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
-import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
-import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
@@ -33,7 +31,10 @@ import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -93,6 +94,19 @@ public class TestUtils {
 		rq.setMode(params.getLaunchRunningMode());
 		rq.setRerun(params.isRerun());
 		rq.setStartTime(Calendar.getInstance().getTime());
+		return rq;
+	}
+
+	public static void simulateFinishLaunchResponse(final ReportPortalClient client) {
+		when(client.finishLaunch(
+				anyString(),
+				any(FinishExecutionRQ.class)
+		)).thenReturn(CommonUtils.createMaybe(new OperationCompletionRS()));
+	}
+
+	public static FinishExecutionRQ standardLaunchFinishRequest() {
+		FinishExecutionRQ rq = new FinishExecutionRQ();
+		rq.setEndTime(Calendar.getInstance().getTime());
 		return rq;
 	}
 

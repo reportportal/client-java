@@ -71,7 +71,7 @@ public class AnalyticsServiceTest {
 	}
 
 	@Test
-	public void googleAnalyticsEventTest() {
+	public void test_analytics_send_event_with_agent() {
 		StartLaunchRQ launchRq = TestUtils.standardLaunchRequest(parameters);
 		launchRq.setAttributes(Collections.singleton(new ItemAttributesRQ("agent", "agent-java-testng|test-version-1", true)));
 
@@ -94,6 +94,30 @@ public class AnalyticsServiceTest {
 		assertThat(eventAction, equalTo("Start launch"));
 		assertThat(eventCategory, anyOf(equalTo("${name}|${version}"), matchesRegex(FULL_PATTERN)));
 		assertThat(eventLabel, equalTo("agent-java-testng|test-version-1"));
+	}
+
+	@Test
+	public void test_analytics_send_event_no_agent_record() {
+		StartLaunchRQ launchRq = TestUtils.standardLaunchRequest(parameters);
+
+		service.sendEvent(CommonUtils.createMaybe("launchId"), launchRq);
+		service.close();
+
+		ArgumentCaptor<AnalyticsItem> argumentCaptor = ArgumentCaptor.forClass(AnalyticsItem.class);
+		verify(googleAnalytics, times(1)).send(argumentCaptor.capture());
+
+		AnalyticsItem value = argumentCaptor.getValue();
+		Map<String, String> params = value.getParams();
+
+		String type = params.get("t");
+		String eventAction = params.get("ea");
+		String eventCategory = params.get("ec");
+		String eventLabel = params.get("el");
+
+		assertThat(type, equalTo("event"));
+		assertThat(eventAction, equalTo("Start launch"));
+		assertThat(eventCategory, anyOf(equalTo("${name}|${version}"), matchesRegex(FULL_PATTERN)));
+		assertThat(eventLabel, nullValue());
 	}
 
 }
