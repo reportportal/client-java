@@ -17,17 +17,22 @@
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.exception.ReportPortalException;
+import com.epam.reportportal.service.analytics.AnalyticsService;
+import com.epam.reportportal.util.test.CommonUtils;
+import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.ta.reportportal.ws.model.ErrorRS;
 import com.epam.ta.reportportal.ws.model.ErrorType;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
+import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
+import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,7 +40,7 @@ import java.util.concurrent.Executors;
 import static com.epam.reportportal.test.TestUtils.*;
 import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -66,12 +71,6 @@ public class LaunchTest {
 
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-	@BeforeEach
-	public void prepare() {
-		simulateStartLaunchResponse(rpClient);
-		simulateStartTestItemResponse(rpClient);
-	}
-
 	@AfterEach
 	public void tearDown() {
 		shutdownExecutorService(executor);
@@ -79,6 +78,8 @@ public class LaunchTest {
 
 	@Test
 	public void launch_should_finish_all_items_even_if_one_of_finishes_failed() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
 
 		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor);
@@ -106,12 +107,14 @@ public class LaunchTest {
 
 	@Test
 	public void launch_should_finish_all_items_even_if_one_of_starts_failed() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateStartChildTestItemResponse(rpClient);
+
 		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor);
 
 		Maybe<String> launchUuid = launch.start();
 		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
-
-		when(rpClient.startTestItem(eq(suiteRs.blockingGet()), any())).thenReturn(startTestItemResponse(UUID.randomUUID().toString()));
 		Maybe<String> testRs = launch.startTestItem(suiteRs, standardStartTestRequest());
 
 		when(rpClient.startTestItem(eq(testRs.blockingGet()), any())).thenThrow(START_CLIENT_EXCEPTION);
@@ -133,6 +136,8 @@ public class LaunchTest {
 
 	@Test
 	public void launch_should_stick_to_every_thread_which_uses_it() throws ExecutionException, InterruptedException {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
 
 		// Verify Launch set on creation
@@ -167,5 +172,54 @@ public class LaunchTest {
 		launchGet = launchChildStartExecutor.submit(Launch::currentLaunch).get();
 		assertThat(launchGet, sameInstance(launchOnCreate));
 		shutdownExecutorService(launchChildStartExecutor);
+	}
+
+	@Mock
+	private AnalyticsService analyticsService;
+
+	@Test
+	public void launch_should_send_analytics_events_if_created_with_request() {
+		simulateStartLaunchResponse(rpClient);
+		simulateFinishLaunchResponse(rpClient);
+
+		StartLaunchRQ startRq = standardLaunchRequest(STANDARD_PARAMETERS);
+		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, startRq, executor) {
+			@Override
+			AnalyticsService getAnalyticsService() {
+				return analyticsService;
+			}
+		};
+		launch.start();
+		launch.finish(standardLaunchFinishRequest());
+
+		verify(analyticsService, times(1)).sendEvent(any(Maybe.class), same(startRq));
+		verify(analyticsService, times(1)).close();
+	}
+
+	@Test
+	public void launch_should_send_analytics_events_if_created_with_launch_maybe() {
+		simulateFinishLaunchResponse(rpClient);
+
+		Maybe<String> launchUuid = CommonUtils.createMaybe("launchUuid");
+		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, launchUuid, executor) {
+			@Override
+			AnalyticsService getAnalyticsService() {
+				return analyticsService;
+			}
+		};
+		launch.start();
+		launch.finish(standardLaunchFinishRequest());
+
+		ArgumentCaptor<StartLaunchRQ> startRqCaptor = ArgumentCaptor.forClass(StartLaunchRQ.class);
+		verify(analyticsService, times(1)).sendEvent(any(Maybe.class), startRqCaptor.capture());
+		verify(analyticsService, times(1)).close();
+
+		StartLaunchRQ startRq = startRqCaptor.getAllValues().get(0);
+		assertThat(startRq.getAttributes(), notNullValue());
+		assertThat(startRq.getAttributes(), hasSize(1));
+		ItemAttributesRQ attribute = startRq.getAttributes().iterator().next();
+		assertThat(attribute.isSystem(), equalTo(Boolean.TRUE));
+		assertThat(attribute.getKey(), equalTo(DefaultProperties.AGENT.getName()));
+		assertThat(attribute.getValue(), equalTo(LaunchImpl.CUSTOM_AGENT));
 	}
 }

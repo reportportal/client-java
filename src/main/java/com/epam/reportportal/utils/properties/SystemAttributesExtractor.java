@@ -68,6 +68,7 @@ public class SystemAttributesExtractor {
 	 *
 	 * @param resource Path to the resource in classpath
 	 * @param loader   context class loader, which is used by a specific agent implementation
+	 * @param propertyHolders an array of specific properties we want to extract
 	 * @return {@link Set} of {@link ItemAttributesRQ}
 	 */
 	public static Set<ItemAttributesRQ> extract(final String resource, final ClassLoader loader, final PropertyHolder... propertyHolders) {
@@ -105,6 +106,7 @@ public class SystemAttributesExtractor {
 	 * Loads properties from the specified location
 	 *
 	 * @param path Path to the resource the file system
+	 * @param propertyHolders an array of specific properties we want to extract
 	 * @return {@link Set} of {@link ItemAttributesRQ}
 	 */
 	public static Set<ItemAttributesRQ> extract(final Path path, final PropertyHolder... propertyHolders) {

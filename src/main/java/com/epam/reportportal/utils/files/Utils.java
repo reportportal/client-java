@@ -20,7 +20,7 @@ import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.utils.MimeTypeDetector;
 import com.google.common.io.ByteSource;
 
-import javax.validation.constraints.NotNull;
+import javax.annotation.Nonnull;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
@@ -50,7 +50,7 @@ public class Utils {
 	 * @return the result
 	 * @throws IOException in case of a read error
 	 */
-	public static String readInputStreamToString(@NotNull InputStream is) throws IOException {
+	public static String readInputStreamToString(@Nonnull InputStream is) throws IOException {
 		byte[] bytes = readInputStreamToBytes(is);
 		if (bytes.length <= 0) {
 			return "";
@@ -71,7 +71,7 @@ public class Utils {
 	 * @return the result
 	 * @throws IOException in case of a read error
 	 */
-	public static byte[] readInputStreamToBytes(@NotNull InputStream is) throws IOException {
+	public static byte[] readInputStreamToBytes(@Nonnull InputStream is) throws IOException {
 		return readInputStreamToBytes(is, READ_BUFFER);
 	}
 
@@ -83,7 +83,7 @@ public class Utils {
 	 * @return the result
 	 * @throws IOException in case of a read error
 	 */
-	public static byte[] readInputStreamToBytes(@NotNull InputStream is, int bufferSize) throws IOException {
+	public static byte[] readInputStreamToBytes(@Nonnull InputStream is, int bufferSize) throws IOException {
 		ReadableByteChannel channel = Channels.newChannel(is);
 		ByteBuffer buffer = ByteBuffer.allocate(bufferSize);
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -103,7 +103,7 @@ public class Utils {
 	 * @return the result
 	 * @throws IOException in case of a read error, or a file not found
 	 */
-	public static byte[] readFileToBytes(@NotNull File file) throws IOException {
+	public static byte[] readFileToBytes(@Nonnull File file) throws IOException {
 		return readInputStreamToBytes(new FileInputStream(file));
 	}
 
@@ -114,7 +114,7 @@ public class Utils {
 	 * @return file data and type
 	 * @throws IOException in case of a read error, or a file not found
 	 */
-	public static TypeAwareByteSource getFile(@NotNull File file) throws IOException {
+	public static TypeAwareByteSource getFile(@Nonnull File file) throws IOException {
 		byte[] data;
 		if (file.exists() && file.isFile()) {
 			data = readFileToBytes(file);

@@ -17,6 +17,7 @@
 package com.epam.reportportal.service.step;
 
 import com.epam.reportportal.test.TestUtils;
+import com.epam.reportportal.util.test.ProcessUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -38,8 +39,8 @@ public class NotInitializedRpTest {
 	}
 
 	@Test
-	public void test_step_reporter_do_not_fail_if_rp_is_not_initialized() throws ExecutionException, InterruptedException, IOException {
-		Process process = TestUtils.buildProcess(true, NotInitializedRpTestExecution.class);
+	public void test_step_reporter_do_not_fail_if_rp_is_not_initialized() throws InterruptedException, IOException {
+		Process process = ProcessUtils.buildProcess(true, NotInitializedRpTestExecution.class);
 		assertThat("Exit code should be '0'", process.waitFor(), equalTo(0));
 	}
 }

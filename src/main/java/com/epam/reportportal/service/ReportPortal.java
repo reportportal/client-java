@@ -51,7 +51,7 @@ import org.apache.http.ssl.SSLContextBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.validation.constraints.NotNull;
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -205,8 +205,8 @@ public class ReportPortal {
 	 * @param executor An executor service which will be used for internal request / response queue
 	 * @return builder for {@link ReportPortal}
 	 */
-	public static ReportPortal create(@NotNull final ReportPortalClient client, @NotNull final ListenerParameters params,
-			@NotNull final ExecutorService executor) {
+	public static ReportPortal create(@Nonnull final ReportPortalClient client, @Nonnull final ListenerParameters params,
+			@Nonnull final ExecutorService executor) {
 		return new ReportPortal(client, executor, params, getLockFile(params));
 	}
 
@@ -416,7 +416,7 @@ public class ReportPortal {
 		 * @param <T>        Report Portal Client interface class
 		 * @return a Report Portal Client instance
 		 */
-		public <T extends ReportPortalClient> T buildClient(@NotNull final Class<T> clientType, @NotNull final ListenerParameters params) {
+		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType, @Nonnull final ListenerParameters params) {
 			return buildClient(clientType, params, buildExecutorService(params));
 		}
 
@@ -427,8 +427,8 @@ public class ReportPortal {
 		 * @param executor   {@link ExecutorService} an Executor which will be used for internal request / response queue processing
 		 * @return a Report Portal Client instance
 		 */
-		public <T extends ReportPortalClient> T buildClient(@NotNull final Class<T> clientType, @NotNull final ListenerParameters params,
-				@NotNull final ExecutorService executor) {
+		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType, @Nonnull final ListenerParameters params,
+				@Nonnull final ExecutorService executor) {
 			try {
 				HttpClient client = ofNullable(this.httpClient)
 						.map(c -> (HttpClient) c.addInterceptorLast(new BearerAuthInterceptor(params.getApiKey())).build())
@@ -446,7 +446,7 @@ public class ReportPortal {
 		 * @param client     {@link HttpClient} an apache HTTP client instance
 		 * @return a ReportPortal endpoint description class
 		 */
-		protected RestEndpoint buildRestEndpoint(@NotNull final ListenerParameters parameters, @NotNull final HttpClient client) {
+		protected RestEndpoint buildRestEndpoint(@Nonnull final ListenerParameters parameters, @Nonnull final HttpClient client) {
 			return buildRestEndpoint(parameters, client, buildExecutorService(parameters));
 		}
 
@@ -456,8 +456,8 @@ public class ReportPortal {
 		 * @param executor   {@link ExecutorService} an Executor which will be used for internal request / response queue processing
 		 * @return a ReportPortal endpoint description class
 		 */
-		protected RestEndpoint buildRestEndpoint(@NotNull final ListenerParameters parameters, @NotNull final HttpClient client,
-				@NotNull final ExecutorService executor) {
+		protected RestEndpoint buildRestEndpoint(@Nonnull final ListenerParameters parameters, @Nonnull final HttpClient client,
+				@Nonnull final ExecutorService executor) {
 			final ObjectMapper om = new ObjectMapper();
 			om.setDateFormat(new SimpleDateFormat(DEFAULT_DATE_FORMAT));
 			om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

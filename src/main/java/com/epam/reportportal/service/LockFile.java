@@ -24,7 +24,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.validation.constraints.NotNull;
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -214,7 +214,7 @@ public class LockFile implements LaunchIdLock {
 	 * @return either a Client instance UUID, either the first UUID which thread managed to place a lock on a '.lock' file.
 	 */
 	@Override
-	public String obtainLaunchUuid(@NotNull final String uuid) {
+	public String obtainLaunchUuid(@Nonnull final String uuid) {
 		Objects.requireNonNull(uuid);
 		if (mainLock != null) {
 			if (!uuid.equals(lockUuid)) {

@@ -29,7 +29,7 @@ import io.reactivex.Maybe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.validation.constraints.NotNull;
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -111,13 +111,13 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	@Override
-	public void sendStep(@NotNull final ItemStatus status, final String name) {
+	public void sendStep(@Nonnull final ItemStatus status, final String name) {
 		sendStep(status, name, () -> {
 		});
 	}
 
 	@Override
-	public void sendStep(@NotNull final ItemStatus status, final String name, final String... logs) {
+	public void sendStep(@Nonnull final ItemStatus status, final String name, final String... logs) {
 		Runnable actions = ofNullable(logs).map(l -> (Runnable) () -> Arrays.stream(l)
 				.forEach(log -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, log, LogLevel.INFO)))).orElse(null);
 
@@ -125,7 +125,7 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	@Override
-	public void sendStep(final @NotNull ItemStatus status, final String name, final Throwable throwable) {
+	public void sendStep(final @Nonnull ItemStatus status, final String name, final Throwable throwable) {
 		sendStep(status, name, () -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, throwable)));
 	}
 
@@ -135,7 +135,7 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	@Override
-	public void sendStep(final @NotNull ItemStatus status, final String name, final File... files) {
+	public void sendStep(final @Nonnull ItemStatus status, final String name, final File... files) {
 		Runnable actions = ofNullable(files).map(f -> (Runnable) () -> Arrays.stream(f)
 				.forEach(file -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, "", LogLevel.INFO, file)))).orElse(null);
 
@@ -143,7 +143,7 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	@Override
-	public void sendStep(final @NotNull ItemStatus status, final String name, final Throwable throwable, final File... files) {
+	public void sendStep(final @Nonnull ItemStatus status, final String name, final Throwable throwable, final File... files) {
 		sendStep(status, name, () -> {
 			for (final File file : files) {
 				ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, throwable, file));

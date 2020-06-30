@@ -19,11 +19,9 @@ package com.epam.reportportal.test;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.utils.SubscriptionUtils;
-import com.epam.ta.reportportal.ws.model.BatchElementCreatedRS;
-import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
-import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
-import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
@@ -33,16 +31,16 @@ import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
-import static org.apache.commons.lang3.StringUtils.joinWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -60,6 +58,7 @@ public class TestUtils {
 		result.setClientJoin(false);
 		result.setBatchLogsSize(1);
 		result.setLaunchName("My-test-launch" + generateUniqueId());
+		result.setProjectName("unit-test");
 		result.setEnable(true);
 		return result;
 	}
@@ -95,6 +94,19 @@ public class TestUtils {
 		rq.setMode(params.getLaunchRunningMode());
 		rq.setRerun(params.isRerun());
 		rq.setStartTime(Calendar.getInstance().getTime());
+		return rq;
+	}
+
+	public static void simulateFinishLaunchResponse(final ReportPortalClient client) {
+		when(client.finishLaunch(
+				anyString(),
+				any(FinishExecutionRQ.class)
+		)).thenReturn(CommonUtils.createMaybe(new OperationCompletionRS()));
+	}
+
+	public static FinishExecutionRQ standardLaunchFinishRequest() {
+		FinishExecutionRQ rq = new FinishExecutionRQ();
+		rq.setEndTime(Calendar.getInstance().getTime());
 		return rq;
 	}
 
@@ -186,44 +198,5 @@ public class TestUtils {
 		rq.setEndTime(Calendar.getInstance().getTime());
 		rq.setStatus("PASSED");
 		return rq;
-	}
-
-	public static class ExecutableNotFoundException extends RuntimeException {
-		public ExecutableNotFoundException(String message) {
-			super(message);
-		}
-	}
-
-	private static String getPathToClass(Class<?> mainClass) {
-		return mainClass.getCanonicalName();
-	}
-
-	public static Process buildProcess(boolean inheritOutput, Class<?> mainClass, String... params) throws IOException {
-		String fileSeparator = System.getProperty("file.separator");
-		String javaHome = System.getProperty("java.home");
-		String executablePath = joinWith(fileSeparator, javaHome, "bin", "java");
-		File executableFile = new File(executablePath);
-		if (!executableFile.exists()) {
-			executablePath = executablePath + ".exe";
-			executableFile = new File(executablePath);
-			if (!executableFile.exists()) {
-				throw new ExecutableNotFoundException("Unable to find java executable file.");
-			}
-		}
-		List<String> paramList = new ArrayList<>();
-		paramList.add(executablePath);
-		paramList.add("-classpath");
-		paramList.add(System.getProperty("java.class.path"));
-		paramList.add(getPathToClass(mainClass));
-		paramList.addAll(Arrays.asList(params));
-		ProcessBuilder pb = new ProcessBuilder(paramList);
-		if (inheritOutput) {
-			pb.inheritIO();
-		}
-		return pb.start();
-	}
-
-	public static Process buildProcess(Class<?> mainClass, String... params) throws IOException {
-		return buildProcess(false, mainClass, params);
 	}
 }
