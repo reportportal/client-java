@@ -18,6 +18,12 @@ on:
     branches:
       - master
       - v4-hotfix
+    paths-ignore:
+      - '.github/**'
+      - README.md
+      - README_TEMPLATE.md
+      - gradle.properties
+      - CHANGELOG.md
 
 env:
   VERSION_FILE: gradle.properties
@@ -78,6 +84,13 @@ jobs:
           -Prelease.newVersion=${{env.NEW_VERSION}} -PbintrayUser=${{secrets.BINTRAY_USER}} -PbintrayApiKey=${{secrets.BINTRAY_API_KEY}} \
           -PgithubUserName=${{env.GH_USER_NAME}} -PgithubToken=${{secrets.GITHUB_TOKEN}}
 
+      - name: Read changelog Entry
+        id: readChangelogEntry
+        uses: mindsers/changelog-reader-action@v1.2.0
+        with:
+          version: 'Unreleased'
+          path: ./${{ env.CHANGE_LOG_FILE }}
+
       - name: Update CHANGELOG.md
         id: changelogUpdate
         run: |
@@ -91,13 +104,6 @@ jobs:
           git add ${{ env.CHANGE_LOG_FILE }}
           git commit -m "Changelog update"
           git push
-
-      - name: Read changelog Entry
-        id: readChangelogEntry
-        uses: mindsers/changelog-reader-action@v1.1.0
-        with:
-          version: ${{ env.RELEASE_VERSION }}
-          path: ./${{ env.CHANGE_LOG_FILE }}
 
       - name: Create Release
         id: createRelease
