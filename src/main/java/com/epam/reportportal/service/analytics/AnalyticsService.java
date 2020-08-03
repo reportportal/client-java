@@ -41,7 +41,7 @@ public class AnalyticsService implements Closeable {
 	private static final String START_LAUNCH_EVENT_ACTION = "Start launch";
 
 	private final ExecutorService googleAnalyticsExecutor = Executors.newSingleThreadExecutor();
-	private final GoogleAnalytics googleAnalytics = new GoogleAnalytics(Schedulers.from(googleAnalyticsExecutor), "UA-96321031-1");
+	private final GoogleAnalytics googleAnalytics = new GoogleAnalytics(Schedulers.from(googleAnalyticsExecutor), "UA-173456809-1");
 	private final List<Completable> dependencies = new CopyOnWriteArrayList<>();
 
 	private final ListenerParameters parameters;
