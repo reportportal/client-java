@@ -24,6 +24,7 @@ import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
+import io.reactivex.Scheduler;
 import io.reactivex.schedulers.Schedulers;
 
 import java.io.Closeable;
@@ -41,7 +42,8 @@ public class AnalyticsService implements Closeable {
 	private static final String START_LAUNCH_EVENT_ACTION = "Start launch";
 
 	private final ExecutorService googleAnalyticsExecutor = Executors.newSingleThreadExecutor();
-	private final GoogleAnalytics googleAnalytics = new GoogleAnalytics(Schedulers.from(googleAnalyticsExecutor), "UA-173456809-1");
+	private final Scheduler scheduler = Schedulers.from(googleAnalyticsExecutor);
+	private final GoogleAnalytics googleAnalytics = new GoogleAnalytics("UA-173456809-1");
 	private final List<Completable> dependencies = new CopyOnWriteArrayList<>();
 
 	private final ListenerParameters parameters;
@@ -65,7 +67,8 @@ public class AnalyticsService implements Closeable {
 		ofNullable(rq.getAttributes()).flatMap(r -> r.stream()
 				.filter(attribute -> attribute.isSystem() && DefaultProperties.AGENT.getName().equalsIgnoreCase(attribute.getKey()))
 				.findAny()).ifPresent(agentAttribute -> analyticsEventBuilder.withLabel(agentAttribute.getValue()));
-		dependencies.add(launchIdMaybe.flatMap(l -> getGoogleAnalytics().send(analyticsEventBuilder.build())).ignoreElement());
+		Maybe<Boolean> analyticsMaybe = launchIdMaybe.map(l -> getGoogleAnalytics().send(analyticsEventBuilder.build())).subscribeOn(scheduler);
+		dependencies.add(analyticsMaybe.ignoreElement());
 	}
 
 	@Override
@@ -73,13 +76,15 @@ public class AnalyticsService implements Closeable {
 		try {
 			Completable.concat(dependencies).timeout(parameters.getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
 		} finally {
-			getGoogleAnalytics().close();
 			googleAnalyticsExecutor.shutdown();
 			try {
-				this.googleAnalyticsExecutor.awaitTermination(parameters.getReportingTimeout(), TimeUnit.SECONDS);
+				if(!googleAnalyticsExecutor.awaitTermination(parameters.getReportingTimeout(), TimeUnit.SECONDS)){
+					googleAnalyticsExecutor.shutdownNow();
+				}
 			} catch (InterruptedException exc) {
 				//do nothing
 			}
+			getGoogleAnalytics().close();
 		}
 	}
 }
