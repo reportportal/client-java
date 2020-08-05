@@ -68,51 +68,51 @@ jobs:
           -Prelease.newVersion=${{ env.NEXT_VERSION }} -PbintrayUser=${{ secrets.BINTRAY_USER }} \
           -PbintrayApiKey=${{ secrets.BINTRAY_API_KEY }} -PgithubUserName=${{ env.GH_USER_NAME }} -PgithubToken=${{ secrets.GITHUB_TOKEN }}
 
-      - name: Read changelog Entry
-        id: readChangelogEntry
-        uses: mindsers/changelog-reader-action@v1.2.0
-        with:
-          version: 'Unreleased'
-          path: ./${{ env.CHANGE_LOG_FILE }}
-
-      - name: Update CHANGELOG.md
-        id: changelogUpdate
-        run: |
-          sed '/\[Unreleased\]/q' ${{ env.CHANGE_LOG_FILE }} >> ${{ env.CHANGE_LOG_TMP_FILE }}
-          sed -E '1,/#?#\s*\[Unreleased\]/d' ${{ env.CHANGE_LOG_FILE }} | sed -E '/#?#\s*\[/q' | \
-          { echo -e '\n## [${{env.RELEASE_VERSION}}]'; sed '$d'; } >> ${{ env.CHANGE_LOG_TMP_FILE }}
-          grep -E '#?#\s*\[[0-9]' ${{ env.CHANGE_LOG_FILE }} | head -n1 >> ${{ env.CHANGE_LOG_TMP_FILE }}
-          sed -E '1,/#?#\s*\[[0-9]/d' ${{ env.CHANGE_LOG_FILE }} >> ${{ env.CHANGE_LOG_TMP_FILE }}
-          rm ${{ env.CHANGE_LOG_FILE }}
-          mv ${{ env.CHANGE_LOG_TMP_FILE }} ${{ env.CHANGE_LOG_FILE }}
-          git add ${{ env.CHANGE_LOG_FILE }}
-          git commit -m "Changelog update"
-          git push
-
-      - name: Create Release
-        id: createRelease
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-        with:
-          tag_name: ${{ env.RELEASE_VERSION }}
-          release_name: Release ${{ env.RELEASE_VERSION }}
-          body: ${{ steps.readChangelogEntry.outputs.log_entry }}
-          draft: false
-          prerelease: false
-
-      - name: Checkout develop branch
-        if: ${{github.ref}} == 'master'
-        uses: actions/checkout@v2
-        with:
-          ref: 'develop'
-          fetch-depth: 0
-
-      - name: Merge release branch into develop
-        id: mergeIntoDevelop
-        if: ${{github.ref}} == 'master'
-        run: |
-          git merge -m 'Merge master branch into develop after a release' origin/master
-          git status | (! grep -Fq 'both modified:') || git status | grep -F 'both modified:' \
-          | { echo -e 'Unable to merge master into develop, merge conflicts:'; (! grep -Eo '[^ ]+$') }
-          git push origin develop
+#      - name: Read changelog Entry
+#        id: readChangelogEntry
+#        uses: mindsers/changelog-reader-action@v1.2.0
+#        with:
+#          version: 'Unreleased'
+#          path: ./${{ env.CHANGE_LOG_FILE }}
+#
+#      - name: Update CHANGELOG.md
+#        id: changelogUpdate
+#        run: |
+#          sed '/\[Unreleased\]/q' ${{ env.CHANGE_LOG_FILE }} >> ${{ env.CHANGE_LOG_TMP_FILE }}
+#          sed -E '1,/#?#\s*\[Unreleased\]/d' ${{ env.CHANGE_LOG_FILE }} | sed -E '/#?#\s*\[/q' | \
+#          { echo -e '\n## [${{env.RELEASE_VERSION}}]'; sed '$d'; } >> ${{ env.CHANGE_LOG_TMP_FILE }}
+#          grep -E '#?#\s*\[[0-9]' ${{ env.CHANGE_LOG_FILE }} | head -n1 >> ${{ env.CHANGE_LOG_TMP_FILE }}
+#          sed -E '1,/#?#\s*\[[0-9]/d' ${{ env.CHANGE_LOG_FILE }} >> ${{ env.CHANGE_LOG_TMP_FILE }}
+#          rm ${{ env.CHANGE_LOG_FILE }}
+#          mv ${{ env.CHANGE_LOG_TMP_FILE }} ${{ env.CHANGE_LOG_FILE }}
+#          git add ${{ env.CHANGE_LOG_FILE }}
+#          git commit -m "Changelog update"
+#          git push
+#
+#      - name: Create Release
+#        id: createRelease
+#        uses: actions/create-release@v1
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+#        with:
+#          tag_name: ${{ env.RELEASE_VERSION }}
+#          release_name: Release ${{ env.RELEASE_VERSION }}
+#          body: ${{ steps.readChangelogEntry.outputs.log_entry }}
+#          draft: false
+#          prerelease: false
+#
+#      - name: Checkout develop branch
+#        if: ${{github.ref}} == 'master'
+#        uses: actions/checkout@v2
+#        with:
+#          ref: 'develop'
+#          fetch-depth: 0
+#
+#      - name: Merge release branch into develop
+#        id: mergeIntoDevelop
+#        if: ${{github.ref}} == 'master'
+#        run: |
+#          git merge -m 'Merge master branch into develop after a release' origin/master
+#          git status | (! grep -Fq 'both modified:') || git status | grep -F 'both modified:' \
+#          | { echo -e 'Unable to merge master into develop, merge conflicts:'; (! grep -Eo '[^ ]+$') }
+#          git push origin develop

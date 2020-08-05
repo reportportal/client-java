@@ -18,7 +18,6 @@ package com.epam.reportportal.service.analytics;
 
 import com.epam.reportportal.service.analytics.item.AnalyticsItem;
 import io.reactivex.Maybe;
-import io.reactivex.MaybeOnSubscribe;
 import io.reactivex.Scheduler;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -57,16 +56,14 @@ public class GoogleAnalytics implements Closeable {
 
 	private static final String DEFAULT_BASE_URL = "https://www.google-analytics.com/collect";
 
-	private final Scheduler scheduler;
-
 	private final String baseUrl;
 
 	private final List<NameValuePair> defaultRequestParams = new ArrayList<>();
 
 	private final HttpClient httpClient;
 
-	public GoogleAnalytics(Scheduler scheduler, String trackingId) {
-		this(scheduler, trackingId, buildDefaultHttpClient());
+	public GoogleAnalytics(String trackingId) {
+		this(trackingId, buildDefaultHttpClient());
 
 	}
 
@@ -77,12 +74,10 @@ public class GoogleAnalytics implements Closeable {
 	 * cid - Client id
 	 * tid - Google analytics resource id
 	 *
-	 * @param scheduler  {@link Scheduler} for async requests processing
 	 * @param trackingId ID of the `Google analytics` resource
 	 * @param httpClient {@link HttpClient} instance
 	 */
-	public GoogleAnalytics(Scheduler scheduler, String trackingId, HttpClient httpClient) {
-		this.scheduler = scheduler;
+	public GoogleAnalytics(String trackingId, HttpClient httpClient) {
 		this.baseUrl = DEFAULT_BASE_URL;
 		Collections.addAll(
 				defaultRequestParams,
@@ -108,26 +103,22 @@ public class GoogleAnalytics implements Closeable {
 	 * @param item {@link AnalyticsItem}
 	 * @return true - if successfully send, otherwise - false wrapped in the {@link Maybe}
 	 */
-	public Maybe<Boolean> send(AnalyticsItem item) {
-		return Maybe.create((MaybeOnSubscribe<Boolean>) emitter -> {
+	public Boolean send(AnalyticsItem item) {
+		try {
+			HttpPost httpPost = buildPostRequest(item);
+			HttpResponse response = httpClient.execute(httpPost);
 			try {
-				HttpPost httpPost = buildPostRequest(item);
-				HttpResponse response = httpClient.execute(httpPost);
-				try {
-					EntityUtils.consumeQuietly(response.getEntity());
-					emitter.onSuccess(true);
-				} finally {
-					if (response instanceof CloseableHttpResponse) {
-						((CloseableHttpResponse) response).close();
-					}
+				EntityUtils.consumeQuietly(response.getEntity());
+			} finally {
+				if (response instanceof CloseableHttpResponse) {
+					((CloseableHttpResponse) response).close();
 				}
-			} catch (Throwable ex) {
-				LOGGER.error(ex.getMessage());
-				emitter.onSuccess(false);
 			}
-
-		}).subscribeOn(scheduler).cache();
-
+			return true;
+		} catch (Throwable ex) {
+			LOGGER.error(ex.getMessage());
+			return false;
+		}
 	}
 
 	private HttpPost buildPostRequest(AnalyticsItem item) {
