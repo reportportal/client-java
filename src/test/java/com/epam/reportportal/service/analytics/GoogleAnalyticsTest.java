@@ -17,8 +17,6 @@
 package com.epam.reportportal.service.analytics;
 
 import com.epam.reportportal.service.analytics.item.AnalyticsEvent;
-import io.reactivex.Scheduler;
-import io.reactivex.schedulers.Schedulers;
 import org.apache.http.HttpVersion;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -27,7 +25,6 @@ import org.apache.http.message.BasicStatusLine;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,7 +35,6 @@ import static org.mockito.Mockito.*;
  */
 public class GoogleAnalyticsTest {
 
-	private final Scheduler scheduler = Schedulers.from(Executors.newSingleThreadExecutor());
 	private final HttpClient httpClient = mock(HttpClient.class);
 
 	@Test

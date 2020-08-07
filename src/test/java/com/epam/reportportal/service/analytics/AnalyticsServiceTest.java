@@ -38,7 +38,7 @@ import static org.mockito.Mockito.verify;
 public class AnalyticsServiceTest {
 
 	private static final String SEMANTIC_VERSION_PATTERN = "(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?";
-	private static final String FULL_PATTERN = "client-java\\|" + SEMANTIC_VERSION_PATTERN;
+	private static final String FULL_PATTERN = "Client name \"client-java\", version \"" + SEMANTIC_VERSION_PATTERN + "\"";
 
 	private static class TestAnalyticsService extends AnalyticsService {
 		private GoogleAnalytics googleAnalytics;
@@ -92,8 +92,8 @@ public class AnalyticsServiceTest {
 
 		assertThat(type, equalTo("event"));
 		assertThat(eventAction, equalTo("Start launch"));
-		assertThat(eventCategory, anyOf(equalTo("${name}|${version}"), matchesRegex(FULL_PATTERN)));
-		assertThat(eventLabel, equalTo("agent-java-testng|test-version-1"));
+		assertThat(eventCategory, anyOf(equalTo("Client name \"${name}\", version \"${version}\""), matchesRegex(FULL_PATTERN)));
+		assertThat(eventLabel, equalTo("Agent name \"agent-java-testng\", version \"test-version-1\""));
 	}
 
 	@Test
@@ -116,7 +116,7 @@ public class AnalyticsServiceTest {
 
 		assertThat(type, equalTo("event"));
 		assertThat(eventAction, equalTo("Start launch"));
-		assertThat(eventCategory, anyOf(equalTo("${name}|${version}"), matchesRegex(FULL_PATTERN)));
+		assertThat(eventCategory, anyOf(equalTo("Client name \"${name}\", version \"${version}\""), matchesRegex(FULL_PATTERN)));
 		assertThat(eventLabel, nullValue());
 	}
 
