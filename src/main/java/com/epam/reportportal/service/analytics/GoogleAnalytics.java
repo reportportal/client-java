@@ -18,7 +18,6 @@ package com.epam.reportportal.service.analytics;
 
 import com.epam.reportportal.service.analytics.item.AnalyticsItem;
 import io.reactivex.Maybe;
-import io.reactivex.Scheduler;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
@@ -55,6 +54,8 @@ public class GoogleAnalytics implements Closeable {
 			.collect(Collectors.toList());
 
 	private static final String DEFAULT_BASE_URL = "https://www.google-analytics.com/collect";
+
+	private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36";
 
 	private final String baseUrl;
 
@@ -93,7 +94,7 @@ public class GoogleAnalytics implements Closeable {
 	private static HttpClient buildDefaultHttpClient() {
 		PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
 		connectionManager.setDefaultMaxPerRoute(1);
-		HttpClientBuilder httpClientBuilder = HttpClients.custom().setConnectionManager(connectionManager);
+		HttpClientBuilder httpClientBuilder = HttpClients.custom().setConnectionManager(connectionManager).setUserAgent(USER_AGENT);
 		return httpClientBuilder.build();
 	}
 

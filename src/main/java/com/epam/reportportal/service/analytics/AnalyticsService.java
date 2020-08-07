@@ -21,6 +21,7 @@ import com.epam.reportportal.service.analytics.item.AnalyticsEvent;
 import com.epam.reportportal.utils.properties.ClientProperties;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
+import com.epam.ta.reportportal.ws.model.attribute.ItemAttributeResource;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
@@ -33,6 +34,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import static java.util.Optional.ofNullable;
 
@@ -40,6 +42,8 @@ public class AnalyticsService implements Closeable {
 
 	private static final String CLIENT_PROPERTIES_FILE = "client.properties";
 	private static final String START_LAUNCH_EVENT_ACTION = "Start launch";
+	private static final String CLIENT_VALUE_FORMAT = "Client name \"%s\", version \"%s\"";
+	private static final String AGENT_VALUE_FORMAT = "Agent name \"%s\", version \"%s\"";
 
 	private final ExecutorService googleAnalyticsExecutor = Executors.newSingleThreadExecutor();
 	private final Scheduler scheduler = Schedulers.from(googleAnalyticsExecutor);
@@ -61,13 +65,23 @@ public class AnalyticsService implements Closeable {
 		analyticsEventBuilder.withAction(START_LAUNCH_EVENT_ACTION);
 		SystemAttributesExtractor.extract(CLIENT_PROPERTIES_FILE, getClass().getClassLoader(), ClientProperties.CLIENT)
 				.stream()
+				.map(ItemAttributeResource::getValue)
+				.map(a -> a.split(Pattern.quote(SystemAttributesExtractor.ATTRIBUTE_VALUE_SEPARATOR)))
+				.filter(a -> a.length >= 2)
 				.findFirst()
-				.ifPresent(clientAttribute -> analyticsEventBuilder.withCategory(clientAttribute.getValue()));
+				.ifPresent(clientAttribute -> analyticsEventBuilder.withCategory(String.format(CLIENT_VALUE_FORMAT,
+						(Object[]) clientAttribute
+				)));
 
 		ofNullable(rq.getAttributes()).flatMap(r -> r.stream()
 				.filter(attribute -> attribute.isSystem() && DefaultProperties.AGENT.getName().equalsIgnoreCase(attribute.getKey()))
-				.findAny()).ifPresent(agentAttribute -> analyticsEventBuilder.withLabel(agentAttribute.getValue()));
-		Maybe<Boolean> analyticsMaybe = launchIdMaybe.map(l -> getGoogleAnalytics().send(analyticsEventBuilder.build())).subscribeOn(scheduler);
+				.findAny())
+				.map(ItemAttributeResource::getValue)
+				.map(a -> a.split(Pattern.quote(SystemAttributesExtractor.ATTRIBUTE_VALUE_SEPARATOR)))
+				.filter(a -> a.length >= 2)
+				.ifPresent(agentAttribute -> analyticsEventBuilder.withLabel(String.format(AGENT_VALUE_FORMAT, (Object[]) agentAttribute)));
+		Maybe<Boolean> analyticsMaybe = launchIdMaybe.map(l -> getGoogleAnalytics().send(analyticsEventBuilder.build()))
+				.subscribeOn(scheduler);
 		dependencies.add(analyticsMaybe.ignoreElement());
 	}
 
@@ -78,7 +92,7 @@ public class AnalyticsService implements Closeable {
 		} finally {
 			googleAnalyticsExecutor.shutdown();
 			try {
-				if(!googleAnalyticsExecutor.awaitTermination(parameters.getReportingTimeout(), TimeUnit.SECONDS)){
+				if (!googleAnalyticsExecutor.awaitTermination(parameters.getReportingTimeout(), TimeUnit.SECONDS)) {
 					googleAnalyticsExecutor.shutdownNow();
 				}
 			} catch (InterruptedException exc) {

@@ -91,6 +91,7 @@ bintray {
     }
 }
 
-def releaseDependencies = [bintrayUpload, publish]
+//def releaseDependencies = [bintrayUpload, publish]
+def releaseDependencies = [bintrayUpload]
 releaseDependencies.addAll(afterReleaseBuild.getDependsOn())
 afterReleaseBuild.setDependsOn(releaseDependencies)

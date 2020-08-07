@@ -43,7 +43,7 @@ public class SystemAttributesExtractor {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SystemAttributesExtractor.class);
 
-	private static final String ATTRIBUTE_VALUE_SEPARATOR = "|";
+	public static final String ATTRIBUTE_VALUE_SEPARATOR = "|";
 
 	private SystemAttributesExtractor() {
 		//static only

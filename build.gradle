@@ -93,6 +93,10 @@ dependencies {
 }
 
 test {
+    testLogging {
+        events "failed"
+        exceptionFormat "full"
+    }
     useJUnitPlatform()
     systemProperty("file.encoding", "utf-8")
     forkEvery(1)
