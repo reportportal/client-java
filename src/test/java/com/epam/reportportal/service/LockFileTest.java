@@ -50,7 +50,6 @@ import static org.hamcrest.Matchers.*;
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class LockFileTest {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LockFileTest.class);
 	private static final String LOCK_FILE_NAME_PATTERN = "%s.reportportal.lock";
@@ -293,7 +292,7 @@ public class LockFileTest {
 	@Test
 	public void test_lock_file_should_not_throw_exception_if_it_is_not_possible_to_write_sync_file() throws IOException {
 		File syncFile = new File(syncFileName);
-		try (FileLock lock = getFileLock(syncFile)) {
+		try (FileLock ignored = getFileLock(syncFile)) {
 			assertThat(lockFile.obtainLaunchUuid(UUID.randomUUID().toString()), nullValue());
 		}
 	}
@@ -302,7 +301,7 @@ public class LockFileTest {
 	public void test_lock_file_should_not_throw_exception_if_it_is_not_possible_to_write_lock_file() throws IOException {
 		String launchUuid = UUID.randomUUID().toString();
 		File lockFile = new File(lockFileName);
-		try (FileLock lock = getFileLock(lockFile)) {
+		try (FileLock ignored = getFileLock(lockFile)) {
 			assertThat(this.lockFile.obtainLaunchUuid(launchUuid), equalTo(launchUuid));
 		}
 	}

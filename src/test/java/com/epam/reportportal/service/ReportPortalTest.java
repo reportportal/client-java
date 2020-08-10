@@ -21,21 +21,21 @@ import com.epam.reportportal.util.test.SocketUtils;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
 import org.junit.jupiter.api.Test;
 
 import java.net.ServerSocket;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.test.TestUtils.standardParameters;
-import static com.epam.reportportal.util.test.CommonUtils.*;
+import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -50,6 +50,28 @@ public class ReportPortalTest {
 	}
 
 	@Test
+	public void proxyParamBypass() throws Exception {
+		String baseUrl = "http://example.com:8080";
+		ServerSocket server = SocketUtils.getServerSocketOnFreePort();
+		ListenerParameters params = standardParameters();
+		params.setBaseUrl(baseUrl);
+		params.setProxyUrl("http://localhost:" + server.getLocalPort());
+		HttpClient client = ReportPortal.builder().defaultClient(params);
+		try {
+			SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(server,
+					Collections.emptyMap(),
+					"files/simple_response.txt"
+			);
+			Pair<String, HttpResponse> result = SocketUtils.executeServerCallable(serverCallable,
+					() -> client.execute(new HttpGet(baseUrl))
+			);
+			assertThat(result.getValue().getStatusLine().getStatusCode(), equalTo(200));
+		} finally {
+			server.close();
+		}
+	}
+
+	@Test
 	public void test_rp_client_saves_and_bypasses_cookies() throws Exception {
 		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
 		ListenerParameters parameters = standardParameters();
@@ -59,7 +81,7 @@ public class ReportPortalTest {
 		try {
 			Map<String, Object> model = new HashMap<>();
 			model.put("cookie", COOKIE);
-			SimpleDateFormat sdf = new SimpleDateFormat(SocketUtils.WEB_DATE_FORMAT);
+			SimpleDateFormat sdf = new SimpleDateFormat(SocketUtils.WEB_DATE_FORMAT, Locale.US);
 			sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
 			Calendar cal = Calendar.getInstance();
 			model.put("date", sdf.format(cal.getTime()));

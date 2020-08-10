@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- A proxy parameter handling: `rp.http.proxy=http://localhost:8981`
 
 ## [5.0.2]
 ### Added
