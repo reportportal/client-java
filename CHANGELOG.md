@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 ### Added
+- Utilities
+  - More Test Case ID methods
+  - CodeRef generation method
 - A proxy parameter handling: `rp.http.proxy=http://localhost:8981`
 
 ## [5.0.2]
