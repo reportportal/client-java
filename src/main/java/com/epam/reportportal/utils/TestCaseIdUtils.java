@@ -74,24 +74,30 @@ public class TestCaseIdUtils {
 
 	public static TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Method method,
 			@Nullable List<Object> parameters) {
+		return getTestCaseId(annotation, method, null, parameters);
+	}
+
+	public static TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Method method, @Nullable String codRef,
+			@Nullable List<Object> parameters) {
 		if (annotation != null) {
 			if (annotation.value().isEmpty()) {
 				if (annotation.parametrized()) {
 					return ofNullable(getParametersForTestCaseId(method, parameters)).map(TestCaseIdEntry::new)
-							.orElse(getTestCaseId(method, parameters));
+							.orElse(ofNullable(codRef).map(c -> getTestCaseId(c, parameters)).orElse(getTestCaseId(method, parameters)));
 				} else {
-					return getTestCaseId(method, parameters);
+					return ofNullable(codRef).map(c -> getTestCaseId(c, parameters)).orElse(getTestCaseId(method, parameters));
 				}
 			} else {
 				if (annotation.parametrized()) {
 					return ofNullable(getParametersForTestCaseId(method, parameters)).map(p -> new TestCaseIdEntry(
-							annotation.value() + (p.startsWith("[") ? p : "[" + p + "]"))).orElse(getTestCaseId(method, parameters));
+							annotation.value() + (p.startsWith("[") ? p : "[" + p + "]")))
+							.orElse(ofNullable(codRef).map(c -> getTestCaseId(c, parameters)).orElse(getTestCaseId(method, parameters)));
 				} else {
 					return new TestCaseIdEntry(annotation.value());
 				}
 			}
 		}
-		return getTestCaseId(method, parameters);
+		return ofNullable(codRef).map(c -> getTestCaseId(c, parameters)).orElse(getTestCaseId(method, parameters));
 	}
 
 	public static TestCaseIdEntry getTestCaseId(@Nullable Method method, @Nullable List<Object> parameters) {
