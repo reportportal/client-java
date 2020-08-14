@@ -57,6 +57,7 @@ public class ListenerParameters implements Cloneable {
 	private String description;
 	private String apiKey;
 	private String baseUrl;
+	private String proxyUrl;
 	private String projectName;
 	private String launchName;
 	private Mode launchRunningMode;
@@ -118,6 +119,7 @@ public class ListenerParameters implements Cloneable {
 		this.description = properties.getProperty(DESCRIPTION);
 		this.apiKey = ofNullable(properties.getProperty(API_KEY, properties.getProperty(UUID))).map(String::trim).orElse(null);
 		this.baseUrl = properties.getProperty(BASE_URL) != null ? properties.getProperty(BASE_URL).trim() : null;
+		this.proxyUrl = properties.getProperty(HTTP_PROXY_URL);
 		this.projectName = properties.getProperty(PROJECT_NAME) != null ? properties.getProperty(PROJECT_NAME).trim() : null;
 		this.launchName = properties.getProperty(LAUNCH_NAME);
 		this.attributes = AttributeParser.parseAsSet(properties.getProperty(LAUNCH_ATTRIBUTES));
@@ -173,6 +175,14 @@ public class ListenerParameters implements Cloneable {
 
 	public void setBaseUrl(String baseUrl) {
 		this.baseUrl = baseUrl;
+	}
+
+	public String getProxyUrl() {
+		return proxyUrl;
+	}
+
+	public void setProxyUrl(String proxyUrl) {
+		this.proxyUrl = proxyUrl;
 	}
 
 	public String getProjectName() {
@@ -403,6 +413,7 @@ public class ListenerParameters implements Cloneable {
 		sb.append("description='").append(description).append('\'');
 		sb.append(", apiKey='").append(apiKey).append('\'');
 		sb.append(", baseUrl='").append(baseUrl).append('\'');
+		sb.append(", proxyUrl='").append(proxyUrl).append('\'');
 		sb.append(", projectName='").append(projectName).append('\'');
 		sb.append(", launchName='").append(launchName).append('\'');
 		sb.append(", launchRunningMode=").append(launchRunningMode);

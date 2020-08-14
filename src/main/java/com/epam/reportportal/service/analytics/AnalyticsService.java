@@ -47,13 +47,14 @@ public class AnalyticsService implements Closeable {
 
 	private final ExecutorService googleAnalyticsExecutor = Executors.newSingleThreadExecutor();
 	private final Scheduler scheduler = Schedulers.from(googleAnalyticsExecutor);
-	private final GoogleAnalytics googleAnalytics = new GoogleAnalytics("UA-173456809-1");
+	private final GoogleAnalytics googleAnalytics;
 	private final List<Completable> dependencies = new CopyOnWriteArrayList<>();
 
 	private final ListenerParameters parameters;
 
 	public AnalyticsService(ListenerParameters listenerParameters) {
 		this.parameters = listenerParameters;
+		googleAnalytics = new GoogleAnalytics("UA-173456809-1", parameters.getProxyUrl());
 	}
 
 	protected GoogleAnalytics getGoogleAnalytics() {

@@ -22,6 +22,10 @@ public enum ListenerProperty {
 
 	//@formatter:off
     BASE_URL("rp.endpoint", true),
+    /**
+     * An URL of a http proxy to connect to the endpoint
+     */
+    HTTP_PROXY_URL("rp.http.proxy", false),
     PROJECT_NAME("rp.project", true),
     LAUNCH_NAME("rp.launch", true),
     UUID("rp.uuid", false),

@@ -18,6 +18,7 @@ package com.epam.reportportal.service.analytics;
 
 import com.epam.reportportal.service.analytics.item.AnalyticsItem;
 import io.reactivex.Maybe;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
@@ -38,6 +39,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * Google analytics asynchronous client. Required for sending analytics event to the resource identified by provided `trackingId`
@@ -63,9 +66,8 @@ public class GoogleAnalytics implements Closeable {
 
 	private final HttpClient httpClient;
 
-	public GoogleAnalytics(String trackingId) {
-		this(trackingId, buildDefaultHttpClient());
-
+	public GoogleAnalytics(String trackingId, String proxyUrl) {
+		this(trackingId, buildDefaultHttpClient(proxyUrl));
 	}
 
 	/**
@@ -91,10 +93,11 @@ public class GoogleAnalytics implements Closeable {
 		this.httpClient = httpClient;
 	}
 
-	private static HttpClient buildDefaultHttpClient() {
+	private static HttpClient buildDefaultHttpClient(String proxyUrl) {
 		PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
 		connectionManager.setDefaultMaxPerRoute(1);
 		HttpClientBuilder httpClientBuilder = HttpClients.custom().setConnectionManager(connectionManager).setUserAgent(USER_AGENT);
+		ofNullable(proxyUrl).ifPresent(u -> httpClientBuilder.setProxy(HttpHost.create(proxyUrl)));
 		return httpClientBuilder.build();
 	}
 

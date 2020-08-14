@@ -37,6 +37,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.CookieSpecs;
@@ -507,7 +508,10 @@ public class ReportPortal {
 				}
 
 			}
-
+			String proxyUrl = parameters.getProxyUrl();
+			if (proxyUrl != null) {
+				builder.setProxy(HttpHost.create(proxyUrl));
+			}
 			builder.setDefaultRequestConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build())
 					.setRetryHandler(new StandardHttpRequestRetryHandler(parameters.getTransferRetries(), true))
 					.setKeepAliveStrategy(new DefaultConnectionKeepAliveStrategy() {
