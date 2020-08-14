@@ -31,8 +31,8 @@ import org.aspectj.lang.reflect.MethodSignature;
 
 import java.util.Calendar;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.google.common.base.Throwables.getStackTraceAsString;
 
@@ -47,7 +47,7 @@ public class StepAspect {
 	private static final InheritableThreadLocal<Map<String, Launch>> launchMap = new InheritableThreadLocal<Map<String, Launch>>() {
 		@Override
 		protected Map<String, Launch> initialValue() {
-			return new HashMap<>();
+			return new ConcurrentHashMap<>();
 		}
 	};
 
