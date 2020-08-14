@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.4]
 ### Added
 - More Test Case ID methods
 
