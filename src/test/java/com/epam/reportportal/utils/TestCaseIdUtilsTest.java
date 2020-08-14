@@ -190,4 +190,16 @@ public class TestCaseIdUtilsTest {
 
 		assertThat(testCaseIdEntry, nullValue());
 	}
+
+	@Test
+	public void test_case_id_should_use_bypassed_code_ref_instead_of_method() throws NoSuchMethodException {
+		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("noTestCaseIdAnnotationParameterized", Integer.TYPE, String.class);
+		TestCaseId annotation = method.getAnnotation(TestCaseId.class);
+		String codeRef = "my.custom.code.ref";
+		String expectedTestCaseId = "my.custom.code.ref[5,firstParam]";
+		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(annotation, method, codeRef, Arrays.asList(5, "firstParam"));
+
+		assertThat(testCaseIdEntry, notNullValue());
+		assertThat(testCaseIdEntry.getId(), equalTo(expectedTestCaseId));
+	}
 }
