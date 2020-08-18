@@ -42,11 +42,6 @@ import static org.mockito.Mockito.verify;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class StepAspectStartTest {
-	private static final ReportPortalClient CLIENT = mock(ReportPortalClient.class);
-
-	static {
-		StepAspectCommon.simulateStartLaunch(CLIENT, "launch2");
-	}
 
 	private final StepAspect aspect = new StepAspect();
 	private final ListenerParameters params = TestUtils.standardParameters();
@@ -57,49 +52,53 @@ public class StepAspectStartTest {
 	@Test
 	public void test_simple_nested_step_item_rq() throws NoSuchMethodException {
 		// Avoid thread-local collision
+		ReportPortalClient client = mock(ReportPortalClient.class);
+		StepAspectCommon.simulateStartLaunch(client, "launch2");
 		String parentId = UUID.randomUUID().toString();
 		String itemUuid = UUID.randomUUID().toString();
-		StepAspectCommon.simulateStartItemResponse(CLIENT, parentId, itemUuid);
+		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
 		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
-		ReportPortal.create(CLIENT, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
+		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 
 		Method method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(CLIENT).startTestItem(same(parentId), captor.capture());
+		verify(client).startTestItem(same(parentId), captor.capture());
 		StartTestItemRQ result = captor.getValue();
 
 		assertThat(result.getName(), equalTo(StepAspectCommon.TEST_STEP_NAME));
 		assertThat(result.getDescription(), equalTo(StepAspectCommon.TEST_STEP_DESCRIPTION));
 		assertThat(result.getAttributes(), nullValue());
-		StepAspectCommon.simulateFinishItemResponse(CLIENT, itemUuid);
+		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
 		aspect.finishNestedStep(method.getAnnotation(Step.class));
 
-		StepAspectCommon.simulateFinishItemResponse(CLIENT, itemUuid);
+		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
 		aspect.finishNestedStep(method.getAnnotation(Step.class));
 	}
 
 	@Test
 	public void test_nested_step_attribute_processing() throws NoSuchMethodException {
 		// Avoid thread-local collision
+		ReportPortalClient client = mock(ReportPortalClient.class);
+		StepAspectCommon.simulateStartLaunch(client, "launch2");
 		String parentId = UUID.randomUUID().toString();
 		String itemUuid = UUID.randomUUID().toString();
-		StepAspectCommon.simulateStartItemResponse(CLIENT, parentId, itemUuid);
+		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
 		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
-		ReportPortal.create(CLIENT, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
+		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 
 		Method method = StepAspectCommon.getMethod("testNestedStepAttributeAnnotation");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(CLIENT).startTestItem(same(parentId), captor.capture());
+		verify(client).startTestItem(same(parentId), captor.capture());
 		StartTestItemRQ result = captor.getValue();
 
 		assertThat(result.getAttributes(), hasSize(1));
 		assertThat(result.getAttributes(), contains(notNullValue()));
 
-		StepAspectCommon.simulateFinishItemResponse(CLIENT, itemUuid);
+		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
 		aspect.finishNestedStep(method.getAnnotation(Step.class));
 	}
 }
