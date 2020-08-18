@@ -50,8 +50,6 @@ public class StepAspectFinishTest {
 	private ReportPortalClient client;
 	@Mock
 	public MethodSignature methodSignature;
-	private String itemUuid;
-	private String parentId;
 
 
 	@BeforeAll
@@ -60,21 +58,20 @@ public class StepAspectFinishTest {
 		StepAspectCommon.simulateStartLaunch(client, "launch2");
 	}
 
-	@BeforeEach
-	public void stepSetup() {
-		parentId = UUID.randomUUID().toString();
-		itemUuid = UUID.randomUUID().toString();
-		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
-		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
-	}
-
 	/*
 	 * Do not finish parent step inside nested step, leads to issue: https://github.com/reportportal/client-java/issues/97
 	 */
 	@Test
 	public void verify_only_nested_step_finished_and_no_parent_steps() throws NoSuchMethodException {
+		// Avoid thread-local collision
+		String parentId = UUID.randomUUID().toString();
+		String itemUuid = UUID.randomUUID().toString();
+		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
+		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
 		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
 		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
+
+
 		Method method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 		aspect.finishNestedStep(method.getAnnotation(Step.class));
@@ -93,8 +90,15 @@ public class StepAspectFinishTest {
 	 */
 	@Test
 	public void verify_only_nested_step_finished_and_no_parent_steps_on_step_failure() throws NoSuchMethodException {
+		// Avoid thread-local collision
+		String parentId = UUID.randomUUID().toString();
+		String itemUuid = UUID.randomUUID().toString();
+		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
+		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
 		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
 		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
+
+
 		Method method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 		aspect.failedNestedStep(method.getAnnotation(Step.class), new IllegalArgumentException());
