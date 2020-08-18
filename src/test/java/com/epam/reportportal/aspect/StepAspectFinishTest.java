@@ -51,6 +51,7 @@ public class StepAspectFinishTest {
 	@Mock
 	public MethodSignature methodSignature;
 	private String itemUuid;
+	private String parentId;
 
 
 	@BeforeAll
@@ -61,11 +62,10 @@ public class StepAspectFinishTest {
 
 	@BeforeEach
 	public void stepSetup() {
-		String parentId = UUID.randomUUID().toString();
+		parentId = UUID.randomUUID().toString();
 		itemUuid = UUID.randomUUID().toString();
 		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
 		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
-		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
 	}
 
 	/*
@@ -73,6 +73,7 @@ public class StepAspectFinishTest {
 	 */
 	@Test
 	public void verify_only_nested_step_finished_and_no_parent_steps() throws NoSuchMethodException {
+		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
 		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 		Method method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
@@ -92,6 +93,7 @@ public class StepAspectFinishTest {
 	 */
 	@Test
 	public void verify_only_nested_step_finished_and_no_parent_steps_on_step_failure() throws NoSuchMethodException {
+		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
 		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 		Method method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));

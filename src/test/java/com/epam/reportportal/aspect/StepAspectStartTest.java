@@ -65,7 +65,6 @@ public class StepAspectStartTest {
 		parentId = UUID.randomUUID().toString();
 		itemUuid = UUID.randomUUID().toString();
 		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
-		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
 	}
 
 	@AfterEach
@@ -76,6 +75,7 @@ public class StepAspectStartTest {
 
 	@Test
 	public void test_simple_nested_step_item_rq() throws NoSuchMethodException {
+		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
 		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 		method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
@@ -93,6 +93,7 @@ public class StepAspectStartTest {
 
 	@Test
 	public void test_nested_step_attribute_processing() throws NoSuchMethodException {
+		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
 		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 		method = StepAspectCommon.getMethod("testNestedStepAttributeAnnotation");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
