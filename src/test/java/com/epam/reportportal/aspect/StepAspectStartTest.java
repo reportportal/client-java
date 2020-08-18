@@ -21,12 +21,10 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
-import io.reactivex.Maybe;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
@@ -37,34 +35,48 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class StepAspectStartTest {
-	private final String parentId = UUID.randomUUID().toString();
-	private final String itemUuid = UUID.randomUUID().toString();
-	private final Maybe<String> parentIdMaybe = StepAspectCommon.getMaybe(parentId);
 	private final StepAspect aspect = new StepAspect();
 
-	@Mock
 	private ReportPortalClient client;
 	@Mock
 	public MethodSignature methodSignature;
 	private Method method;
 
-	@BeforeEach
-	public void setup() {
+	private String parentId;
+	private String itemUuid;
+
+	@BeforeAll
+	public void launchSetup() {
+		client = mock(ReportPortalClient.class);
 		StepAspectCommon.simulateStartLaunch(client, "launch2");
+	}
+
+	@BeforeEach
+	public void stepSetup() {
+		parentId = UUID.randomUUID().toString();
+		itemUuid = UUID.randomUUID().toString();
 		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
-		StepAspect.setParentId(parentIdMaybe);
+		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
+		ListenerParameters params = TestUtils.standardParameters();
+		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
+	}
+
+	@AfterEach
+	public void cleanup() {
+		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
+		aspect.finishNestedStep(method.getAnnotation(Step.class));
 	}
 
 	@Test
 	public void test_simple_nested_step_item_rq() throws NoSuchMethodException {
-		ListenerParameters params = TestUtils.standardParameters();
-		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 		method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 
@@ -81,8 +93,6 @@ public class StepAspectStartTest {
 
 	@Test
 	public void test_nested_step_attribute_processing() throws NoSuchMethodException {
-		ListenerParameters params = TestUtils.standardParameters();
-		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 		method = StepAspectCommon.getMethod("testNestedStepAttributeAnnotation");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 
@@ -92,6 +102,5 @@ public class StepAspectStartTest {
 
 		assertThat(result.getAttributes(), hasSize(1));
 		assertThat(result.getAttributes(), contains(notNullValue()));
-		aspect.finishNestedStep(method.getAnnotation(Step.class));
 	}
 }

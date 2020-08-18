@@ -22,11 +22,13 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
-import io.reactivex.Maybe;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
@@ -35,29 +37,35 @@ import java.util.UUID;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class StepAspectFinishTest {
-	private final String parentId = UUID.randomUUID().toString();
-	private final String itemUuid = UUID.randomUUID().toString();
-	private final Maybe<String> parentIdMaybe = StepAspectCommon.getMaybe(parentId);
 	private final StepAspect aspect = new StepAspect();
 
-	@Mock
 	private ReportPortalClient client;
 	@Mock
 	public MethodSignature methodSignature;
+	private String itemUuid;
+
+	@BeforeAll
+	public void launchSetup() {
+		client = mock(ReportPortalClient.class);
+		StepAspectCommon.simulateStartLaunch(client, "launch2");
+	}
 
 	@BeforeEach
-	public void setup() {
-		StepAspectCommon.simulateStartLaunch(client, "launch1");
+	public void stepSetup() {
+		String parentId = UUID.randomUUID().toString();
+		itemUuid = UUID.randomUUID().toString();
 		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
 		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
-		StepAspect.setParentId(parentIdMaybe);
+		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
+		ListenerParameters params = TestUtils.standardParameters();
+		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 	}
 
 	/*
@@ -73,10 +81,7 @@ public class StepAspectFinishTest {
 
 		ArgumentCaptor<String> finishUuids = ArgumentCaptor.forClass(String.class);
 		ArgumentCaptor<FinishTestItemRQ> finishRQs = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(client, times(1)).finishTestItem(finishUuids.capture(), finishRQs.capture());
-
-		String finishUuid = finishUuids.getValue();
-		assertThat(finishUuid, sameInstance(itemUuid));
+		verify(client, times(1)).finishTestItem(same(itemUuid), finishRQs.capture());
 
 		FinishTestItemRQ resultRq = finishRQs.getValue();
 		assertThat(resultRq.getStatus(), equalTo(ItemStatus.PASSED.name()));
@@ -96,10 +101,7 @@ public class StepAspectFinishTest {
 
 		ArgumentCaptor<String> finishUuids = ArgumentCaptor.forClass(String.class);
 		ArgumentCaptor<FinishTestItemRQ> finishRQs = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(client, times(1)).finishTestItem(finishUuids.capture(), finishRQs.capture());
-
-		String finishUuid = finishUuids.getValue();
-		assertThat(finishUuid, sameInstance(itemUuid));
+		verify(client, times(1)).finishTestItem(same(itemUuid), finishRQs.capture());
 
 		FinishTestItemRQ resultRq = finishRQs.getValue();
 		assertThat(resultRq.getStatus(), equalTo(ItemStatus.FAILED.name()));
