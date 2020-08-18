@@ -31,8 +31,6 @@ import org.aspectj.lang.reflect.MethodSignature;
 
 import java.util.Calendar;
 import java.util.Deque;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static com.google.common.base.Throwables.getStackTraceAsString;
 
@@ -41,16 +39,6 @@ import static com.google.common.base.Throwables.getStackTraceAsString;
  */
 @Aspect
 public class StepAspect {
-
-	private static final InheritableThreadLocal<String> currentLaunchId = new InheritableThreadLocal<>();
-
-	private static final InheritableThreadLocal<Map<String, Launch>> launchMap = new InheritableThreadLocal<Map<String, Launch>>() {
-		@Override
-		protected Map<String, Launch> initialValue() {
-			return new ConcurrentHashMap<>();
-		}
-	};
-
 	private static final InheritableThreadLocal<Deque<Maybe<String>>> stepStack = new InheritableThreadLocal<Deque<Maybe<String>>>() {
 		@Override
 		protected Deque<Maybe<String>> initialValue() {
@@ -82,7 +70,7 @@ public class StepAspect {
 
 			StartTestItemRQ startStepRequest = StepRequestUtils.buildStartStepRequest(signature, step, joinPoint);
 
-			Launch launch = launchMap.get().get(currentLaunchId.get());
+			Launch launch = Launch.currentLaunch();
 			Maybe<String> stepMaybe = launch.startTestItem(parent, startStepRequest);
 			stepStack.get().push(stepMaybe);
 		}
@@ -99,7 +87,7 @@ public class StepAspect {
 			FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(ItemStatus.PASSED,
 					Calendar.getInstance().getTime()
 			);
-			launchMap.get().get(currentLaunchId.get()).finishTestItem(stepId, finishStepRequest);
+			Launch.currentLaunch().finishTestItem(stepId, finishStepRequest);
 		}
 	}
 
@@ -133,16 +121,11 @@ public class StepAspect {
 			);
 
 			while (stepId != null) {
-				launchMap.get().get(currentLaunchId.get()).finishTestItem(stepId, finishStepRequest);
+				Launch.currentLaunch().finishTestItem(stepId, finishStepRequest);
 				stepId = stepStack.get().poll();
 			}
 		}
 
-	}
-
-	public static void addLaunch(String key, Launch launch) {
-		launchMap.get().put(key, launch);
-		currentLaunchId.set(key);
 	}
 
 	public static void setParentId(Maybe<String> parent) {

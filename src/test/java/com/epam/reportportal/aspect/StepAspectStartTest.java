@@ -17,7 +17,10 @@
 package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
-import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.test.TestUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -33,29 +36,31 @@ import java.util.UUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.verify;
 
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
 public class StepAspectStartTest {
-	private String parentId = UUID.randomUUID().toString();
-	private String itemUuid = UUID.randomUUID().toString();
-	private Maybe<String> parentIdMaybe = StepAspectCommon.getMaybe(parentId);
-	private StepAspect aspect = new StepAspect();
+	private final String parentId = UUID.randomUUID().toString();
+	private final String itemUuid = UUID.randomUUID().toString();
+	private final Maybe<String> parentIdMaybe = StepAspectCommon.getMaybe(parentId);
+	private final StepAspect aspect = new StepAspect();
 
 	@Mock
-	private Launch launch;
+	private ReportPortalClient client;
 	@Mock
 	public MethodSignature methodSignature;
-
 	private Method method;
 
 	@BeforeEach
 	public void setup() {
+		StepAspectCommon.simulateStartLaunch(client, "launch2");
+		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
 		StepAspect.setParentId(parentIdMaybe);
-		StepAspect.addLaunch(UUID.randomUUID().toString(), launch);
-		StepAspectCommon.simulateStartItemResponse(launch, parentIdMaybe, itemUuid);
+		ListenerParameters params = TestUtils.standardParameters();
+		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 	}
 
 	@AfterEach
@@ -69,7 +74,7 @@ public class StepAspectStartTest {
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(launch).startTestItem(eq(parentIdMaybe), captor.capture());
+		verify(client).startTestItem(eq(parentId), captor.capture());
 		StartTestItemRQ result = captor.getValue();
 
 		assertThat(result.getName(), equalTo(StepAspectCommon.TEST_STEP_NAME));
@@ -83,7 +88,7 @@ public class StepAspectStartTest {
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(launch).startTestItem(eq(parentIdMaybe), captor.capture());
+		verify(client).startTestItem(same(parentId), captor.capture());
 		StartTestItemRQ result = captor.getValue();
 
 		assertThat(result.getAttributes(), hasSize(1));

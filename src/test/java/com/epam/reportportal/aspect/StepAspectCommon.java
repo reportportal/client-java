@@ -19,10 +19,13 @@ package com.epam.reportportal.aspect;
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.attribute.Attribute;
 import com.epam.reportportal.annotations.attribute.Attributes;
-import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.test.TestUtils;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeEmitter;
 import io.reactivex.MaybeOnSubscribe;
@@ -31,6 +34,7 @@ import org.aspectj.lang.Signature;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.aspectj.lang.reflect.SourceLocation;
 
+import javax.annotation.Nonnull;
 import java.lang.reflect.Method;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -41,18 +45,20 @@ import static org.mockito.Mockito.when;
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
 public class StepAspectCommon {
-	static Maybe<String> simulateStartItemResponse(Launch launch, Maybe<String> parentIdMaybe, final String itemUuid) {
-		Maybe<String> itemIdMaybe = Maybe.create(emitter -> {
-			emitter.onSuccess(itemUuid);
-			emitter.onComplete();
-		});
 
-		when(launch.startTestItem(same(parentIdMaybe), any(StartTestItemRQ.class))).thenReturn(itemIdMaybe);
-		return itemIdMaybe;
+	static void simulateStartLaunch(ReportPortalClient client, String launchId) {
+		when(client.startLaunch(any())).thenReturn(TestUtils.startLaunchResponse(launchId));
 	}
 
-	static void simulateFinishItemResponse(Launch launch, Maybe<String> idMaybe) {
-		when(launch.finishTestItem(same(idMaybe), any(FinishTestItemRQ.class))).thenReturn(Maybe.create(emitter -> {
+	static void simulateStartItemResponse(ReportPortalClient client, String parentId, final String itemUuid) {
+		when(client.startTestItem(
+				same(parentId),
+				any(StartTestItemRQ.class)
+		)).thenReturn(CommonUtils.createMaybe(new ItemCreatedRS(itemUuid, itemUuid)));
+	}
+
+	static void simulateFinishItemResponse(ReportPortalClient client, String id) {
+		when(client.finishTestItem(same(id), any(FinishTestItemRQ.class))).thenReturn(Maybe.create(emitter -> {
 			emitter.onSuccess(new OperationCompletionRS());
 			emitter.onComplete();
 		}));
@@ -61,7 +67,7 @@ public class StepAspectCommon {
 	static <T> Maybe<T> getMaybe(final T response) {
 		return Maybe.create(new MaybeOnSubscribe<T>() {
 			@Override
-			public void subscribe(MaybeEmitter<T> emitter) {
+			public void subscribe(@Nonnull MaybeEmitter<T> emitter) {
 				emitter.onSuccess(response);
 				emitter.onComplete();
 			}
@@ -77,6 +83,7 @@ public class StepAspectCommon {
 	static final String TEST_STEP_DESCRIPTION = "Test step name";
 
 	@Step(value = TEST_STEP_NAME, description = TEST_STEP_DESCRIPTION)
+	@SuppressWarnings("unused")
 	public void testNestedStepSimple() {
 	}
 
@@ -137,6 +144,7 @@ public class StepAspectCommon {
 
 	@Step(value = TEST_STEP_NAME, description = TEST_STEP_DESCRIPTION)
 	@Attributes(attributes = @Attribute(key = "test", value = "value"))
+	@SuppressWarnings("unused")
 	public void testNestedStepAttributeAnnotation() {
 	}
 }

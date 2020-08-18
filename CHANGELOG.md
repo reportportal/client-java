@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Issue #117 multithreaded reporting of nested steps 
 
 ## [5.0.4]
 ### Added

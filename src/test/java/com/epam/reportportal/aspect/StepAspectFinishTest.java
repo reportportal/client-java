@@ -18,7 +18,10 @@ package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.listeners.ItemStatus;
-import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.test.TestUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import io.reactivex.Maybe;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -45,36 +48,35 @@ public class StepAspectFinishTest {
 	private final StepAspect aspect = new StepAspect();
 
 	@Mock
-	private Launch launch;
+	private ReportPortalClient client;
 	@Mock
 	public MethodSignature methodSignature;
 
-	private Maybe<String> startStep;
-
 	@BeforeEach
 	public void setup() {
+		StepAspectCommon.simulateStartLaunch(client, "launch1");
+		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
+		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
 		StepAspect.setParentId(parentIdMaybe);
-		StepAspect.addLaunch(UUID.randomUUID().toString(), launch);
-		startStep = StepAspectCommon.simulateStartItemResponse(launch, parentIdMaybe, itemUuid);
-		StepAspectCommon.simulateFinishItemResponse(launch, startStep);
+		ListenerParameters params = TestUtils.standardParameters();
+		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 	}
 
 	/*
 	 * Do not finish parent step inside nested step, leads to issue: https://github.com/reportportal/client-java/issues/97
 	 */
 	@Test
-	@SuppressWarnings("unchecked")
 	public void verify_only_nested_step_finished_and_no_parent_steps() throws NoSuchMethodException {
 		Method method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 		aspect.finishNestedStep(method.getAnnotation(Step.class));
 
-		ArgumentCaptor<Maybe<String>> finishUuids = ArgumentCaptor.forClass(Maybe.class);
+		ArgumentCaptor<String> finishUuids = ArgumentCaptor.forClass(String.class);
 		ArgumentCaptor<FinishTestItemRQ> finishRQs = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(launch, times(1)).finishTestItem(finishUuids.capture(), finishRQs.capture());
+		verify(client, times(1)).finishTestItem(finishUuids.capture(), finishRQs.capture());
 
-		Maybe<String> finishUuid = finishUuids.getValue();
-		assertThat(finishUuid, sameInstance(startStep));
+		String finishUuid = finishUuids.getValue();
+		assertThat(finishUuid, sameInstance(itemUuid));
 
 		FinishTestItemRQ resultRq = finishRQs.getValue();
 		assertThat(resultRq.getStatus(), equalTo(ItemStatus.PASSED.name()));
@@ -85,18 +87,17 @@ public class StepAspectFinishTest {
 	 * Do not finish parent step inside nested step, leads to issue: https://github.com/reportportal/client-java/issues/97
 	 */
 	@Test
-	@SuppressWarnings("unchecked")
 	public void verify_only_nested_step_finished_and_no_parent_steps_on_step_failure() throws NoSuchMethodException {
 		Method method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 		aspect.failedNestedStep(method.getAnnotation(Step.class), new IllegalArgumentException());
 
-		ArgumentCaptor<Maybe<String>> finishUuids = ArgumentCaptor.forClass(Maybe.class);
+		ArgumentCaptor<String> finishUuids = ArgumentCaptor.forClass(String.class);
 		ArgumentCaptor<FinishTestItemRQ> finishRQs = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(launch, times(1)).finishTestItem(finishUuids.capture(), finishRQs.capture());
+		verify(client, times(1)).finishTestItem(finishUuids.capture(), finishRQs.capture());
 
-		Maybe<String> finishUuid = finishUuids.getValue();
-		assertThat(finishUuid, sameInstance(startStep));
+		String finishUuid = finishUuids.getValue();
+		assertThat(finishUuid, sameInstance(itemUuid));
 
 		FinishTestItemRQ resultRq = finishRQs.getValue();
 		assertThat(resultRq.getStatus(), equalTo(ItemStatus.FAILED.name()));
