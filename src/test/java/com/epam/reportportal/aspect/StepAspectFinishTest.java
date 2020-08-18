@@ -25,10 +25,8 @@ import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
@@ -36,26 +34,34 @@ import java.lang.reflect.Method;
 import java.util.UUID;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Mockito.*;
 
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class StepAspectFinishTest {
 	private final StepAspect aspect = new StepAspect();
 	private final ListenerParameters params = TestUtils.standardParameters();
 
+	private final String parentId = UUID.randomUUID().toString();
+	private final String itemUuid = UUID.randomUUID().toString();
+
+	@Mock
 	private ReportPortalClient client;
+
 	@Mock
 	public MethodSignature methodSignature;
 
-
-	@BeforeAll
+	@BeforeEach
 	public void launchSetup() {
 		client = mock(ReportPortalClient.class);
-		StepAspectCommon.simulateStartLaunch(client, "launch2");
+		StepAspectCommon.simulateStartLaunch(client, "launch");
+		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
+		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
+		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
+		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 	}
 
 	/*
@@ -63,52 +69,15 @@ public class StepAspectFinishTest {
 	 */
 	@Test
 	public void verify_only_nested_step_finished_and_no_parent_steps() throws NoSuchMethodException {
-		// Avoid thread-local collision
-		String parentId = UUID.randomUUID().toString();
-		String itemUuid = UUID.randomUUID().toString();
-		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
-		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
-		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
-		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
-
-
 		Method method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 		aspect.finishNestedStep(method.getAnnotation(Step.class));
 
-		ArgumentCaptor<String> finishUuids = ArgumentCaptor.forClass(String.class);
 		ArgumentCaptor<FinishTestItemRQ> finishRQs = ArgumentCaptor.forClass(FinishTestItemRQ.class);
 		verify(client, times(1)).finishTestItem(same(itemUuid), finishRQs.capture());
 
 		FinishTestItemRQ resultRq = finishRQs.getValue();
 		assertThat(resultRq.getStatus(), equalTo(ItemStatus.PASSED.name()));
-		assertThat(resultRq.getIssue(), nullValue());
-	}
-
-	/*
-	 * Do not finish parent step inside nested step, leads to issue: https://github.com/reportportal/client-java/issues/97
-	 */
-	@Test
-	public void verify_only_nested_step_finished_and_no_parent_steps_on_step_failure() throws NoSuchMethodException {
-		// Avoid thread-local collision
-		String parentId = UUID.randomUUID().toString();
-		String itemUuid = UUID.randomUUID().toString();
-		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
-		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
-		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
-		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
-
-
-		Method method = StepAspectCommon.getMethod("testNestedStepSimple");
-		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
-		aspect.failedNestedStep(method.getAnnotation(Step.class), new IllegalArgumentException());
-
-		ArgumentCaptor<String> finishUuids = ArgumentCaptor.forClass(String.class);
-		ArgumentCaptor<FinishTestItemRQ> finishRQs = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(client, times(1)).finishTestItem(same(itemUuid), finishRQs.capture());
-
-		FinishTestItemRQ resultRq = finishRQs.getValue();
-		assertThat(resultRq.getStatus(), equalTo(ItemStatus.FAILED.name()));
 		assertThat(resultRq.getIssue(), nullValue());
 	}
 }

@@ -17,12 +17,13 @@
 package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
-import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,14 +36,12 @@ import java.util.UUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.ArgumentMatchers.same;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
-public class StepAspectStartTest {
+public class StepAspectFinishTestFailure {
 	private final StepAspect aspect = new StepAspect();
 	private final ListenerParameters params = TestUtils.standardParameters();
 
@@ -58,26 +57,27 @@ public class StepAspectStartTest {
 	@BeforeEach
 	public void launchSetup() {
 		client = mock(ReportPortalClient.class);
-		StepAspectCommon.simulateStartLaunch(client, "launch2");
+		StepAspectCommon.simulateStartLaunch(client, "launch");
 		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
 		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
 		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
 		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 	}
 
+	/*
+	 * Do not finish parent step inside nested step, leads to issue: https://github.com/reportportal/client-java/issues/97
+	 */
 	@Test
-	public void test_simple_nested_step_item_rq() throws NoSuchMethodException {
+	public void verify_only_nested_step_finished_and_no_parent_steps_on_step_failure() throws NoSuchMethodException {
 		Method method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
+		aspect.failedNestedStep(method.getAnnotation(Step.class), new IllegalArgumentException());
 
-		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client).startTestItem(same(parentId), captor.capture());
-		StartTestItemRQ result = captor.getValue();
+		ArgumentCaptor<FinishTestItemRQ> finishRQs = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(client, times(1)).finishTestItem(same(itemUuid), finishRQs.capture());
 
-		assertThat(result.getName(), equalTo(StepAspectCommon.TEST_STEP_NAME));
-		assertThat(result.getDescription(), equalTo(StepAspectCommon.TEST_STEP_DESCRIPTION));
-		assertThat(result.getAttributes(), nullValue());
-
-		aspect.finishNestedStep(method.getAnnotation(Step.class));
+		FinishTestItemRQ resultRq = finishRQs.getValue();
+		assertThat(resultRq.getStatus(), equalTo(ItemStatus.FAILED.name()));
+		assertThat(resultRq.getIssue(), nullValue());
 	}
 }
