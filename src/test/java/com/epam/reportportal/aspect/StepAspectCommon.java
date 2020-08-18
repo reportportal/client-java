@@ -60,13 +60,6 @@ public class StepAspectCommon {
 		)).thenReturn(CommonUtils.createMaybe(new ItemCreatedRS(itemUuid, itemUuid)));
 	}
 
-	static void simulateFinishItemResponseLenient(ReportPortalClient client, String id) {
-		lenient().when(client.finishTestItem(same(id), any(FinishTestItemRQ.class))).thenReturn(Maybe.create(emitter -> {
-			emitter.onSuccess(new OperationCompletionRS());
-			emitter.onComplete();
-		}));
-	}
-
 	static void simulateFinishItemResponse(ReportPortalClient client, String id) {
 		when(client.finishTestItem(same(id), any(FinishTestItemRQ.class))).thenReturn(Maybe.create(emitter -> {
 			emitter.onSuccess(new OperationCompletionRS());

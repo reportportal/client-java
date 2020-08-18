@@ -58,19 +58,13 @@ public class StepAspectStartTest {
 	public void setup() {
 		StepAspectCommon.simulateStartLaunch(client, "launch2");
 		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
-		StepAspectCommon.simulateFinishItemResponseLenient(client, itemUuid);
 		StepAspect.setParentId(parentIdMaybe);
-		ListenerParameters params = TestUtils.standardParameters();
-		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
-	}
-
-	@AfterEach
-	public void cleanUp() {
-		aspect.finishNestedStep(method.getAnnotation(Step.class));
 	}
 
 	@Test
 	public void test_simple_nested_step_item_rq() throws NoSuchMethodException {
+		ListenerParameters params = TestUtils.standardParameters();
+		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 		method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 
@@ -81,10 +75,14 @@ public class StepAspectStartTest {
 		assertThat(result.getName(), equalTo(StepAspectCommon.TEST_STEP_NAME));
 		assertThat(result.getDescription(), equalTo(StepAspectCommon.TEST_STEP_DESCRIPTION));
 		assertThat(result.getAttributes(), nullValue());
+		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
+		aspect.finishNestedStep(method.getAnnotation(Step.class));
 	}
 
 	@Test
 	public void test_nested_step_attribute_processing() throws NoSuchMethodException {
+		ListenerParameters params = TestUtils.standardParameters();
+		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 		method = StepAspectCommon.getMethod("testNestedStepAttributeAnnotation");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 
@@ -94,5 +92,6 @@ public class StepAspectStartTest {
 
 		assertThat(result.getAttributes(), hasSize(1));
 		assertThat(result.getAttributes(), contains(notNullValue()));
+		aspect.finishNestedStep(method.getAnnotation(Step.class));
 	}
 }
