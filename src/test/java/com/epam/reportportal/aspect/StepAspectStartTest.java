@@ -50,10 +50,9 @@ public class StepAspectStartTest {
 
 	private final StepAspect aspect = new StepAspect();
 	private final ListenerParameters params = TestUtils.standardParameters();
-	
+
 	@Mock
 	public MethodSignature methodSignature;
-	private Method method;
 
 	@Test
 	public void test_simple_nested_step_item_rq() throws NoSuchMethodException {
@@ -64,7 +63,7 @@ public class StepAspectStartTest {
 		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
 		ReportPortal.create(CLIENT, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 
-		method = StepAspectCommon.getMethod("testNestedStepSimple");
+		Method method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
@@ -90,9 +89,7 @@ public class StepAspectStartTest {
 		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
 		ReportPortal.create(CLIENT, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 
-		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
-		ReportPortal.create(CLIENT, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
-		method = StepAspectCommon.getMethod("testNestedStepAttributeAnnotation");
+		Method method = StepAspectCommon.getMethod("testNestedStepAttributeAnnotation");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
