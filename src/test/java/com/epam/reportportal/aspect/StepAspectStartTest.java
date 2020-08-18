@@ -58,6 +58,7 @@ public class StepAspectStartTest {
 	public void setup() {
 		StepAspectCommon.simulateStartLaunch(client, "launch2");
 		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
+		StepAspectCommon.simulateFinishItemResponseLenient(client, itemUuid);
 		StepAspect.setParentId(parentIdMaybe);
 		ListenerParameters params = TestUtils.standardParameters();
 		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();

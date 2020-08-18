@@ -19,9 +19,11 @@ package com.epam.reportportal.aspect;
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.attribute.Attribute;
 import com.epam.reportportal.annotations.attribute.Attributes;
+import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
+import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -39,6 +41,7 @@ import java.lang.reflect.Method;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 /**
@@ -48,13 +51,20 @@ public class StepAspectCommon {
 
 	static void simulateStartLaunch(ReportPortalClient client, String launchId) {
 		when(client.startLaunch(any())).thenReturn(TestUtils.startLaunchResponse(launchId));
+		lenient().when(client.log(any(MultiPartRequest.class))).thenReturn(CommonUtils.createMaybe(new BatchSaveOperatingRS()));
 	}
 
 	static void simulateStartItemResponse(ReportPortalClient client, String parentId, final String itemUuid) {
-		when(client.startTestItem(
-				same(parentId),
+		when(client.startTestItem(same(parentId),
 				any(StartTestItemRQ.class)
 		)).thenReturn(CommonUtils.createMaybe(new ItemCreatedRS(itemUuid, itemUuid)));
+	}
+
+	static void simulateFinishItemResponseLenient(ReportPortalClient client, String id) {
+		lenient().when(client.finishTestItem(same(id), any(FinishTestItemRQ.class))).thenReturn(Maybe.create(emitter -> {
+			emitter.onSuccess(new OperationCompletionRS());
+			emitter.onComplete();
+		}));
 	}
 
 	static void simulateFinishItemResponse(ReportPortalClient client, String id) {
