@@ -44,6 +44,7 @@ import static org.mockito.Mockito.verify;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class StepAspectStartTest {
 	private final StepAspect aspect = new StepAspect();
+	private final ListenerParameters params = TestUtils.standardParameters();
 
 	private ReportPortalClient client;
 	@Mock
@@ -65,8 +66,6 @@ public class StepAspectStartTest {
 		itemUuid = UUID.randomUUID().toString();
 		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
 		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
-		ListenerParameters params = TestUtils.standardParameters();
-		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 	}
 
 	@AfterEach
@@ -77,6 +76,7 @@ public class StepAspectStartTest {
 
 	@Test
 	public void test_simple_nested_step_item_rq() throws NoSuchMethodException {
+		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 		method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 
@@ -93,6 +93,7 @@ public class StepAspectStartTest {
 
 	@Test
 	public void test_nested_step_attribute_processing() throws NoSuchMethodException {
+		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 		method = StepAspectCommon.getMethod("testNestedStepAttributeAnnotation");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 

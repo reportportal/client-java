@@ -45,11 +45,13 @@ import static org.mockito.Mockito.*;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class StepAspectFinishTest {
 	private final StepAspect aspect = new StepAspect();
+	private final ListenerParameters params = TestUtils.standardParameters();
 
 	private ReportPortalClient client;
 	@Mock
 	public MethodSignature methodSignature;
 	private String itemUuid;
+
 
 	@BeforeAll
 	public void launchSetup() {
@@ -64,8 +66,6 @@ public class StepAspectFinishTest {
 		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
 		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
 		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
-		ListenerParameters params = TestUtils.standardParameters();
-		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 	}
 
 	/*
@@ -73,7 +73,6 @@ public class StepAspectFinishTest {
 	 */
 	@Test
 	public void verify_only_nested_step_finished_and_no_parent_steps() throws NoSuchMethodException {
-		ListenerParameters params = TestUtils.standardParameters();
 		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 		Method method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
@@ -93,7 +92,6 @@ public class StepAspectFinishTest {
 	 */
 	@Test
 	public void verify_only_nested_step_finished_and_no_parent_steps_on_step_failure() throws NoSuchMethodException {
-		ListenerParameters params = TestUtils.standardParameters();
 		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 		Method method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
