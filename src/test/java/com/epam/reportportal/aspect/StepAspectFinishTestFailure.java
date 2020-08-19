@@ -63,7 +63,7 @@ public class StepAspectFinishTestFailure {
 		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 		myLaunch = ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params));
 		myLaunch.start();
-		StepAspect.setParentId(myLaunch, CommonUtils.createMaybe(parentId));
+		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
 	}
 
 	/*
