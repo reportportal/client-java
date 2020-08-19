@@ -18,6 +18,7 @@ package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
@@ -48,18 +49,19 @@ public class StepAspectStartTestAttribute {
 	private final String itemUuid = UUID.randomUUID().toString();
 
 	@Mock(name = "StepAspectStartTest.class")
-	private ReportPortalClient client;
-
+	public ReportPortalClient client;
 	@Mock
 	public MethodSignature methodSignature;
+	private Launch myLaunch;
 
 	@BeforeEach
 	public void launchSetup() {
-		StepAspectCommon.simulateStartLaunch(client, "launch4");
+		StepAspectCommon.simulateLaunch(client, "launch4");
 		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
 		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
 		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
-		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
+		myLaunch = ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params));
+		myLaunch.start();
 	}
 
 	@Test
@@ -75,5 +77,6 @@ public class StepAspectStartTestAttribute {
 		assertThat(result.getAttributes(), contains(notNullValue()));
 
 		aspect.finishNestedStep(method.getAnnotation(Step.class));
+		myLaunch.finish(TestUtils.standardLaunchFinishRequest());
 	}
 }

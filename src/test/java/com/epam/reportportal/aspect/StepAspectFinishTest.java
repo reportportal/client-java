@@ -19,6 +19,7 @@ package com.epam.reportportal.aspect;
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
@@ -49,18 +50,19 @@ public class StepAspectFinishTest {
 	private final String itemUuid = UUID.randomUUID().toString();
 
 	@Mock(name = "StepAspectFinishTest.class")
-	private ReportPortalClient client;
-
+	public ReportPortalClient client;
 	@Mock
 	public MethodSignature methodSignature;
+	private Launch myLaunch;
 
 	@BeforeEach
 	public void launchSetup() {
-		StepAspectCommon.simulateStartLaunch(client, "launch1");
+		StepAspectCommon.simulateLaunch(client, "launch1");
 		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
 		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
 		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
-		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
+		myLaunch = ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params));
+		myLaunch.start();
 	}
 
 	/*
@@ -71,6 +73,7 @@ public class StepAspectFinishTest {
 		Method method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 		aspect.finishNestedStep(method.getAnnotation(Step.class));
+		myLaunch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<FinishTestItemRQ> finishRQs = ArgumentCaptor.forClass(FinishTestItemRQ.class);
 		verify(client, times(1)).finishTestItem(same(itemUuid), finishRQs.capture());
