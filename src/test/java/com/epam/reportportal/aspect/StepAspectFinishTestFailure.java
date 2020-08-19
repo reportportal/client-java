@@ -48,7 +48,7 @@ public class StepAspectFinishTestFailure {
 	private final String parentId = UUID.randomUUID().toString();
 	private final String itemUuid = UUID.randomUUID().toString();
 
-	@Mock
+	@Mock(name = "StepAspectFinishTestFailure.class")
 	private ReportPortalClient client;
 
 	@Mock
@@ -56,8 +56,7 @@ public class StepAspectFinishTestFailure {
 
 	@BeforeEach
 	public void launchSetup() {
-		client = mock(ReportPortalClient.class);
-		StepAspectCommon.simulateStartLaunch(client, "launch");
+		StepAspectCommon.simulateStartLaunch(client, "launch2");
 		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
 		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
 		StepAspect.setParentId(CommonUtils.createMaybe(parentId));

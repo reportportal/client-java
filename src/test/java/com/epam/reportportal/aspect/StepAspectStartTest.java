@@ -36,7 +36,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.same;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -49,7 +48,7 @@ public class StepAspectStartTest {
 	private final String parentId = UUID.randomUUID().toString();
 	private final String itemUuid = UUID.randomUUID().toString();
 
-	@Mock
+	@Mock(name = "StepAspectStartTest.class")
 	private ReportPortalClient client;
 
 	@Mock
@@ -57,8 +56,7 @@ public class StepAspectStartTest {
 
 	@BeforeEach
 	public void launchSetup() {
-		client = mock(ReportPortalClient.class);
-		StepAspectCommon.simulateStartLaunch(client, "launch2");
+		StepAspectCommon.simulateStartLaunch(client, "launch3");
 		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
 		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
 		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
