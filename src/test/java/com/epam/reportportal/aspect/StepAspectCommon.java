@@ -26,14 +26,11 @@ import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import io.reactivex.Maybe;
-import io.reactivex.MaybeEmitter;
-import io.reactivex.MaybeOnSubscribe;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.Signature;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.aspectj.lang.reflect.SourceLocation;
 
-import javax.annotation.Nonnull;
 import java.lang.reflect.Method;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -64,21 +61,6 @@ public class StepAspectCommon {
 			emitter.onSuccess(new OperationCompletionRS());
 			emitter.onComplete();
 		}));
-	}
-
-	static <T> Maybe<T> getMaybe(final T response) {
-		return Maybe.create(new MaybeOnSubscribe<T>() {
-			@Override
-			public void subscribe(@Nonnull MaybeEmitter<T> emitter) {
-				emitter.onSuccess(response);
-				emitter.onComplete();
-			}
-
-			@Override
-			public String toString() {
-				return response.toString();
-			}
-		});
 	}
 
 	static final String TEST_STEP_NAME = "Test step name";

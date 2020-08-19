@@ -78,6 +78,7 @@ public class StepNameUtilsTest {
 	}
 
 	@Step(STEP_NAME_PATTERN)
+	@SuppressWarnings("unused")
 	private void stepWithAValueInName(String value) {
 
 	}

@@ -42,8 +42,6 @@ import static com.google.common.base.Throwables.getStackTraceAsString;
 public class StepAspect {
 	private static final ConcurrentHashMap<Launch, Deque<Maybe<String>>> stepStack = new ConcurrentHashMap<>();
 
-	private static final InheritableThreadLocal<Maybe<String>> parentId = new InheritableThreadLocal<>();
-
 	@Pointcut("@annotation(step)")
 	public void withStepAnnotation(Step step) {
 
@@ -63,7 +61,7 @@ public class StepAspect {
 			Deque<Maybe<String>> steps = stepStack.computeIfAbsent(launch, l -> new ConcurrentLinkedDeque<>());
 			Maybe<String> parent = steps.peek();
 			if (parent == null) {
-				parent = parentId.get();
+				return;
 			}
 
 			StartTestItemRQ startStepRequest = StepRequestUtils.buildStartStepRequest(signature, step, joinPoint);
@@ -124,10 +122,9 @@ public class StepAspect {
 				stepId = steps.poll();
 			}
 		}
-
 	}
 
-	public static void setParentId(Maybe<String> parent) {
-		parentId.set(parent);
+	public static void setParentId(Launch launch, Maybe<String> parent) {
+		stepStack.computeIfAbsent(launch, l -> new ConcurrentLinkedDeque<>()).push(parent);
 	}
 }
