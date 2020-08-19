@@ -62,7 +62,7 @@ public class StepAspectFinishTest {
 		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
 		myLaunch = ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params));
 		myLaunch.start();
-		StepAspect.setParentId(myLaunch, CommonUtils.createMaybe(parentId));
+		StepAspect.setParentId(CommonUtils.createMaybe(parentId));
 	}
 
 	/*
