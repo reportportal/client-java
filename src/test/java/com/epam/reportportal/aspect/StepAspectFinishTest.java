@@ -18,9 +18,13 @@ package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.listeners.ItemStatus;
+import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.test.TestUtils;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
-import io.reactivex.Maybe;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,75 +35,51 @@ import java.lang.reflect.Method;
 import java.util.UUID;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Mockito.*;
 
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
 public class StepAspectFinishTest {
+	private final StepAspect aspect = new StepAspect();
+	private final ListenerParameters params = TestUtils.standardParameters();
+
 	private final String parentId = UUID.randomUUID().toString();
 	private final String itemUuid = UUID.randomUUID().toString();
-	private final Maybe<String> parentIdMaybe = StepAspectCommon.getMaybe(parentId);
-	private final StepAspect aspect = new StepAspect();
 
-	@Mock
-	private Launch launch;
+	@Mock(name = "StepAspectFinishTest.class")
+	public ReportPortalClient client;
 	@Mock
 	public MethodSignature methodSignature;
-
-	private Maybe<String> startStep;
+	private Launch myLaunch;
 
 	@BeforeEach
-	public void setup() {
-		StepAspect.setParentId(parentIdMaybe);
-		StepAspect.addLaunch(UUID.randomUUID().toString(), launch);
-		startStep = StepAspectCommon.simulateStartItemResponse(launch, parentIdMaybe, itemUuid);
-		StepAspectCommon.simulateFinishItemResponse(launch, startStep);
+	public void launchSetup() {
+		StepAspectCommon.simulateLaunch(client, "launch1");
+		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
+		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
+		myLaunch = ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params));
+		myLaunch.start();
+		StepAspect.setParentId(myLaunch, CommonUtils.createMaybe(parentId));
 	}
 
 	/*
 	 * Do not finish parent step inside nested step, leads to issue: https://github.com/reportportal/client-java/issues/97
 	 */
 	@Test
-	@SuppressWarnings("unchecked")
 	public void verify_only_nested_step_finished_and_no_parent_steps() throws NoSuchMethodException {
 		Method method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 		aspect.finishNestedStep(method.getAnnotation(Step.class));
+		myLaunch.finish(TestUtils.standardLaunchFinishRequest());
 
-		ArgumentCaptor<Maybe<String>> finishUuids = ArgumentCaptor.forClass(Maybe.class);
 		ArgumentCaptor<FinishTestItemRQ> finishRQs = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(launch, times(1)).finishTestItem(finishUuids.capture(), finishRQs.capture());
-
-		Maybe<String> finishUuid = finishUuids.getValue();
-		assertThat(finishUuid, sameInstance(startStep));
+		verify(client, timeout(1000).times(1)).finishTestItem(same(itemUuid), finishRQs.capture());
 
 		FinishTestItemRQ resultRq = finishRQs.getValue();
 		assertThat(resultRq.getStatus(), equalTo(ItemStatus.PASSED.name()));
-		assertThat(resultRq.getIssue(), nullValue());
-	}
-
-	/*
-	 * Do not finish parent step inside nested step, leads to issue: https://github.com/reportportal/client-java/issues/97
-	 */
-	@Test
-	@SuppressWarnings("unchecked")
-	public void verify_only_nested_step_finished_and_no_parent_steps_on_step_failure() throws NoSuchMethodException {
-		Method method = StepAspectCommon.getMethod("testNestedStepSimple");
-		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
-		aspect.failedNestedStep(method.getAnnotation(Step.class), new IllegalArgumentException());
-
-		ArgumentCaptor<Maybe<String>> finishUuids = ArgumentCaptor.forClass(Maybe.class);
-		ArgumentCaptor<FinishTestItemRQ> finishRQs = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(launch, times(1)).finishTestItem(finishUuids.capture(), finishRQs.capture());
-
-		Maybe<String> finishUuid = finishUuids.getValue();
-		assertThat(finishUuid, sameInstance(startStep));
-
-		FinishTestItemRQ resultRq = finishRQs.getValue();
-		assertThat(resultRq.getStatus(), equalTo(ItemStatus.FAILED.name()));
 		assertThat(resultRq.getIssue(), nullValue());
 	}
 }

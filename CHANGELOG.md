@@ -1,17 +1,13 @@
 # Changelog
 
 ## [Unreleased]
-
-## [5.0.4]
-### Added
-- More Test Case ID methods
-
-## [5.0.3]
 ### Added
 - Utilities
   - More Test Case ID methods
   - CodeRef generation method
 - A proxy parameter handling: `rp.http.proxy=http://localhost:8981`
+### Fixed
+- Issue #117 multithreaded reporting of nested steps 
 
 ## [5.0.2]
 ### Added

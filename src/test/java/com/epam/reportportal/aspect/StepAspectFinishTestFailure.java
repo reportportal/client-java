@@ -17,13 +17,14 @@
 package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
-import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,21 +37,19 @@ import java.util.UUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.ArgumentMatchers.same;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
-public class StepAspectStartTest {
+public class StepAspectFinishTestFailure {
 	private final StepAspect aspect = new StepAspect();
 	private final ListenerParameters params = TestUtils.standardParameters();
 
 	private final String parentId = UUID.randomUUID().toString();
 	private final String itemUuid = UUID.randomUUID().toString();
 
-	@Mock(name = "StepAspectStartTest.class")
+	@Mock(name = "StepAspectFinishTestFailure.class")
 	public ReportPortalClient client;
 	@Mock
 	public MethodSignature methodSignature;
@@ -58,28 +57,30 @@ public class StepAspectStartTest {
 
 	@BeforeEach
 	public void launchSetup() {
-		StepAspectCommon.simulateLaunch(client, "launch3");
+		StepAspectCommon.simulateLaunch(client, "launch2");
 		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
 		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
+		ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params)).start();
 		myLaunch = ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params));
 		myLaunch.start();
 		StepAspect.setParentId(myLaunch, CommonUtils.createMaybe(parentId));
 	}
 
+	/*
+	 * Do not finish parent step inside nested step, leads to issue: https://github.com/reportportal/client-java/issues/97
+	 */
 	@Test
-	public void test_simple_nested_step_item_rq() throws NoSuchMethodException {
+	public void verify_only_nested_step_finished_and_no_parent_steps_on_step_failure() throws NoSuchMethodException {
 		Method method = StepAspectCommon.getMethod("testNestedStepSimple");
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
-
-		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, timeout(1000).times(1)).startTestItem(same(parentId), captor.capture());
-		StartTestItemRQ result = captor.getValue();
-
-		assertThat(result.getName(), equalTo(StepAspectCommon.TEST_STEP_NAME));
-		assertThat(result.getDescription(), equalTo(StepAspectCommon.TEST_STEP_DESCRIPTION));
-		assertThat(result.getAttributes(), nullValue());
-
-		aspect.finishNestedStep(method.getAnnotation(Step.class));
+		aspect.failedNestedStep(method.getAnnotation(Step.class), new IllegalArgumentException());
 		myLaunch.finish(TestUtils.standardLaunchFinishRequest());
+
+		ArgumentCaptor<FinishTestItemRQ> finishRQs = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(client, timeout(1000).times(1)).finishTestItem(same(itemUuid), finishRQs.capture());
+
+		FinishTestItemRQ resultRq = finishRQs.getValue();
+		assertThat(resultRq.getStatus(), equalTo(ItemStatus.FAILED.name()));
+		assertThat(resultRq.getIssue(), nullValue());
 	}
 }
