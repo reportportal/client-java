@@ -77,7 +77,7 @@ public class StepAspectFinishTestFailure {
 		myLaunch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<FinishTestItemRQ> finishRQs = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(client, times(1)).finishTestItem(same(itemUuid), finishRQs.capture());
+		verify(client, timeout(1000).times(1)).finishTestItem(same(itemUuid), finishRQs.capture());
 
 		FinishTestItemRQ resultRq = finishRQs.getValue();
 		assertThat(resultRq.getStatus(), equalTo(ItemStatus.FAILED.name()));
