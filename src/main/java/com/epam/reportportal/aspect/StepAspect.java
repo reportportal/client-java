@@ -23,7 +23,6 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import com.google.common.collect.Queues;
 import io.reactivex.Maybe;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.*;
@@ -31,6 +30,8 @@ import org.aspectj.lang.reflect.MethodSignature;
 
 import java.util.Calendar;
 import java.util.Deque;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import static com.google.common.base.Throwables.getStackTraceAsString;
 
@@ -39,12 +40,7 @@ import static com.google.common.base.Throwables.getStackTraceAsString;
  */
 @Aspect
 public class StepAspect {
-	private static final InheritableThreadLocal<Deque<Maybe<String>>> stepStack = new InheritableThreadLocal<Deque<Maybe<String>>>() {
-		@Override
-		protected Deque<Maybe<String>> initialValue() {
-			return Queues.newArrayDeque();
-		}
-	};
+	private static final ConcurrentHashMap<Launch, Deque<Maybe<String>>> stepStack = new ConcurrentHashMap<>();
 
 	private static final InheritableThreadLocal<Maybe<String>> parentId = new InheritableThreadLocal<>();
 
@@ -63,31 +59,33 @@ public class StepAspect {
 		if (!step.isIgnored()) {
 			MethodSignature signature = (MethodSignature) joinPoint.getSignature();
 
-			Maybe<String> parent = stepStack.get().peek();
+			Launch launch = Launch.currentLaunch();
+			Deque<Maybe<String>> steps = stepStack.computeIfAbsent(launch, l -> new ConcurrentLinkedDeque<>());
+			Maybe<String> parent = steps.peek();
 			if (parent == null) {
 				parent = parentId.get();
 			}
 
 			StartTestItemRQ startStepRequest = StepRequestUtils.buildStartStepRequest(signature, step, joinPoint);
-
-			Launch launch = Launch.currentLaunch();
 			Maybe<String> stepMaybe = launch.startTestItem(parent, startStepRequest);
-			stepStack.get().push(stepMaybe);
+			steps.push(stepMaybe);
 		}
-
 	}
 
 	@AfterReturning(value = "anyMethod() && withStepAnnotation(step)", argNames = "step")
 	public void finishNestedStep(Step step) {
 		if (!step.isIgnored()) {
-			Maybe<String> stepId = stepStack.get().poll();
+			Launch launch = Launch.currentLaunch();
+			Deque<Maybe<String>> steps = stepStack.computeIfAbsent(launch, l -> new ConcurrentLinkedDeque<>());
+			Maybe<String> stepId = steps.poll();
 			if (stepId == null) {
 				return;
 			}
+
 			FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(ItemStatus.PASSED,
 					Calendar.getInstance().getTime()
 			);
-			Launch.currentLaunch().finishTestItem(stepId, finishStepRequest);
+			launch.finishTestItem(stepId, finishStepRequest);
 		}
 	}
 
@@ -95,8 +93,9 @@ public class StepAspect {
 	public void failedNestedStep(Step step, final Throwable throwable) {
 
 		if (!step.isIgnored()) {
-
-			Maybe<String> stepId = stepStack.get().poll();
+			Launch launch = Launch.currentLaunch();
+			Deque<Maybe<String>> steps = stepStack.computeIfAbsent(launch, l -> new ConcurrentLinkedDeque<>());
+			Maybe<String> stepId = steps.poll();
 			if (stepId == null) {
 				return;
 			}
@@ -121,8 +120,8 @@ public class StepAspect {
 			);
 
 			while (stepId != null) {
-				Launch.currentLaunch().finishTestItem(stepId, finishStepRequest);
-				stepId = stepStack.get().poll();
+				launch.finishTestItem(stepId, finishStepRequest);
+				stepId = steps.poll();
 			}
 		}
 
