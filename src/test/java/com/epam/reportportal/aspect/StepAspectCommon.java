@@ -25,7 +25,6 @@ import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
-import io.reactivex.Maybe;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.Signature;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -57,17 +56,13 @@ public class StepAspectCommon {
 	}
 
 	static void simulateFinishItemResponse(ReportPortalClient client, String id) {
-		when(client.finishTestItem(same(id), any(FinishTestItemRQ.class))).thenReturn(Maybe.create(emitter -> {
-			emitter.onSuccess(new OperationCompletionRS());
-			emitter.onComplete();
-		}));
+		when(client.finishTestItem(same(id), any(FinishTestItemRQ.class))).thenReturn(CommonUtils.createMaybe(new OperationCompletionRS()));
 	}
 
 	static final String TEST_STEP_NAME = "Test step name";
 	static final String TEST_STEP_DESCRIPTION = "Test step name";
 
 	@Step(value = TEST_STEP_NAME, description = TEST_STEP_DESCRIPTION)
-	@SuppressWarnings("unused")
 	public void testNestedStepSimple() {
 	}
 
@@ -128,7 +123,6 @@ public class StepAspectCommon {
 
 	@Step(value = TEST_STEP_NAME, description = TEST_STEP_DESCRIPTION)
 	@Attributes(attributes = @Attribute(key = "test", value = "value"))
-	@SuppressWarnings("unused")
 	public void testNestedStepAttributeAnnotation() {
 	}
 }

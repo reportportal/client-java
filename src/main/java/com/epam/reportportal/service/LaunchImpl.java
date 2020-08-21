@@ -15,6 +15,7 @@
  */
 package com.epam.reportportal.service;
 
+import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ItemStatus;
@@ -121,20 +122,17 @@ public class LaunchImpl extends Launch {
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 
-		launch = Maybe.create(new MaybeOnSubscribe<String>() {
-			@Override
-			public void subscribe(@Nonnull final MaybeEmitter<String> emitter) {
+		launch = Maybe.create((MaybeOnSubscribe<String>) emitter -> {
 
-				Maybe<StartLaunchRS> launchPromise = Maybe.defer(() -> rpClient.startLaunch(rq)
-						.retry(DEFAULT_REQUEST_RETRY)
-						.doOnSuccess(LAUNCH_SUCCESS_CONSUMER)
-						.doOnError(LOG_ERROR)).subscribeOn(getScheduler()).cache();
+			Maybe<StartLaunchRS> launchPromise = Maybe.defer(() -> rpClient.startLaunch(rq)
+					.retry(DEFAULT_REQUEST_RETRY)
+					.doOnSuccess(LAUNCH_SUCCESS_CONSUMER)
+					.doOnError(LOG_ERROR)).subscribeOn(getScheduler()).cache();
 
-				launchPromise.subscribe(rs -> emitter.onSuccess(rs.getId()), t -> {
-					LOG_ERROR.accept(t);
-					emitter.onComplete();
-				});
-			}
+			launchPromise.subscribe(rs -> emitter.onSuccess(rs.getId()), t -> {
+				LOG_ERROR.accept(t);
+				emitter.onComplete();
+			});
 		}).cache();
 	}
 
@@ -250,16 +248,19 @@ public class LaunchImpl extends Launch {
 			return createErrorResponse(new NullPointerException("StartTestItemRQ should not be null"));
 		}
 
-		Maybe<String> testItem = launch.flatMap((Function<String, Maybe<String>>) launchId -> {
+		Maybe<String> item = launch.flatMap((Function<String, Maybe<String>>) launchId -> {
 			rq.setLaunchUuid(launchId);
 			return rpClient.startTestItem(rq).retry(DEFAULT_REQUEST_RETRY).doOnSuccess(logCreated("item")).map(TO_ID);
 		}).cache();
 
-		testItem.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start test item"));
-		QUEUE.getUnchecked(testItem).addToQueue(testItem.ignoreElement().onErrorComplete());
-		LoggingContext.init(launch, testItem, rpClient, getScheduler(), getParameters().getBatchLogsSize(), getParameters().isConvertImage());
-		getStepReporter().setParent(testItem);
-		return testItem;
+		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start test item"));
+		QUEUE.getUnchecked(item).addToQueue(item.ignoreElement().onErrorComplete());
+		LoggingContext.init(launch, item, rpClient, getScheduler(), getParameters().getBatchLogsSize(), getParameters().isConvertImage());
+
+		getStepReporter().setParent(item);
+		StepAspect.setParentId(item);
+
+		return item;
 	}
 
 	public Maybe<String> startTestItem(final Maybe<String> parentId, final Maybe<String> retryOf, final StartTestItemRQ rq) {
@@ -276,27 +277,22 @@ public class LaunchImpl extends Launch {
 		if (null == parentId) {
 			return startTestItem(rq);
 		}
-		final Maybe<String> itemId = launch.flatMap(new Function<String, Maybe<String>>() {
-			@Override
-			public Maybe<String> apply(final String launchId) {
-				return parentId.flatMap(new Function<String, MaybeSource<String>>() {
-					@Override
-					public MaybeSource<String> apply(String parentId) {
-						rq.setLaunchUuid(launchId);
-						LOGGER.debug("Starting test item..." + Thread.currentThread().getName());
-						Maybe<ItemCreatedRS> result = rpClient.startTestItem(parentId, rq);
-						result = result.retry(DEFAULT_REQUEST_RETRY);
-						result = result.doOnSuccess(logCreated("item"));
-						return result.map(TO_ID);
-					}
-				});
-			}
-		}).cache();
-		itemId.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start test item"));
-		QUEUE.getUnchecked(itemId).withParent(parentId).addToQueue(itemId.ignoreElement().onErrorComplete());
-		LoggingContext.init(launch, itemId, rpClient, getScheduler(), getParameters().getBatchLogsSize(), getParameters().isConvertImage());
-		getStepReporter().setParent(itemId);
-		return itemId;
+		final Maybe<String> item = launch.flatMap((Function<String, Maybe<String>>) lId -> parentId.flatMap((Function<String, MaybeSource<String>>) pId -> {
+			rq.setLaunchUuid(lId);
+			LOGGER.debug("Starting test item..." + Thread.currentThread().getName());
+			Maybe<ItemCreatedRS> result = rpClient.startTestItem(pId, rq);
+			result = result.retry(DEFAULT_REQUEST_RETRY);
+			result = result.doOnSuccess(logCreated("item"));
+			return result.map(TO_ID);
+		})).cache();
+		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start test item"));
+		QUEUE.getUnchecked(item).withParent(parentId).addToQueue(item.ignoreElement().onErrorComplete());
+		LoggingContext.init(launch, item, rpClient, getScheduler(), getParameters().getBatchLogsSize(), getParameters().isConvertImage());
+
+		getStepReporter().setParent(item);
+		StepAspect.setParentId(item);
+
+		return item;
 	}
 
 	/**
@@ -362,6 +358,7 @@ public class LaunchImpl extends Launch {
 		}
 
 		getStepReporter().removeParent(item);
+		StepAspect.removeParentId(item);
 
 		return finishResponse;
 	}
