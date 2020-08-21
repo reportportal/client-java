@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.7]
 ## Added
 - StepAspect.setParentId and StepAspect.removeParentId now handled inside LaunchImpl class 
 
