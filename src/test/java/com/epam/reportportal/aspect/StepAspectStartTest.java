@@ -34,8 +34,7 @@ import java.lang.reflect.Method;
 import java.util.UUID;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -78,6 +77,22 @@ public class StepAspectStartTest {
 		assertThat(result.getName(), equalTo(StepAspectCommon.TEST_STEP_NAME));
 		assertThat(result.getDescription(), equalTo(StepAspectCommon.TEST_STEP_DESCRIPTION));
 		assertThat(result.getAttributes(), nullValue());
+
+		aspect.finishNestedStep(method.getAnnotation(Step.class));
+		myLaunch.finish(TestUtils.standardLaunchFinishRequest());
+	}
+
+	@Test
+	public void test_nested_step_attribute_processing() throws NoSuchMethodException {
+		Method method = StepAspectCommon.getMethod("testNestedStepAttributeAnnotation");
+		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
+
+		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, timeout(1000).times(1)).startTestItem(same(parentId), captor.capture());
+		StartTestItemRQ result = captor.getValue();
+
+		assertThat(result.getAttributes(), hasSize(1));
+		assertThat(result.getAttributes(), contains(notNullValue()));
 
 		aspect.finishNestedStep(method.getAnnotation(Step.class));
 		myLaunch.finish(TestUtils.standardLaunchFinishRequest());

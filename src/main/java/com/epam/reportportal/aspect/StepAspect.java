@@ -28,6 +28,7 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.MethodSignature;
 
+import javax.annotation.Nonnull;
 import java.util.Calendar;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -63,8 +64,7 @@ public class StepAspect {
 			}
 
 			StartTestItemRQ startStepRequest = StepRequestUtils.buildStartStepRequest(signature, step, joinPoint);
-			Maybe<String> stepMaybe = Launch.currentLaunch().startTestItem(parent, startStepRequest);
-			steps.push(stepMaybe);
+			Launch.currentLaunch().startTestItem(parent, startStepRequest);
 		}
 	}
 
@@ -72,7 +72,7 @@ public class StepAspect {
 	public void finishNestedStep(Step step) {
 		if (!step.isIgnored()) {
 			Deque<Maybe<String>> steps = stepStack.get();
-			Maybe<String> stepId = steps.poll();
+			Maybe<String> stepId = steps.peek();
 			if (stepId == null) {
 				return;
 			}
@@ -89,7 +89,7 @@ public class StepAspect {
 
 		if (!step.isIgnored()) {
 			Deque<Maybe<String>> steps = stepStack.get();
-			Maybe<String> stepId = steps.poll();
+			Maybe<String> stepId = steps.peek();
 			if (stepId == null) {
 				return;
 			}
@@ -112,15 +112,15 @@ public class StepAspect {
 			FinishTestItemRQ finishStepRequest = StepRequestUtils.buildFinishStepRequest(ItemStatus.FAILED,
 					Calendar.getInstance().getTime()
 			);
-
-			while (stepId != null) {
-				Launch.currentLaunch().finishTestItem(stepId, finishStepRequest);
-				stepId = steps.poll();
-			}
+			Launch.currentLaunch().finishTestItem(stepId, finishStepRequest);
 		}
 	}
 
-	public static void setParentId(Maybe<String> parent) {
+	public static void setParentId(@Nonnull final Maybe<String> parent) {
 		stepStack.get().push(parent);
+	}
+
+	public static void removeParentId(@Nonnull final Maybe<String> parentUuid) {
+		stepStack.get().removeLastOccurrence(parentUuid);
 	}
 }

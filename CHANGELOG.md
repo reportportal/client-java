@@ -1,10 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+## Added
+- StepAspect.setParentId and StepAspect.removeParentId now handled inside LaunchImpl class 
 
 ## [5.0.6]
-
-## [5.0.5]
 ### Added
 - Utilities
   - More Test Case ID methods
