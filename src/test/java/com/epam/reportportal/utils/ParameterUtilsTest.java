@@ -19,6 +19,7 @@ package com.epam.reportportal.utils;
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -46,8 +47,6 @@ public class ParameterUtilsTest {
 		}
 	}
 
-	private static final int FINAL = 16;
-
 	private static final Method method = Arrays.stream(ParameterUtilsTest.class.getDeclaredMethods())
 			.filter(m -> "test".equals(m.getName()))
 			.findAny()
@@ -58,11 +57,11 @@ public class ParameterUtilsTest {
 			.findAny()
 			.orElse(null);
 
-	private static final Constructor constructor = Arrays.stream(ParameterUtilsTestObject.class.getDeclaredConstructors())
+	private static final Constructor<?> constructor = Arrays.stream(ParameterUtilsTestObject.class.getDeclaredConstructors())
 			.findAny()
 			.orElse(null);
 
-	private static final Constructor constructorWithKey = Arrays.stream(ParameterUtilsTestObjectKey.class.getDeclaredConstructors())
+	private static final Constructor<?> constructorWithKey = Arrays.stream(ParameterUtilsTestObjectKey.class.getDeclaredConstructors())
 			.findAny()
 			.orElse(null);
 
@@ -72,17 +71,18 @@ public class ParameterUtilsTest {
 	public void testKey(String string, @ParameterKey("id") TestCaseIdEntry id, int number) {
 	}
 
+	private static final List<?> PARAM_VALUES = Arrays.asList("test", null, 10);
+
 	@Test
 	public void test_method_parameter_reading() {
 		Parameter[] parameterOrder = method.getParameters();
 
-		List<Object> parameterValues = Arrays.asList("test", null, 10);
-		List<ParameterResource> parameters = ParameterUtils.getParameters(method, parameterValues);
+		List<ParameterResource> parameters = ParameterUtils.getParameters(method, PARAM_VALUES);
 
 		assertThat(parameters, hasSize(3));
 		IntStream.range(0, parameters.size()).forEach(i -> {
 			ParameterResource p = parameters.get(i);
-			Object v = parameterValues.get(i);
+			Object v = PARAM_VALUES.get(i);
 			assertThat(p.getKey(), equalTo(parameterOrder[i].getType().getName()));
 			assertThat(p.getValue(), equalTo(v == null ? "NULL" : v.toString()));
 		});
@@ -92,13 +92,12 @@ public class ParameterUtilsTest {
 	public void test_method_constructor_reading() {
 		Parameter[] parameterOrder = constructor.getParameters();
 
-		List<Object> parameterValues = Arrays.asList("test", null, 10);
-		List<ParameterResource> parameters = ParameterUtils.getParameters(constructor, parameterValues);
+		List<ParameterResource> parameters = ParameterUtils.getParameters(constructor, PARAM_VALUES);
 
 		assertThat(parameters, hasSize(3));
 		IntStream.range(0, parameters.size()).forEach(i -> {
 			ParameterResource p = parameters.get(i);
-			Object v = parameterValues.get(i);
+			Object v = PARAM_VALUES.get(i);
 			assertThat(p.getKey(), equalTo(parameterOrder[i].getType().getName()));
 			assertThat(p.getValue(), equalTo(v == null ? "NULL" : v.toString()));
 		});
@@ -108,13 +107,12 @@ public class ParameterUtilsTest {
 	public void test_method_parameter_key_annotation_reading() {
 		Parameter[] parameterOrder = methodWithKey.getParameters();
 
-		List<Object> parameterValues = Arrays.asList("test", null, 10);
-		List<ParameterResource> parameters = ParameterUtils.getParameters(methodWithKey, parameterValues);
+		List<ParameterResource> parameters = ParameterUtils.getParameters(methodWithKey, PARAM_VALUES);
 
 		assertThat(parameters, hasSize(3));
 		IntStream.range(0, parameters.size()).forEach(i -> {
 			ParameterResource p = parameters.get(i);
-			Object v = parameterValues.get(i);
+			Object v = PARAM_VALUES.get(i);
 			if (i != 1) {
 				assertThat(p.getKey(), equalTo(parameterOrder[i].getType().getName()));
 			} else {
@@ -128,13 +126,12 @@ public class ParameterUtilsTest {
 	public void test_constructor_parameter_key_annotation_reading() {
 		Parameter[] parameterOrder = constructorWithKey.getParameters();
 
-		List<Object> parameterValues = Arrays.asList("test", null, 10);
-		List<ParameterResource> parameters = ParameterUtils.getParameters(constructorWithKey, parameterValues);
+		List<ParameterResource> parameters = ParameterUtils.getParameters(constructorWithKey, PARAM_VALUES);
 
 		assertThat(parameters, hasSize(3));
 		IntStream.range(0, parameters.size()).forEach(i -> {
 			ParameterResource p = parameters.get(i);
-			Object v = parameterValues.get(i);
+			Object v = PARAM_VALUES.get(i);
 			if (i != 2) {
 				assertThat(p.getKey(), equalTo(parameterOrder[i].getType().getName()));
 			} else {
@@ -161,5 +158,81 @@ public class ParameterUtilsTest {
 	@MethodSource("typeConversion")
 	public void test_type_conversion(Class<?> from, Class<?> to) {
 		assertThat(ParameterUtils.toBoxedType(from), sameInstance(to));
+	}
+
+	private static final List<Pair<String, ?>> PARAM_KEY_VALUES = Arrays.asList(Pair.of("str", "test"),
+			Pair.of("my_id", null),
+			Pair.of("number", 10)
+	);
+
+	@Test
+	public void test_method_parameter_reading_codref() {
+		String codeRef = TestCaseIdUtils.getCodeRef(method);
+		Parameter[] parameterOrder = method.getParameters();
+
+		List<ParameterResource> parameters = ParameterUtils.getParameters(codeRef, PARAM_KEY_VALUES);
+
+		assertThat(parameters, hasSize(3));
+		IntStream.range(0, parameters.size()).forEach(i -> {
+			ParameterResource p = parameters.get(i);
+			Object v = PARAM_KEY_VALUES.get(i).getValue();
+			assertThat(p.getKey(), equalTo(parameterOrder[i].getType().getName()));
+			assertThat(p.getValue(), equalTo(v == null ? "NULL" : v.toString()));
+		});
+	}
+
+	@Test
+	public void test_method_parameter_key_annotation_reading_codref() {
+		String codeRef = TestCaseIdUtils.getCodeRef(methodWithKey);
+		Parameter[] parameterOrder = methodWithKey.getParameters();
+
+		List<ParameterResource> parameters = ParameterUtils.getParameters(codeRef, PARAM_KEY_VALUES);
+
+		assertThat(parameters, hasSize(3));
+		IntStream.range(0, parameters.size()).forEach(i -> {
+			ParameterResource p = parameters.get(i);
+			Object v = PARAM_KEY_VALUES.get(i).getValue();
+			if (i != 1) {
+				assertThat(p.getKey(), equalTo(parameterOrder[i].getType().getName()));
+			} else {
+				assertThat(p.getKey(), equalTo("id"));
+			}
+			assertThat(p.getValue(), equalTo(v == null ? "NULL" : v.toString()));
+		});
+	}
+
+	@Test
+	public void test_constructor_parameter_key_annotation_reading_codref() {
+		String codeRef = TestCaseIdUtils.getCodeRef(constructorWithKey);
+		Parameter[] parameterOrder = constructorWithKey.getParameters();
+
+		List<ParameterResource> parameters = ParameterUtils.getParameters(codeRef, PARAM_KEY_VALUES);
+
+		assertThat(parameters, hasSize(3));
+		IntStream.range(0, parameters.size()).forEach(i -> {
+			ParameterResource p = parameters.get(i);
+			Object v = PARAM_KEY_VALUES.get(i).getValue();
+			if (i != 2) {
+				assertThat(p.getKey(), equalTo(parameterOrder[i].getType().getName()));
+			} else {
+				assertThat(p.getKey(), equalTo("index"));
+			}
+			assertThat(p.getValue(), equalTo(v == null ? "NULL" : v.toString()));
+		});
+	}
+
+	@Test
+	public void test_non_existent_codref() {
+		String codeRef = "my.not.existent.code.ref";
+
+		List<ParameterResource> parameters = ParameterUtils.getParameters(codeRef, PARAM_KEY_VALUES);
+
+		assertThat(parameters, hasSize(3));
+		IntStream.range(0, parameters.size()).forEach(i -> {
+			ParameterResource p = parameters.get(i);
+			Object v = PARAM_KEY_VALUES.get(i).getValue();
+			assertThat(p.getKey(), equalTo(PARAM_KEY_VALUES.get(i).getKey()));
+			assertThat(p.getValue(), equalTo(v == null ? "NULL" : v.toString()));
+		});
 	}
 }

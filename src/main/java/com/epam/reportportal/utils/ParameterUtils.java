@@ -18,16 +18,20 @@ package com.epam.reportportal.utils;
 
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Parameter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static java.util.Optional.ofNullable;
 
@@ -35,6 +39,8 @@ import static java.util.Optional.ofNullable;
  * An utility class for parameters read and processing.
  */
 public class ParameterUtils {
+
+	public static final String NULL_VALUE = "NULL";
 
 	private ParameterUtils() {
 	}
@@ -48,8 +54,8 @@ public class ParameterUtils {
 	 * @return a list of parameter POJOs with fulfilled name and value.
 	 */
 	public static @Nonnull
-	List<ParameterResource> getParameters(@Nonnull final Executable method, final List<Object> parameterValues) {
-		List<Object> values = ofNullable(parameterValues).orElse(Collections.emptyList());
+	List<ParameterResource> getParameters(@Nonnull final Executable method, @Nullable final List<?> parameterValues) {
+		List<?> values = ofNullable(parameterValues).orElse(Collections.emptyList());
 		Parameter[] params = method.getParameters();
 		Annotation[][] parameterAnnotations = method.getParameterAnnotations();
 		return IntStream.range(0, params.length).boxed().map(i -> {
@@ -60,7 +66,7 @@ public class ParameterUtils {
 					.findFirst()
 					.orElseGet(() -> params[i].getType().getName());
 			res.setKey(parameterName);
-			res.setValue(ofNullable(i < values.size() ? values.get(i) : null).orElse("NULL").toString());
+			res.setValue(ofNullable(i < values.size() ? values.get(i) : null).map(String::valueOf).orElse(NULL_VALUE));
 			return res;
 		}).collect(Collectors.toList());
 	}
@@ -97,5 +103,53 @@ public class ParameterUtils {
 		} else {
 			return primitiveType;
 		}
+	}
+
+	@Nonnull
+	private static List<ParameterResource> getParameters(@Nullable final List<Pair<String, ?>> arguments) {
+		return ofNullable(arguments).map(args -> args.stream().map(a -> {
+			ParameterResource p = new ParameterResource();
+			p.setKey(a.getKey());
+			p.setValue(ofNullable(a.getValue()).map(String::valueOf).orElse(NULL_VALUE));
+			return p;
+		}).collect(Collectors.toList())).orElse(Collections.emptyList());
+	}
+
+	/**
+	 * Read all parameters from a method or a constructor and converts in into a list of {@link ParameterResource}.
+	 * Respects {@link ParameterKey} annotation.
+	 *
+	 * @param codeRef    a method reference to read parameters
+	 * @param parameters a source of parameter values and parameter names if not set by {@link ParameterKey} annotation
+	 * @return a list of parameter POJOs with fulfilled name and value.
+	 */
+	@Nonnull
+	public static List<ParameterResource> getParameters(@Nullable final String codeRef, @Nullable final List<Pair<String, ?>> parameters) {
+		Optional<List<Object>> paramValues = ofNullable(parameters).map(args -> args.stream()
+				.map(a -> (Object) a.getValue())
+				.collect(Collectors.toList()));
+
+		return ofNullable(codeRef).flatMap(cr -> {
+			int lastDelimiterIndex = cr.lastIndexOf('.');
+			String className = cr.substring(0, lastDelimiterIndex);
+			String methodName = cr.substring(lastDelimiterIndex + 1);
+
+			Optional<Class<?>> testStepClass;
+			try {
+				testStepClass = Optional.of(Class.forName(className));
+			} catch (ClassNotFoundException e1) {
+				try {
+					testStepClass = Optional.of(Class.forName(cr));
+				} catch (ClassNotFoundException e2) {
+					testStepClass = Optional.empty();
+				}
+			}
+			return testStepClass.flatMap(cl -> Stream.concat(Arrays.stream(cl.getDeclaredMethods()),
+					Arrays.stream(cl.getDeclaredConstructors())
+			)
+					.filter(m -> methodName.equals(m.getName()) || cr.equals(m.getName()))
+					.filter(m -> m.getParameterCount() == paramValues.map(List::size).orElse(0))
+					.findAny());
+		}).map(m -> ParameterUtils.getParameters(m, paramValues.orElse(null))).orElse(getParameters(parameters));
 	}
 }
