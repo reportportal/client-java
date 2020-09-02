@@ -160,7 +160,7 @@ public class ParameterUtilsTest {
 		assertThat(ParameterUtils.toBoxedType(from), sameInstance(to));
 	}
 
-	private static final List<Pair<String, ?>> PARAM_KEY_VALUES = Arrays.asList(Pair.of("str", "test"),
+	private static final List<Pair<String, Object>> PARAM_KEY_VALUES = Arrays.asList(Pair.of("str", "test"),
 			Pair.of("my_id", null),
 			Pair.of("number", 10)
 	);

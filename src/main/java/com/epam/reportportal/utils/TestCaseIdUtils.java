@@ -63,12 +63,12 @@ public class TestCaseIdUtils {
 	 * @return a text code reference
 	 */
 	@Nonnull
-	public static String getCodeRef(@Nonnull final Constructor<?> method) {
+	public static <T> String getCodeRef(@Nonnull final Constructor<T> method) {
 		return method.getName();
 	}
 
 	@Nullable
-	public static String getParametersForTestCaseId(Method method, List<?> parameters) {
+	public static <T> String getParametersForTestCaseId(Method method, List<T> parameters) {
 		if (method == null || parameters == null || parameters.isEmpty()) {
 			return null;
 		}
@@ -92,13 +92,13 @@ public class TestCaseIdUtils {
 	}
 
 	@Nullable
-	public static TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Method method, @Nullable List<?> parameters) {
+	public static <T> TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Method method, @Nullable List<T> parameters) {
 		return getTestCaseId(annotation, method, null, parameters);
 	}
 
 	@Nullable
-	public static TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Method method, @Nullable String codRef,
-			@Nullable List<?> parameters) {
+	public static <T> TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Method method, @Nullable String codRef,
+			@Nullable List<T> parameters) {
 		if (annotation != null) {
 			if (annotation.value().isEmpty()) {
 				if (annotation.parametrized()) {
@@ -128,7 +128,7 @@ public class TestCaseIdUtils {
 	 * @return a Test Case ID or null
 	 */
 	@Nullable
-	public static TestCaseIdEntry getTestCaseId(@Nullable Method method, @Nullable List<?> parameters) {
+	public static <T> TestCaseIdEntry getTestCaseId(@Nullable Method method, @Nullable List<T> parameters) {
 		return ofNullable(method).map(m -> getTestCaseId(getCodeRef(m), parameters)).orElse(getTestCaseId(parameters));
 	}
 
@@ -140,7 +140,7 @@ public class TestCaseIdUtils {
 	 * @return a Test Case ID or null
 	 */
 	@Nullable
-	public static TestCaseIdEntry getTestCaseId(@Nullable String codeRef, @Nullable List<?> parameters) {
+	public static <T> TestCaseIdEntry getTestCaseId(@Nullable String codeRef, @Nullable List<T> parameters) {
 		return ofNullable(codeRef).map(r -> new TestCaseIdEntry(codeRef + ofNullable(parameters).map(TRANSFORM_PARAMETERS).orElse("")))
 				.orElse(getTestCaseId(parameters));
 	}
@@ -152,7 +152,7 @@ public class TestCaseIdUtils {
 	 * @return a Test Case ID or null
 	 */
 	@Nullable
-	public static TestCaseIdEntry getTestCaseId(@Nullable List<?> parameters) {
+	public static <T> TestCaseIdEntry getTestCaseId(@Nullable List<T> parameters) {
 		if (parameters == null || parameters.isEmpty()) {
 			return null;
 		}

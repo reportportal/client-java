@@ -53,8 +53,8 @@ public class ParameterUtils {
 	 * @param parameterValues a source of parameter values
 	 * @return a list of parameter POJOs with fulfilled name and value.
 	 */
-	public static @Nonnull
-	List<ParameterResource> getParameters(@Nonnull final Executable method, @Nullable final List<?> parameterValues) {
+	@Nonnull
+	public static <T> List<ParameterResource> getParameters(@Nonnull final Executable method, @Nullable final List<T> parameterValues) {
 		List<?> values = ofNullable(parameterValues).orElse(Collections.emptyList());
 		Parameter[] params = method.getParameters();
 		Annotation[][] parameterAnnotations = method.getParameterAnnotations();
@@ -106,7 +106,7 @@ public class ParameterUtils {
 	}
 
 	@Nonnull
-	private static List<ParameterResource> getParameters(@Nullable final List<Pair<String, ?>> arguments) {
+	private static <T> List<ParameterResource> getParameters(@Nullable final List<Pair<String, T>> arguments) {
 		return ofNullable(arguments).map(args -> args.stream().map(a -> {
 			ParameterResource p = new ParameterResource();
 			p.setKey(a.getKey());
@@ -124,7 +124,7 @@ public class ParameterUtils {
 	 * @return a list of parameter POJOs with fulfilled name and value.
 	 */
 	@Nonnull
-	public static List<ParameterResource> getParameters(@Nullable final String codeRef, @Nullable final List<Pair<String, ?>> parameters) {
+	public static <T> List<ParameterResource> getParameters(@Nullable final String codeRef, @Nullable final List<Pair<String, T>> parameters) {
 		Optional<List<Object>> paramValues = ofNullable(parameters).map(args -> args.stream()
 				.map(a -> (Object) a.getValue())
 				.collect(Collectors.toList()));
