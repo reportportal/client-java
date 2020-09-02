@@ -23,6 +23,7 @@ import com.epam.reportportal.service.item.TestCaseIdEntry;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,16 +41,34 @@ public class TestCaseIdUtils {
 		//static only
 	}
 
-	private static final Function<List<Object>, String> TRANSFORM_PARAMETERS = it -> it.stream()
+	private static final Function<List<?>, String> TRANSFORM_PARAMETERS = it -> it.stream()
 			.map(String::valueOf)
 			.collect(Collectors.joining(",", "[", "]"));
 
+	/**
+	 * Generates a text code reference by consuming a {@link Method}
+	 *
+	 * @param method a method, the value should not be null
+	 * @return a text code reference
+	 */
+	@Nonnull
 	public static String getCodeRef(@Nonnull final Method method) {
 		return method.getDeclaringClass().getCanonicalName() + "." + method.getName();
 	}
 
+	/**
+	 * Generates a text code reference by consuming a {@link Constructor}
+	 *
+	 * @param method a constructor, the value should not be null
+	 * @return a text code reference
+	 */
+	@Nonnull
+	public static String getCodeRef(@Nonnull final Constructor<?> method) {
+		return method.getName();
+	}
+
 	@Nullable
-	public static String getParametersForTestCaseId(Method method, List<Object> parameters) {
+	public static String getParametersForTestCaseId(Method method, List<?> parameters) {
 		if (method == null || parameters == null || parameters.isEmpty()) {
 			return null;
 		}
@@ -72,13 +91,14 @@ public class TestCaseIdUtils {
 		return TRANSFORM_PARAMETERS.apply(keys.stream().map(parameters::get).collect(Collectors.toList()));
 	}
 
-	public static TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Method method,
-			@Nullable List<Object> parameters) {
+	@Nullable
+	public static TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Method method, @Nullable List<?> parameters) {
 		return getTestCaseId(annotation, method, null, parameters);
 	}
 
+	@Nullable
 	public static TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Method method, @Nullable String codRef,
-			@Nullable List<Object> parameters) {
+			@Nullable List<?> parameters) {
 		if (annotation != null) {
 			if (annotation.value().isEmpty()) {
 				if (annotation.parametrized()) {
@@ -100,16 +120,39 @@ public class TestCaseIdUtils {
 		return ofNullable(codRef).map(c -> getTestCaseId(c, parameters)).orElse(getTestCaseId(method, parameters));
 	}
 
-	public static TestCaseIdEntry getTestCaseId(@Nullable Method method, @Nullable List<Object> parameters) {
+	/**
+	 * Generates Test Case ID based on a method reference and a list of parameters
+	 *
+	 * @param method     a {@link Method} object
+	 * @param parameters a list of parameters
+	 * @return a Test Case ID or null
+	 */
+	@Nullable
+	public static TestCaseIdEntry getTestCaseId(@Nullable Method method, @Nullable List<?> parameters) {
 		return ofNullable(method).map(m -> getTestCaseId(getCodeRef(m), parameters)).orElse(getTestCaseId(parameters));
 	}
 
-	public static TestCaseIdEntry getTestCaseId(@Nullable String codeRef, @Nullable List<Object> parameters) {
+	/**
+	 * Generates Test Case ID based on a code reference and a list of parameters
+	 *
+	 * @param codeRef    a code reference
+	 * @param parameters a list of parameters
+	 * @return a Test Case ID or null
+	 */
+	@Nullable
+	public static TestCaseIdEntry getTestCaseId(@Nullable String codeRef, @Nullable List<?> parameters) {
 		return ofNullable(codeRef).map(r -> new TestCaseIdEntry(codeRef + ofNullable(parameters).map(TRANSFORM_PARAMETERS).orElse("")))
 				.orElse(getTestCaseId(parameters));
 	}
 
-	public static TestCaseIdEntry getTestCaseId(@Nullable List<Object> parameters) {
+	/**
+	 * Generates Test Case ID based on a list of parameters
+	 *
+	 * @param parameters a list of parameters
+	 * @return a Test Case ID or null
+	 */
+	@Nullable
+	public static TestCaseIdEntry getTestCaseId(@Nullable List<?> parameters) {
 		if (parameters == null || parameters.isEmpty()) {
 			return null;
 		}
