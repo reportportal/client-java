@@ -162,7 +162,7 @@ public class DefaultStepReporter implements StepReporter {
 	public void finishPreviousStep() {
 		finishPreviousStepInternal().ifPresent(e -> {
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
-				parentFailures.add(parents.get().getLast());
+				parentFailures.addAll(parents.get());
 			}
 		});
 	}
@@ -175,7 +175,7 @@ public class DefaultStepReporter implements StepReporter {
 				startTestItemRQ.setStartTime(new Date(previousDate.getTime() + 1));
 			}
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
-				parentFailures.add(parents.get().getLast());
+				parentFailures.addAll(parents.get());
 			}
 		});
 		return launch.startTestItem(parents.get().getLast(), startTestItemRQ);

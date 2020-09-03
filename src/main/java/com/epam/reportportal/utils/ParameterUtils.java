@@ -49,6 +49,7 @@ public class ParameterUtils {
 	 * Read all parameters from a method or a constructor and converts in into a list of {@link ParameterResource}.
 	 * Respects {@link ParameterKey} annotation.
 	 *
+	 * @param <T> parameter values type
 	 * @param method          a method to read parameters
 	 * @param parameterValues a source of parameter values
 	 * @return a list of parameter POJOs with fulfilled name and value.
@@ -119,6 +120,7 @@ public class ParameterUtils {
 	 * Read all parameters from a method or a constructor and converts in into a list of {@link ParameterResource}.
 	 * Respects {@link ParameterKey} annotation.
 	 *
+	 * @param <T> parameter values type
 	 * @param codeRef    a method reference to read parameters
 	 * @param parameters a source of parameter values and parameter names if not set by {@link ParameterKey} annotation
 	 * @return a list of parameter POJOs with fulfilled name and value.
