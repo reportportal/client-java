@@ -3,13 +3,13 @@
 ## [Unreleased]
 
 ## [5.0.10]
-## Added
+### Added
 - Additional ParameterUtils methods to use inside Cucumber agents
 ### Changed
 - Manual Nested Step failure now also fails all the ancestors, not only the nearest one
 
 ## [5.0.7]
-## Added
+### Added
 - StepAspect.setParentId and StepAspect.removeParentId now handled inside LaunchImpl class 
 
 ## [5.0.6]
