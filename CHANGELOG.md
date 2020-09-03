@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.10]
 ## Added
 - Additional ParameterUtils methods to use inside Cucumber agents
 ### Changed
