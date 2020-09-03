@@ -59,6 +59,7 @@ public class TestCaseIdUtils {
 	/**
 	 * Generates a text code reference by consuming a {@link Constructor}
 	 *
+	 * @param <T> constructor type
 	 * @param method a constructor, the value should not be null
 	 * @return a text code reference
 	 */
@@ -123,6 +124,7 @@ public class TestCaseIdUtils {
 	/**
 	 * Generates Test Case ID based on a method reference and a list of parameters
 	 *
+	 * @param <T> parameters type
 	 * @param method     a {@link Method} object
 	 * @param parameters a list of parameters
 	 * @return a Test Case ID or null
@@ -135,6 +137,7 @@ public class TestCaseIdUtils {
 	/**
 	 * Generates Test Case ID based on a code reference and a list of parameters
 	 *
+	 * @param <T> parameters type
 	 * @param codeRef    a code reference
 	 * @param parameters a list of parameters
 	 * @return a Test Case ID or null
@@ -148,6 +151,7 @@ public class TestCaseIdUtils {
 	/**
 	 * Generates Test Case ID based on a list of parameters
 	 *
+	 * @param <T> parameters type
 	 * @param parameters a list of parameters
 	 * @return a Test Case ID or null
 	 */
