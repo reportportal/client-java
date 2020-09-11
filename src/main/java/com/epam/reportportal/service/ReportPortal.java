@@ -108,7 +108,7 @@ public class ReportPortal {
 	 * @return Launch
 	 */
 	public Launch newLaunch(StartLaunchRQ rq) {
-		if (BooleanUtils.isNotTrue(parameters.getEnable())) {
+		if (BooleanUtils.isNotTrue(parameters.getEnable()) || rpClient == null) {
 			return Launch.NOOP_LAUNCH;
 		}
 
@@ -398,7 +398,7 @@ public class ReportPortal {
 		public ReportPortal build() {
 			try {
 				ListenerParameters params = ofNullable(this.parameters).orElse(new ListenerParameters(defaultPropertiesLoader()));
-				ExecutorService executorService = executor == null ? buildExecutorService(params): executor;
+				ExecutorService executorService = executor == null ? buildExecutorService(params) : executor;
 				return new ReportPortal(buildClient(ReportPortalClient.class, params, executorService),
 						executorService,
 						params,
@@ -431,10 +431,11 @@ public class ReportPortal {
 		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType, @Nonnull final ListenerParameters params,
 				@Nonnull final ExecutorService executor) {
 			try {
-				HttpClient client = ofNullable(this.httpClient)
-						.map(c -> (HttpClient) c.addInterceptorLast(new BearerAuthInterceptor(params.getApiKey())).build())
-						.orElse(defaultClient(params));
-				return RestEndpoints.forInterface(clientType, buildRestEndpoint(params, client, executor));
+				HttpClient client = ofNullable(this.httpClient).map(c -> (HttpClient) c.addInterceptorLast(new BearerAuthInterceptor(params.getApiKey()))
+						.build()).orElseGet(() -> defaultClient(params));
+
+				return ofNullable(client).map(c -> RestEndpoints.forInterface(clientType, buildRestEndpoint(params, c, executor)))
+						.orElse(null);
 			} catch (Exception e) {
 				String errMsg = "Cannot build ReportPortal client";
 				LOGGER.error(errMsg, e);
@@ -483,16 +484,27 @@ public class ReportPortal {
 			return baseUrl + apiBase + "/" + project;
 		}
 
-		protected HttpClient defaultClient(ListenerParameters parameters) throws MalformedURLException {
-			String baseUrl = parameters.getBaseUrl();
-			if (baseUrl == null) {
-				throw new InternalReportPortalClientException("Base url for Report Portal server is not set!");
+		protected HttpClient defaultClient(ListenerParameters parameters) {
+			String baseUrlStr = parameters.getBaseUrl();
+			if (baseUrlStr == null) {
+				LOGGER.warn("Base url for Report Portal server is not set!");
+				return null;
 			}
+
+			URL baseUrl;
+			try {
+				baseUrl = new URL(baseUrlStr);
+			} catch (MalformedURLException e) {
+				LOGGER.warn("Unable to parse Report Portal URL", e);
+				return null;
+			}
+
 			String keyStore = parameters.getKeystore();
 			String keyStorePassword = parameters.getKeystorePassword();
 
-			final HttpClientBuilder builder = HttpClients.custom();
-			if (HTTPS.equals(new URL(baseUrl).getProtocol()) && keyStore != null) {
+			HttpClientBuilder builder = HttpClients.custom();
+
+			if (HTTPS.equals(baseUrl.getProtocol()) && keyStore != null) {
 				if (null == keyStorePassword) {
 					throw new InternalReportPortalClientException(
 							"You should provide keystore password parameter [" + ListenerProperty.KEYSTORE_PASSWORD
@@ -508,10 +520,12 @@ public class ReportPortal {
 				}
 
 			}
+
 			String proxyUrl = parameters.getProxyUrl();
 			if (proxyUrl != null) {
 				builder.setProxy(HttpHost.create(proxyUrl));
 			}
+
 			builder.setDefaultRequestConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build())
 					.setRetryHandler(new StandardHttpRequestRetryHandler(parameters.getTransferRetries(), true))
 					.setKeepAliveStrategy(new DefaultConnectionKeepAliveStrategy() {

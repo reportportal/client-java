@@ -1,15 +1,17 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- ReportPortal does not throw any exceptions if 'reportportal.properties' not found
 
 ## [5.0.10]
-## Added
+### Added
 - Additional ParameterUtils methods to use inside Cucumber agents
 ### Changed
 - Manual Nested Step failure now also fails all the ancestors, not only the nearest one
 
 ## [5.0.7]
-## Added
+### Added
 - StepAspect.setParentId and StepAspect.removeParentId now handled inside LaunchImpl class 
 
 ## [5.0.6]
@@ -30,23 +32,15 @@
 - @NotNull annotations replaced with @Nonnull as the latter is shorter and comes with Java SE
 
 ## [4.0.4]
-
 ### Improvements
 * reportportal/reportportal#293 - Re-licence client side 
 
 ## [4.0.0]
-
 ### Improvements
-
 * Get rid of HTTP Apache Async Client in favor of synchronous version 
 * Better extensibility
 
-
 ## [3.0.3]
-##### Released: 9 June 2017
-
+### Released: 9 June 2017
 ### Bugfixes
-
 * reportportal/reportportal#142 - Java client parameters are not UTF-8 encoded
-
-

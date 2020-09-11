@@ -15,8 +15,8 @@
  */
 package com.epam.reportportal.service;
 
-import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.SocketUtils;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
@@ -38,15 +38,39 @@ import static com.epam.reportportal.test.TestUtils.standardParameters;
 import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ReportPortalTest {
 	private static final String COOKIE = "AWSALB=P7cqG8g/K70xHAKOUPrWrG0XgmhG8GJNinj8lDnKVyITyubAen2lBr+fSa/e2JAoGksQphtImp49rZxc41qdqUGvAc67SdZHY1BMFIHKzc8kyWc1oQjq6oI+s39U";
 
 	@Test
-	public void noUrlResultsInException() {
+	public void no_url_results_in_null_client() {
 		ListenerParameters listenerParameters = new ListenerParameters();
-		assertThrows(InternalReportPortalClientException.class, () -> ReportPortal.builder().defaultClient(listenerParameters));
+		assertThat(ReportPortal.builder().defaultClient(listenerParameters), nullValue());
+	}
+
+	@Test
+	public void correct_url_results_in_not_null_client() {
+		ListenerParameters listenerParameters = new ListenerParameters();
+		listenerParameters.setBaseUrl("http://localhost");
+		assertThat(ReportPortal.builder().defaultClient(listenerParameters), notNullValue());
+	}
+
+	@Test
+	public void no_url_results_in_noop_launch() {
+		ListenerParameters listenerParameters = new ListenerParameters();
+		ReportPortal rp = ReportPortal.builder().withParameters(listenerParameters).build();
+		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(listenerParameters));
+		assertThat(launch, sameInstance(Launch.NOOP_LAUNCH));
+	}
+
+	@Test
+	public void correct_url_results_in_correct_launch() {
+		ListenerParameters listenerParameters = new ListenerParameters();
+		listenerParameters.setBaseUrl("http://localhost");
+		listenerParameters.setEnable(true);
+		ReportPortal rp = ReportPortal.builder().withParameters(listenerParameters).build();
+		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(listenerParameters));
+		assertThat(launch, not(sameInstance(Launch.NOOP_LAUNCH)));
 	}
 
 	@Test

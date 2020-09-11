@@ -20,6 +20,7 @@ import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.launch.PrimaryLaunch;
 import com.epam.reportportal.service.launch.SecondaryLaunch;
+import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.utils.SubscriptionUtils;
 import com.epam.ta.reportportal.ws.model.ErrorRS;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
@@ -48,6 +49,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static com.epam.reportportal.test.TestUtils.*;
 import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
@@ -66,18 +68,16 @@ public class ReportPortalClientJoinTest {
 
 	private final ExecutorService executor = Executors.newFixedThreadPool(2);
 
+	private final Supplier<ListenerParameters> params = () -> {
+		ListenerParameters p = TestUtils.standardParameters();
+		p.setClientJoin(true);
+		return p;
+	};
+
 	@Mock
 	private ReportPortalClient rpClient;
 	@Mock
 	private LockFile lockFile;
-	private ListenerParameters params;
-
-	@BeforeEach
-	public void prepare() {
-		params = new ListenerParameters();
-		params.setClientJoin(true);
-		params.setEnable(Boolean.TRUE);
-	}
 
 	@AfterEach
 	public void tearDown() {
@@ -160,7 +160,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_two_launches_have_correct_class_names() {
-		List<Launch> launches = createLaunchesNoStart(2, rpClient, params, lockFile, executor);
+		List<Launch> launches = createLaunchesNoStart(2, rpClient, params.get(), lockFile, executor);
 
 		assertThat(launches.get(0).getClass().getCanonicalName(), Matchers.equalTo(PrimaryLaunch.class.getCanonicalName()));
 		assertThat(launches.get(1).getClass().getCanonicalName(), Matchers.equalTo(SecondaryLaunch.class.getCanonicalName()));
@@ -168,7 +168,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_two_launches_call_start_launch_only_once() {
-		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executor);
+		List<Launch> launches = createLaunches(2, rpClient, params.get(), lockFile, executor);
 		launches.get(0).start();
 		launches.get(1).start();
 
@@ -178,7 +178,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_primary_launch_start_launch_request() {
-		List<Launch> launches = createLaunchesNoGetLaunch(1, rpClient, params, lockFile, executor);
+		List<Launch> launches = createLaunchesNoGetLaunch(1, rpClient, params.get(), lockFile, executor);
 		launches.get(0).start();
 
 		ArgumentCaptor<String> passedUuid = ArgumentCaptor.forClass(String.class);
@@ -194,7 +194,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_two_launches_have_same_uuid() {
-		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executor);
+		List<Launch> launches = createLaunches(2, rpClient, params.get(), lockFile, executor);
 
 		String firstUuid = getId(launches.get(0).start());
 		String secondUuid = getId(launches.get(1).start());
@@ -211,7 +211,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_only_primary_launch_finish_launch_on_rp() {
-		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executor);
+		List<Launch> launches = createLaunches(2, rpClient, params.get(), lockFile, executor);
 		launches.get(0).start();
 		launches.get(1).start();
 
@@ -226,12 +226,13 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_standard_launch_returned_if_the_feature_is_off() {
-		params.setClientJoin(false);
-		ReportPortal rp1 = new ReportPortal(rpClient, executor, params, null);
-		ReportPortal rp2 = new ReportPortal(rpClient, executor, params, null);
+		ListenerParameters p = params.get();
+		p.setClientJoin(false);
+		ReportPortal rp1 = new ReportPortal(rpClient, executor, p, null);
+		ReportPortal rp2 = new ReportPortal(rpClient, executor, p, null);
 
-		Launch firstLaunch = rp1.newLaunch(standardLaunchRequest(params));
-		Launch secondLaunch = rp2.newLaunch(standardLaunchRequest(params));
+		Launch firstLaunch = rp1.newLaunch(standardLaunchRequest(p));
+		Launch secondLaunch = rp2.newLaunch(standardLaunchRequest(p));
 
 		assertThat(firstLaunch.getClass().getCanonicalName(), equalTo(LaunchImpl.class.getCanonicalName()));
 		assertThat(secondLaunch.getClass().getCanonicalName(), equalTo(LaunchImpl.class.getCanonicalName()));
@@ -239,8 +240,8 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_rp_client_should_not_throw_errors_in_case_of_lock_file_error() {
-		ReportPortal rp1 = new ReportPortal(rpClient, executor, params, lockFile);
-		Launch launch = rp1.newLaunch(standardLaunchRequest(params));
+		ReportPortal rp1 = new ReportPortal(rpClient, executor, params.get(), lockFile);
+		Launch launch = rp1.newLaunch(standardLaunchRequest(params.get()));
 		assertThat(launch.getClass().getCanonicalName(), equalTo(LaunchImpl.class.getCanonicalName()));
 	}
 
@@ -265,7 +266,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_rp_client_sends_correct_start_item_for_secondary_launch() {
-		List<Launch> launches = createLaunches(2, rpClient, params, lockFile, executor);
+		List<Launch> launches = createLaunches(2, rpClient, params.get(), lockFile, executor);
 		launches.get(0).start();
 		launches.get(1).start();
 
@@ -279,7 +280,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_secondary_launch_call_get_launch_by_uuid() {
-		List<Launch> launches = createLaunchesNoStart(2, rpClient, params, lockFile, executor);
+		List<Launch> launches = createLaunchesNoStart(2, rpClient, params.get(), lockFile, executor);
 		simulateGetLaunchResponse(rpClient);
 		launches.get(1).start();
 
@@ -308,11 +309,12 @@ public class ReportPortalClientJoinTest {
 		int num = 2;
 		simulateObtainLaunchUuidResponse(lockFile);
 		simulateGetLaunchByUuidResponse(rpClient);
-		params.setAsyncReporting(false);
+		ListenerParameters p = params.get();
+		p.setAsyncReporting(false);
 		List<Launch> launches = new ArrayList<>(num);
 		for (int i = 0; i < num; i++) {
-			ReportPortal rp = new ReportPortal(rpClient, executor, params, lockFile);
-			launches.add(rp.newLaunch(standardLaunchRequest(params)));
+			ReportPortal rp = new ReportPortal(rpClient, executor, p, lockFile);
+			launches.add(rp.newLaunch(standardLaunchRequest(p)));
 		}
 		launches.get(1).start();
 
@@ -324,11 +326,12 @@ public class ReportPortalClientJoinTest {
 	public void test_secondary_launch_does_not_wait_get_launch_by_uuid_correct_response_for_v2() {
 		int num = 2;
 		simulateObtainLaunchUuidResponse(lockFile);
-		params.setAsyncReporting(true);
+		ListenerParameters p = params.get();
+		p.setAsyncReporting(true);
 		List<Launch> launches = new ArrayList<>(num);
 		for (int i = 0; i < num; i++) {
-			ReportPortal rp = new ReportPortal(rpClient, executor, params, lockFile);
-			launches.add(rp.newLaunch(standardLaunchRequest(params)));
+			ReportPortal rp = new ReportPortal(rpClient, executor, p, lockFile);
+			launches.add(rp.newLaunch(standardLaunchRequest(p)));
 		}
 		launches.get(1).start();
 
@@ -337,7 +340,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_two_launches_have_the_same_executors() {
-		List<Launch> launches = createLaunchesNoStart(2, rpClient, params, lockFile, executor);
+		List<Launch> launches = createLaunchesNoStart(2, rpClient, params.get(), lockFile, executor);
 
 		assertThat(((LaunchImpl) launches.get(0)).getExecutor(), sameInstance(executor));
 		assertThat(((LaunchImpl) launches.get(1)).getExecutor(), sameInstance(executor));
@@ -345,7 +348,7 @@ public class ReportPortalClientJoinTest {
 
 	@Test
 	public void test_two_launches_have_the_same_scheduler() {
-		List<Launch> launches = createLaunchesNoStart(2, rpClient, params, lockFile, executor);
+		List<Launch> launches = createLaunchesNoStart(2, rpClient, params.get(), lockFile, executor);
 
 		Scheduler scheduler1 = ((LaunchImpl) launches.get(0)).getScheduler();
 		Scheduler scheduler2 = ((LaunchImpl) launches.get(1)).getScheduler();
