@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.11]
 ### Changed
 - ReportPortal does not throw any exceptions if 'reportportal.properties' not found
 
