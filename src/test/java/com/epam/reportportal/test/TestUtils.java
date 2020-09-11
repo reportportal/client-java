@@ -55,6 +55,7 @@ public class TestUtils {
 
 	public static ListenerParameters standardParameters() {
 		ListenerParameters result = new ListenerParameters();
+		result.setBaseUrl("http://localhost:8080");
 		result.setClientJoin(false);
 		result.setBatchLogsSize(1);
 		result.setLaunchName("My-test-launch" + generateUniqueId());
