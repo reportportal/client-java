@@ -53,6 +53,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -94,7 +95,8 @@ public class ReportPortal {
 	 * @param rpClient   ReportPortal client
 	 * @param parameters Listener Parameters
 	 */
-	ReportPortal(ReportPortalClient rpClient, ExecutorService executor, ListenerParameters parameters, LockFile lockFile) {
+	ReportPortal(@Nullable ReportPortalClient rpClient, @Nonnull ExecutorService executor, @Nonnull ListenerParameters parameters,
+			@Nullable LockFile lockFile) {
 		this.rpClient = rpClient;
 		this.executor = executor;
 		this.parameters = parameters;
@@ -112,10 +114,6 @@ public class ReportPortal {
 			return Launch.NOOP_LAUNCH;
 		}
 
-		return getLaunch(rq);
-	}
-
-	private Launch getLaunch(StartLaunchRQ rq) {
 		if (lockFile == null) {
 			// do not use multi-client mode
 			return new LaunchImpl(rpClient, parameters, rq, executor);
@@ -154,7 +152,7 @@ public class ReportPortal {
 	 * @return This instance for chaining
 	 */
 	public Launch withLaunch(Maybe<String> launchUuid) {
-		return new LaunchImpl(rpClient, parameters, launchUuid, executor);
+		return ofNullable(rpClient).map(c -> (Launch) new LaunchImpl(c, parameters, launchUuid, executor)).orElse(Launch.NOOP_LAUNCH);
 	}
 
 	/**
