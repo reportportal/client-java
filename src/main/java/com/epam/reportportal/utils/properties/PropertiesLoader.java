@@ -248,7 +248,7 @@ public class PropertiesLoader {
 		Map<String, String> normalizedSet = new HashMap<>();
 		for (Map.Entry<String, String> entry : overrides.entrySet()) {
 			if (entry.getKey() != null) {
-				String key = entry.getKey().replace("_", ".");
+				String key = entry.getKey().toLowerCase().replace("_", ".");
 				normalizedSet.put(key, entry.getValue());
 			}
 		}
