@@ -66,7 +66,7 @@ public class StepTemplateUtils {
 			}
 
 			if (object instanceof Iterable) {
-				return parseCollection(templateConfig, (Iterable) object, i, fields);
+				return parseCollection(templateConfig, (Iterable<?>) object, i, fields);
 			}
 
 			object = Accessible.on(object).field(fields[i]).getValue();
@@ -106,12 +106,12 @@ public class StepTemplateUtils {
 	 * @param fields         Fields of the template part
 	 * @return {@link String} representation of the parsed Collection
 	 */
-	private static String parseCollection(StepTemplateConfig templateConfig, Iterable iterable, int index, String[] fields)
+	private static String parseCollection(StepTemplateConfig templateConfig, Iterable<?> iterable, int index, String[] fields)
 			throws NoSuchFieldException {
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append(templateConfig.iterableStartSymbol());
 
-		Iterator iterator = iterable.iterator();
+		Iterator<?> iterator = iterable.iterator();
 		while (iterator.hasNext()) {
 			stringBuilder.append(retrieveValue(templateConfig, index, fields, iterator.next()));
 			if (iterator.hasNext()) {
@@ -129,13 +129,15 @@ public class StepTemplateUtils {
 	 * @return {@link String} representation of the descendant
 	 */
 	private static String parseDescendant(StepTemplateConfig templateConfig, Object descendant) {
-
+		if (descendant == null) {
+			return ParameterUtils.NULL_VALUE;
+		}
 		if (descendant.getClass().isArray()) {
 			return parseDescendantArray(templateConfig, descendant);
 		}
 
 		if (descendant instanceof Iterable) {
-			return parseDescendantCollection(templateConfig, (Iterable) descendant);
+			return parseDescendantCollection(templateConfig, (Iterable<?>) descendant);
 		}
 
 		return String.valueOf(descendant);
@@ -167,11 +169,11 @@ public class StepTemplateUtils {
 	 * @param iterable       Collection of the descendant element which elements should be parsed
 	 * @return {@link String} representation of the parsed Collection
 	 */
-	private static String parseDescendantCollection(StepTemplateConfig templateConfig, Iterable iterable) {
+	private static String parseDescendantCollection(StepTemplateConfig templateConfig, Iterable<?> iterable) {
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append(templateConfig.iterableStartSymbol());
 
-		Iterator iterator = iterable.iterator();
+		Iterator<?> iterator = iterable.iterator();
 		while (iterator.hasNext()) {
 			stringBuilder.append(parseDescendant(templateConfig, iterator.next()));
 			if (iterator.hasNext()) {
