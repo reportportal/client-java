@@ -57,7 +57,8 @@ public class StepTemplateUtilsTest {
 				{ "someObject.innerStrings", "[firstInner, secondInner, thirdInner]" }, { "someObject", "INNER" },
 				{ "someObject.outers", "[OUTER]" },
 				{ "someObject.outers.outerStrings", "[[{first, second, third}, {fourth, fifth, sixth}]]" },
-				{ "someObject.outers.outerName", "[outer]" } };
+				{ "someObject.outers.outerName", "[outer]" },  { "someObject.innerNullString", ParameterUtils.NULL_VALUE },
+				{ "someObject.innerNullList", ParameterUtils.NULL_VALUE }};
 	}
 
 	private Outer.Inner createInnerObject() {
@@ -104,6 +105,9 @@ public class StepTemplateUtilsTest {
 			private List<String> innerStrings;
 
 			private List<Outer> outers;
+
+			private String innerNullString;
+			private List<String> innerNullList;
 
 			public Inner(String outerName, List<String[]> outerStrings, String innerName, List<String> innerStrings, List<Outer> outers) {
 				super(outerName, outerStrings);
