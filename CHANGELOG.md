@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.12]
 ### Fixed
 - Null-value handling for inner fields for step templates of annotation-based nested steps
 ### Changed
