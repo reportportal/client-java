@@ -16,23 +16,24 @@
 
 package com.epam.reportportal.service;
 
+import com.epam.reportportal.annotations.Step;
+import com.epam.reportportal.aspect.StepAspect;
+import com.epam.reportportal.aspect.StepAspectCommon;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.service.analytics.AnalyticsService;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.utils.properties.DefaultProperties;
-import com.epam.ta.reportportal.ws.model.ErrorRS;
-import com.epam.ta.reportportal.ws.model.ErrorType;
-import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
-import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
+import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
+import java.lang.reflect.Method;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -178,6 +179,7 @@ public class LaunchTest {
 	private AnalyticsService analyticsService;
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void launch_should_send_analytics_events_if_created_with_request() {
 		simulateStartLaunchResponse(rpClient);
 		simulateFinishLaunchResponse(rpClient);
@@ -197,6 +199,7 @@ public class LaunchTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void launch_should_send_analytics_events_if_created_with_launch_maybe() {
 		simulateFinishLaunchResponse(rpClient);
 
@@ -221,5 +224,52 @@ public class LaunchTest {
 		assertThat(attribute.isSystem(), equalTo(Boolean.TRUE));
 		assertThat(attribute.getKey(), equalTo(DefaultProperties.AGENT.getName()));
 		assertThat(attribute.getValue(), equalTo(LaunchImpl.CUSTOM_AGENT));
+	}
+
+	private final StepAspect aspect = new StepAspect();
+	private static final RuntimeException DUMMY_ERROR = new IllegalStateException("Just a failure");
+
+	@Step
+	public void aFailureStep() {
+		throw DUMMY_ERROR;
+	}
+
+	@Test
+	public void launch_should_correctly_track_parent_items_for_annotation_based_nested_steps() throws NoSuchMethodException {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateFinishTestItemResponse(rpClient);
+		simulateStartChildTestItemResponse(rpClient);
+		simulateFinishLaunchResponse(rpClient);
+		simulateBatchLogResponse(rpClient);
+
+		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor);
+
+		launch.start();
+		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
+		Maybe<String> testRs = launch.startTestItem(suiteRs, standardStartTestRequest());
+		Maybe<String> firstStepRs = launch.startTestItem(testRs, standardStartStepRequest());
+		launch.finishTestItem(firstStepRs, positiveFinishRequest());
+		Maybe<String> secondStepRs = launch.startTestItem(testRs, standardStartStepRequest());
+
+		Method method = getClass().getMethod("aFailureStep");
+		Step step = method.getAnnotation(Step.class);
+
+		aspect.startNestedStep(StepAspectCommon.getJoinPointNoParams(mock(MethodSignature.class), method), step);
+		aspect.failedNestedStep(step, DUMMY_ERROR);
+
+		FinishTestItemRQ failedFinishRq = positiveFinishRequest();
+		failedFinishRq.setStatus("FAILED");
+		launch.finishTestItem(secondStepRs, failedFinishRq);
+
+		FinishTestItemRQ finishRq = positiveFinishRequest();
+		finishRq.setStatus(null);
+		launch.finishTestItem(testRs, finishRq);
+		launch.finishTestItem(suiteRs, finishRq);
+		launch.finish(standardLaunchFinishRequest());
+
+		ArgumentCaptor<FinishTestItemRQ> captor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(rpClient, times(1)).finishTestItem(same(firstStepRs.blockingGet()), captor.capture());
+		captor.getAllValues().forEach(i -> assertThat(i.getStatus(), equalTo("PASSED")));
 	}
 }

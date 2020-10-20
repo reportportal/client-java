@@ -63,6 +63,7 @@ public class StepAspectCommon {
 	static final String TEST_STEP_DESCRIPTION = "Test step name";
 
 	@Step(value = TEST_STEP_NAME, description = TEST_STEP_DESCRIPTION)
+	@SuppressWarnings("unused")
 	public void testNestedStepSimple() {
 	}
 
@@ -70,9 +71,8 @@ public class StepAspectCommon {
 		return StepAspectCommon.class.getMethod(name);
 	}
 
-	static JoinPoint getJoinPoint(final MethodSignature mock, Method method) {
+	public static JoinPoint getJoinPointNoParams(final MethodSignature mock, Method method) {
 		when(mock.getMethod()).thenReturn(method);
-		when(mock.getParameterNames()).thenReturn(new String[0]);
 		return new JoinPoint() {
 			@Override
 			public String toShortString() {
@@ -121,8 +121,15 @@ public class StepAspectCommon {
 		};
 	}
 
+	public static JoinPoint getJoinPoint(final MethodSignature mock, Method method) {
+		JoinPoint joinPoint = getJoinPointNoParams(mock, method);
+		when(mock.getParameterNames()).thenReturn(new String[0]);
+		return joinPoint;
+	}
+
 	@Step(value = TEST_STEP_NAME, description = TEST_STEP_DESCRIPTION)
 	@Attributes(attributes = @Attribute(key = "test", value = "value"))
+	@SuppressWarnings("unused")
 	public void testNestedStepAttributeAnnotation() {
 	}
 }
