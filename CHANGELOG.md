@@ -6,7 +6,6 @@
 ### Changed
 - It's now possible to bypass a null-value client to ReportPortal class constructor, as a result user will get a NOOP launch
 
-
 ## [5.0.11]
 ### Changed
 - ReportPortal does not throw any exceptions if 'reportportal.properties' not found
