@@ -16,10 +16,13 @@
 
 package com.epam.reportportal.service.tree;
 
+import com.epam.reportportal.listeners.ItemStatus;
+import com.epam.reportportal.listeners.ItemType;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import io.reactivex.Maybe;
-import javax.annotation.Nullable;
 
+import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,6 +40,10 @@ public class TestItemTree {
 
 	public TestItemTree() {
 		this.testItems = new ConcurrentHashMap<>();
+	}
+
+	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> itemId) {
+		return new TestItemTree.TestItemLeaf(itemId);
 	}
 
 	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> itemId, int expectedChildrenCount) {
@@ -76,15 +83,23 @@ public class TestItemTree {
 
 		private final String name;
 		private final int hash;
+		private final Map<String, Object> attributes = new ConcurrentHashMap<>();
 
-		private ItemTreeKey(String name) {
-			this.name = name;
-			this.hash = name != null ? name.hashCode() : 0;
-		}
+		private ItemStatus status;
+		private ItemType type;
 
 		private ItemTreeKey(String name, int hash) {
 			this.name = name;
 			this.hash = hash;
+		}
+
+		private ItemTreeKey(String name) {
+			this(name, name != null ? name.hashCode() : 0);
+		}
+
+		private ItemTreeKey(String name, Map<String, Object> attributes) {
+			this(name);
+			this.attributes.putAll(attributes);
 		}
 
 		public String getName() {
@@ -101,6 +116,10 @@ public class TestItemTree {
 
 		public static ItemTreeKey of(String name, int hash) {
 			return new ItemTreeKey(name, hash);
+		}
+
+		public static ItemTreeKey of(String name, Map<String, Object> attributes) {
+			return new ItemTreeKey(name, attributes);
 		}
 
 		@Override
@@ -126,6 +145,38 @@ public class TestItemTree {
 			result = 31 * result + hash;
 			return result;
 		}
+
+		public ItemStatus getStatus() {
+			return status;
+		}
+
+		public void setStatus(ItemStatus status) {
+			this.status = status;
+		}
+
+		public ItemType getType() {
+			return type;
+		}
+
+		public void setType(ItemType type) {
+			this.type = type;
+		}
+
+		public Object getAttribute(String key) {
+			return attributes.get(key);
+		}
+
+		public Object setAttribute(String key, Object value) {
+			return attributes.put(key, value);
+		}
+
+		public void clearAttribute(String key) {
+			attributes.remove(key);
+		}
+
+		public Map<String, Object> getAttributes() {
+			return Collections.unmodifiableMap(attributes);
+		}
 	}
 
 	/**
@@ -143,6 +194,11 @@ public class TestItemTree {
 		private Maybe<OperationCompletionRS> finishResponse;
 		private final Maybe<String> itemId;
 		private final Map<ItemTreeKey, TestItemLeaf> childItems;
+
+		private TestItemLeaf(Maybe<String> itemId) {
+			this.itemId = itemId;
+			this.childItems = new ConcurrentHashMap<>();
+		}
 
 		private TestItemLeaf(Maybe<String> itemId, int expectedChildrenCount) {
 			this.itemId = itemId;
