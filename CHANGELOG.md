@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- A lot of code style warnings (e.g. legacy java 6 code can be updated, etc)
 
 ## [5.0.12]
 ### Fixed

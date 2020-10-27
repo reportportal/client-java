@@ -24,7 +24,12 @@ public enum ItemStatus {
 	FAILED,
 	STOPPED,
 	SKIPPED,
-	RESETED,
+	/**
+	 * @deprecated 'RESETED' status was deprecated and will be removed in the next versions, use {@link ItemStatus#INTERRUPTED} status
+	 * instead
+	 */
+	@Deprecated RESETED,
+	INTERRUPTED,
 	CANCELLED,
 	INFO,
 	WARN

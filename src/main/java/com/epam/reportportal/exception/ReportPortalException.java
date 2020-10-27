@@ -31,7 +31,7 @@ public class ReportPortalException extends GeneralReportPortalException {
 	/**
 	 * HTTP Error Response Body
 	 */
-	protected ErrorRS error;
+	protected final ErrorRS error;
 
 	public ReportPortalException(int statusCode, String statusMessage, ErrorRS error) {
 		super(statusCode, statusMessage, error.getMessage());

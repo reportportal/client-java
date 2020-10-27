@@ -62,8 +62,7 @@ public class AnalyticsService implements Closeable {
 	}
 
 	public void sendEvent(Maybe<String> launchIdMaybe, StartLaunchRQ rq) {
-		AnalyticsEvent.AnalyticsEventBuilder analyticsEventBuilder = AnalyticsEvent.builder();
-		analyticsEventBuilder.withAction(START_LAUNCH_EVENT_ACTION);
+		AnalyticsEvent.AnalyticsEventBuilder analyticsEventBuilder = AnalyticsEvent.builder().withAction(START_LAUNCH_EVENT_ACTION);
 		SystemAttributesExtractor.extract(CLIENT_PROPERTIES_FILE, getClass().getClassLoader(), ClientProperties.CLIENT)
 				.stream()
 				.map(ItemAttributeResource::getValue)
@@ -89,7 +88,10 @@ public class AnalyticsService implements Closeable {
 	@Override
 	public void close() {
 		try {
-			Completable.concat(dependencies).timeout(parameters.getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
+			Throwable result = Completable.concat(dependencies).timeout(parameters.getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
+			if (result != null) {
+				throw new RuntimeException("Unable to complete execution of all dependencies", result);
+			}
 		} finally {
 			googleAnalyticsExecutor.shutdown();
 			try {

@@ -52,7 +52,7 @@ public class LaunchLoggingContext {
 	private static final int DEFAULT_BUFFER_SIZE = 10;
 	static final String DEFAULT_LAUNCH_KEY = "default";
 
-	static ConcurrentHashMap<String, LaunchLoggingContext> loggingContextMap = new ConcurrentHashMap<String, LaunchLoggingContext>();
+	static final ConcurrentHashMap<String, LaunchLoggingContext> loggingContextMap = new ConcurrentHashMap<>();
 	/* Log emitter */
 	private final PublishSubject<Maybe<SaveLogRQ>> emitter;
 	/* a UUID of Launch in ReportPortal */

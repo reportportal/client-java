@@ -392,7 +392,13 @@ public class ListenerParameters implements Cloneable {
 
 	@Override
 	public ListenerParameters clone() {
-		final ListenerParameters clone = new ListenerParameters();
+		ListenerParameters clonedParent;
+		try {
+			clonedParent = (ListenerParameters) super.clone();
+		} catch (CloneNotSupportedException exc) {
+			clonedParent = new ListenerParameters();
+		}
+		final ListenerParameters clone = clonedParent;
 		Arrays.stream(getClass().getDeclaredFields()).forEach(f -> {
 			if (Modifier.isFinal(f.getModifiers())) {
 				return; // skip constants

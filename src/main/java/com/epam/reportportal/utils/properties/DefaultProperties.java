@@ -28,9 +28,9 @@ public enum DefaultProperties implements PropertyHolder {
 	JVM("jvm", true, "java.vm.name", "java.version", "java.class.version"),
 	AGENT("agent", false, "agent.name", "agent.version");
 
-	private String name;
-	private boolean internal;
-	private String[] propertyKeys;
+	private final String name;
+	private final boolean internal;
+	private final String[] propertyKeys;
 
 	DefaultProperties(String name, boolean internal, String... propertyKeys) {
 		this.name = name;

@@ -18,9 +18,10 @@ package com.epam.reportportal.service.tree;
 
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import io.reactivex.Maybe;
-import io.reactivex.annotations.Nullable;
+import javax.annotation.Nullable;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -35,7 +36,7 @@ public class TestItemTree {
 	private final Map<ItemTreeKey, TestItemLeaf> testItems;
 
 	public TestItemTree() {
-		this.testItems = new ConcurrentHashMap<ItemTreeKey, TestItemLeaf>();
+		this.testItems = new ConcurrentHashMap<>();
 	}
 
 	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> itemId, int expectedChildrenCount) {
@@ -116,7 +117,7 @@ public class TestItemTree {
 			if (hash != that.hash) {
 				return false;
 			}
-			return name != null ? name.equals(that.name) : that.name == null;
+			return Objects.equals(name, that.name);
 		}
 
 		@Override
@@ -145,7 +146,7 @@ public class TestItemTree {
 
 		private TestItemLeaf(Maybe<String> itemId, int expectedChildrenCount) {
 			this.itemId = itemId;
-			this.childItems = new ConcurrentHashMap<ItemTreeKey, TestItemLeaf>(expectedChildrenCount);
+			this.childItems = new ConcurrentHashMap<>(expectedChildrenCount);
 		}
 
 		private TestItemLeaf(Maybe<String> itemId, ConcurrentHashMap<ItemTreeKey, TestItemLeaf> childItems) {

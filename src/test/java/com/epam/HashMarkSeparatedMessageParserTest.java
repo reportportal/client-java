@@ -18,6 +18,7 @@ package com.epam;
 import com.epam.reportportal.message.HashMarkSeparatedMessageParser;
 import com.epam.reportportal.message.MessageParser;
 import com.epam.reportportal.message.ReportPortalMessage;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -38,5 +39,22 @@ public class HashMarkSeparatedMessageParserTest {
 		assertThat(message, notNullValue());
 		assertThat(message.getMessage(), equalTo("demo test message######33"));
 		assertThat(message.getData(), nullValue());
+	}
+
+	@Test
+	public void testParserEmptyMessage() throws IOException {
+		MessageParser parser = new HashMarkSeparatedMessageParser();
+
+		ReportPortalMessage message = parser.parse("RP_MESSAGE#FILE#c:\\somedemofile#");
+		assertThat(message, notNullValue());
+		assertThat(message.getMessage(), emptyString());
+		assertThat(message.getData(), nullValue());
+	}
+
+	@Test
+	public void testParserNullMessage() {
+		MessageParser parser = new HashMarkSeparatedMessageParser();
+
+		Assertions.assertThrows(RuntimeException.class, () -> parser.parse("RP_MESSAGE#FILE#c:\\somedemofile"));
 	}
 }

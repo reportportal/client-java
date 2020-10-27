@@ -24,6 +24,8 @@ import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+
 /**
  * @author Dzianis_Shybeka
  */
@@ -36,17 +38,17 @@ public class SubscriptionUtils {
 		return new MaybeObserver<T>() {
 
 			@Override
-			public void onSubscribe(Disposable d) {
+			public void onSubscribe(@Nonnull Disposable d) {
 				//				ignore
 			}
 
 			@Override
-			public void onSuccess(T Result) {
+			public void onSuccess(@Nonnull T Result) {
 				LOGGER.debug("{} successfully completed", type);
 			}
 
 			@Override
-			public void onError(Throwable e) {
+			public void onError(@Nonnull Throwable e) {
 				LOGGER.error("{} completed with error ", type, e);
 			}
 
@@ -62,7 +64,7 @@ public class SubscriptionUtils {
 		return new FlowableSubscriber<T>() {
 
 			@Override
-			public void onSubscribe(Subscription s) {
+			public void onSubscribe(@Nonnull Subscription s) {
 				//				ignore
 			}
 
@@ -88,12 +90,12 @@ public class SubscriptionUtils {
 		return new CompletableObserver() {
 
 			@Override
-			public void onSubscribe(Disposable d) {
+			public void onSubscribe(@Nonnull Disposable d) {
 				//				ignore
 			}
 
 			@Override
-			public void onError(Throwable e) {
+			public void onError(@Nonnull Throwable e) {
 				LOGGER.error("[{}] ReportPortal {} execution error", Thread.currentThread().getId(), type, e);
 			}
 

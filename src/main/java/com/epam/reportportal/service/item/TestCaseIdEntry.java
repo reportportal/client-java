@@ -16,6 +16,8 @@
 
 package com.epam.reportportal.service.item;
 
+import java.util.Objects;
+
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
@@ -49,7 +51,7 @@ public class TestCaseIdEntry {
 
 		TestCaseIdEntry that = (TestCaseIdEntry) o;
 
-		return id != null ? id.equals(that.id) : that.id == null;
+		return Objects.equals(id, that.id);
 	}
 
 	@Override

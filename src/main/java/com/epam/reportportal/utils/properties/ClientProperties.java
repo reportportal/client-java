@@ -26,9 +26,9 @@ package com.epam.reportportal.utils.properties;
 public enum ClientProperties implements PropertyHolder {
 	CLIENT("client", false, "client.name", "client.version");
 
-	private String name;
-	private boolean internal;
-	private String[] propertyKeys;
+	private final String name;
+	private final boolean internal;
+	private final String[] propertyKeys;
 
 	ClientProperties(String name, boolean internal, String... propertyKeys) {
 		this.name = name;

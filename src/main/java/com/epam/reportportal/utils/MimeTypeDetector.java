@@ -34,7 +34,7 @@ import static com.google.common.base.Strings.isNullOrEmpty;
  */
 public class MimeTypeDetector {
 
-	private static Detector detector = new AutoDetectParser().getDetector();
+	private static final Detector detector = new AutoDetectParser().getDetector();
 
 	private MimeTypeDetector() {
 		//statics only
