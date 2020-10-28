@@ -2,9 +2,9 @@
 
 ## [Unreleased]
 ### Fixed
-- A lot of code style warnings (e.g. legacy java 6 code can be updated, etc)
+- A lot of code style warnings (e.g. legacy java 6 code updated, etc)
 ### Added
-- TestItemTree.ItemTreeKey now supports attribute storing
+- TestItemTree.TestItemLeaf now supports attribute storing
 
 ## [5.0.12]
 ### Fixed

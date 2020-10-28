@@ -42,26 +42,104 @@ public class TestItemTree {
 		this.testItems = new ConcurrentHashMap<>();
 	}
 
+	/**
+	 * Create a Test Item Leaf for a tree of Test Items
+	 *
+	 * @param itemId an ID of the leaf
+	 * @return a leaf object
+	 */
 	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> itemId) {
 		return new TestItemTree.TestItemLeaf(itemId);
 	}
 
+	/**
+	 * Create a Test Item Leaf for a tree of Test Items
+	 *
+	 * @deprecated use {@link TestItemTree#createTestItemLeaf(Maybe)}
+	 * @param itemId an ID of the leaf
+	 * @param expectedChildrenCount not used anymore
+	 * @return a leaf object
+	 */
+	@Deprecated
 	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> itemId, int expectedChildrenCount) {
-		return new TestItemTree.TestItemLeaf(itemId, expectedChildrenCount);
+		return createTestItemLeaf(itemId);
 	}
 
+	/**
+	 * Create a Test Item Leaf for a tree of Test Items
+	 *
+	 * @param parentId an ID of a parent Test Item (leaf)
+	 * @param itemId an ID of the leaf
+	 * @return a leaf object
+	 */
+	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> parentId, Maybe<String> itemId) {
+		return new TestItemTree.TestItemLeaf(parentId, itemId);
+	}
+
+	/**
+	 * Create a Test Item Leaf for a tree of Test Items
+	 *
+	 * @deprecated use {@link TestItemTree#createTestItemLeaf(Maybe)}
+	 * @param parentId an ID of a parent Test Item (leaf)
+	 * @param itemId an ID of the leaf
+	 * @param expectedChildrenCount not used anymore
+	 * @return a leaf object
+	 */
+	@Deprecated
 	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> parentId, Maybe<String> itemId, int expectedChildrenCount) {
-		return new TestItemTree.TestItemLeaf(parentId, itemId, expectedChildrenCount);
+		return createTestItemLeaf(parentId, itemId);
 	}
 
+	/**
+	 * Create a Test Item Leaf for a tree of Test Items
+	 *
+	 * @param itemId an ID of the leaf
+	 * @param childItems child leaf elements
+	 * @return a leaf object
+	 */
 	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> itemId,
-			ConcurrentHashMap<ItemTreeKey, TestItemLeaf> childItems) {
-		return new TestItemTree.TestItemLeaf(itemId, childItems);
+			Map<ItemTreeKey, TestItemLeaf> childItems) {
+		return new TestItemTree.TestItemLeaf(itemId, Collections.emptyMap(), childItems);
 	}
 
+	/**
+	 * Create a Test Item Leaf for a tree of Test Items
+	 *
+	 * @param itemId an ID of the leaf
+	 * @param childItems child leaf elements
+	 * @param attributes leaf attributes
+	 * @return a leaf object
+	 */
+	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> itemId,
+			Map<ItemTreeKey, TestItemLeaf> childItems, Map<String, Object> attributes) {
+		return new TestItemTree.TestItemLeaf(itemId, attributes, childItems);
+	}
+
+	/**
+	 * Create a Test Item Leaf for a tree of Test Items
+	 *
+	 * @param parentId an ID of a parent Test Item (leaf)
+	 * @param itemId an ID of the leaf
+	 * @param childItems child leaf elements
+	 * @return a leaf object
+	 */
 	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> parentId, Maybe<String> itemId,
 			ConcurrentHashMap<ItemTreeKey, TestItemLeaf> childItems) {
-		return new TestItemTree.TestItemLeaf(parentId, itemId, childItems);
+		return new TestItemTree.TestItemLeaf(parentId, itemId, Collections.emptyMap(), childItems);
+	}
+
+	/**
+	 * Create a Test Item Leaf for a tree of Test Items
+	 *
+	 * @param parentId an ID of a parent Test Item (leaf)
+	 * @param itemId an ID of the leaf
+	 * @param childItems child leaf elements
+	 * @param attributes leaf attributes
+	 * @return a leaf object
+	 */
+	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> parentId, Maybe<String> itemId,
+			ConcurrentHashMap<ItemTreeKey, TestItemLeaf> childItems, Map<String, Object> attributes) {
+		return new TestItemTree.TestItemLeaf(parentId, itemId, attributes, childItems);
 	}
 
 	public Maybe<String> getLaunchId() {
@@ -83,10 +161,6 @@ public class TestItemTree {
 
 		private final String name;
 		private final int hash;
-		private final Map<String, Object> attributes = new ConcurrentHashMap<>();
-
-		private ItemStatus status;
-		private ItemType type;
 
 		private ItemTreeKey(String name, int hash) {
 			this.name = name;
@@ -95,11 +169,6 @@ public class TestItemTree {
 
 		private ItemTreeKey(String name) {
 			this(name, name != null ? name.hashCode() : 0);
-		}
-
-		private ItemTreeKey(String name, Map<String, Object> attributes) {
-			this(name);
-			this.attributes.putAll(attributes);
 		}
 
 		public String getName() {
@@ -116,10 +185,6 @@ public class TestItemTree {
 
 		public static ItemTreeKey of(String name, int hash) {
 			return new ItemTreeKey(name, hash);
-		}
-
-		public static ItemTreeKey of(String name, Map<String, Object> attributes) {
-			return new ItemTreeKey(name, attributes);
 		}
 
 		@Override
@@ -145,38 +210,6 @@ public class TestItemTree {
 			result = 31 * result + hash;
 			return result;
 		}
-
-		public ItemStatus getStatus() {
-			return status;
-		}
-
-		public void setStatus(ItemStatus status) {
-			this.status = status;
-		}
-
-		public ItemType getType() {
-			return type;
-		}
-
-		public void setType(ItemType type) {
-			this.type = type;
-		}
-
-		public Object getAttribute(String key) {
-			return attributes.get(key);
-		}
-
-		public Object setAttribute(String key, Object value) {
-			return attributes.put(key, value);
-		}
-
-		public void clearAttribute(String key) {
-			attributes.remove(key);
-		}
-
-		public Map<String, Object> getAttributes() {
-			return Collections.unmodifiableMap(attributes);
-		}
 	}
 
 	/**
@@ -193,32 +226,39 @@ public class TestItemTree {
 		@Nullable
 		private Maybe<OperationCompletionRS> finishResponse;
 		private final Maybe<String> itemId;
-		private final Map<ItemTreeKey, TestItemLeaf> childItems;
+		private final Map<ItemTreeKey, TestItemLeaf> childItems = new ConcurrentHashMap<>();
+		private final Map<String, Object> attributes = new ConcurrentHashMap<>();
+		private ItemStatus status;
+		private ItemType type;
 
 		private TestItemLeaf(Maybe<String> itemId) {
 			this.itemId = itemId;
-			this.childItems = new ConcurrentHashMap<>();
 		}
 
-		private TestItemLeaf(Maybe<String> itemId, int expectedChildrenCount) {
-			this.itemId = itemId;
-			this.childItems = new ConcurrentHashMap<>(expectedChildrenCount);
+		private TestItemLeaf(Maybe<String> itemId, Map<String, Object> attributes) {
+			this(itemId);
+			this.attributes.putAll(attributes);
 		}
 
-		private TestItemLeaf(Maybe<String> itemId, ConcurrentHashMap<ItemTreeKey, TestItemLeaf> childItems) {
-			this.itemId = itemId;
-			this.childItems = childItems;
+		private TestItemLeaf(Maybe<String> itemId, Map<String, Object> attributes, Map<ItemTreeKey, TestItemLeaf> childItems) {
+			this(itemId, attributes);
+			this.childItems.putAll(childItems);
 		}
 
-		private TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId, int expectedChildrenCount) {
-			this(itemId, expectedChildrenCount);
+		private TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId) {
+			this(itemId);
 			this.parentId = parentId;
 		}
 
-		private TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId,
-				ConcurrentHashMap<ItemTreeKey, TestItemLeaf> childItems) {
-			this(itemId, childItems);
+		private TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId, Map<String, Object> attributes) {
+			this(itemId, attributes);
 			this.parentId = parentId;
+		}
+
+		private TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId, Map<String, Object> attributes,
+				Map<ItemTreeKey, TestItemLeaf> childItems) {
+			this(itemId, parentId, attributes);
+			this.childItems.putAll(childItems);
 		}
 
 		@Nullable
@@ -245,6 +285,41 @@ public class TestItemTree {
 
 		public Map<ItemTreeKey, TestItemLeaf> getChildItems() {
 			return childItems;
+		}
+
+		public ItemStatus getStatus() {
+			return status;
+		}
+
+		public void setStatus(ItemStatus status) {
+			this.status = status;
+		}
+
+		public ItemType getType() {
+			return type;
+		}
+
+		public void setType(ItemType type) {
+			this.type = type;
+		}
+
+		@Nullable
+		public Object getAttribute(String key) {
+			return attributes.get(key);
+		}
+
+		@Nullable
+		public Object setAttribute(String key, Object value) {
+			return attributes.put(key, value);
+		}
+
+		@Nullable
+		public Object clearAttribute(String key) {
+			return attributes.remove(key);
+		}
+
+		public Map<String, Object> getAttributes() {
+			return Collections.unmodifiableMap(attributes);
 		}
 	}
 }

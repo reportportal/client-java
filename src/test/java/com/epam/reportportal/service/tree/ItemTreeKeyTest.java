@@ -44,29 +44,29 @@ public class ItemTreeKeyTest {
 	}
 
 	@Test
-	public void it_is_not_possible_to_modify_key_by_changing_original_attributes_map() {
+	public void it_is_not_possible_to_modify_leaf_by_changing_original_attributes_map() {
 		Map<String, Object> attributes = new HashMap<>();
 		attributes.put("test", "test");
-		TestItemTree.ItemTreeKey key = TestItemTree.ItemTreeKey.of("test", attributes);
+		TestItemTree.TestItemLeaf leaf = TestItemTree.createTestItemLeaf(null, Collections.emptyMap(), attributes);
 		attributes.put("test2", "test2");
-		assertThat(key.getAttributes().entrySet(), hasSize(1));
+		assertThat(leaf.getAttributes().entrySet(), hasSize(1));
 	}
 
 	@Test
-	public void it_is_not_possible_to_modify_key_by_getting_all_attributes() {
+	public void it_is_not_possible_to_modify_leaf_by_getting_all_attributes() {
 		Map<String, Object> attributes = new HashMap<>();
 		attributes.put("test", "test");
-		TestItemTree.ItemTreeKey key = TestItemTree.ItemTreeKey.of("test", attributes);
-		Map<String, Object> resultAttributes = key.getAttributes();
+		TestItemTree.TestItemLeaf leaf = TestItemTree.createTestItemLeaf(null, Collections.emptyMap(), attributes);
+		Map<String, Object> resultAttributes = leaf.getAttributes();
 		Assertions.assertThrows(UnsupportedOperationException.class, () -> resultAttributes.put("test2", "test2"));
 	}
 
 	@Test
 	public void it_is_possible_to_modify_key_by_calling_set_attribute_method() {
 		Map<String, Object> attributes = Collections.singletonMap("test", "test");
-		TestItemTree.ItemTreeKey key = TestItemTree.ItemTreeKey.of("test", attributes);
-		key.setAttribute("test2", "test2");
-		Map<String, Object> resultAttributes = key.getAttributes();
+		TestItemTree.TestItemLeaf leaf = TestItemTree.createTestItemLeaf(null, Collections.emptyMap(), attributes);
+		leaf.setAttribute("test2", "test2");
+		Map<String, Object> resultAttributes = leaf.getAttributes();
 		assertThat(resultAttributes.entrySet(), hasSize(2));
 	}
 
@@ -75,9 +75,9 @@ public class ItemTreeKeyTest {
 		Map<String, Object> attributes = new HashMap<>();
 		attributes.put("test", "test");
 		attributes.put("test2", "test2");
-		TestItemTree.ItemTreeKey key = TestItemTree.ItemTreeKey.of("test", attributes);
-		key.clearAttribute("test2");
-		Map<String, Object> resultAttributes = key.getAttributes();
+		TestItemTree.TestItemLeaf leaf = TestItemTree.createTestItemLeaf(null, Collections.emptyMap(), attributes);
+		leaf.clearAttribute("test2");
+		Map<String, Object> resultAttributes = leaf.getAttributes();
 		assertThat(resultAttributes.entrySet(), hasSize(1));
 	}
 
@@ -86,27 +86,7 @@ public class ItemTreeKeyTest {
 		Map<String, Object> attributes = new HashMap<>();
 		attributes.put("test", "test");
 		attributes.put("test2", "value2");
-		TestItemTree.ItemTreeKey key = TestItemTree.ItemTreeKey.of("test", attributes);
-		assertThat(key.getAttribute("test2"), equalTo("value2"));
-	}
-
-	@Test
-	public void attributes_does_not_change_equality_logic() {
-		Map<String, Object> attributes = new HashMap<>();
-		attributes.put("test", "test");
-		TestItemTree.ItemTreeKey key1 = TestItemTree.ItemTreeKey.of("test", attributes);
-		key1.setAttribute("test2", "value2");
-		TestItemTree.ItemTreeKey key2 = TestItemTree.ItemTreeKey.of("test");
-		assertThat(key1, equalTo(key2));
-	}
-
-	@Test
-	public void attributes_does_not_change_hash_code_logic() {
-		Map<String, Object> attributes = new HashMap<>();
-		attributes.put("test", "test");
-		TestItemTree.ItemTreeKey key1 = TestItemTree.ItemTreeKey.of("test", attributes);
-		key1.setAttribute("test2", "value2");
-		TestItemTree.ItemTreeKey key2 = TestItemTree.ItemTreeKey.of("test");
-		assertThat(key1.hashCode(), equalTo(key2.hashCode()));
+		TestItemTree.TestItemLeaf leaf = TestItemTree.createTestItemLeaf(null, Collections.emptyMap(), attributes);
+		assertThat(leaf.getAttribute("test2"), equalTo("value2"));
 	}
 }
