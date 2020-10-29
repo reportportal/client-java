@@ -21,6 +21,7 @@ import com.epam.reportportal.listeners.ItemType;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import io.reactivex.Maybe;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Map;
@@ -283,6 +284,7 @@ public class TestItemTree {
 			return itemId;
 		}
 
+		@Nonnull
 		public Map<ItemTreeKey, TestItemLeaf> getChildItems() {
 			return childItems;
 		}
