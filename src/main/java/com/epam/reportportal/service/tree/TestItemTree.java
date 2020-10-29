@@ -304,8 +304,9 @@ public class TestItemTree {
 		}
 
 		@Nullable
-		public Object getAttribute(String key) {
-			return attributes.get(key);
+		@SuppressWarnings("unchecked")
+		public <T> T getAttribute(String key) {
+			return (T) attributes.get(key);
 		}
 
 		@Nullable
