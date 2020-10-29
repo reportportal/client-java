@@ -124,7 +124,7 @@ public class TestItemTree {
 	 * @return a leaf object
 	 */
 	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> parentId, Maybe<String> itemId,
-			ConcurrentHashMap<ItemTreeKey, TestItemLeaf> childItems) {
+			Map<ItemTreeKey, TestItemLeaf> childItems) {
 		return new TestItemTree.TestItemLeaf(parentId, itemId, Collections.emptyMap(), childItems);
 	}
 
@@ -138,7 +138,7 @@ public class TestItemTree {
 	 * @return a leaf object
 	 */
 	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> parentId, Maybe<String> itemId,
-			ConcurrentHashMap<ItemTreeKey, TestItemLeaf> childItems, Map<String, Object> attributes) {
+			Map<ItemTreeKey, TestItemLeaf> childItems, Map<String, Object> attributes) {
 		return new TestItemTree.TestItemLeaf(parentId, itemId, attributes, childItems);
 	}
 
