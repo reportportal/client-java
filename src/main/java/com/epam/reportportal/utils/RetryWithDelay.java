@@ -17,6 +17,8 @@ package com.epam.reportportal.utils;
 
 import io.reactivex.functions.Predicate;
 
+import javax.annotation.Nonnull;
+
 import static java.lang.Thread.sleep;
 
 /**
@@ -39,7 +41,7 @@ public class RetryWithDelay implements Predicate<Throwable> {
 	}
 
 	@Override
-	public boolean test(final Throwable throwable) throws Exception {
+	public boolean test(@Nonnull final Throwable throwable) throws Exception {
 		try {
 			//check whether we should retry this exception
 			if (!predicate.test(throwable)) {

@@ -50,9 +50,9 @@ public class AttributeParser {
 		}
 		Set<ItemAttributesRQ> attributes = Sets.newHashSet();
 
-		String[] attributesSplitted = rawAttributes.trim().split(ATTRIBUTES_SPLITTER);
-		for (int i = 0; i < attributesSplitted.length; i++) {
-			ItemAttributesRQ itemAttributeResource = splitKeyValue(attributesSplitted[i]);
+		String[] attributesSplit = rawAttributes.trim().split(ATTRIBUTES_SPLITTER);
+		for (String s : attributesSplit) {
+			ItemAttributesRQ itemAttributeResource = splitKeyValue(s);
 			if (itemAttributeResource != null) {
 				attributes.add(itemAttributeResource);
 			}

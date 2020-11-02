@@ -117,6 +117,11 @@ public class TestUtils {
 		return SubscriptionUtils.createConstantMaybe(rs);
 	}
 
+	public static Maybe<OperationCompletionRS> finishTestItemResponse() {
+		final OperationCompletionRS rs = new OperationCompletionRS();
+		return SubscriptionUtils.createConstantMaybe(rs);
+	}
+
 	public static void simulateStartTestItemResponse(final ReportPortalClient client) {
 		when(client.startTestItem(any(StartTestItemRQ.class))).then((Answer<Maybe<ItemCreatedRS>>) invocation -> {
 			StartTestItemRQ rq = invocation.getArgument(0);
@@ -129,6 +134,13 @@ public class TestUtils {
 			StartTestItemRQ rq = invocation.getArgument(1);
 			return startTestItemResponse(ofNullable(rq.getUuid()).orElseGet(() -> UUID.randomUUID().toString()));
 		});
+	}
+
+	public static void simulateFinishTestItemResponse(final ReportPortalClient client) {
+		when(client.finishTestItem(
+				anyString(),
+				any(FinishTestItemRQ.class)
+		)).then((Answer<Maybe<OperationCompletionRS>>) invocation -> finishTestItemResponse());
 	}
 
 	public static StartTestItemRQ standardStartSuiteRequest() {

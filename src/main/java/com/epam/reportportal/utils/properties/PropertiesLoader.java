@@ -49,14 +49,11 @@ public class PropertiesLoader {
 	 * @see #INNER_PATH
 	 */
 	public static PropertiesLoader load() {
-		return new PropertiesLoader(new Supplier<Properties>() {
-			@Override
-			public Properties get() {
-				try {
-					return loadProperties(INNER_PATH);
-				} catch (IOException e) {
-					throw new InternalReportPortalClientException("Unable to load properties", e);
-				}
+		return new PropertiesLoader(() -> {
+			try {
+				return loadProperties(INNER_PATH);
+			} catch (IOException e) {
+				throw new InternalReportPortalClientException("Unable to load properties", e);
 			}
 		});
 	}
@@ -68,14 +65,11 @@ public class PropertiesLoader {
 	 * @return PropertiesLoader instance
 	 */
 	public static PropertiesLoader load(final String resource) {
-		return new PropertiesLoader(new Supplier<Properties>() {
-			@Override
-			public Properties get() {
-				try {
-					return loadProperties(resource);
-				} catch (IOException e) {
-					throw new InternalReportPortalClientException("Unable to load properties", e);
-				}
+		return new PropertiesLoader(() -> {
+			try {
+				return loadProperties(resource);
+			} catch (IOException e) {
+				throw new InternalReportPortalClientException("Unable to load properties", e);
 			}
 		});
 	}
@@ -241,14 +235,14 @@ public class PropertiesLoader {
 	 * replace underscores with dots (dots are normally not allowed in spring boot variables, so like in spring boot,
 	 * underscores can be used.
 	 *
-	 * @param overrides
+	 * @param overrides a property set to normalize
 	 * @return the overrides without underscores and with dots.
 	 */
 	private static Map<String, String> normalizeOverrides(Map<String, String> overrides) {
 		Map<String, String> normalizedSet = new HashMap<>();
 		for (Map.Entry<String, String> entry : overrides.entrySet()) {
 			if (entry.getKey() != null) {
-				String key = entry.getKey().replace("_", ".");
+				String key = entry.getKey().toLowerCase().replace("_", ".");
 				normalizedSet.put(key, entry.getValue());
 			}
 		}

@@ -20,8 +20,7 @@ import com.google.common.io.ByteSource;
 import java.io.File;
 import java.io.IOException;
 
-import static com.epam.reportportal.utils.MimeTypeDetector.detect;
-import static com.google.common.io.Files.asByteSource;
+import static com.epam.reportportal.utils.files.Utils.getFile;
 
 /**
  * Report portal message wrapper. This wrapper should be used if any file <br>
@@ -52,7 +51,7 @@ public class ReportPortalMessage {
 	}
 
 	public ReportPortalMessage(File file, String message) throws IOException {
-		this(new TypeAwareByteSource(asByteSource(file), detect(file)), message);
+		this(getFile(file), message);
 	}
 
 	public String getMessage() {

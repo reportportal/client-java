@@ -120,7 +120,7 @@ public class LoggingContext {
 				.buffer(bufferSize)
 				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
 						rqs)).toFlowable())
-				.doOnError(throwable -> LOG_ERROR.accept(throwable))
+				.doOnError(LOG_ERROR)
 				.observeOn(scheduler)
 				.subscribe(logFlowableResults("Logging context"));
 

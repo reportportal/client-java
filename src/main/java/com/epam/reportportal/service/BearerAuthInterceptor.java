@@ -35,8 +35,7 @@ public class BearerAuthInterceptor implements HttpRequestInterceptor {
 	}
 
 	@Override
-	public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
+	public void process(HttpRequest request, HttpContext context) {
 		request.setHeader(HttpHeaders.AUTHORIZATION, "bearer " + uuid);
-
 	}
 }

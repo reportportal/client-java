@@ -1,6 +1,12 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- A lot of code style warnings (e.g. legacy java 6 code updated, etc)
+### Added
+- TestItemTree.TestItemLeaf now supports attribute storing
+### Changed
+- Properties loader now ignores property case
 
 ## [5.0.12]
 ### Fixed

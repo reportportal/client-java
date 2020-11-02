@@ -19,12 +19,10 @@ package com.epam.reportportal.service.tree;
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortalClient;
-import com.epam.reportportal.utils.MimeTypeDetector;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.google.common.collect.Lists;
-import com.google.common.io.Files;
 import io.reactivex.Maybe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +30,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
+
+import static com.epam.reportportal.utils.files.Utils.getFile;
 
 /**
  * This class provides methods for sending requests to the Report Portal instance, using {@link ReportPortalClient}
@@ -82,7 +82,7 @@ public class ItemTreeReporter {
 		if (item == null || launchUuid == null) {
 			return Maybe.empty();
 		}
-		if (testItemLeaf.getFinishResponse() != null) {
+		if (finishResponse != null) {
 			Throwable t = finishResponse.ignoreElement().blockingGet(); //  ensure we are the last update in the chain
 			if (t != null) {
 				LOGGER.warn("A main item finished with error", t);
@@ -174,7 +174,7 @@ public class ItemTreeReporter {
 	}
 
 	private static SaveLogRQ.File createFileModel(File file) throws IOException {
-		TypeAwareByteSource data = new TypeAwareByteSource(Files.asByteSource(file), MimeTypeDetector.detect(file));
+		TypeAwareByteSource data = getFile(file);
 		SaveLogRQ.File fileModel = new SaveLogRQ.File();
 		fileModel.setContent(data.read());
 		fileModel.setContentType(data.getMediaType());

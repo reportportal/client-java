@@ -17,20 +17,22 @@
 package com.epam.reportportal.listeners;
 
 /**
- * All possible statuses of test method finish supported by backend.
+ * All possible types of test items supported by backend.
  */
-public enum ItemStatus {
-	PASSED,
-	FAILED,
-	STOPPED,
-	SKIPPED,
-	/**
-	 * @deprecated 'RESETED' status was deprecated and will be removed in the next versions, use {@link ItemStatus#INTERRUPTED} status
-	 * instead
-	 */
-	@Deprecated RESETED,
-	INTERRUPTED,
-	CANCELLED,
-	INFO,
-	WARN
+public enum ItemType {
+	SUITE,
+	STORY,
+	TEST,
+	SCENARIO,
+	STEP,
+	BEFORE_CLASS,
+	BEFORE_GROUPS,
+	BEFORE_METHOD,
+	BEFORE_SUITE,
+	BEFORE_TEST,
+	AFTER_CLASS,
+	AFTER_GROUPS,
+	AFTER_METHOD,
+	AFTER_SUITE,
+	AFTER_TEST
 }

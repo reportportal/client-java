@@ -16,7 +16,6 @@
 package com.epam.reportportal.message;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Splitter;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteSource;
 import com.google.common.io.Resources;
@@ -24,10 +23,13 @@ import com.google.common.io.Resources;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
-import static com.google.common.io.Files.asByteSource;
+import static com.epam.reportportal.utils.files.Utils.getFile;
 import static com.google.common.io.Resources.getResource;
 
 /**
@@ -50,7 +52,7 @@ public class HashMarkSeparatedMessageParser implements MessageParser {
 				if (!file.exists()) {
 					return null;
 				}
-				return new TypeAwareByteSource(asByteSource(file), detect(file));
+				return getFile(file);
 			}
 		},
 		BASE64 {
@@ -86,10 +88,25 @@ public class HashMarkSeparatedMessageParser implements MessageParser {
 	}
 
 	private static final int CHUNKS_COUNT = 4;
+	private static final Pattern CHUNK_DELIMITER = Pattern.compile("#");
 
 	@Override
 	public ReportPortalMessage parse(String message) throws IOException {
-		List<String> split = Splitter.on("#").limit(CHUNKS_COUNT).splitToList(message);
+		Matcher m = CHUNK_DELIMITER.matcher(Pattern.quote(message));
+		int chunkIdx = 0;
+		List<String> split = new ArrayList<>(CHUNKS_COUNT);
+		int prevRegion = 0;
+		while (m.find()) {
+			String chunk = message.substring(prevRegion, m.start() - 2);
+			prevRegion = m.start() - 1;
+			if (!chunk.isEmpty()) {
+				split.add(chunk);
+			}
+			if (++chunkIdx >= CHUNKS_COUNT - 1) {
+				break;
+			}
+		}
+		split.add(message.substring(prevRegion));
 
 		// -1 because there may be no
 		if (CHUNKS_COUNT != split.size()) {

@@ -26,11 +26,11 @@ public class GeneralReportPortalException extends RuntimeException {
 	/**
 	 * HTTP Status Code
 	 */
-	protected int statusCode;
+	protected final int statusCode;
 	/**
 	 * HTTP Status Message
 	 */
-	protected String statusMessage;
+	protected final String statusMessage;
 
 	public GeneralReportPortalException(int statusCode, String statusMessage, String errorContent) {
 		super(errorContent);

@@ -56,7 +56,7 @@ public class AnalyticsEvent implements AnalyticsItem {
 
 	public static class AnalyticsEventBuilder {
 
-		private Map<String, String> params;
+		private final Map<String, String> params;
 
 		public AnalyticsEventBuilder() {
 			params = Maps.newHashMapWithExpectedSize(4);
