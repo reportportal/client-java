@@ -72,6 +72,20 @@ public class PropertiesLoaderTest {
 	}
 
 	@Test
+	public void test_loader_ignores_upper_case() {
+		Properties properties = new Properties();
+		properties.setProperty("rp.description", "testvalue");
+
+		PropertiesLoader.overrideWith(properties, ImmutableMap.<String, String>builder().put("RP_DESCRIPTION", "anothervalue").build());
+		assertThat(
+				"Incorrect override behaviour",
+				properties.getProperty(ListenerProperty.DESCRIPTION.getPropertyName()),
+				equalTo("anothervalue")
+		);
+	}
+
+
+	@Test
 	public void testUtf() {
 		assertThat("Incorrect encoding!", PropertiesLoader.load("utf-demo.properties").getProperty("utf8"), is("привет мир!"));
 	}
