@@ -24,7 +24,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
+import java.lang.reflect.Executable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -33,12 +33,12 @@ import java.util.stream.Collectors;
 import static java.util.Optional.ofNullable;
 
 /**
- *
+ * A static class which contains methods to generate Test Case IDs and code references.
  */
 public class TestCaseIdUtils {
 
 	private TestCaseIdUtils() {
-		//static only
+		throw new IllegalStateException("Static only class");
 	}
 
 	private static final Function<List<?>, String> TRANSFORM_PARAMETERS = it -> it.stream()
@@ -46,34 +46,33 @@ public class TestCaseIdUtils {
 			.collect(Collectors.joining(",", "[", "]"));
 
 	/**
-	 * Generates a text code reference by consuming a {@link Method}
+	 * Generates a text code reference by consuming a {@link Executable}
 	 *
-	 * @param method a method, the value should not be null
+	 * @param executable a executable or constructor, the value should not be null
 	 * @return a text code reference
 	 */
 	@Nonnull
-	public static String getCodeRef(@Nonnull final Method method) {
-		return method.getDeclaringClass().getCanonicalName() + "." + method.getName();
+	public static String getCodeRef(@Nonnull final Executable executable) {
+		if (executable instanceof Constructor) {
+			return executable.getName();
+		}
+		return executable.getDeclaringClass().getCanonicalName() + "." + executable.getName();
 	}
 
 	/**
-	 * Generates a text code reference by consuming a {@link Constructor}
+	 * Returns a string of parameters values, separated by comma and embraced by '[]'.
 	 *
-	 * @param <T> constructor type
-	 * @param method a constructor, the value should not be null
-	 * @return a text code reference
+	 * @param executable a constructor or method
+	 * @param parameters a list of parameter values
+	 * @param <T>        a type of parameters
+	 * @return a string representation of parameters
 	 */
-	@Nonnull
-	public static <T> String getCodeRef(@Nonnull final Constructor<T> method) {
-		return method.getName();
-	}
-
 	@Nullable
-	public static <T> String getParametersForTestCaseId(Method method, List<T> parameters) {
-		if (method == null || parameters == null || parameters.isEmpty()) {
+	public static <T> String getParametersForTestCaseId(Executable executable, List<T> parameters) {
+		if (executable == null || parameters == null || parameters.isEmpty()) {
 			return null;
 		}
-		Annotation[][] parameterAnnotations = method.getParameterAnnotations();
+		Annotation[][] parameterAnnotations = executable.getParameterAnnotations();
 		List<Integer> keys = new ArrayList<>();
 		for (int paramIndex = 0; paramIndex < parameterAnnotations.length; paramIndex++) {
 			for (int annotationIndex = 0; annotationIndex < parameterAnnotations[paramIndex].length; annotationIndex++) {
@@ -92,52 +91,74 @@ public class TestCaseIdUtils {
 		return TRANSFORM_PARAMETERS.apply(keys.stream().map(parameters::get).collect(Collectors.toList()));
 	}
 
+	/**
+	 * Generates a {@link TestCaseIdEntry}
+	 *
+	 * @param annotation a {@link TestCaseId} annotation instance
+	 * @param executable a constructor or method for {@link TestCaseIdKey} scan
+	 * @param parameters a list of parameter values
+	 * @param <T>        a type of parameters
+	 * @return Test Case ID or null if not possible to generate (all parameters are nulls, empty, etc.)
+	 */
 	@Nullable
-	public static <T> TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Method method, @Nullable List<T> parameters) {
-		return getTestCaseId(annotation, method, null, parameters);
+	public static <T> TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Executable executable,
+			@Nullable List<T> parameters) {
+		return getTestCaseId(annotation, executable, null, parameters);
 	}
 
+	/**
+	 * Generates a {@link TestCaseIdEntry}
+	 *
+	 * @param annotation a {@link TestCaseId} annotation instance
+	 * @param executable a constructor or method for {@link TestCaseIdKey} scan
+	 * @param codRef     a code reference to use to generate the ID
+	 * @param parameters a list of parameter values
+	 * @param <T>        a type of parameters
+	 * @return Test Case ID or null if not possible to generate (all parameters are nulls, empty, etc.)
+	 */
 	@Nullable
-	public static <T> TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Method method, @Nullable String codRef,
-			@Nullable List<T> parameters) {
+	public static <T> TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Executable executable,
+			@Nullable String codRef, @Nullable List<T> parameters) {
 		if (annotation != null) {
 			if (annotation.value().isEmpty()) {
 				if (annotation.parametrized()) {
-					return ofNullable(getParametersForTestCaseId(method, parameters)).map(TestCaseIdEntry::new)
-							.orElse(ofNullable(codRef).map(c -> getTestCaseId(c, parameters)).orElse(getTestCaseId(method, parameters)));
+					return ofNullable(getParametersForTestCaseId(executable, parameters)).map(TestCaseIdEntry::new)
+							.orElse(ofNullable(codRef).map(c -> getTestCaseId(c, parameters))
+									.orElse(getTestCaseId(executable, parameters)));
 				} else {
-					return ofNullable(codRef).map(c -> getTestCaseId(c, parameters)).orElse(getTestCaseId(method, parameters));
+					return ofNullable(codRef).map(c -> getTestCaseId(c, parameters)).orElse(getTestCaseId(executable, parameters));
 				}
 			} else {
 				if (annotation.parametrized()) {
-					return ofNullable(getParametersForTestCaseId(method, parameters)).map(p -> new TestCaseIdEntry(
+					return ofNullable(getParametersForTestCaseId(executable, parameters)).map(p -> new TestCaseIdEntry(
 							annotation.value() + (p.startsWith("[") ? p : "[" + p + "]")))
-							.orElse(ofNullable(codRef).map(c -> getTestCaseId(c, parameters)).orElse(getTestCaseId(method, parameters)));
+							.orElse(ofNullable(codRef).map(c -> getTestCaseId(c, parameters))
+									.orElse(getTestCaseId(executable, parameters)));
 				} else {
 					return new TestCaseIdEntry(annotation.value());
 				}
 			}
 		}
-		return ofNullable(codRef).map(c -> getTestCaseId(c, parameters)).orElse(getTestCaseId(method, parameters));
+		return ofNullable(codRef).map(c -> getTestCaseId(c, parameters)).orElse(getTestCaseId(executable, parameters));
 	}
 
 	/**
-	 * Generates Test Case ID based on a method reference and a list of parameters
+	 * Generates Test Case ID based on a executable reference and a list of parameters
 	 *
-	 * @param <T> parameters type
-	 * @param method     a {@link Method} object
+	 * @param <T>        parameters type
+	 * @param executable a {@link Executable} object
 	 * @param parameters a list of parameters
 	 * @return a Test Case ID or null
 	 */
 	@Nullable
-	public static <T> TestCaseIdEntry getTestCaseId(@Nullable Method method, @Nullable List<T> parameters) {
-		return ofNullable(method).map(m -> getTestCaseId(getCodeRef(m), parameters)).orElse(getTestCaseId(parameters));
+	public static <T> TestCaseIdEntry getTestCaseId(@Nullable Executable executable, @Nullable List<T> parameters) {
+		return ofNullable(executable).map(m -> getTestCaseId(getCodeRef(m), parameters)).orElse(getTestCaseId(parameters));
 	}
 
 	/**
 	 * Generates Test Case ID based on a code reference and a list of parameters
 	 *
-	 * @param <T> parameters type
+	 * @param <T>        parameters type
 	 * @param codeRef    a code reference
 	 * @param parameters a list of parameters
 	 * @return a Test Case ID or null
@@ -151,7 +172,7 @@ public class TestCaseIdUtils {
 	/**
 	 * Generates Test Case ID based on a list of parameters
 	 *
-	 * @param <T> parameters type
+	 * @param <T>        parameters type
 	 * @param parameters a list of parameters
 	 * @return a Test Case ID or null
 	 */

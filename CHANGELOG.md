@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Test Case ID generation methods now accepts `Executable` as a parameter instead of `Method`
 
 ## [5.0.13]
 ### Fixed
