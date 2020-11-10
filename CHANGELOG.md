@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 ### Changed
-- Test Casi ID generation methods now accepts `Executable` as a parameter instead of `Method`
+- Test Case ID generation methods now accepts `Executable` as a parameter instead of `Method`
 
 ## [5.0.13]
 ### Fixed
