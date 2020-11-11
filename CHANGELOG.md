@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Apache Tika was updated on version 1.20
 
 ## [5.0.14]
 ### Changed
