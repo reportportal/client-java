@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.15]
 ### Added
 - A method to emit a log entry for a certain item: 
   com.epam.reportportal.service.ReportPortal.emitLog(io.reactivex.Maybe<java.lang.String>, java.util.function.Function<java.lang.String,com.epam.ta.reportportal.ws.model.log.SaveLogRQ>)
