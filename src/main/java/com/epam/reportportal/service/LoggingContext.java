@@ -25,6 +25,7 @@ import io.reactivex.functions.Function;
 import io.reactivex.subjects.PublishSubject;
 import org.reactivestreams.Publisher;
 
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
@@ -126,23 +127,36 @@ public class LoggingContext {
 
 	}
 
+	private SaveLogRQ prepareRequest(String launchId, String itemId, final java.util.function.Function<String, SaveLogRQ> logSupplier)
+			throws IOException {
+		final SaveLogRQ rq = logSupplier.apply(itemId);
+		rq.setLaunchUuid(launchId);
+		SaveLogRQ.File file = rq.getFile();
+		if (convertImages && null != file && isImage(file.getContentType())) {
+			final TypeAwareByteSource source = convert(ByteSource.wrap(file.getContent()));
+			file.setContent(source.read());
+			file.setContentType(source.getMediaType());
+		}
+		return rq;
+	}
+
 	/**
 	 * Emits log. Basically, put it into processing pipeline
 	 *
 	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
 	 */
 	public void emit(final java.util.function.Function<String, SaveLogRQ> logSupplier) {
-		emitter.onNext(launchUuid.zipWith(itemUuid, (launchId, itemId) -> {
-			final SaveLogRQ rq = logSupplier.apply(itemId);
-			rq.setLaunchUuid(launchId);
-			SaveLogRQ.File file = rq.getFile();
-			if (convertImages && null != file && isImage(file.getContentType())) {
-				final TypeAwareByteSource source = convert(ByteSource.wrap(file.getContent()));
-				file.setContent(source.read());
-				file.setContentType(source.getMediaType());
-			}
-			return rq;
-		}));
+		emitter.onNext(launchUuid.zipWith(itemUuid, (launchId, itemId) -> prepareRequest(launchId, itemId, logSupplier)));
+	}
+
+	/**
+	 * Emits log. Basically, put it into processing pipeline
+	 *
+	 * @param logItemUuid Test Item ID promise
+	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
+	 */
+	public void emit(final Maybe<String> logItemUuid, final java.util.function.Function<String, SaveLogRQ> logSupplier) {
+		emitter.onNext(launchUuid.zipWith(logItemUuid, (launchId, itemId) -> prepareRequest(launchId, itemId, logSupplier)));
 	}
 
 	/**

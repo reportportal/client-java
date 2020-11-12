@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- A method to emit a log entry for a certain item: 
+  com.epam.reportportal.service.ReportPortal.emitLog(io.reactivex.Maybe<java.lang.String>, java.util.function.Function<java.lang.String,com.epam.ta.reportportal.ws.model.log.SaveLogRQ>)
+### Changed
+- Apache Tika was updated on version 1.20
 
 ## [5.0.14]
 ### Changed
