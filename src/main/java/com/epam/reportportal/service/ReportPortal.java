@@ -242,6 +242,22 @@ public class ReportPortal {
 	/**
 	 * Emits log message if there is any active context attached to the current thread
 	 *
+	 * @param itemUuid Test Item ID promise
+	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
+	 * @return true if log has been emitted
+	 */
+	public static boolean emitLog(Maybe<String> itemUuid, final Function<String, SaveLogRQ> logSupplier) {
+		final LoggingContext loggingContext = LoggingContext.CONTEXT_THREAD_LOCAL.get().peek();
+		if (null != loggingContext) {
+			loggingContext.emit(itemUuid, logSupplier);
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Emits log message if there is any active context attached to the current thread
+	 *
 	 * @param message Log message
 	 * @param level   Log level
 	 * @param time    Log time
