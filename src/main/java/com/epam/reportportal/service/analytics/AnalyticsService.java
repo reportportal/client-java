@@ -29,6 +29,7 @@ import io.reactivex.Scheduler;
 import io.reactivex.schedulers.Schedulers;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
@@ -39,6 +40,7 @@ import java.util.regex.Pattern;
 import static java.util.Optional.ofNullable;
 
 public class AnalyticsService implements Closeable {
+	public static final String ANALYTICS_PROPERTY = "AGENT_NO_ANALYTICS";
 
 	private static final String CLIENT_PROPERTIES_FILE = "client.properties";
 	private static final String START_LAUNCH_EVENT_ACTION = "Start launch";
@@ -47,18 +49,19 @@ public class AnalyticsService implements Closeable {
 
 	private final ExecutorService googleAnalyticsExecutor = Executors.newSingleThreadExecutor();
 	private final Scheduler scheduler = Schedulers.from(googleAnalyticsExecutor);
-	private final GoogleAnalytics googleAnalytics;
+	private final Analytics analytics;
 	private final List<Completable> dependencies = new CopyOnWriteArrayList<>();
 
 	private final ListenerParameters parameters;
 
 	public AnalyticsService(ListenerParameters listenerParameters) {
 		this.parameters = listenerParameters;
-		googleAnalytics = new GoogleAnalytics("UA-173456809-1", parameters.getProxyUrl());
+		boolean isDisabled = System.getenv(ANALYTICS_PROPERTY) != null;
+		analytics = isDisabled ? new DummyAnalytics() : new Statistics("UA-173456809-1", parameters.getProxyUrl());
 	}
 
-	protected GoogleAnalytics getGoogleAnalytics() {
-		return googleAnalytics;
+	protected Analytics getAnalytics() {
+		return analytics;
 	}
 
 	public void sendEvent(Maybe<String> launchIdMaybe, StartLaunchRQ rq) {
@@ -80,9 +83,13 @@ public class AnalyticsService implements Closeable {
 				.map(a -> a.split(Pattern.quote(SystemAttributesExtractor.ATTRIBUTE_VALUE_SEPARATOR)))
 				.filter(a -> a.length >= 2)
 				.ifPresent(agentAttribute -> analyticsEventBuilder.withLabel(String.format(AGENT_VALUE_FORMAT, (Object[]) agentAttribute)));
-		Maybe<Boolean> analyticsMaybe = launchIdMaybe.map(l -> getGoogleAnalytics().send(analyticsEventBuilder.build()))
+		Maybe<Boolean> analyticsMaybe = launchIdMaybe.map(l -> getAnalytics().send(analyticsEventBuilder.build()))
+				.cache()
 				.subscribeOn(scheduler);
 		dependencies.add(analyticsMaybe.ignoreElement());
+		//noinspection ResultOfMethodCallIgnored
+		analyticsMaybe.subscribe(t -> {
+		});
 	}
 
 	@Override
@@ -101,7 +108,10 @@ public class AnalyticsService implements Closeable {
 			} catch (InterruptedException exc) {
 				//do nothing
 			}
-			getGoogleAnalytics().close();
+			try {
+				getAnalytics().close();
+			} catch (IOException ignore) {
+			}
 		}
 	}
 }

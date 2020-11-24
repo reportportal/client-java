@@ -19,9 +19,9 @@ package com.epam.reportportal.service.analytics;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.analytics.item.AnalyticsItem;
 import com.epam.reportportal.test.TestUtils;
-import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import io.reactivex.Maybe;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -32,8 +32,8 @@ import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.*;
 
 public class AnalyticsServiceTest {
 
@@ -41,24 +41,30 @@ public class AnalyticsServiceTest {
 	private static final String FULL_PATTERN = "Client name \"client-java\", version \"" + SEMANTIC_VERSION_PATTERN + "\"";
 
 	private static class TestAnalyticsService extends AnalyticsService {
-		private GoogleAnalytics googleAnalytics;
+		private Analytics analytics;
 
 		public TestAnalyticsService(ListenerParameters listenerParameters) {
 			super(listenerParameters);
 		}
 
-		public void setGoogleAnalytics(GoogleAnalytics googleAnalytics) {
-			this.googleAnalytics = googleAnalytics;
+		public void setAnalytics(Analytics analytics) {
+			this.analytics = analytics;
 		}
 
 		@Override
-		protected GoogleAnalytics getGoogleAnalytics() {
-			return googleAnalytics;
+		protected Analytics getAnalytics() {
+			return analytics;
 		}
 	}
 
 	@Mock
-	private GoogleAnalytics googleAnalytics;
+	private Statistics analytics;
+
+	private final Maybe<String> launchMaybe = Maybe.create(emitter -> {
+		Thread.sleep(300);
+		emitter.onSuccess("launchId");
+		emitter.onComplete();
+	});
 
 	private TestAnalyticsService service;
 	private ListenerParameters parameters;
@@ -67,7 +73,7 @@ public class AnalyticsServiceTest {
 	public void setup() {
 		parameters = TestUtils.standardParameters();
 		service = new TestAnalyticsService(parameters);
-		service.setGoogleAnalytics(googleAnalytics);
+		service.setAnalytics(analytics);
 	}
 
 	@Test
@@ -75,11 +81,11 @@ public class AnalyticsServiceTest {
 		StartLaunchRQ launchRq = TestUtils.standardLaunchRequest(parameters);
 		launchRq.setAttributes(Collections.singleton(new ItemAttributesRQ("agent", "agent-java-testng|test-version-1", true)));
 
-		service.sendEvent(CommonUtils.createMaybe("launchId"), launchRq);
+		service.sendEvent(launchMaybe, launchRq);
 		service.close();
 
 		ArgumentCaptor<AnalyticsItem> argumentCaptor = ArgumentCaptor.forClass(AnalyticsItem.class);
-		verify(googleAnalytics, times(1)).send(argumentCaptor.capture());
+		verify(analytics, times(1)).send(argumentCaptor.capture());
 
 		AnalyticsItem value = argumentCaptor.getValue();
 
@@ -100,11 +106,11 @@ public class AnalyticsServiceTest {
 	public void test_analytics_send_event_no_agent_record() {
 		StartLaunchRQ launchRq = TestUtils.standardLaunchRequest(parameters);
 
-		service.sendEvent(CommonUtils.createMaybe("launchId"), launchRq);
+		service.sendEvent(launchMaybe, launchRq);
 		service.close();
 
 		ArgumentCaptor<AnalyticsItem> argumentCaptor = ArgumentCaptor.forClass(AnalyticsItem.class);
-		verify(googleAnalytics, times(1)).send(argumentCaptor.capture());
+		verify(analytics, times(1)).send(argumentCaptor.capture());
 
 		AnalyticsItem value = argumentCaptor.getValue();
 		Map<String, String> params = value.getParams();
@@ -120,4 +126,10 @@ public class AnalyticsServiceTest {
 		assertThat(eventLabel, nullValue());
 	}
 
+	@Test
+	public void test_analytics_send_event_async() {
+		StartLaunchRQ launchRq = TestUtils.standardLaunchRequest(parameters);
+		service.sendEvent(launchMaybe, launchRq);
+		verify(analytics, timeout(2000).times(1)).send(any());
+	}
 }

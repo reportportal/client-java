@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- 'AGENT_NO_ANALYTICS' environment variable
 
 ## [5.0.15]
 ### Added

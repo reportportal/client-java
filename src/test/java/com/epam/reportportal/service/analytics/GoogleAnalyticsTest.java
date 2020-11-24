@@ -45,7 +45,7 @@ public class GoogleAnalyticsTest {
 				"OK"
 		)));
 
-		GoogleAnalytics googleAnalytics = new GoogleAnalytics("id", httpClient);
+		Statistics googleAnalytics = new Statistics("id", httpClient);
 		Boolean result = googleAnalytics.send(new AnalyticsEvent(null, null, null));
 
 		verify(httpClient, times(1)).execute(any(HttpPost.class));
@@ -58,7 +58,7 @@ public class GoogleAnalyticsTest {
 
 		when(httpClient.execute(any(HttpPost.class))).thenThrow(new RuntimeException("Internal error"));
 
-		GoogleAnalytics googleAnalytics = new GoogleAnalytics("id", httpClient);
+		Statistics googleAnalytics = new Statistics("id", httpClient);
 		Boolean result = googleAnalytics.send(new AnalyticsEvent(null, null, null));
 
 		verify(httpClient, times(1)).execute(any(HttpPost.class));
