@@ -19,7 +19,6 @@ on:
       - master
       - v4-hotfix
     paths-ignore:
-      - '.github/**'
       - README.md
       - README_TEMPLATE.md
       - gradle.properties
