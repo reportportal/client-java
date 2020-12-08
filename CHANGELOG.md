@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- 'AGENT_NO_ANALYTICS' environment variable
+- MemoizingSupplier class for agents lazy init
 
 ## [5.0.15]
 ### Added

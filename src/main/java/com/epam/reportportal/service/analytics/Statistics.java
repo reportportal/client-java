@@ -34,7 +34,7 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
+import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
@@ -47,9 +47,9 @@ import static java.util.Optional.ofNullable;
  *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
-public class GoogleAnalytics implements Closeable {
+public class Statistics implements Analytics {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(GoogleAnalytics.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Statistics.class);
 
 	private static final Function<Map<String, String>, List<NameValuePair>> PARAMETERS_CONVERTER = params -> params.entrySet()
 			.stream()
@@ -66,7 +66,7 @@ public class GoogleAnalytics implements Closeable {
 
 	private final HttpClient httpClient;
 
-	public GoogleAnalytics(String trackingId, String proxyUrl) {
+	public Statistics(String trackingId, String proxyUrl) {
 		this(trackingId, buildDefaultHttpClient(proxyUrl));
 	}
 
@@ -80,7 +80,7 @@ public class GoogleAnalytics implements Closeable {
 	 * @param trackingId ID of the `Google analytics` resource
 	 * @param httpClient {@link HttpClient} instance
 	 */
-	public GoogleAnalytics(String trackingId, HttpClient httpClient) {
+	public Statistics(String trackingId, HttpClient httpClient) {
 		this.baseUrl = DEFAULT_BASE_URL;
 		Collections.addAll(
 				defaultRequestParams,
@@ -93,7 +93,7 @@ public class GoogleAnalytics implements Closeable {
 		this.httpClient = httpClient;
 	}
 
-	private static HttpClient buildDefaultHttpClient(String proxyUrl) {
+	private static HttpClient buildDefaultHttpClient(@Nullable String proxyUrl) {
 		PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
 		connectionManager.setDefaultMaxPerRoute(1);
 		HttpClientBuilder httpClientBuilder = HttpClients.custom().setConnectionManager(connectionManager).setUserAgent(USER_AGENT);
@@ -107,6 +107,7 @@ public class GoogleAnalytics implements Closeable {
 	 * @param item {@link AnalyticsItem}
 	 * @return true - if successfully send, otherwise - false wrapped in the {@link Maybe}
 	 */
+	@Override
 	public Boolean send(AnalyticsItem item) {
 		try {
 			HttpPost httpPost = buildPostRequest(item);
