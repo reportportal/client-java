@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.17]
 ### Fixed
 - All client threads now marked as daemon to not prevent JVM shutting down
 
