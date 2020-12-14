@@ -573,6 +573,7 @@ public class ReportPortal {
 	}
 
 	private static ExecutorService buildExecutorService(ListenerParameters params) {
-		return Executors.newFixedThreadPool(params.getIoPoolSize(), new ThreadFactoryBuilder().setNameFormat("rp-io-%s").build());
+		return Executors.newFixedThreadPool(params.getIoPoolSize(), new ThreadFactoryBuilder().setNameFormat("rp-io-%s").setDaemon(true)
+				.build());
 	}
 }

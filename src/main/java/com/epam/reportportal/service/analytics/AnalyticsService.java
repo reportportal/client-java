@@ -23,6 +23,7 @@ import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributeResource;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.Scheduler;
@@ -47,7 +48,8 @@ public class AnalyticsService implements Closeable {
 	private static final String CLIENT_VALUE_FORMAT = "Client name \"%s\", version \"%s\"";
 	private static final String AGENT_VALUE_FORMAT = "Agent name \"%s\", version \"%s\"";
 
-	private final ExecutorService googleAnalyticsExecutor = Executors.newSingleThreadExecutor();
+	private final ExecutorService googleAnalyticsExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(
+			"rp-stat-%s").setDaemon(true).build());
 	private final Scheduler scheduler = Schedulers.from(googleAnalyticsExecutor);
 	private final Analytics analytics;
 	private final List<Completable> dependencies = new CopyOnWriteArrayList<>();
