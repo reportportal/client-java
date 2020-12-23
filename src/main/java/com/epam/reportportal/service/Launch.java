@@ -22,9 +22,13 @@ import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.issue.Issue;
 import io.reactivex.Maybe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * @author Andrei Varabyeu
@@ -152,6 +156,43 @@ public abstract class Launch {
 		@Override
 		public Maybe<OperationCompletionRS> finishTestItem(Maybe<String> itemId, FinishTestItemRQ rq) {
 			return Maybe.empty();
+		}
+	};
+
+	/**
+	 * An Issue to remove 'To Investigate' mark from a skipped/failed Test Item
+	 */
+	public static final Issue NOT_ISSUE = new Issue() {
+		public static final String NOT_ISSUE = "NOT_ISSUE";
+
+		@Override
+		public String getIssueType() {
+			return NOT_ISSUE;
+		}
+
+		@Override
+		public void setComment(String comment) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void setIssueType(String type) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void setAutoAnalyzed(boolean autoAnalyzed) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void setIgnoreAnalyzer(boolean ignoreAnalyzer) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void setExternalSystemIssues(Set<ExternalSystemIssue> externalSystemIssues) {
+			throw new UnsupportedOperationException();
 		}
 	};
 }
