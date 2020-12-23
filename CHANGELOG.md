@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.18]
 ### Added
 - A static Issue Launch.NOT_ISSUE to use in agents and avoid issue creation duplication
 - StatusEvaluation class with an `evaluateStatus` method
