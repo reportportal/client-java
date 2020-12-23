@@ -25,7 +25,6 @@ import com.epam.reportportal.utils.RetryWithDelay;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
-import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
@@ -315,9 +314,7 @@ public class LaunchImpl extends Launch {
 		}
 
 		if (ItemStatus.SKIPPED.name().equals(rq.getStatus()) && !getParameters().getSkippedAnIssue()) {
-			Issue issue = new Issue();
-			issue.setIssueType(NOT_ISSUE);
-			rq.setIssue(issue);
+			rq.setIssue(Launch.NOT_ISSUE);
 		}
 
 		QUEUE.getUnchecked(launch).addToQueue(LoggingContext.complete());
