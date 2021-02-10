@@ -20,8 +20,11 @@ import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.ta.reportportal.ws.model.Constants;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.google.common.net.MediaType;
+import okhttp3.RequestBody;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.google.common.io.ByteSource.wrap;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -35,10 +38,12 @@ public class HttpRequestUtils {
 		//static only
 	}
 
-	public static MultiPartRequest buildLogMultiPartRequest(List<SaveLogRQ> rqs) {
-		MultiPartRequest.Builder builder = new MultiPartRequest.Builder();
+	public static Map<String, Object> buildLogMultiPartRequest(List<SaveLogRQ> rqs) {
+		Map<String, Object> result = new HashMap<>();
+		result.put(Constants.LOG_REQUEST_JSON_PART, rqs);
 
-		builder.addSerializedPart(Constants.LOG_REQUEST_JSON_PART, rqs);
+		// TODO: finish
+		// RequestBody.
 
 		for (SaveLogRQ rq : rqs) {
 			final SaveLogRQ.File file = rq.getFile();
@@ -51,6 +56,6 @@ public class HttpRequestUtils {
 				);
 			}
 		}
-		return builder.build();
+		return result;
 	}
 }

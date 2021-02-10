@@ -15,8 +15,6 @@
  */
 package com.epam.reportportal.service;
 
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
-import com.epam.reportportal.restendpoint.http.annotation.*;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.LaunchResource;
@@ -25,41 +23,40 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import retrofit2.http.*;
 
-import static com.epam.reportportal.restendpoint.http.HttpMethod.*;
+import java.util.Map;
 
 /**
  * @author Andrei Varabyeu
  */
 public interface ReportPortalClient {
 
-	@Request(method = POST, url = "/launch")
+	@POST("v1/launch")
 	Maybe<StartLaunchRS> startLaunch(@Body StartLaunchRQ rq);
 
-	@Request(method = POST, url = "/launch/merge")
+	@POST("v1/launch/merge")
 	Maybe<LaunchResource> mergeLaunches(@Body MergeLaunchesRQ rq);
 
-	@Request(method = PUT, url = "/launch/{launchId}/finish")
+	@PUT("v1/launch/{launchId}/finish")
 	Maybe<OperationCompletionRS> finishLaunch(@Path("launchId") String launch, @Body FinishExecutionRQ rq);
 
-	@Request(method = POST, url = "/item/")
+	@POST("v1/item/")
 	Maybe<ItemCreatedRS> startTestItem(@Body StartTestItemRQ rq);
 
-	@Request(method = POST, url = "/item/{parent}")
+	@POST("v1/item/{parent}")
 	Maybe<ItemCreatedRS> startTestItem(@Path("parent") String parent, @Body StartTestItemRQ rq);
 
-	@Request(method = PUT, url = "/item/{itemId}")
+	@PUT("v1/item/{itemId}")
 	Maybe<OperationCompletionRS> finishTestItem(@Path("itemId") String itemId, @Body FinishTestItemRQ rq);
 
-	@Request(method = POST, url = "/log/")
+	@POST("v1/log/")
 	Maybe<EntryCreatedAsyncRS> log(@Body SaveLogRQ rq);
 
-	@Request(method = POST, url = "/log/")
-	Maybe<BatchSaveOperatingRS> log(@Body @Multipart MultiPartRequest rq);
+	@Multipart
+	@POST("v1/log/")
+	Maybe<BatchSaveOperatingRS> log(@PartMap Map<String, Object> rq);
 
-	@Request(method = GET, url = "/launch/uuid/{launchUuid}")
+	@GET("v1/launch/uuid/{launchUuid}")
 	Maybe<LaunchResource> getLaunchByUuid(@Path("launchUuid") String launchUuid);
-
-	@Close
-	void close();
 }

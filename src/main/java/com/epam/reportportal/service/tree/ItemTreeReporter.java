@@ -17,7 +17,6 @@
 package com.epam.reportportal.service.tree;
 
 import com.epam.reportportal.message.TypeAwareByteSource;
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.*;
@@ -159,8 +158,7 @@ public class ItemTreeReporter {
 		} catch (IOException e) {
 			return Maybe.error(e);
 		}
-		MultiPartRequest multiPartRequest = HttpRequestUtils.buildLogMultiPartRequest(Collections.singletonList(saveLogRequest));
-		return reportPortalClient.log(multiPartRequest);
+		return reportPortalClient.log(HttpRequestUtils.buildLogMultiPartRequest(Collections.singletonList(saveLogRequest)));
 	}
 
 	private static SaveLogRQ createSaveLogRequest(String launchUuid, String itemId, String level, String message, Date logTime) {
