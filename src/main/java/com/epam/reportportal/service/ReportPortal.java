@@ -72,6 +72,7 @@ import static com.epam.reportportal.service.LaunchLoggingContext.DEFAULT_LAUNCH_
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
 import static com.epam.reportportal.utils.files.Utils.readFileToBytes;
 import static java.util.Optional.ofNullable;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
  * Default ReportPortal Reporter implementation. Uses
@@ -536,7 +537,7 @@ public class ReportPortal {
 			}
 
 			String proxyUrl = parameters.getProxyUrl();
-			if (proxyUrl != null) {
+			if (isNotBlank(proxyUrl)) {
 				builder.setProxy(HttpHost.create(proxyUrl));
 			}
 

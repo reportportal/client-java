@@ -15,8 +15,6 @@
  */
 package com.epam.reportportal.message;
 
-import com.google.common.base.Joiner;
-import com.google.common.io.BaseEncoding;
 import com.google.common.io.ByteSource;
 import com.google.common.io.Resources;
 
@@ -24,13 +22,14 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
 import static com.epam.reportportal.utils.files.Utils.getFile;
-import static com.google.common.io.Resources.getResource;
+import static java.util.Optional.ofNullable;
 
 /**
  * Colon separated message parser. Expects string in the following format:<br>
@@ -61,17 +60,19 @@ public class HashMarkSeparatedMessageParser implements MessageParser {
 				if (data.contains(":")) {
 					final String[] parts = data.split(":");
 					String type = parts[1];
-					return new TypeAwareByteSource(ByteSource.wrap(BaseEncoding.base64().decode(parts[0])), type);
+					return new TypeAwareByteSource(ByteSource.wrap(Base64.getDecoder().decode(parts[0])), type);
 
 				}
-				final ByteSource source = ByteSource.wrap(BaseEncoding.base64().decode(data));
+				final ByteSource source = ByteSource.wrap(Base64.getDecoder().decode(data));
 				return new TypeAwareByteSource(source, detect(source, null));
 			}
 		},
 		RESOURCE {
 			@Override
 			public TypeAwareByteSource toByteSource(String resourceName) throws IOException {
-				URL resource = getResource(resourceName);
+				URL resource = ofNullable(Thread.currentThread()
+						.getContextClassLoader()
+						.getResource(resourceName)).orElseGet(() -> HashMarkSeparatedMessageParser.class.getResource(resourceName));
 				if (null == resource) {
 					return null;
 				}
@@ -110,7 +111,7 @@ public class HashMarkSeparatedMessageParser implements MessageParser {
 
 		// -1 because there may be no
 		if (CHUNKS_COUNT != split.size()) {
-			throw new RuntimeException("Incorrect message format. Chunks: " + Joiner.on("\n").join(split) + "\n count: " + split.size());
+			throw new RuntimeException("Incorrect message format. Chunks: " + String.join("\n", split) + "\n count: " + split.size());
 		}
 		return new ReportPortalMessage(MessageType.fromString(split.get(1)).toByteSource(split.get(2)), split.get(3));
 	}

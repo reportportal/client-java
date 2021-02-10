@@ -15,13 +15,10 @@
  */
 package com.epam.reportportal.service;
 
-import com.google.common.net.HttpHeaders;
-import org.apache.http.HttpException;
+import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.protocol.HttpContext;
-
-import java.io.IOException;
 
 /**
  * Adds Bearer TOKEN to the request headers

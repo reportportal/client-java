@@ -16,6 +16,7 @@
 package com.epam.reportportal.utils.properties;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
+import com.epam.reportportal.utils.MemoizingSupplier;
 import com.google.common.annotations.VisibleForTesting;
 
 import java.io.*;
@@ -29,7 +30,6 @@ import java.util.Properties;
 import java.util.function.Supplier;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.values;
-import static com.google.common.base.Suppliers.memoize;
 
 /**
  * Load report portal launch start properties
@@ -75,7 +75,7 @@ public class PropertiesLoader {
 	}
 
 	private PropertiesLoader(final Supplier<Properties> propertiesSupplier) {
-		this.propertiesSupplier = memoize(propertiesSupplier::get);
+		this.propertiesSupplier = new MemoizingSupplier<>(propertiesSupplier);
 	}
 
 	/**
@@ -255,7 +255,7 @@ public class PropertiesLoader {
 	 * @param source    Properties to be overridden
 	 * @param overrides Overrides
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	@VisibleForTesting
 	static void overrideWith(Properties source, Properties overrides) {
 		overrideWith(source, ((Map) overrides));

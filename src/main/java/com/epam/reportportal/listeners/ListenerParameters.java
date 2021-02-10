@@ -21,10 +21,10 @@ import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.Mode;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Sets;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -94,7 +94,7 @@ public class ListenerParameters implements Cloneable {
 		this.convertImage = DEFAULT_CONVERT_IMAGE;
 		this.reportingTimeout = DEFAULT_REPORTING_TIMEOUT;
 
-		this.attributes = Sets.newHashSet();
+		this.attributes = new HashSet<>();
 
 		this.rerun = DEFAULT_RETURN;
 
