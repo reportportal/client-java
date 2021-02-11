@@ -93,16 +93,10 @@ public class SecondaryLaunch extends LaunchImpl {
 	@Override
 	public void finish(final FinishExecutionRQ rq) {
 		QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
-		try {
 			Throwable throwable = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren()).
 					timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
 			if (throwable != null) {
 				LOGGER.error("Unable to finish secondary launch in ReportPortal", throwable);
 			}
-		} finally {
-			rpClient.close();
-			// ignore that call, since only primary launch should finish it
-			lockFile.finishInstanceUuid(instanceUuid.get());
-		}
 	}
 }

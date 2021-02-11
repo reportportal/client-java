@@ -48,10 +48,7 @@ public class AnalyticsService implements Closeable {
 	private static final String CLIENT_VALUE_FORMAT = "Client name \"%s\", version \"%s\"";
 	private static final String AGENT_VALUE_FORMAT = "Agent name \"%s\", version \"%s\"";
 
-	private final ExecutorService googleAnalyticsExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(
-			"rp-stat-%s").setDaemon(true).build());
-	private final Scheduler scheduler = Schedulers.from(googleAnalyticsExecutor);
-	private final Analytics analytics;
+	private final Statistics analytics;
 	private final List<Completable> dependencies = new CopyOnWriteArrayList<>();
 
 	private final ListenerParameters parameters;
@@ -59,10 +56,10 @@ public class AnalyticsService implements Closeable {
 	public AnalyticsService(ListenerParameters listenerParameters) {
 		this.parameters = listenerParameters;
 		boolean isDisabled = System.getenv(ANALYTICS_PROPERTY) != null;
-		analytics = isDisabled ? new DummyAnalytics() : new Statistics("UA-173456809-1", parameters.getProxyUrl());
+		analytics = isDisabled ? new DummyAnalytics() : new StatisticsService("UA-173456809-1", parameters);
 	}
 
-	protected Analytics getAnalytics() {
+	protected Statistics getAnalytics() {
 		return analytics;
 	}
 
@@ -85,7 +82,7 @@ public class AnalyticsService implements Closeable {
 				.map(a -> a.split(Pattern.quote(SystemAttributesExtractor.ATTRIBUTE_VALUE_SEPARATOR)))
 				.filter(a -> a.length >= 2)
 				.ifPresent(agentAttribute -> analyticsEventBuilder.withLabel(String.format(AGENT_VALUE_FORMAT, (Object[]) agentAttribute)));
-		Maybe<Boolean> analyticsMaybe = launchIdMaybe.map(l -> getAnalytics().send(analyticsEventBuilder.build()))
+		Maybe<Void> analyticsMaybe = launchIdMaybe.flatMap(l -> getAnalytics().send(analyticsEventBuilder.build()))
 				.cache()
 				.subscribeOn(scheduler);
 		dependencies.add(analyticsMaybe.ignoreElement());

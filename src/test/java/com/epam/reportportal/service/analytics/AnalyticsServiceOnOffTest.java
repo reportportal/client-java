@@ -39,7 +39,7 @@ public class AnalyticsServiceOnOffTest {
 
 	@Test
 	public void test_analytics_property_on() throws IOException, InterruptedException {
-		Process process = ProcessUtils.buildProcess(true, AnalyticsRunnable.class, Statistics.class.getCanonicalName());
+		Process process = ProcessUtils.buildProcess(true, AnalyticsRunnable.class, StatisticsService.class.getCanonicalName());
 		assertThat("Exit code should be '0'", process.waitFor(), equalTo(0));
 	}
 }

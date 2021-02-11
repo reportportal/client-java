@@ -16,12 +16,12 @@
 
 package com.epam.reportportal.utils.http;
 
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.ta.reportportal.ws.model.Constants;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.google.common.net.MediaType;
 import okhttp3.RequestBody;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,17 +45,17 @@ public class HttpRequestUtils {
 		// TODO: finish
 		// RequestBody.
 
-		for (SaveLogRQ rq : rqs) {
-			final SaveLogRQ.File file = rq.getFile();
-			if (null != file) {
-				builder.addBinaryPart(
-						Constants.LOG_REQUEST_BINARY_PART,
-						file.getName(),
-						isBlank(file.getContentType()) ? MediaType.OCTET_STREAM.toString() : file.getContentType(),
-						wrap(file.getContent())
-				);
-			}
-		}
-		return result;
+//		for (SaveLogRQ rq : rqs) {
+//			final SaveLogRQ.File file = rq.getFile();
+//			if (null != file) {
+//				builder.addBinaryPart(
+//						Constants.LOG_REQUEST_BINARY_PART,
+//						file.getName(),
+//						isBlank(file.getContentType()) ? MediaType.OCTET_STREAM.toString() : file.getContentType(),
+//						wrap(file.getContent())
+//				);
+//			}
+//		}
+		return Collections.emptyMap();
 	}
 }

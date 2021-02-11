@@ -65,6 +65,7 @@ dependencies {
     compile "com.squareup.retrofit2:converter-scalars:${project.retrofit_version}"
     compile "com.squareup.retrofit2:converter-jackson:${project.retrofit_version}"
     compile "com.squareup.retrofit2:adapter-rxjava2:${project.retrofit_version}"
+    compile 'com.squareup.okhttp3:logging-interceptor:3.14.9'
 
     shadow "org.aspectj:aspectjweaver:1.9.2"
     shadow "org.aspectj:aspectjrt:1.9.2"

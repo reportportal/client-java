@@ -41,24 +41,24 @@ public class AnalyticsServiceTest {
 	private static final String FULL_PATTERN = "Client name \"client-java\", version \"" + SEMANTIC_VERSION_PATTERN + "\"";
 
 	private static class TestAnalyticsService extends AnalyticsService {
-		private Analytics analytics;
+		private Statistics analytics;
 
 		public TestAnalyticsService(ListenerParameters listenerParameters) {
 			super(listenerParameters);
 		}
 
-		public void setAnalytics(Analytics analytics) {
+		public void setAnalytics(Statistics analytics) {
 			this.analytics = analytics;
 		}
 
 		@Override
-		protected Analytics getAnalytics() {
+		protected Statistics getAnalytics() {
 			return analytics;
 		}
 	}
 
 	@Mock
-	private Statistics analytics;
+	private StatisticsService analytics;
 
 	private final Maybe<String> launchMaybe = Maybe.create(emitter -> {
 		Thread.sleep(300);

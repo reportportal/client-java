@@ -214,14 +214,10 @@ public class LaunchImpl extends Launch {
 				.ignoreElement()
 				.cache();
 		try {
-			try {
 				Throwable error = finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
 				if (error != null) {
 					LOGGER.error("Unable to finish launch in ReportPortal", error);
 				}
-			} finally {
-				rpClient.close();
-			}
 		} finally {
 			getAnalyticsService().close();
 		}

@@ -17,15 +17,17 @@
 package com.epam.reportportal.service.analytics;
 
 import com.epam.reportportal.service.analytics.item.AnalyticsItem;
+import io.reactivex.Maybe;
 
-public class DummyAnalytics implements Analytics {
+public class DummyAnalytics implements Statistics {
 
 	@Override
-	public Boolean send(AnalyticsItem item) {
-		return Boolean.TRUE;
+	public Maybe<Void> send(AnalyticsItem item) {
+		return Maybe.empty();
 	}
 
 	@Override
 	public void close() {
+		// did nothing - do nothing
 	}
 }
