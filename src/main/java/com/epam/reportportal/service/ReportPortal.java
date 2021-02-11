@@ -58,6 +58,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
@@ -243,7 +246,7 @@ public class ReportPortal {
 	/**
 	 * Emits log message if there is any active context attached to the current thread
 	 *
-	 * @param itemUuid Test Item ID promise
+	 * @param itemUuid    Test Item ID promise
 	 * @param logSupplier Log supplier. Converts current Item ID to the {@link SaveLogRQ} object
 	 * @return true if log has been emitted
 	 */
@@ -411,19 +414,13 @@ public class ReportPortal {
 		}
 
 		public ReportPortal build() {
-			try {
-				ListenerParameters params = ofNullable(this.parameters).orElse(new ListenerParameters(defaultPropertiesLoader()));
-				ExecutorService executorService = executor == null ? buildExecutorService(params) : executor;
-				return new ReportPortal(buildClient(ReportPortalClient.class, params, executorService),
-						executorService,
-						params,
-						buildLockFile(params)
-				);
-			} catch (Exception e) {
-				String errMsg = "Cannot build ReportPortal client";
-				LOGGER.error(errMsg, e);
-				throw new InternalReportPortalClientException(errMsg, e);
-			}
+			ListenerParameters params = ofNullable(this.parameters).orElse(new ListenerParameters(defaultPropertiesLoader()));
+			ExecutorService executorService = executor == null ? buildExecutorService(params) : executor;
+			return new ReportPortal(buildClient(ReportPortalClient.class, params, executorService),
+					executorService,
+					params,
+					buildLockFile(params)
+			);
 		}
 
 		/**
@@ -445,17 +442,10 @@ public class ReportPortal {
 		 */
 		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType, @Nonnull final ListenerParameters params,
 				@Nonnull final ExecutorService executor) {
-			try {
-				HttpClient client = ofNullable(this.httpClient).map(c -> (HttpClient) c.addInterceptorLast(new BearerAuthInterceptor(params.getApiKey()))
-						.build()).orElseGet(() -> defaultClient(params));
+			HttpClient client = ofNullable(this.httpClient).map(c -> (HttpClient) c.addInterceptorLast(new BearerAuthInterceptor(params.getApiKey()))
+					.build()).orElseGet(() -> defaultClient(params));
 
-				return ofNullable(client).map(c -> RestEndpoints.forInterface(clientType, buildRestEndpoint(params, c, executor)))
-						.orElse(null);
-			} catch (Exception e) {
-				String errMsg = "Cannot build ReportPortal client";
-				LOGGER.error(errMsg, e);
-				throw new InternalReportPortalClientException(errMsg, e);
-			}
+			return ofNullable(client).map(c -> RestEndpoints.forInterface(clientType, buildRestEndpoint(params, c, executor))).orElse(null);
 		}
 
 		/**
@@ -521,19 +511,21 @@ public class ReportPortal {
 
 			if (HTTPS.equals(baseUrl.getProtocol()) && keyStore != null) {
 				if (null == keyStorePassword) {
-					throw new InternalReportPortalClientException(
-							"You should provide keystore password parameter [" + ListenerProperty.KEYSTORE_PASSWORD
-									+ "] if you use HTTPS protocol");
+					String error = "You should provide keystore password parameter [" + ListenerProperty.KEYSTORE_PASSWORD
+							+ "] if you use HTTPS protocol";
+					LOGGER.error(error);
+					throw new InternalReportPortalClientException(error);
 				}
 
 				try {
 					builder.setSSLContext(SSLContextBuilder.create()
 							.loadTrustMaterial(SslUtils.loadKeyStore(keyStore, keyStorePassword), TrustSelfSignedStrategy.INSTANCE)
 							.build());
-				} catch (Exception e) {
-					throw new InternalReportPortalClientException("Unable to load trust store");
+				} catch (KeyStoreException | NoSuchAlgorithmException | KeyManagementException e) {
+					String error = "Unable to load trust store";
+					LOGGER.error(error, e);
+					throw new InternalReportPortalClientException(error, e);
 				}
-
 			}
 
 			String proxyUrl = parameters.getProxyUrl();
@@ -574,7 +566,8 @@ public class ReportPortal {
 	}
 
 	private static ExecutorService buildExecutorService(ListenerParameters params) {
-		return Executors.newFixedThreadPool(params.getIoPoolSize(), new ThreadFactoryBuilder().setNameFormat("rp-io-%s").setDaemon(true)
-				.build());
+		return Executors.newFixedThreadPool(params.getIoPoolSize(),
+				new ThreadFactoryBuilder().setNameFormat("rp-io-%s").setDaemon(true).build()
+		);
 	}
 }

@@ -15,8 +15,12 @@
  */
 package com.epam.reportportal.utils;
 
+import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.restendpoint.http.IOUtils;
+import com.epam.reportportal.service.ReportPortal;
 import com.google.common.io.Resources;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.security.KeyStore;
@@ -25,6 +29,7 @@ import java.security.KeyStore;
  * @author Andrei Varabyeu
  */
 public class SslUtils {
+	private static final Logger LOGGER = LoggerFactory.getLogger(SslUtils.class);
 
 	/**
 	 * Load keystore
@@ -41,7 +46,9 @@ public class SslUtils {
 			trustStore.load(is, password.toCharArray());
 			return trustStore;
 		} catch (Exception e) {
-			throw new RuntimeException("Unable to load trust store", e);
+			String error = "Unable to load trust store";
+			LOGGER.error(error, e);
+			throw new InternalReportPortalClientException(error, e);
 		} finally {
 			IOUtils.closeQuietly(is);
 		}
