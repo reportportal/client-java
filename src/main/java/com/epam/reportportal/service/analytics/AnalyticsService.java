@@ -23,24 +23,24 @@ import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributeResource;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
-import io.reactivex.Scheduler;
-import io.reactivex.schedulers.Schedulers;
+import okhttp3.ResponseBody;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import retrofit2.Response;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import static java.util.Optional.ofNullable;
 
 public class AnalyticsService implements Closeable {
+	private static final Logger LOGGER = LoggerFactory.getLogger("stat_logger");
+
 	public static final String ANALYTICS_PROPERTY = "AGENT_NO_ANALYTICS";
 
 	private static final String CLIENT_PROPERTIES_FILE = "client.properties";
@@ -59,7 +59,7 @@ public class AnalyticsService implements Closeable {
 		analytics = isDisabled ? new DummyAnalytics() : new StatisticsService("UA-173456809-1", parameters);
 	}
 
-	protected Statistics getAnalytics() {
+	protected Statistics getStatistics() {
 		return analytics;
 	}
 
@@ -82,13 +82,16 @@ public class AnalyticsService implements Closeable {
 				.map(a -> a.split(Pattern.quote(SystemAttributesExtractor.ATTRIBUTE_VALUE_SEPARATOR)))
 				.filter(a -> a.length >= 2)
 				.ifPresent(agentAttribute -> analyticsEventBuilder.withLabel(String.format(AGENT_VALUE_FORMAT, (Object[]) agentAttribute)));
-		Maybe<Void> analyticsMaybe = launchIdMaybe.flatMap(l -> getAnalytics().send(analyticsEventBuilder.build()))
-				.cache()
-				.subscribeOn(scheduler);
+		Maybe<Response<ResponseBody>> analyticsMaybe = launchIdMaybe.flatMap(l -> getStatistics().send(analyticsEventBuilder.build()))
+				.cache();
 		dependencies.add(analyticsMaybe.ignoreElement());
 		//noinspection ResultOfMethodCallIgnored
-		analyticsMaybe.subscribe(t -> {
-		});
+		analyticsMaybe.subscribe(
+				t -> {
+					ofNullable(t.body()).ifPresent(ResponseBody::close);
+					},
+				t -> LOGGER.error("Unable to send statistics", t)
+		);
 	}
 
 	@Override
@@ -99,18 +102,7 @@ public class AnalyticsService implements Closeable {
 				throw new RuntimeException("Unable to complete execution of all dependencies", result);
 			}
 		} finally {
-			googleAnalyticsExecutor.shutdown();
-			try {
-				if (!googleAnalyticsExecutor.awaitTermination(parameters.getReportingTimeout(), TimeUnit.SECONDS)) {
-					googleAnalyticsExecutor.shutdownNow();
-				}
-			} catch (InterruptedException exc) {
-				//do nothing
-			}
-			try {
-				getAnalytics().close();
-			} catch (IOException ignore) {
-			}
+			getStatistics().close();
 		}
 	}
 }

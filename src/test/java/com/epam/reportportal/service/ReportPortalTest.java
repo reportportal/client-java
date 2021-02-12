@@ -126,7 +126,6 @@ public class ReportPortalTest {
 			assertThat(result.getValue(), notNullValue());
 			assertThat("Second request should contain cookie value", result.getKey(), containsString(COOKIE));
 		} finally {
-			rpClient.close();
 			ss.close();
 			shutdownExecutorService(clientExecutor);
 		}

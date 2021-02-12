@@ -116,14 +116,15 @@ public class LoggingContext {
 		this.itemUuid = itemUuid;
 		this.emitter = PublishSubject.create();
 		this.convertImages = convertImages;
-		emitter.toFlowable(BackpressureStrategy.BUFFER)
-				.flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable)
-				.buffer(bufferSize)
-				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
-						rqs)).toFlowable())
-				.doOnError(LOG_ERROR)
-				.observeOn(scheduler)
-				.subscribe(logFlowableResults("Logging context"));
+		// TODO: fix
+//		emitter.toFlowable(BackpressureStrategy.BUFFER)
+//				.flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable)
+//				.buffer(bufferSize)
+//				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
+//						rqs)).toFlowable())
+//				.doOnError(LOG_ERROR)
+//				.observeOn(scheduler)
+//				.subscribe(logFlowableResults("Logging context"));
 
 	}
 

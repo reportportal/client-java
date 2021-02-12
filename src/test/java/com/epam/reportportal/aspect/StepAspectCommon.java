@@ -43,7 +43,8 @@ public class StepAspectCommon {
 
 	static void simulateLaunch(ReportPortalClient client, String launchId) {
 		when(client.startLaunch(any())).thenReturn(TestUtils.startLaunchResponse(launchId));
-		lenient().when(client.log(any(MultiPartRequest.class))).thenReturn(CommonUtils.createMaybe(new BatchSaveOperatingRS()));
+		// TODO: fix
+//		lenient().when(client.log(any(MultiPartRequest.class))).thenReturn(CommonUtils.createMaybe(new BatchSaveOperatingRS()));
 		when(client.finishLaunch(anyString(),
 				any(FinishExecutionRQ.class)
 		)).thenReturn(CommonUtils.createMaybe(new OperationCompletionRS()));

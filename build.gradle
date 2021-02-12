@@ -67,6 +67,11 @@ dependencies {
     compile "com.squareup.retrofit2:adapter-rxjava2:${project.retrofit_version}"
     compile 'com.squareup.okhttp3:logging-interceptor:3.14.9'
 
+    // temporary, to be able to test
+    compile ('com.epam.reportportal:restendpoint:0.2.14') {
+        exclude module: 'guava'
+    }
+
     shadow "org.aspectj:aspectjweaver:1.9.2"
     shadow "org.aspectj:aspectjrt:1.9.2"
 

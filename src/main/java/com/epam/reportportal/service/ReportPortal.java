@@ -442,8 +442,10 @@ public class ReportPortal {
 		 */
 		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType, @Nonnull final ListenerParameters params,
 				@Nonnull final ExecutorService executor) {
-			HttpClient client = ofNullable(this.httpClient).map(c -> (HttpClient) c.addInterceptorLast(new BearerAuthInterceptor(params.getApiKey()))
-					.build()).orElseGet(() -> defaultClient(params));
+			HttpClient client = ofNullable(this.httpClient)
+					.map(c->(HttpClient) c.build())
+//					.map(c -> (HttpClient) c.addInterceptorLast(new BearerAuthInterceptor(params.getApiKey())).build())
+					.orElseGet(() -> defaultClient(params));
 
 			return ofNullable(client).map(c -> RestEndpoints.forInterface(clientType, buildRestEndpoint(params, c, executor))).orElse(null);
 		}
@@ -549,7 +551,8 @@ public class ReportPortal {
 					.setMaxConnTotal(parameters.getMaxConnectionsTotal())
 					.setConnectionTimeToLive(parameters.getMaxConnectionTtlMs(), TimeUnit.MILLISECONDS)
 					.evictIdleConnections(parameters.getMaxConnectionIdleTtlMs(), TimeUnit.MILLISECONDS);
-			return builder.addInterceptorLast(new BearerAuthInterceptor(parameters.getApiKey())).build();
+//			return builder.addInterceptorLast(new BearerAuthInterceptor(parameters.getApiKey())).build();
+			return builder.build();
 		}
 
 		protected LockFile buildLockFile(ListenerParameters parameters) {

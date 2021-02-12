@@ -24,6 +24,6 @@ import static org.hamcrest.Matchers.instanceOf;
 public class AnalyticsRunnable {
 	public static void main(String... args) throws ClassNotFoundException {
 		AnalyticsService service = new AnalyticsService(TestUtils.standardParameters());
-		assertThat(service.getAnalytics(), instanceOf(Class.forName(args[0])));
+		assertThat(service.getStatistics(), instanceOf(Class.forName(args[0])));
 	}
 }

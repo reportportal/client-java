@@ -18,12 +18,15 @@ package com.epam.reportportal.service.analytics;
 
 import com.epam.reportportal.service.analytics.item.AnalyticsItem;
 import io.reactivex.Maybe;
+import okhttp3.MediaType;
+import okhttp3.ResponseBody;
+import retrofit2.Response;
 
 public class DummyAnalytics implements Statistics {
 
 	@Override
-	public Maybe<Void> send(AnalyticsItem item) {
-		return Maybe.empty();
+	public Maybe<Response<ResponseBody>> send(AnalyticsItem item) {
+		return Maybe.create(e-> e.onSuccess(Response.success(ResponseBody.create(MediaType.get("text/plain"), ""))));
 	}
 
 	@Override

@@ -22,10 +22,13 @@ import com.epam.reportportal.test.TestUtils;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
+import okhttp3.MediaType;
+import okhttp3.ResponseBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import retrofit2.Response;
 
 import java.util.Collections;
 import java.util.Map;
@@ -52,7 +55,7 @@ public class AnalyticsServiceTest {
 		}
 
 		@Override
-		protected Statistics getAnalytics() {
+		protected Statistics getStatistics() {
 			return analytics;
 		}
 	}
@@ -61,7 +64,7 @@ public class AnalyticsServiceTest {
 	private StatisticsService analytics;
 
 	private final Maybe<String> launchMaybe = Maybe.create(emitter -> {
-		Thread.sleep(300);
+		Thread.sleep(200);
 		emitter.onSuccess("launchId");
 		emitter.onComplete();
 	});
@@ -74,6 +77,10 @@ public class AnalyticsServiceTest {
 		parameters = TestUtils.standardParameters();
 		service = new TestAnalyticsService(parameters);
 		service.setAnalytics(analytics);
+		when(analytics.send(any())).thenReturn(Maybe.create(e -> e.onSuccess(Response.success(ResponseBody.create(
+				MediaType.get("text/plain"),
+				""
+		)))));
 	}
 
 	@Test
