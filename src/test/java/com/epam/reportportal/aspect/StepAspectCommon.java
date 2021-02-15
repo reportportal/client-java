@@ -19,7 +19,6 @@ package com.epam.reportportal.aspect;
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.attribute.Attribute;
 import com.epam.reportportal.annotations.attribute.Attributes;
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;

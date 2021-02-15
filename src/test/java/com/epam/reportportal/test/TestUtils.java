@@ -17,7 +17,6 @@
 package com.epam.reportportal.test;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.utils.SubscriptionUtils;
@@ -25,20 +24,17 @@ import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
-import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
 import static org.mockito.ArgumentMatchers.any;
@@ -99,8 +95,7 @@ public class TestUtils {
 	}
 
 	public static void simulateFinishLaunchResponse(final ReportPortalClient client) {
-		when(client.finishLaunch(
-				anyString(),
+		when(client.finishLaunch(anyString(),
 				any(FinishExecutionRQ.class)
 		)).thenReturn(CommonUtils.createMaybe(new OperationCompletionRS()));
 	}
@@ -137,8 +132,7 @@ public class TestUtils {
 	}
 
 	public static void simulateFinishTestItemResponse(final ReportPortalClient client) {
-		when(client.finishTestItem(
-				anyString(),
+		when(client.finishTestItem(anyString(),
 				any(FinishTestItemRQ.class)
 		)).then((Answer<Maybe<OperationCompletionRS>>) invocation -> finishTestItemResponse());
 	}
@@ -194,17 +188,17 @@ public class TestUtils {
 	@SuppressWarnings("unchecked")
 	public static void simulateBatchLogResponse(final ReportPortalClient client) {
 		// TODO: fix
-//		when(client.log(any(MultiPartRequest.class))).then((Answer<Maybe<BatchSaveOperatingRS>>) invocation -> {
-//			MultiPartRequest rq = invocation.getArgument(0);
-//			List<String> saveRqs = rq.getSerializedRQs()
-//					.stream()
-//					.map(r -> (List<SaveLogRQ>) r.getRequest())
-//					.flatMap(Collection::stream)
-//					.peek(r -> LOGGER.info(r.getItemUuid() + " - " + r.getMessage()))
-//					.map(s -> ofNullable(s.getUuid()).orElseGet(() -> UUID.randomUUID().toString()))
-//					.collect(Collectors.toList());
-//			return batchLogResponse(saveRqs);
-//		});
+		//		when(client.log(any(MultiPartRequest.class))).then((Answer<Maybe<BatchSaveOperatingRS>>) invocation -> {
+		//			MultiPartRequest rq = invocation.getArgument(0);
+		//			List<String> saveRqs = rq.getSerializedRQs()
+		//					.stream()
+		//					.map(r -> (List<SaveLogRQ>) r.getRequest())
+		//					.flatMap(Collection::stream)
+		//					.peek(r -> LOGGER.info(r.getItemUuid() + " - " + r.getMessage()))
+		//					.map(s -> ofNullable(s.getUuid()).orElseGet(() -> UUID.randomUUID().toString()))
+		//					.collect(Collectors.toList());
+		//			return batchLogResponse(saveRqs);
+		//		});
 	}
 
 	public static FinishTestItemRQ positiveFinishRequest() {

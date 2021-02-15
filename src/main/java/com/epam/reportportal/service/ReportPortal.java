@@ -19,12 +19,6 @@ import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.message.ReportPortalMessage;
 import com.epam.reportportal.message.TypeAwareByteSource;
-import com.epam.reportportal.restendpoint.http.HttpClientRestEndpoint;
-import com.epam.reportportal.restendpoint.http.RestEndpoint;
-import com.epam.reportportal.restendpoint.http.RestEndpoints;
-import com.epam.reportportal.restendpoint.serializer.ByteArraySerializer;
-import com.epam.reportportal.restendpoint.serializer.Serializer;
-import com.epam.reportportal.restendpoint.serializer.json.JacksonSerializer;
 import com.epam.reportportal.service.launch.PrimaryLaunch;
 import com.epam.reportportal.service.launch.SecondaryLaunch;
 import com.epam.reportportal.utils.SslUtils;
@@ -36,38 +30,36 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
+import io.reactivex.schedulers.Schedulers;
+import okhttp3.Cookie;
+import okhttp3.CookieJar;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.BooleanUtils;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.client.StandardHttpRequestRetryHandler;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.ssl.SSLContextBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.net.ssl.*;
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.net.Proxy;
 import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -79,7 +71,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
  * Default ReportPortal Reporter implementation. Uses
- * {@link RestEndpoint} as REST WS Client
+ * {@link retrofit2.Retrofit} as REST WS Client
  *
  * @author Andrei Varabyeu
  */
@@ -394,11 +386,11 @@ public class ReportPortal {
 		static final String API_V2_BASE = "/api/v2";
 		private static final String HTTPS = "https";
 
-		private HttpClientBuilder httpClient;
+		private OkHttpClient.Builder httpClient;
 		private ListenerParameters parameters;
 		private ExecutorService executor;
 
-		public Builder withHttpClient(HttpClientBuilder client) {
+		public Builder withHttpClient(OkHttpClient.Builder client) {
 			this.httpClient = client;
 			return this;
 		}
@@ -416,11 +408,10 @@ public class ReportPortal {
 		public ReportPortal build() {
 			ListenerParameters params = ofNullable(this.parameters).orElse(new ListenerParameters(defaultPropertiesLoader()));
 			ExecutorService executorService = executor == null ? buildExecutorService(params) : executor;
-			return new ReportPortal(buildClient(ReportPortalClient.class, params, executorService),
-					executorService,
-					params,
-					buildLockFile(params)
-			);
+			Class<? extends ReportPortalClient> clientType = params.isAsyncReporting() ?
+					ReportPortalClientV2.class :
+					ReportPortalClient.class;
+			return new ReportPortal(buildClient(clientType, params, executorService), executorService, params, buildLockFile(params));
 		}
 
 		/**
@@ -442,56 +433,43 @@ public class ReportPortal {
 		 */
 		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType, @Nonnull final ListenerParameters params,
 				@Nonnull final ExecutorService executor) {
-			HttpClient client = ofNullable(this.httpClient)
-					.map(c->(HttpClient) c.build())
-//					.map(c -> (HttpClient) c.addInterceptorLast(new BearerAuthInterceptor(params.getApiKey())).build())
-					.orElseGet(() -> defaultClient(params));
+			OkHttpClient client = ofNullable(this.httpClient).map(c -> c.addInterceptor(new BearerAuthInterceptor(params.getApiKey()))
+					.build()).orElseGet(() -> defaultClient(params));
 
-			return ofNullable(client).map(c -> RestEndpoints.forInterface(clientType, buildRestEndpoint(params, c, executor))).orElse(null);
+			return ofNullable(client).map(c -> buildRestEndpoint(params, c, executor).create(clientType)).orElse(null);
 		}
 
 		/**
 		 * @param parameters {@link ListenerParameters} Report Portal parameters
-		 * @param client     {@link HttpClient} an apache HTTP client instance
+		 * @param client     {@link OkHttpClient} an HTTP client instance
 		 * @return a ReportPortal endpoint description class
 		 */
-		protected RestEndpoint buildRestEndpoint(@Nonnull final ListenerParameters parameters, @Nonnull final HttpClient client) {
+		protected Retrofit buildRestEndpoint(@Nonnull final ListenerParameters parameters, @Nonnull final OkHttpClient client) {
 			return buildRestEndpoint(parameters, client, buildExecutorService(parameters));
 		}
 
 		/**
 		 * @param parameters {@link ListenerParameters} Report Portal parameters
-		 * @param client     {@link HttpClient} an apache HTTP client instance
+		 * @param client     {@link OkHttpClient} an HTTP client instance
 		 * @param executor   {@link ExecutorService} an Executor which will be used for internal request / response queue processing
 		 * @return a ReportPortal endpoint description class
 		 */
-		protected RestEndpoint buildRestEndpoint(@Nonnull final ListenerParameters parameters, @Nonnull final HttpClient client,
+		protected Retrofit buildRestEndpoint(@Nonnull final ListenerParameters parameters, @Nonnull final OkHttpClient client,
 				@Nonnull final ExecutorService executor) {
 			final ObjectMapper om = new ObjectMapper();
 			om.setDateFormat(new SimpleDateFormat(DEFAULT_DATE_FORMAT));
 			om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
 			String baseUrl = parameters.getBaseUrl();
-			String project = parameters.getProjectName();
-
-			final JacksonSerializer jacksonSerializer = new JacksonSerializer(om);
-			return new HttpClientRestEndpoint(client,
-					new LinkedList<Serializer>() {{
-						add(jacksonSerializer);
-						add(new ByteArraySerializer());
-					}},
-					new ReportPortalErrorHandler(jacksonSerializer),
-					buildEndpointUrl(baseUrl, project, parameters.isAsyncReporting()),
-					executor
-			);
+			return new Retrofit.Builder().client(client)
+					.baseUrl(baseUrl)
+					.addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(Schedulers.from(executor)))
+					.addConverterFactory(JacksonConverterFactory.create())
+					.build();
 		}
 
-		protected String buildEndpointUrl(String baseUrl, String project, boolean asyncReporting) {
-			String apiBase = asyncReporting ? API_V2_BASE : API_V1_BASE;
-			return baseUrl + apiBase + "/" + project;
-		}
-
-		protected HttpClient defaultClient(ListenerParameters parameters) {
+		@Nullable
+		protected OkHttpClient defaultClient(@Nonnull ListenerParameters parameters) {
 			String baseUrlStr = parameters.getBaseUrl();
 			if (baseUrlStr == null) {
 				LOGGER.warn("Base url for Report Portal server is not set!");
@@ -509,7 +487,7 @@ public class ReportPortal {
 			String keyStore = parameters.getKeystore();
 			String keyStorePassword = parameters.getKeystorePassword();
 
-			HttpClientBuilder builder = HttpClients.custom();
+			OkHttpClient.Builder builder = new OkHttpClient.Builder();
 
 			if (HTTPS.equals(baseUrl.getProtocol()) && keyStore != null) {
 				if (null == keyStorePassword) {
@@ -520,9 +498,19 @@ public class ReportPortal {
 				}
 
 				try {
-					builder.setSSLContext(SSLContextBuilder.create()
-							.loadTrustMaterial(SslUtils.loadKeyStore(keyStore, keyStorePassword), TrustSelfSignedStrategy.INSTANCE)
-							.build());
+					TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+					trustManagerFactory.init(SslUtils.loadKeyStore(keyStore, keyStorePassword));
+					TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
+					X509TrustManager trustManager = (X509TrustManager) ofNullable(trustManagers).flatMap(managers -> Arrays.stream(managers)
+							.filter(m -> m instanceof X509TrustManager)
+							.findAny())
+							.orElseThrow(() -> new InternalReportPortalClientException(
+									"Unable to find X509 trust manager, managers:" + Arrays.toString(trustManagers)));
+
+					SSLContext sslContext = SSLContext.getInstance("TLS");
+					sslContext.init(null, new TrustManager[] { trustManager }, null);
+					SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+					builder.sslSocketFactory(sslSocketFactory, trustManager);
 				} catch (KeyStoreException | NoSuchAlgorithmException | KeyManagementException e) {
 					String error = "Unable to load trust store";
 					LOGGER.error(error, e);
@@ -530,28 +518,37 @@ public class ReportPortal {
 				}
 			}
 
-			String proxyUrl = parameters.getProxyUrl();
-			if (isNotBlank(proxyUrl)) {
-				builder.setProxy(HttpHost.create(proxyUrl));
+			String proxyStr = parameters.getProxyUrl();
+			if (isNotBlank(proxyStr)) {
+				try {
+					URL proxyUrl = new URL(proxyStr);
+					int port = proxyUrl.getPort();
+					builder.proxy(new Proxy(Proxy.Type.HTTP,
+							InetSocketAddress.createUnresolved(proxyUrl.getHost(), port >= 0 ? port : proxyUrl.getDefaultPort())
+					));
+				} catch (MalformedURLException e) {
+					LOGGER.warn("Unable to parse proxy URL", e);
+					return null;
+				}
 			}
+			builder.retryOnConnectionFailure(true)
+					.cookieJar(new CookieJar() {
+						private final Map<String, CopyOnWriteArrayList<Cookie>> STORAGE = new ConcurrentHashMap<>();
 
-			builder.setDefaultRequestConfig(RequestConfig.custom().setCookieSpec(CookieSpecs.STANDARD).build())
-					.setRetryHandler(new StandardHttpRequestRetryHandler(parameters.getTransferRetries(), true))
-					.setKeepAliveStrategy(new DefaultConnectionKeepAliveStrategy() {
 						@Override
-						public long getKeepAliveDuration(HttpResponse response, HttpContext context) {
-							long keepAliveDuration = super.getKeepAliveDuration(response, context);
-							if (keepAliveDuration == -1) {
-								return parameters.getMaxConnectionTtlMs();
-							}
-							return keepAliveDuration;
+						public void saveFromResponse(@Nonnull HttpUrl url, @Nonnull List<Cookie> cookies) {
+							STORAGE.computeIfAbsent(url.url().getHost(), u->new CopyOnWriteArrayList<>()).addAll(cookies);
+						}
+
+						@Override
+						@Nonnull
+						public List<Cookie> loadForRequest(@Nonnull HttpUrl url) {
+							List<Cookie> result = STORAGE.computeIfAbsent(url.url().getHost(), u -> new CopyOnWriteArrayList<>());
+							return result;
 						}
 					})
-					.setMaxConnPerRoute(parameters.getMaxConnectionsPerRoute())
-					.setMaxConnTotal(parameters.getMaxConnectionsTotal())
-					.setConnectionTimeToLive(parameters.getMaxConnectionTtlMs(), TimeUnit.MILLISECONDS)
-					.evictIdleConnections(parameters.getMaxConnectionIdleTtlMs(), TimeUnit.MILLISECONDS);
-//			return builder.addInterceptorLast(new BearerAuthInterceptor(parameters.getApiKey())).build();
+					.addInterceptor(new BearerAuthInterceptor(parameters.getApiKey()))
+					.addInterceptor(new PathParamInterceptor("projectName", parameters.getProjectName()));
 			return builder.build();
 		}
 

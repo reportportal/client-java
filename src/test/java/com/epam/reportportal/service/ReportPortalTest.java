@@ -20,10 +20,10 @@ import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.SocketUtils;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
 import org.junit.jupiter.api.Test;
 
 import java.net.ServerSocket;
@@ -80,16 +80,17 @@ public class ReportPortalTest {
 		ListenerParameters params = standardParameters();
 		params.setBaseUrl(baseUrl);
 		params.setProxyUrl("http://localhost:" + server.getLocalPort());
-		HttpClient client = ReportPortal.builder().defaultClient(params);
+		OkHttpClient client = ReportPortal.builder().defaultClient(params);
+		assertThat(client, notNullValue());
 		try {
 			SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(server,
 					Collections.emptyMap(),
 					"files/simple_response.txt"
 			);
-			Pair<String, HttpResponse> result = SocketUtils.executeServerCallable(serverCallable,
-					() -> client.execute(new HttpGet(baseUrl))
+			Pair<String, Response> result = SocketUtils.executeServerCallable(serverCallable,
+					() -> client.newCall(new Request.Builder().url(baseUrl).build()).execute()
 			);
-			assertThat(result.getValue().getStatusLine().getStatusCode(), equalTo(200));
+			assertThat(result.getValue().code(), equalTo(200));
 		} finally {
 			server.close();
 		}
