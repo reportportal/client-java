@@ -382,8 +382,7 @@ public class ReportPortal {
 	}
 
 	public static class Builder {
-		static final String API_V1_BASE = "/api/v1";
-		static final String API_V2_BASE = "/api/v2";
+		static final String API_PATH = "api/";
 		private static final String HTTPS = "https";
 
 		private OkHttpClient.Builder httpClient;
@@ -460,7 +459,7 @@ public class ReportPortal {
 			om.setDateFormat(new SimpleDateFormat(DEFAULT_DATE_FORMAT));
 			om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-			String baseUrl = parameters.getBaseUrl();
+			String baseUrl = parameters.getBaseUrl() + API_PATH;
 			return new Retrofit.Builder().client(client)
 					.baseUrl(baseUrl)
 					.addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(Schedulers.from(executor)))
@@ -543,8 +542,7 @@ public class ReportPortal {
 						@Override
 						@Nonnull
 						public List<Cookie> loadForRequest(@Nonnull HttpUrl url) {
-							List<Cookie> result = STORAGE.computeIfAbsent(url.url().getHost(), u -> new CopyOnWriteArrayList<>());
-							return result;
+							return STORAGE.computeIfAbsent(url.url().getHost(), u -> new CopyOnWriteArrayList<>());
 						}
 					})
 					.addInterceptor(new BearerAuthInterceptor(parameters.getApiKey()))
