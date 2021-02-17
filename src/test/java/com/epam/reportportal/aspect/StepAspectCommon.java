@@ -24,6 +24,7 @@ import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
+import okhttp3.MultipartBody;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.Signature;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -42,8 +43,7 @@ public class StepAspectCommon {
 
 	static void simulateLaunch(ReportPortalClient client, String launchId) {
 		when(client.startLaunch(any())).thenReturn(TestUtils.startLaunchResponse(launchId));
-		// TODO: fix
-//		lenient().when(client.log(any(MultiPartRequest.class))).thenReturn(CommonUtils.createMaybe(new BatchSaveOperatingRS()));
+		lenient().when(client.log(any(MultipartBody.class))).thenReturn(CommonUtils.createMaybe(new BatchSaveOperatingRS()));
 		when(client.finishLaunch(anyString(),
 				any(FinishExecutionRQ.class)
 		)).thenReturn(CommonUtils.createMaybe(new OperationCompletionRS()));

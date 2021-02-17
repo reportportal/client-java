@@ -23,9 +23,8 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import okhttp3.MultipartBody;
 import retrofit2.http.*;
-
-import java.util.Map;
 
 public interface ReportPortalClientV2 extends ReportPortalClient {
 
@@ -60,5 +59,5 @@ public interface ReportPortalClientV2 extends ReportPortalClient {
 	@Override
 	@Multipart
 	@POST("v2/{projectName}/log/")
-	Maybe<BatchSaveOperatingRS> log(@PartMap Map<String, Object> rq);
+	Maybe<BatchSaveOperatingRS> log(@Body MultipartBody body);
 }

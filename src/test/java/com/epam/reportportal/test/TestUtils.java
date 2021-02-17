@@ -24,17 +24,22 @@ import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
+import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.reactivex.Maybe;
+import okhttp3.MultipartBody;
+import okio.Buffer;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Calendar;
-import java.util.List;
-import java.util.UUID;
+import java.io.IOException;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
 import static org.mockito.ArgumentMatchers.any;
@@ -45,6 +50,8 @@ public class TestUtils {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TestUtils.class);
 
 	public static final ListenerParameters STANDARD_PARAMETERS = standardParameters();
+
+	private static final ObjectMapper MAPPER = new ObjectMapper();
 
 	private TestUtils() {
 	}
@@ -185,20 +192,42 @@ public class TestUtils {
 		return SubscriptionUtils.createConstantMaybe(rs);
 	}
 
-	@SuppressWarnings("unchecked")
+	public static List<SaveLogRQ> extractJsonParts(MultipartBody body) {
+		return body.parts()
+				.stream()
+				.filter(p -> ofNullable(p.headers()).map(headers -> headers.get("Content-Disposition"))
+						.map(h -> h.contains(Constants.LOG_REQUEST_JSON_PART))
+						.orElse(false))
+				.map(MultipartBody.Part::body)
+				.map(b -> {
+					Buffer buf = new Buffer();
+					try {
+						b.writeTo(buf);
+					} catch (IOException ignore) {
+					}
+					return buf.readByteArray();
+				})
+				.map(b -> {
+					try {
+						return MAPPER.readValue(b, new TypeReference<List<SaveLogRQ>>() {
+						});
+					} catch (IOException e) {
+						return Collections.<SaveLogRQ>emptyList();
+					}
+				})
+				.flatMap(Collection::stream)
+				.collect(Collectors.toList());
+	}
+
 	public static void simulateBatchLogResponse(final ReportPortalClient client) {
-		// TODO: fix
-		//		when(client.log(any(MultiPartRequest.class))).then((Answer<Maybe<BatchSaveOperatingRS>>) invocation -> {
-		//			MultiPartRequest rq = invocation.getArgument(0);
-		//			List<String> saveRqs = rq.getSerializedRQs()
-		//					.stream()
-		//					.map(r -> (List<SaveLogRQ>) r.getRequest())
-		//					.flatMap(Collection::stream)
-		//					.peek(r -> LOGGER.info(r.getItemUuid() + " - " + r.getMessage()))
-		//					.map(s -> ofNullable(s.getUuid()).orElseGet(() -> UUID.randomUUID().toString()))
-		//					.collect(Collectors.toList());
-		//			return batchLogResponse(saveRqs);
-		//		});
+		when(client.log(any(MultipartBody.class))).then((Answer<Maybe<BatchSaveOperatingRS>>) invocation -> {
+			MultipartBody rq = invocation.getArgument(0);
+			List<String> saveRqs = extractJsonParts(rq).stream()
+					.peek(r -> LOGGER.info(r.getItemUuid() + " - " + r.getMessage()))
+					.map(s -> ofNullable(s.getUuid()).orElseGet(() -> UUID.randomUUID().toString()))
+					.collect(Collectors.toList());
+			return batchLogResponse(saveRqs);
+		});
 	}
 
 	public static FinishTestItemRQ positiveFinishRequest() {

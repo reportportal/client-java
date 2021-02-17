@@ -46,9 +46,7 @@ public class ListenerParameters implements Cloneable {
 	private static final boolean DEFAULT_RETURN = false;
 	private static final boolean DEFAULT_ASYNC_REPORTING = false;
 	private static final boolean DEFAULT_CALLBACK_REPORTING_ENABLED = false;
-	private static final int DEFAULT_MAX_CONNECTION_TIME_TO_LIVE_MS = 29900;
-	private static final int DEFAULT_MAX_CONNECTION_IDLE_TIME_MS = 5 * 1000;
-	private static final int DEFAULT_TRANSFER_RETRY_COUNT = 5;
+	private static final boolean DEFAULT_HTTP_LOGGING = false;
 	private static final boolean DEFAULT_CLIENT_JOIN_MODE = true;
 	private static final String DEFAULT_LOCK_FILE_NAME = "reportportal.lock";
 	private static final String DEFAULT_SYNC_FILE_NAME = "reportportal.sync";
@@ -58,6 +56,7 @@ public class ListenerParameters implements Cloneable {
 	private String apiKey;
 	private String baseUrl;
 	private String proxyUrl;
+	private boolean httpLogging;
 	private String projectName;
 	private String launchName;
 	private Mode launchRunningMode;
@@ -74,12 +73,6 @@ public class ListenerParameters implements Cloneable {
 	private boolean asyncReporting;
 	private boolean callbackReportingEnabled;
 	private Integer ioPoolSize;
-	private Integer maxConnectionsPerRoute;
-	private Integer maxConnectionsTotal;
-
-	private Integer maxConnectionTtlMs;
-	private Integer maxConnectionIdleTtlMs;
-	private Integer transferRetries;
 
 	private boolean clientJoin;
 	private String lockFileName;
@@ -93,6 +86,7 @@ public class ListenerParameters implements Cloneable {
 		this.batchLogsSize = LoggingContext.DEFAULT_BUFFER_SIZE;
 		this.convertImage = DEFAULT_CONVERT_IMAGE;
 		this.reportingTimeout = DEFAULT_REPORTING_TIMEOUT;
+		this.httpLogging = DEFAULT_HTTP_LOGGING;
 
 		this.attributes = new HashSet<>();
 
@@ -102,12 +96,6 @@ public class ListenerParameters implements Cloneable {
 		this.callbackReportingEnabled = DEFAULT_CALLBACK_REPORTING_ENABLED;
 
 		this.ioPoolSize = DEFAULT_IO_POOL_SIZE;
-		this.maxConnectionsPerRoute = DEFAULT_MAX_CONNECTIONS_PER_ROUTE;
-		this.maxConnectionsTotal = DEFAULT_MAX_CONNECTIONS_TOTAL;
-
-		this.maxConnectionTtlMs = DEFAULT_MAX_CONNECTION_TIME_TO_LIVE_MS;
-		this.maxConnectionIdleTtlMs = DEFAULT_MAX_CONNECTION_IDLE_TIME_MS;
-		this.transferRetries = DEFAULT_TRANSFER_RETRY_COUNT;
 
 		this.clientJoin = DEFAULT_CLIENT_JOIN_MODE;
 		this.lockFileName = DEFAULT_LOCK_FILE_NAME;
@@ -130,6 +118,7 @@ public class ListenerParameters implements Cloneable {
 		this.batchLogsSize = properties.getPropertyAsInt(BATCH_SIZE_LOGS, LoggingContext.DEFAULT_BUFFER_SIZE);
 		this.convertImage = properties.getPropertyAsBoolean(IS_CONVERT_IMAGE, DEFAULT_CONVERT_IMAGE);
 		this.reportingTimeout = properties.getPropertyAsInt(REPORTING_TIMEOUT, DEFAULT_REPORTING_TIMEOUT);
+		this.httpLogging = properties.getPropertyAsBoolean(HTTP_LOGGING, DEFAULT_HTTP_LOGGING);
 
 		this.keystore = properties.getProperty(KEYSTORE_RESOURCE);
 		this.keystorePassword = properties.getProperty(KEYSTORE_PASSWORD);
@@ -140,12 +129,6 @@ public class ListenerParameters implements Cloneable {
 		this.callbackReportingEnabled = properties.getPropertyAsBoolean(CALLBACK_REPORTING_ENABLED, DEFAULT_CALLBACK_REPORTING_ENABLED);
 
 		this.ioPoolSize = properties.getPropertyAsInt(IO_POOL_SIZE, DEFAULT_IO_POOL_SIZE);
-		this.maxConnectionsPerRoute = properties.getPropertyAsInt(MAX_CONNECTIONS_PER_ROUTE, DEFAULT_MAX_CONNECTIONS_PER_ROUTE);
-		this.maxConnectionsTotal = properties.getPropertyAsInt(MAX_CONNECTIONS_TOTAL, DEFAULT_MAX_CONNECTIONS_TOTAL);
-
-		this.maxConnectionTtlMs = properties.getPropertyAsInt(MAX_CONNECTION_TIME_TO_LIVE, DEFAULT_MAX_CONNECTION_TIME_TO_LIVE_MS);
-		this.maxConnectionIdleTtlMs = properties.getPropertyAsInt(MAX_CONNECTION_IDLE_TIME, DEFAULT_MAX_CONNECTION_IDLE_TIME_MS);
-		this.transferRetries = properties.getPropertyAsInt(MAX_TRANSFER_RETRY_COUNT, DEFAULT_TRANSFER_RETRY_COUNT);
 
 		this.clientJoin = properties.getPropertyAsBoolean(CLIENT_JOIN_MODE, DEFAULT_CLIENT_JOIN_MODE);
 		this.lockFileName = properties.getProperty(LOCK_FILE_NAME, DEFAULT_LOCK_FILE_NAME);
@@ -313,46 +296,6 @@ public class ListenerParameters implements Cloneable {
 		this.ioPoolSize = ioPoolSize;
 	}
 
-	public Integer getMaxConnectionsPerRoute() {
-		return maxConnectionsPerRoute;
-	}
-
-	public void setMaxConnectionsPerRoute(Integer maxConnectionsPerRoute) {
-		this.maxConnectionsPerRoute = maxConnectionsPerRoute;
-	}
-
-	public Integer getMaxConnectionsTotal() {
-		return maxConnectionsTotal;
-	}
-
-	public void setMaxConnectionsTotal(Integer maxConnectionsTotal) {
-		this.maxConnectionsTotal = maxConnectionsTotal;
-	}
-
-	public Integer getMaxConnectionTtlMs() {
-		return maxConnectionTtlMs;
-	}
-
-	public void setMaxConnectionTtlMs(Integer maxConnectionTtlMs) {
-		this.maxConnectionTtlMs = maxConnectionTtlMs;
-	}
-
-	public Integer getMaxConnectionIdleTtlMs() {
-		return maxConnectionIdleTtlMs;
-	}
-
-	public void setMaxConnectionIdleTtlMs(Integer maxConnectionIdleTtlMs) {
-		this.maxConnectionIdleTtlMs = maxConnectionIdleTtlMs;
-	}
-
-	public Integer getTransferRetries() {
-		return transferRetries;
-	}
-
-	public void setTransferRetries(Integer transferRetries) {
-		this.transferRetries = transferRetries;
-	}
-
 	public boolean getClientJoin() {
 		return clientJoin;
 	}
@@ -383,6 +326,14 @@ public class ListenerParameters implements Cloneable {
 
 	public void setFileWaitTimeout(long timeout) {
 		this.fileWaitTimeout = timeout;
+	}
+
+	public boolean isHttpLogging() {
+		return httpLogging;
+	}
+
+	public void setHttpLogging(boolean httpLogging) {
+		this.httpLogging = httpLogging;
 	}
 
 	@VisibleForTesting
@@ -420,6 +371,7 @@ public class ListenerParameters implements Cloneable {
 		sb.append(", apiKey='").append(apiKey).append('\'');
 		sb.append(", baseUrl='").append(baseUrl).append('\'');
 		sb.append(", proxyUrl='").append(proxyUrl).append('\'');
+		sb.append(", httpLogging='").append(httpLogging).append('\'');
 		sb.append(", projectName='").append(projectName).append('\'');
 		sb.append(", launchName='").append(launchName).append('\'');
 		sb.append(", launchRunningMode=").append(launchRunningMode);
@@ -436,11 +388,6 @@ public class ListenerParameters implements Cloneable {
 		sb.append(", asyncReporting=").append(asyncReporting);
 		sb.append(", ioPoolSize=").append(ioPoolSize);
 		sb.append(", callbackReportingEnabled=").append(callbackReportingEnabled);
-		sb.append(", maxConnectionsPerRoute=").append(maxConnectionsPerRoute);
-		sb.append(", maxConnectionsTotal=").append(maxConnectionsTotal);
-		sb.append(", maxConnectionTtlMs=").append(maxConnectionTtlMs);
-		sb.append(", maxConnectionIdleTtlMs=").append(maxConnectionIdleTtlMs);
-		sb.append(", transferRetries=").append(transferRetries);
 		sb.append(", clientJoin=").append(clientJoin);
 		sb.append(", lockFileName=").append(lockFileName);
 		sb.append(", syncFileName=").append(syncFileName);

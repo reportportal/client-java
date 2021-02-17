@@ -26,6 +26,7 @@ public enum ListenerProperty {
      * An URL of a http proxy to connect to the endpoint
      */
     HTTP_PROXY_URL("rp.http.proxy", false),
+    HTTP_LOGGING("rp.http.logging", false),
     PROJECT_NAME("rp.project", true),
     LAUNCH_NAME("rp.launch", true),
     UUID("rp.uuid", false),
@@ -45,23 +46,6 @@ public enum ListenerProperty {
     CALLBACK_REPORTING_ENABLED("rp.reporting.callback", false),
     SKIPPED_AS_ISSUE("rp.skipped.issue", false),
     IO_POOL_SIZE("rp.io.pool.size", false),
-    MAX_CONNECTIONS_PER_ROUTE("rp.max.connections.per.route", false),
-    MAX_CONNECTIONS_TOTAL("rp.max.connections.total", false),
-
-    /**
-     * The property regulates maximum time in milliseconds after which a connection will be closed and thrown away.
-     */
-    MAX_CONNECTION_TIME_TO_LIVE("rp.transport.connections.general.ttl.milliseconds", false),
-
-    /**
-     * The property regulates maximum idle (no any transfer) time in milliseconds after which a connection will be closed and thrown away.
-     */
-    MAX_CONNECTION_IDLE_TIME("rp.transport.connections.idle.ttl.milliseconds", false),
-
-    /**
-     * Maximum number of deliver attempts on transport layer. Retries IO and connection exceptions.
-     */
-    MAX_TRANSFER_RETRY_COUNT("rp.transport.connections.retry.count", false),
 
     /**
      * Run report portal client in multiple client mode. In such mode RC client will share one launch ID between all clients on the machine.
