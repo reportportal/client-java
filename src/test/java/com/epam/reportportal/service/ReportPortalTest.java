@@ -100,7 +100,7 @@ public class ReportPortalTest {
 	public void test_rp_client_saves_and_bypasses_cookies() throws Exception {
 		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
 		ListenerParameters parameters = standardParameters();
-		parameters.setBaseUrl("http://localhost:" + ss.getLocalPort() + "/");
+		parameters.setBaseUrl("http://localhost:" + ss.getLocalPort());
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
 		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
 		try {

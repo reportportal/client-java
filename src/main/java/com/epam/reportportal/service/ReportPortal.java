@@ -35,6 +35,7 @@ import okhttp3.Cookie;
 import okhttp3.CookieJar;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import org.apache.commons.lang3.BooleanUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -459,7 +460,7 @@ public class ReportPortal {
 			om.setDateFormat(new SimpleDateFormat(DEFAULT_DATE_FORMAT));
 			om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-			String baseUrl = parameters.getBaseUrl() + API_PATH;
+			String baseUrl = (parameters.getBaseUrl().endsWith("/") ? parameters.getBaseUrl() : parameters.getBaseUrl() + "/") + API_PATH;
 			return new Retrofit.Builder().client(client)
 					.baseUrl(baseUrl)
 					.addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(Schedulers.from(executor)))
@@ -530,23 +531,29 @@ public class ReportPortal {
 					return null;
 				}
 			}
-			builder.retryOnConnectionFailure(true)
-					.cookieJar(new CookieJar() {
-						private final Map<String, CopyOnWriteArrayList<Cookie>> STORAGE = new ConcurrentHashMap<>();
 
-						@Override
-						public void saveFromResponse(@Nonnull HttpUrl url, @Nonnull List<Cookie> cookies) {
-							STORAGE.computeIfAbsent(url.url().getHost(), u->new CopyOnWriteArrayList<>()).addAll(cookies);
-						}
+			builder.addInterceptor(new BearerAuthInterceptor(parameters.getApiKey()));
+			builder.addInterceptor(new PathParamInterceptor("projectName", parameters.getProjectName()));
 
-						@Override
-						@Nonnull
-						public List<Cookie> loadForRequest(@Nonnull HttpUrl url) {
-							return STORAGE.computeIfAbsent(url.url().getHost(), u -> new CopyOnWriteArrayList<>());
-						}
-					})
-					.addInterceptor(new BearerAuthInterceptor(parameters.getApiKey()))
-					.addInterceptor(new PathParamInterceptor("projectName", parameters.getProjectName()));
+			if (parameters.isHttpLogging()) {
+				HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
+				logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+				builder.addInterceptor(logging);
+			}
+			builder.retryOnConnectionFailure(true).cookieJar(new CookieJar() {
+				private final Map<String, CopyOnWriteArrayList<Cookie>> STORAGE = new ConcurrentHashMap<>();
+
+				@Override
+				public void saveFromResponse(@Nonnull HttpUrl url, @Nonnull List<Cookie> cookies) {
+					STORAGE.computeIfAbsent(url.url().getHost(), u -> new CopyOnWriteArrayList<>()).addAll(cookies);
+				}
+
+				@Override
+				@Nonnull
+				public List<Cookie> loadForRequest(@Nonnull HttpUrl url) {
+					return STORAGE.computeIfAbsent(url.url().getHost(), u -> new CopyOnWriteArrayList<>());
+				}
+			});
 			return builder.build();
 		}
 
