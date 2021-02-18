@@ -194,11 +194,11 @@ public class ListenerParameters implements Cloneable {
 	}
 
 	public Set<ItemAttributesRQ> getAttributes() {
-		return attributes;
+		return Collections.unmodifiableSet(attributes);
 	}
 
 	public void setAttributes(Set<ItemAttributesRQ> attributes) {
-		this.attributes = Collections.unmodifiableSet(attributes);
+		this.attributes = new HashSet<>(attributes);
 	}
 
 	public Boolean getEnable() {
