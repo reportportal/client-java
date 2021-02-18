@@ -192,8 +192,8 @@ public class TestUtils {
 		return SubscriptionUtils.createConstantMaybe(rs);
 	}
 
-	public static List<SaveLogRQ> extractJsonParts(MultipartBody body) {
-		return body.parts()
+	public static List<SaveLogRQ> extractJsonParts(List<MultipartBody.Part> parts) {
+		return parts
 				.stream()
 				.filter(p -> ofNullable(p.headers()).map(headers -> headers.get("Content-Disposition"))
 						.map(h -> h.contains(Constants.LOG_REQUEST_JSON_PART))
@@ -220,8 +220,8 @@ public class TestUtils {
 	}
 
 	public static void simulateBatchLogResponse(final ReportPortalClient client) {
-		when(client.log(any(MultipartBody.class))).then((Answer<Maybe<BatchSaveOperatingRS>>) invocation -> {
-			MultipartBody rq = invocation.getArgument(0);
+		when(client.log(any(List.class))).then((Answer<Maybe<BatchSaveOperatingRS>>) invocation -> {
+			List<MultipartBody.Part> rq = invocation.getArgument(0);
 			List<String> saveRqs = extractJsonParts(rq).stream()
 					.peek(r -> LOGGER.info(r.getItemUuid() + " - " + r.getMessage()))
 					.map(s -> ofNullable(s.getUuid()).orElseGet(() -> UUID.randomUUID().toString()))

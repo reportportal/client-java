@@ -32,10 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.google.common.io.ByteSource.wrap;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -53,11 +50,11 @@ public class HttpRequestUtils {
 		//static only
 	}
 
-	public static MultipartBody buildLogMultiPartRequest(List<SaveLogRQ> rqs) {
-		MultipartBody.Builder result = new MultipartBody.Builder();
+	public static List<MultipartBody.Part> buildLogMultiPartRequest(List<SaveLogRQ> rqs) {
+		List<MultipartBody.Part> result = new ArrayList<>();
 		try {
-			result.addFormDataPart(Constants.LOG_REQUEST_JSON_PART, MAPPER.writerFor(new TypeReference<List<SaveLogRQ>>() {
-			}).writeValueAsString(rqs));
+			result.add(MultipartBody.Part.createFormData(Constants.LOG_REQUEST_JSON_PART, MAPPER.writerFor(new TypeReference<List<SaveLogRQ>>() {
+			}).writeValueAsString(rqs)));
 		} catch (JsonProcessingException e) {
 			throw new InternalReportPortalClientException("Unable to process JSON", e);
 		}
@@ -74,9 +71,9 @@ public class HttpRequestUtils {
 					LOGGER.error("Unable to parse content media type, default value was used: " + DEFAULT_TYPE, e);
 					type = okhttp3.MediaType.get(DEFAULT_TYPE);
 				}
-				result.addFormDataPart(Constants.LOG_REQUEST_BINARY_PART, file.getName(), RequestBody.create(type, file.getContent()));
+				result.add(MultipartBody.Part.createFormData(Constants.LOG_REQUEST_BINARY_PART, file.getName(), RequestBody.create(type, file.getContent())));
 			}
 		}
-		return result.build();
+		return result;
 	}
 }

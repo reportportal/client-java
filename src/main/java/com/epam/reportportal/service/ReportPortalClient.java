@@ -26,6 +26,8 @@ import io.reactivex.Maybe;
 import okhttp3.MultipartBody;
 import retrofit2.http.*;
 
+import java.util.List;
+
 public interface ReportPortalClient {
 
 	@POST("v1/{projectName}/launch")
@@ -51,7 +53,7 @@ public interface ReportPortalClient {
 
 	@Multipart
 	@POST("v1/{projectName}/log/")
-	Maybe<BatchSaveOperatingRS> log(MultipartBody body);
+	Maybe<BatchSaveOperatingRS> log(@Part List<MultipartBody.Part> parts);
 
 	@GET("v1/{projectName}/launch/uuid/{launchUuid}")
 	Maybe<LaunchResource> getLaunchByUuid(@Path("launchUuid") String launchUuid);

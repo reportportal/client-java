@@ -201,7 +201,7 @@ public class ManualNestedStepTest {
 
 	@Test
 	public void verify_nested_step_with_a_batch_of_logs() {
-		when(client.log(any(MultipartBody.class))).thenReturn(createConstantMaybe(new BatchSaveOperatingRS()));
+		when(client.log(any(List.class))).thenReturn(createConstantMaybe(new BatchSaveOperatingRS()));
 
 		int logNumber = 3;
 
@@ -211,7 +211,7 @@ public class ManualNestedStepTest {
 
 		ArgumentCaptor<StartTestItemRQ> stepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, timeout(1000).times(1)).startTestItem(eq(testMethodUuid), stepCaptor.capture());
-		ArgumentCaptor<MultipartBody> logCaptor = ArgumentCaptor.forClass(MultipartBody.class);
+		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, timeout(1000).times(logNumber)).log(logCaptor.capture());
 
 		StartTestItemRQ nestedStep = stepCaptor.getValue();

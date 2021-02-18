@@ -152,7 +152,7 @@ public class ItemLoggingContextMultiThreadTest {
 		verify(rpClient, times(2)).startTestItem(anyString(), any());
 
 		// Verify 10 log are logged and save their requests
-		ArgumentCaptor<MultipartBody> obtainLogs = ArgumentCaptor.forClass(MultipartBody.class);
+		ArgumentCaptor<List<MultipartBody.Part>> obtainLogs = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, times(10)).log(obtainLogs.capture());
 		obtainLogs.getAllValues().stream().flatMap(rq -> TestUtils.extractJsonParts(rq).stream()).forEach(log -> {
 			String logItemId = log.getItemUuid();

@@ -31,6 +31,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.aspectj.lang.reflect.SourceLocation;
 
 import java.lang.reflect.Method;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.lenient;
@@ -43,7 +44,7 @@ public class StepAspectCommon {
 
 	static void simulateLaunch(ReportPortalClient client, String launchId) {
 		when(client.startLaunch(any())).thenReturn(TestUtils.startLaunchResponse(launchId));
-		lenient().when(client.log(any(MultipartBody.class))).thenReturn(CommonUtils.createMaybe(new BatchSaveOperatingRS()));
+		lenient().when(client.log(any(List.class))).thenReturn(CommonUtils.createMaybe(new BatchSaveOperatingRS()));
 		when(client.finishLaunch(anyString(),
 				any(FinishExecutionRQ.class)
 		)).thenReturn(CommonUtils.createMaybe(new OperationCompletionRS()));
