@@ -24,6 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -88,7 +89,7 @@ public class ListenerParameters implements Cloneable {
 		this.reportingTimeout = DEFAULT_REPORTING_TIMEOUT;
 		this.httpLogging = DEFAULT_HTTP_LOGGING;
 
-		this.attributes = new HashSet<>();
+		this.attributes = Collections.emptySet();
 
 		this.rerun = DEFAULT_RETURN;
 
@@ -110,7 +111,7 @@ public class ListenerParameters implements Cloneable {
 		this.proxyUrl = properties.getProperty(HTTP_PROXY_URL);
 		this.projectName = properties.getProperty(PROJECT_NAME) != null ? properties.getProperty(PROJECT_NAME).trim() : null;
 		this.launchName = properties.getProperty(LAUNCH_NAME);
-		this.attributes = AttributeParser.parseAsSet(properties.getProperty(LAUNCH_ATTRIBUTES));
+		this.attributes = Collections.unmodifiableSet(AttributeParser.parseAsSet(properties.getProperty(LAUNCH_ATTRIBUTES)));
 		this.launchRunningMode = parseLaunchMode(properties.getProperty(MODE));
 		this.enable = properties.getPropertyAsBoolean(ENABLE, DEFAULT_ENABLE);
 		this.isSkippedAnIssue = properties.getPropertyAsBoolean(SKIPPED_AS_ISSUE, DEFAULT_SKIP_ISSUE);
@@ -197,7 +198,7 @@ public class ListenerParameters implements Cloneable {
 	}
 
 	public void setAttributes(Set<ItemAttributesRQ> attributes) {
-		this.attributes = attributes;
+		this.attributes = Collections.unmodifiableSet(attributes);
 	}
 
 	public Boolean getEnable() {
