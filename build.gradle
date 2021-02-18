@@ -1,17 +1,27 @@
-plugins {
-    id 'net.researchgate.release' version '2.8.1'
-    id 'com.jfrog.bintray' version '1.8.4'
-    id 'com.github.johnrengelman.shadow' version '5.1.0'
-}
+/*
+ *  Copyright 2021 EPAM Systems
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+apply plugin: 'java-library'
 
-apply plugin: 'java'
-apply from: 'release.gradle'
+project.ext.releaseMode = project.hasProperty('releaseMode')
+def branch = releaseMode ? '5.0.0' : 'develop'
+apply from: "https://raw.githubusercontent.com/reportportal/gradle-scripts/$branch/release-commons.gradle"
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 compileTestJava.options.encoding = "UTF-8"
-
-project.ext.releaseMode = project.hasProperty("releaseMode")
 
 repositories {
     jcenter()
@@ -20,65 +30,44 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
+project.ext.githubUserName = project.hasProperty('githubUserName') ? githubUserName : ""
+project.ext.githubToken = project.hasProperty('githubToken') ? githubToken : ""
+
+publishing {
+    repositories {
+        maven {
+            name = "JUnit5 GitHub Packages"
+            url = uri("https://maven.pkg.github.com/reportportal/client-java")
+            credentials {
+                username = githubUserName
+                password = githubToken
+            }
+        }
+    }
+}
+
 processResources {
     filesMatching('client.properties') {
         expand(project.properties)
     }
 }
 
-sourceSets {
-    main {
-        compileClasspath += configurations.shadow
-        runtimeClasspath += configurations.shadow
-    }
-    test {
-        compileClasspath += configurations.shadow
-        runtimeClasspath += configurations.shadow
-    }
-}
-
-//configurations.shadow.extendsFrom(configurations.runtime)
-
-shadowJar {
-//    configurations = [project.configurations.runtime]
-
-    dependencies {
-        include(dependency('com.epam.reportportal:restendpoint'))
-        include(dependency('org.apache.httpcomponents:httpclient'))
-        include(dependency('org.apache.httpcomponents:httpmime'))
-        include(dependency('org.apache.httpcomponents:httpcore'))
-        include(dependency('commons-logging:commons-logging'))
-        include(dependency('com.google.guava:guava'))
-    }
-
-    classifier = null
-    relocate 'org.apache.http', 'rp.org.apache.http'
-    relocate 'com.google.common', 'rp.com.google.common'
-    relocate 'com.google.thirdparty', 'rp.com.google.thirdparty'
-    relocate 'org.apache.commons.logging', 'rp.org.apache.commons.logging'
-}
-
 dependencies {
-    compile 'com.epam.reportportal:commons-model:5.0.0'
-    compile 'com.google.guava:guava:30.1-android'
-    compile "com.squareup.retrofit2:retrofit:${project.retrofit_version}"
-    compile "com.squareup.retrofit2:converter-scalars:${project.retrofit_version}"
-    compile "com.squareup.retrofit2:converter-jackson:${project.retrofit_version}"
-    compile "com.squareup.retrofit2:adapter-rxjava2:${project.retrofit_version}"
-    compile 'com.squareup.okhttp3:logging-interceptor:3.14.9'
+    api 'com.epam.reportportal:commons-model:5.0.0'
+    api 'io.reactivex.rxjava2:rxjava:2.2.10'
+    api 'com.google.code.findbugs:jsr305:3.0.2'
+    api 'com.google.guava:guava:30.1-android'
+    api "com.squareup.retrofit2:retrofit:${project.retrofit_version}"
+    implementation "com.squareup.retrofit2:converter-scalars:${project.retrofit_version}"
+    implementation "com.squareup.retrofit2:converter-jackson:${project.retrofit_version}"
+    implementation "com.squareup.retrofit2:adapter-rxjava2:${project.retrofit_version}"
+    implementation 'com.squareup.okhttp3:logging-interceptor:3.14.9'
 
-    // temporary, to be able to test
-//    compile ('com.epam.reportportal:restendpoint:0.2.14') {
-//        exclude module: 'guava'
-//    }
+    api "org.aspectj:aspectjrt:${project.aspectj_version}"
+    implementation "org.aspectj:aspectjweaver:${project.aspectj_version}"
 
-    shadow "org.aspectj:aspectjweaver:1.9.2"
-    shadow "org.aspectj:aspectjrt:1.9.2"
-
-    shadow 'com.google.code.findbugs:jsr305:3.0.2'
-    shadow 'io.reactivex.rxjava2:rxjava:2.2.10'
-    shadow 'org.apache.tika:tika-core:1.20'
-    shadow 'org.slf4j:slf4j-api:1.7.25'
+    api 'org.apache.tika:tika-core:1.20'
+    implementation 'org.slf4j:slf4j-api:1.7.25'
 
     testImplementation('org.junit.platform:junit-platform-runner:1.6.0') {
         exclude module: 'junit'
@@ -110,3 +99,7 @@ test {
 wrapper {
     gradleVersion = '5.4.1'
 }
+
+def releaseDependencies = [bintrayUpload, publish]
+releaseDependencies.addAll(afterReleaseBuild.getDependsOn())
+afterReleaseBuild.setDependsOn(releaseDependencies)
