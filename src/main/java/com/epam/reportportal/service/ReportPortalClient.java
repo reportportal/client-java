@@ -51,7 +51,7 @@ public interface ReportPortalClient {
 
 	@Multipart
 	@POST("v1/{projectName}/log/")
-	Maybe<BatchSaveOperatingRS> log(@Part MultipartBody body);
+	Maybe<BatchSaveOperatingRS> log(MultipartBody body);
 
 	@GET("v1/{projectName}/launch/uuid/{launchUuid}")
 	Maybe<LaunchResource> getLaunchByUuid(@Path("launchUuid") String launchUuid);
