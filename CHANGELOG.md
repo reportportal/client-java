@@ -3,6 +3,8 @@
 ## [Unreleased]
 
 ## [5.1.0-ALPHA-1]
+### Fixed
+- Bug fixes
 ### Changed
 - try-catch refactoring in `ReportPortal.Builder` class to get better stack traces
 - Introducing "Retrofit 2" as RP client
