@@ -1,8 +1,6 @@
 # Changelog
 
 ## [Unreleased]
-
-## [5.1.0-ALPHA-3]
 ### Fixed
 - Bug fixes
 ### Changed
