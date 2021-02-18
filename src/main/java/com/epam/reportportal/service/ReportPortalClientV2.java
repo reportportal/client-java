@@ -43,7 +43,7 @@ public interface ReportPortalClientV2 extends ReportPortalClient {
 	Maybe<OperationCompletionRS> finishLaunch(@Path("launchId") String launch, @Body FinishExecutionRQ rq);
 
 	@Override
-	@POST("v2/{projectName}/item/")
+	@POST("v2/{projectName}/item")
 	Maybe<ItemCreatedRS> startTestItem(@Body StartTestItemRQ rq);
 
 	@Override
@@ -55,11 +55,11 @@ public interface ReportPortalClientV2 extends ReportPortalClient {
 	Maybe<OperationCompletionRS> finishTestItem(@Path("itemId") String itemId, @Body FinishTestItemRQ rq);
 
 	@Override
-	@POST("v2/{projectName}/log/")
+	@POST("v2/{projectName}/log")
 	Maybe<EntryCreatedAsyncRS> log(@Body SaveLogRQ rq);
 
 	@Override
 	@Multipart
-	@POST("v2/{projectName}/log/")
+	@POST("v2/{projectName}/log")
 	Maybe<BatchSaveOperatingRS> log(@Part List<MultipartBody.Part> parts);
 }

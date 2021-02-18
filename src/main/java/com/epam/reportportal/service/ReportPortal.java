@@ -22,6 +22,7 @@ import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.service.launch.PrimaryLaunch;
 import com.epam.reportportal.service.launch.SecondaryLaunch;
 import com.epam.reportportal.utils.SslUtils;
+import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.reportportal.utils.properties.ListenerProperty;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -79,7 +80,6 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 public class ReportPortal {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportPortal.class);
-	private static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
 
 	private final AtomicReference<String> instanceUuid = new AtomicReference<>(UUID.randomUUID().toString());
 
@@ -456,15 +456,11 @@ public class ReportPortal {
 		 */
 		protected Retrofit buildRestEndpoint(@Nonnull final ListenerParameters parameters, @Nonnull final OkHttpClient client,
 				@Nonnull final ExecutorService executor) {
-			final ObjectMapper om = new ObjectMapper();
-			om.setDateFormat(new SimpleDateFormat(DEFAULT_DATE_FORMAT));
-			om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
 			String baseUrl = (parameters.getBaseUrl().endsWith("/") ? parameters.getBaseUrl() : parameters.getBaseUrl() + "/") + API_PATH;
 			return new Retrofit.Builder().client(client)
 					.baseUrl(baseUrl)
 					.addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(Schedulers.from(executor)))
-					.addConverterFactory(JacksonConverterFactory.create())
+					.addConverterFactory(JacksonConverterFactory.create(HttpRequestUtils.MAPPER))
 					.build();
 		}
 
