@@ -100,6 +100,12 @@ wrapper {
     gradleVersion = '5.4.1'
 }
 
+release {
+    git {
+        requireBranch = 'retrofit'
+    }
+}
+
 def releaseDependencies = [bintrayUpload, publish]
 releaseDependencies.addAll(afterReleaseBuild.getDependsOn())
 afterReleaseBuild.setDependsOn(releaseDependencies)
