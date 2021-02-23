@@ -20,13 +20,13 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.utils.SubscriptionUtils;
+import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.reactivex.Maybe;
 import okhttp3.MultipartBody;
 import okio.Buffer;
@@ -50,8 +50,6 @@ public class TestUtils {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TestUtils.class);
 
 	public static final ListenerParameters STANDARD_PARAMETERS = standardParameters();
-
-	private static final ObjectMapper MAPPER = new ObjectMapper();
 
 	private TestUtils() {
 	}
@@ -193,8 +191,7 @@ public class TestUtils {
 	}
 
 	public static List<SaveLogRQ> extractJsonParts(List<MultipartBody.Part> parts) {
-		return parts
-				.stream()
+		return parts.stream()
 				.filter(p -> ofNullable(p.headers()).map(headers -> headers.get("Content-Disposition"))
 						.map(h -> h.contains(Constants.LOG_REQUEST_JSON_PART))
 						.orElse(false))
@@ -209,7 +206,7 @@ public class TestUtils {
 				})
 				.map(b -> {
 					try {
-						return MAPPER.readValue(b, new TypeReference<List<SaveLogRQ>>() {
+						return HttpRequestUtils.MAPPER.readValue(b, new TypeReference<List<SaveLogRQ>>() {
 						});
 					} catch (IOException e) {
 						return Collections.<SaveLogRQ>emptyList();
