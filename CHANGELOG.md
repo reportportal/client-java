@@ -3,14 +3,11 @@
 ## [Unreleased]
 
 ## [5.1.0-ALPHA-6]
-### Changed
-- Apache Tika version degraded on 1.19 for Android compatibility
-- Common Jackson ObjectMapper moved to HttpRequestUtils class
-
-## [5.1.0-ALPHA-5]
 ### Fixed
 - Bug fixes
 ### Changed
+- Apache Tika version degraded on 1.19 for Android compatibility
+- Common Jackson ObjectMapper moved to HttpRequestUtils class
 - try-catch refactoring in `ReportPortal.Builder` class to get better stack traces
 - Introducing "Retrofit 2" as RP client
 
