@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [5.1.0-BETA-1]
+
 ## [5.1.0-ALPHA-6]
 ### Fixed
 - Bug fixes
