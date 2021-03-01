@@ -323,9 +323,10 @@ public class ReportPortalClientJoinTest {
 	}
 
 	@Test
-	public void test_secondary_launch_does_not_wait_get_launch_by_uuid_correct_response_for_v2() {
+	public void test_secondary_launch_awaits_get_launch_by_uuid_correct_response_for_v2() {
 		int num = 2;
 		simulateObtainLaunchUuidResponse(lockFile);
+		simulateGetLaunchByUuidResponse(rpClient);
 		ListenerParameters p = params.get();
 		p.setAsyncReporting(true);
 		List<Launch> launches = new ArrayList<>(num);
@@ -335,7 +336,8 @@ public class ReportPortalClientJoinTest {
 		}
 		launches.get(1).start();
 
-		verify(rpClient, after(WAIT_TIMEOUT).times(0)).getLaunchByUuid(anyString());
+		verify(lockFile, timeout(WAIT_TIMEOUT).times(2)).obtainLaunchUuid(anyString());
+		verify(rpClient, after(WAIT_TIMEOUT * 3).times(3)).getLaunchByUuid(anyString());
 	}
 
 	@Test

@@ -84,9 +84,7 @@ public class SecondaryLaunch extends LaunchImpl {
 
 	@Override
 	public Maybe<String> start() {
-		if (!getParameters().isAsyncReporting()) {
-			waitForLaunchStart();
-		}
+		waitForLaunchStart();
 		return super.start();
 	}
 
