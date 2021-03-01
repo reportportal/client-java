@@ -3,10 +3,6 @@
 ## [Unreleased]
 
 ## [5.1.0-BETA-1]
-
-## [5.1.0-ALPHA-6]
-### Fixed
-- Bug fixes
 ### Changed
 - Apache Tika version degraded on 1.19 for Android compatibility
 - Common Jackson ObjectMapper moved to HttpRequestUtils class
