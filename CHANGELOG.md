@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- UniqueID annotation deprecated
 ### Removed
 - Tags annotation since it looks like it is not in use anywhere
 
