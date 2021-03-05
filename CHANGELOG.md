@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Removed
+- Tags annotation since it looks like it is not in use anywhere
 
 ## [5.1.0-BETA-1]
 ### Changed
