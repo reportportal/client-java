@@ -22,7 +22,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation for test methods to attach {@link com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ} to the test items
+ * Annotation for test methods and classes to attach {@link com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ} to the test items
  *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  * @see Attribute
@@ -31,7 +31,7 @@ import java.lang.annotation.Target;
  * @see MultiValueAttribute
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
+@Target({ElementType.METHOD, ElementType.TYPE})
 public @interface Attributes {
 
 	Attribute[] attributes() default {};

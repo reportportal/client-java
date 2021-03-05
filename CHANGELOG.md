@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Changed
 - UniqueID annotation deprecated
+- It's now possible to assign Attributes annotation on classes
 ### Removed
 - Tags annotation since it looks like it is not in use anywhere
 
