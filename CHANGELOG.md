@@ -14,6 +14,12 @@
 - try-catch refactoring in `ReportPortal.Builder` class to get better stack traces
 - Introducing "Retrofit 2" as RP client
 
+## [5.0.21]
+### Changed
+- try-catch refactoring in `ReportPortal.Builder` class to get better stack traces
+### Added
+- `rp.rx.buffer.size` property handling
+
 ## [5.0.18]
 ### Added
 - A static Issue Launch.NOT_ISSUE to use in agents and avoid issue creation duplication

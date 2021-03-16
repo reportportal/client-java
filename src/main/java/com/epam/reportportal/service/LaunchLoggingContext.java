@@ -16,12 +16,17 @@
 
 package com.epam.reportportal.service;
 
+import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import io.reactivex.*;
+import io.reactivex.Completable;
+import io.reactivex.Flowable;
+import io.reactivex.Maybe;
+import io.reactivex.Scheduler;
 import io.reactivex.functions.Function;
+import io.reactivex.internal.operators.flowable.FlowableFromObservable;
 import io.reactivex.subjects.PublishSubject;
 import org.reactivestreams.Publisher;
 
@@ -47,9 +52,6 @@ import static com.google.common.io.ByteSource.wrap;
  * @see #init(Maybe, ReportPortalClient, Scheduler)
  */
 public class LaunchLoggingContext {
-
-	/* default back-pressure buffer size */
-	private static final int DEFAULT_BUFFER_SIZE = 10;
 	static final String DEFAULT_LAUNCH_KEY = "default";
 
 	static final ConcurrentHashMap<String, LaunchLoggingContext> loggingContextMap = new ConcurrentHashMap<>();
@@ -60,19 +62,36 @@ public class LaunchLoggingContext {
 	/* Whether Image should be converted to BlackAndWhite */
 	private final boolean convertImages;
 
-	private LaunchLoggingContext(Maybe<String> launchUuid, final ReportPortalClient client, Scheduler scheduler, int bufferSize,
-			boolean convertImages) {
+	private LaunchLoggingContext(Maybe<String> launchUuid, final ReportPortalClient client, Scheduler scheduler,
+			ListenerParameters parameters) {
 		this.launchUuid = launchUuid;
 		this.emitter = PublishSubject.create();
-		this.convertImages = convertImages;
-		emitter.toFlowable(BackpressureStrategy.BUFFER)
+		this.convertImages = parameters.isConvertImage();
+		new FlowableFromObservable<>(emitter)
 				.flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable)
-				.buffer(bufferSize)
+				.buffer(parameters.getBatchLogsSize())
 				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
 						rqs)).toFlowable())
 				.doOnError(Throwable::printStackTrace)
 				.observeOn(scheduler)
+				.onBackpressureBuffer(parameters.getRxBufferSize(), false, true)
 				.subscribe(logFlowableResults("Launch logging context"));
+	}
+
+	/**
+	 * Initializes new logging context and attaches it to current thread
+	 *
+	 * @param launchUuid a UUID of a Launch
+	 * @param client     Client of ReportPortal
+	 * @param scheduler  a {@link Scheduler} to use with this LoggingContext
+	 * @param parameters Report Portal client configuration parameters
+	 * @return New Logging Context
+	 */
+	public static LaunchLoggingContext init(Maybe<String> launchUuid, final ReportPortalClient client, Scheduler scheduler,
+			ListenerParameters parameters) {
+		LaunchLoggingContext context = new LaunchLoggingContext(launchUuid, client, scheduler, parameters);
+		loggingContextMap.put(DEFAULT_LAUNCH_KEY, context);
+		return context;
 	}
 
 	/**
@@ -84,7 +103,7 @@ public class LaunchLoggingContext {
 	 * @return New Logging Context
 	 */
 	static LaunchLoggingContext init(Maybe<String> launchUuid, final ReportPortalClient client, Scheduler scheduler) {
-		return init(launchUuid, client, scheduler, DEFAULT_BUFFER_SIZE, false);
+		return init(launchUuid, client, scheduler, LoggingContext.DEFAULT_LOG_BATCH_SIZE, false);
 	}
 
 	/**
@@ -93,13 +112,16 @@ public class LaunchLoggingContext {
 	 * @param launchUuid    Launch UUID
 	 * @param client        Client of ReportPortal
 	 * @param scheduler     a {@link Scheduler} to use with this LoggingContext
-	 * @param bufferSize    Size of back-pressure buffer
+	 * @param batchLogsSize Size of a log batch
 	 * @param convertImages Whether Image should be converted to BlackAndWhite
 	 * @return New Logging Context
 	 */
-	static LaunchLoggingContext init(Maybe<String> launchUuid, final ReportPortalClient client, Scheduler scheduler, int bufferSize,
+	static LaunchLoggingContext init(Maybe<String> launchUuid, final ReportPortalClient client, Scheduler scheduler, int batchLogsSize,
 			boolean convertImages) {
-		LaunchLoggingContext context = new LaunchLoggingContext(launchUuid, client, scheduler, bufferSize, convertImages);
+		ListenerParameters params = new ListenerParameters();
+		params.setBatchLogsSize(batchLogsSize);
+		params.setConvertImage(convertImages);
+		LaunchLoggingContext context = new LaunchLoggingContext(launchUuid, client, scheduler, params);
 		loggingContextMap.put(DEFAULT_LAUNCH_KEY, context);
 		return context;
 	}
