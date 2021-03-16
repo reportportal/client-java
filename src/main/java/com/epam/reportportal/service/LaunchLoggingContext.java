@@ -67,13 +67,14 @@ public class LaunchLoggingContext {
 		this.launchUuid = launchUuid;
 		this.emitter = PublishSubject.create();
 		this.convertImages = parameters.isConvertImage();
-		new FlowableFromObservable<>(emitter).onBackpressureBuffer(parameters.getRxBufferSize(), false, true)
+		new FlowableFromObservable<>(emitter)
 				.flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable)
 				.buffer(parameters.getBatchLogsSize())
 				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
 						rqs)).toFlowable())
 				.doOnError(Throwable::printStackTrace)
 				.observeOn(scheduler)
+				.onBackpressureBuffer(parameters.getRxBufferSize(), false, true)
 				.subscribe(logFlowableResults("Launch logging context"));
 	}
 
