@@ -71,7 +71,8 @@ public enum ListenerProperty {
     CLIENT_JOIN_MODE("rp.client.join", false),
     LOCK_FILE_NAME("rp.client.join.lock.file.name", false),
     SYNC_FILE_NAME("rp.client.join.sync.file.name", false),
-    FILE_WAIT_TIMEOUT_MS("rp.client.join.file.wait.timeout.ms", false);
+    FILE_WAIT_TIMEOUT_MS("rp.client.join.file.wait.timeout.ms", false),
+    RX_BUFFER_SIZE("rp.rx.buffer.size", false);
     //formatter:on
 
     private final String propertyName;

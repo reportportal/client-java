@@ -22,13 +22,13 @@ import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import com.google.common.collect.Lists;
 import io.reactivex.Maybe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Date;
 
 import static com.epam.reportportal.utils.files.Utils.getFile;
@@ -159,7 +159,7 @@ public class ItemTreeReporter {
 		} catch (IOException e) {
 			return Maybe.error(e);
 		}
-		MultiPartRequest multiPartRequest = HttpRequestUtils.buildLogMultiPartRequest(Lists.newArrayList(saveLogRequest));
+		MultiPartRequest multiPartRequest = HttpRequestUtils.buildLogMultiPartRequest(Collections.singletonList(saveLogRequest));
 		return reportPortalClient.log(multiPartRequest);
 	}
 

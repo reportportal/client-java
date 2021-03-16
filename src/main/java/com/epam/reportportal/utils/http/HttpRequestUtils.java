@@ -19,12 +19,12 @@ package com.epam.reportportal.utils.http;
 import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.ta.reportportal.ws.model.Constants;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import com.google.common.base.Strings;
 import com.google.common.net.MediaType;
 
 import java.util.List;
 
 import static com.google.common.io.ByteSource.wrap;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -43,9 +43,10 @@ public class HttpRequestUtils {
 		for (SaveLogRQ rq : rqs) {
 			final SaveLogRQ.File file = rq.getFile();
 			if (null != file) {
-				builder.addBinaryPart(Constants.LOG_REQUEST_BINARY_PART,
+				builder.addBinaryPart(
+						Constants.LOG_REQUEST_BINARY_PART,
 						file.getName(),
-						Strings.isNullOrEmpty(file.getContentType()) ? MediaType.OCTET_STREAM.toString() : file.getContentType(),
+						isBlank(file.getContentType()) ? MediaType.OCTET_STREAM.toString() : file.getContentType(),
 						wrap(file.getContent())
 				);
 			}

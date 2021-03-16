@@ -17,12 +17,10 @@ package com.epam.reportportal.utils;
 
 import com.epam.reportportal.annotations.attribute.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import org.apache.commons.lang3.StringUtils;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * This class contains functionality for parsing tags from string.
@@ -46,9 +44,9 @@ public class AttributeParser {
 	 */
 	public static Set<ItemAttributesRQ> parseAsSet(String rawAttributes) {
 		if (null == rawAttributes) {
-			return Sets.newHashSet();
+			return Collections.emptySet();
 		}
-		Set<ItemAttributesRQ> attributes = Sets.newHashSet();
+		Set<ItemAttributesRQ> attributes = new HashSet<>();
 
 		String[] attributesSplit = rawAttributes.trim().split(ATTRIBUTES_SPLITTER);
 		for (String s : attributesSplit) {
@@ -78,7 +76,7 @@ public class AttributeParser {
 	}
 
 	public static Set<ItemAttributesRQ> retrieveAttributes(Attributes attributesAnnotation) {
-		Set<ItemAttributesRQ> itemAttributes = Sets.newLinkedHashSet();
+		Set<ItemAttributesRQ> itemAttributes = new LinkedHashSet<>();
 		for (Attribute attribute : attributesAnnotation.attributes()) {
 			if (!attribute.value().trim().isEmpty()) {
 				itemAttributes.add(createItemAttribute(attribute.key(), attribute.value()));
@@ -107,23 +105,15 @@ public class AttributeParser {
 			return Collections.singletonList(createItemAttribute(null, value));
 		}
 
-		List<ItemAttributesRQ> itemAttributes = Lists.newArrayListWithExpectedSize(keys.length);
-		for (String key : keys) {
-			itemAttributes.add(createItemAttribute(key, value));
-		}
-		return itemAttributes;
+		return Arrays.stream(keys).map(k -> createItemAttribute(k, value)).collect(Collectors.toList());
 	}
 
 	private static List<ItemAttributesRQ> createItemAttributes(String key, String[] values) {
 		if (values != null && values.length > 0) {
-			List<ItemAttributesRQ> attributes = Lists.newArrayListWithExpectedSize(values.length);
-			for (String value : values) {
-				if (value != null && !value.trim().isEmpty()) {
-					attributes.add(createItemAttribute(key, value));
-				}
-			}
-
-			return attributes;
+			return Arrays.stream(values)
+					.filter(StringUtils::isNotBlank)
+					.map(v -> createItemAttribute(key, v))
+					.collect(Collectors.toList());
 		}
 
 		return Collections.emptyList();

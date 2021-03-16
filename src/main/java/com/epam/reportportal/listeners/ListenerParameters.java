@@ -21,10 +21,10 @@ import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.Mode;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Sets;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -53,6 +53,7 @@ public class ListenerParameters implements Cloneable {
 	private static final String DEFAULT_LOCK_FILE_NAME = "reportportal.lock";
 	private static final String DEFAULT_SYNC_FILE_NAME = "reportportal.sync";
 	private static final long DEFAULT_FILE_WAIT_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+	private static final int DEFAULT_RX_BUFFER_SIZE = 128;
 
 	private String description;
 	private String apiKey;
@@ -86,15 +87,17 @@ public class ListenerParameters implements Cloneable {
 	private String syncFileName;
 	private long fileWaitTimeout;
 
+	private int rxBufferSize;
+
 	public ListenerParameters() {
 
 		this.isSkippedAnIssue = DEFAULT_SKIP_ISSUE;
 
-		this.batchLogsSize = LoggingContext.DEFAULT_BUFFER_SIZE;
+		this.batchLogsSize = LoggingContext.DEFAULT_LOG_BATCH_SIZE;
 		this.convertImage = DEFAULT_CONVERT_IMAGE;
 		this.reportingTimeout = DEFAULT_REPORTING_TIMEOUT;
 
-		this.attributes = Sets.newHashSet();
+		this.attributes = new HashSet<>();
 
 		this.rerun = DEFAULT_RETURN;
 
@@ -113,6 +116,7 @@ public class ListenerParameters implements Cloneable {
 		this.lockFileName = DEFAULT_LOCK_FILE_NAME;
 		this.syncFileName = DEFAULT_SYNC_FILE_NAME;
 		this.fileWaitTimeout = DEFAULT_FILE_WAIT_TIMEOUT_MS;
+		this.rxBufferSize = DEFAULT_RX_BUFFER_SIZE;
 	}
 
 	public ListenerParameters(PropertiesLoader properties) {
@@ -127,7 +131,7 @@ public class ListenerParameters implements Cloneable {
 		this.enable = properties.getPropertyAsBoolean(ENABLE, DEFAULT_ENABLE);
 		this.isSkippedAnIssue = properties.getPropertyAsBoolean(SKIPPED_AS_ISSUE, DEFAULT_SKIP_ISSUE);
 
-		this.batchLogsSize = properties.getPropertyAsInt(BATCH_SIZE_LOGS, LoggingContext.DEFAULT_BUFFER_SIZE);
+		this.batchLogsSize = properties.getPropertyAsInt(BATCH_SIZE_LOGS, LoggingContext.DEFAULT_LOG_BATCH_SIZE);
 		this.convertImage = properties.getPropertyAsBoolean(IS_CONVERT_IMAGE, DEFAULT_CONVERT_IMAGE);
 		this.reportingTimeout = properties.getPropertyAsInt(REPORTING_TIMEOUT, DEFAULT_REPORTING_TIMEOUT);
 
@@ -151,6 +155,8 @@ public class ListenerParameters implements Cloneable {
 		this.lockFileName = properties.getProperty(LOCK_FILE_NAME, DEFAULT_LOCK_FILE_NAME);
 		this.syncFileName = properties.getProperty(SYNC_FILE_NAME, DEFAULT_SYNC_FILE_NAME);
 		this.fileWaitTimeout = properties.getPropertyAsInt(FILE_WAIT_TIMEOUT_MS, (int) DEFAULT_FILE_WAIT_TIMEOUT_MS);
+
+		this.rxBufferSize = properties.getPropertyAsInt(RX_BUFFER_SIZE, DEFAULT_RX_BUFFER_SIZE);
 	}
 
 	public String getDescription() {
@@ -385,6 +391,17 @@ public class ListenerParameters implements Cloneable {
 		this.fileWaitTimeout = timeout;
 	}
 
+	public int getRxBufferSize() {
+		return ofNullable(System.getProperty("rx2.buffer-size"))
+				.map(Integer::valueOf)
+				.map(s->Math.max(1, s))
+				.orElse(rxBufferSize);
+	}
+
+	public void setRxBufferSize(int size) {
+		rxBufferSize = size;
+	}
+
 	@VisibleForTesting
 	Mode parseLaunchMode(String mode) {
 		return Mode.isExists(mode) ? Mode.valueOf(mode.toUpperCase()) : Mode.DEFAULT;
@@ -415,6 +432,7 @@ public class ListenerParameters implements Cloneable {
 
 	@Override
 	public String toString() {
+		@SuppressWarnings("StringBufferReplaceableByString")
 		final StringBuilder sb = new StringBuilder("ListenerParameters{");
 		sb.append("description='").append(description).append('\'');
 		sb.append(", apiKey='").append(apiKey).append('\'');
@@ -445,6 +463,7 @@ public class ListenerParameters implements Cloneable {
 		sb.append(", lockFileName=").append(lockFileName);
 		sb.append(", syncFileName=").append(syncFileName);
 		sb.append(", fileWaitTimeout=").append(fileWaitTimeout);
+		sb.append(", rxBufferSize=").append(rxBufferSize);
 		sb.append('}');
 		return sb.toString();
 	}

@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- try-catch refactoring in `ReportPortal.Builder` class to get better stack traces
+### Added
+- `rp.rx.buffer.size` property handling
 
 ## [5.0.18]
 ### Added

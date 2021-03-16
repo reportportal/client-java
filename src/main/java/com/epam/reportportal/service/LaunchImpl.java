@@ -191,8 +191,7 @@ public class LaunchImpl extends Launch {
 		LaunchLoggingContext.init(this.launch,
 				this.rpClient,
 				getScheduler(),
-				getParameters().getBatchLogsSize(),
-				getParameters().isConvertImage()
+				getParameters()
 		);
 		getAnalyticsService().sendEvent(launch, startRq);
 		return this.launch;
@@ -254,7 +253,7 @@ public class LaunchImpl extends Launch {
 
 		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(item).addToQueue(item.ignoreElement().onErrorComplete());
-		LoggingContext.init(launch, item, rpClient, getScheduler(), getParameters().getBatchLogsSize(), getParameters().isConvertImage());
+		LoggingContext.init(launch, item, rpClient, getScheduler(), getParameters());
 
 		getStepReporter().setParent(item);
 		StepAspect.setParentId(item);
@@ -286,7 +285,7 @@ public class LaunchImpl extends Launch {
 		})).cache();
 		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(item).withParent(parentId).addToQueue(item.ignoreElement().onErrorComplete());
-		LoggingContext.init(launch, item, rpClient, getScheduler(), getParameters().getBatchLogsSize(), getParameters().isConvertImage());
+		LoggingContext.init(launch, item, rpClient, getScheduler(), getParameters());
 
 		getStepReporter().setParent(item);
 		StepAspect.setParentId(item);
