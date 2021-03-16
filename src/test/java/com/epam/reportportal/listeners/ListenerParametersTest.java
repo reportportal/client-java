@@ -18,6 +18,7 @@ package com.epam.reportportal.listeners;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 import static com.epam.ta.reportportal.ws.model.launch.Mode.DEBUG;
 import static com.epam.ta.reportportal.ws.model.launch.Mode.DEFAULT;
@@ -25,6 +26,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ListenerParametersTest {
 
 	@Test
@@ -76,6 +78,34 @@ public class ListenerParametersTest {
 	 */
 	@Test
 	public void parametersShouldHaveEmptyPublicConstructor() throws NoSuchMethodException {
+		//noinspection ResultOfMethodCallIgnored
 		ListenerParameters.class.getConstructor();
+	}
+
+	@Test
+	public void test_rx_buffer_size_property_file_bypass() {
+		PropertiesLoader properties = PropertiesLoader.load("reportportal-rx-size.properties");
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		assertEquals(1024, listenerParameters.getRxBufferSize());
+	}
+
+	@Test
+	public void test_rx_buffer_size_system_property_bypass() {
+		System.setProperty("rx2.buffer-size", "1024");
+		ListenerParameters listenerParameters = TestUtils.standardParameters();
+
+		assertEquals(1024, listenerParameters.getRxBufferSize());
+		System.clearProperty("rx2.buffer-size");
+	}
+
+	@Test
+	public void test_rx_buffer_size_system_property_override() {
+		System.setProperty("rx2.buffer-size", "10");
+		PropertiesLoader properties = PropertiesLoader.load("reportportal-rx-size.properties");
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		assertEquals(10, listenerParameters.getRxBufferSize());
+		System.clearProperty("rx2.buffer-size");
 	}
 }
