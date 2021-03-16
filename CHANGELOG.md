@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.19]
 ### Changed
 - try-catch refactoring in `ReportPortal.Builder` class to get better stack traces
 ### Added
