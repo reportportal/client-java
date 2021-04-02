@@ -83,7 +83,10 @@ public class DefaultStepReporter implements StepReporter {
 
 	@Override
 	public boolean isFailed(final Maybe<String> parentId) {
-		return parentFailures.contains(parentId);
+		if (parentId != null) {
+			return parentFailures.contains(parentId);
+		}
+		return false;
 	}
 
 	protected void sendStep(final ItemStatus status, final String name, final Runnable actions) {
