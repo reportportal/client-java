@@ -73,7 +73,7 @@ dependencies {
     shadow 'org.apache.tika:tika-core:1.20'
     shadow 'org.slf4j:slf4j-api:1.7.25'
 
-    testImplementation("org.junit.platform:junit-platform-runner:${project.junit_launcher_version}") {
+    testImplementation("org.junit.platform:junit-platform-runner:${project.junit_runner_version}") {
         exclude module: 'junit'
     }
     testImplementation "org.junit.jupiter:junit-jupiter-api:${project.junit_version}"
