@@ -1,6 +1,5 @@
 # Client java
- [ ![Download](https://api.bintray.com/packages/epam/reportportal/client-java/images/download.svg) ](https://bintray.com/epam/reportportal/client-java/_latestVersion)
- 
+[![Maven Central](https://img.shields.io/maven-central/v/com.epam.reportportal/client-java.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22client-java%22) 
 ![CI Build](https://github.com/reportportal/client-java/workflows/CI%20Build/badge.svg)
 [![Join Slack chat!](https://reportportal-slack-auto.herokuapp.com/badge.svg)](https://reportportal-slack-auto.herokuapp.com)
 [![stackoverflow](https://img.shields.io/badge/reportportal-stackoverflow-orange.svg?style=flat)](http://stackoverflow.com/questions/tagged/reportportal)
