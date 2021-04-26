@@ -14,9 +14,8 @@ compileTestJava.options.encoding = "UTF-8"
 project.ext.releaseMode = project.hasProperty("releaseMode")
 
 repositories {
-    jcenter()
     mavenLocal()
-    maven { url "http://dl.bintray.com/epam/reportportal" }
+    mavenCentral()
     maven { url "https://jitpack.io" }
 }
 
