@@ -1,6 +1,5 @@
 plugins {
     id 'net.researchgate.release' version '2.8.1'
-    id 'com.jfrog.bintray' version '1.8.4'
     id 'com.github.johnrengelman.shadow' version '5.1.0'
 }
 
