@@ -84,7 +84,12 @@ public class LaunchImpl extends Launch {
 			TimeUnit.SECONDS.toMillis(ITEM_FINISH_RETRY_TIMEOUT)
 	);
 
+	/**
+	 * @deprecated use {@link Launch#NOT_ISSUE}
+	 */
+	@Deprecated
 	public static final String NOT_ISSUE = "NOT_ISSUE";
+
 	public static final String CUSTOM_AGENT = "CUSTOM";
 
 	/**
