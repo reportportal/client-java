@@ -24,7 +24,7 @@ import static com.epam.ta.reportportal.ws.model.launch.Mode.DEBUG;
 import static com.epam.ta.reportportal.ws.model.launch.Mode.DEFAULT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ListenerParametersTest {
@@ -107,5 +107,25 @@ public class ListenerParametersTest {
 
 		assertEquals(10, listenerParameters.getRxBufferSize());
 		System.clearProperty("rx2.buffer-size");
+	}
+
+	@Test
+	public void test_item_name_truncation_default_values() {
+		PropertiesLoader properties = PropertiesLoader.load("utf-demo.properties");
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		assertTrue(listenerParameters.isTruncateItemNames());
+		assertEquals(1024, listenerParameters.getTruncateItemNamesLimit());
+		assertEquals("...", listenerParameters.getTruncateItemNamesReplacement());
+	}
+
+	@Test
+	public void test_item_name_truncation_property_file_bypass() {
+		PropertiesLoader properties = PropertiesLoader.load("reportportal-item-names-truncation.properties");
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		assertFalse(listenerParameters.isTruncateItemNames());
+		assertEquals(512, listenerParameters.getTruncateItemNamesLimit());
+		assertEquals("\\", listenerParameters.getTruncateItemNamesReplacement());
 	}
 }

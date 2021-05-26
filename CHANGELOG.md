@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Item names truncation, issue #154
 
 ## [5.0.21]
 ### Changed
