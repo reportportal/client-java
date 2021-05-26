@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.0.22]
 ### Added
 - Item names truncation, issue #154
 
