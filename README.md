@@ -1,7 +1,6 @@
 # Client java
- [ ![Download](https://api.bintray.com/packages/epam/reportportal/client-java/images/download.svg) ](https://bintray.com/epam/reportportal/client-java/_latestVersion)
- 
-![CI Build](https://github.com/reportportal/client-java/workflows/CI%20Build/badge.svg)
+[![Maven Central](https://img.shields.io/maven-central/v/com.epam.reportportal/client-java.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22client-java%22)
+[![CI Build](https://github.com/reportportal/client-java/actions/workflows/ci.yml/badge.svg)](https://github.com/reportportal/client-java/actions/workflows/ci.yml)
 [![Join Slack chat!](https://reportportal-slack-auto.herokuapp.com/badge.svg)](https://reportportal-slack-auto.herokuapp.com)
 [![stackoverflow](https://img.shields.io/badge/reportportal-stackoverflow-orange.svg?style=flat)](http://stackoverflow.com/questions/tagged/reportportal)
 [![Build with Love](https://img.shields.io/badge/build%20with-❤%EF%B8%8F%E2%80%8D-lightgrey.svg)](http://reportportal.io?style=flat)
@@ -45,25 +44,26 @@ rp.keystore.password = <PASSWORD_OF_YOUR_KEYSTORE>
 
 User should provide next parameters to agent.
 
-| **Parameter**                                 | **Description**      | **Required**|
-|-----------------------------------------------|----------------------|-------------|
-|rp.endpoint                                    |URL of web service, where requests should be send |Yes |
-|rp.api.key or rp.uuid                          |Api token of user |Yes |
-|rp.launch                                      |The unique name of Launch (Run). Based on that name a history of runs will be created for particular name |Yes |
-|rp.project                                     |Project name to identify scope |Yes |
-|rp.enable                                      |Enable/Disable logging to Report Portal: rp.enable=true - enable log to RP server.  Any other value means 'false': rp.enable=false - disable log to RP server.  If parameter is absent in  properties file then automation project results will be posted on RP. |No |
-|rp.description                                 |Launch description |No |
-|rp.attributes                                  |Set of attributes for specifying additional meta information for current launch. Format: key:value;value;build:12345-6. Attributes should be separated by “;”, keys and values - “:”. |No |
-|rp.reporting.async                             |Enables asynchronous reporting. Available values - `true` or `false`(by default). Supported only in 5+ vesion |No |
-|rp.reporting.callback                          |Enables [callback reporting](https://github.com/reportportal/client-java/wiki/Callback-reporting-usefulness). Available values - `true` or `false`(by default). Supported only in 5+ vesion |No |
-|rp.rerun                                       |Enables [rerun mode](https://github.com/reportportal/documentation/blob/master/src/md/src/DevGuides/rerun.md). Available values - `true` or `false`(by default). Supported only in 5+ version | No |
-|rp.rerun.of                                    |Specifies UUID of launch that has to be reruned |No |
-|rp.convertimage                                |Colored log images can be converted to grayscale for reducing image size. Values: ‘true’ – will be converted. Any other value means ‘false’. |No |
-|rp.mode                                        |ReportPortal provides possibility to specify visibility of executing launch. Currently two modes are supported: DEFAULT  - all users from project can see this launch; DEBUG - all users except of Customer role can see this launch (in debug sub tab). Note: for all java based clients (TestNG, Junit) mode will be set automatically to "DEFAULT" if it is not specified. |No |
-|rp.skipped.issue                               |ReportPortal provides feature to mark skipped tests as not 'To Investigate' items on WS side. Parameter could be equal boolean values: *TRUE* - skipped tests considered as issues and will be marked as 'To Investigate' on Report Portal. *FALSE* - skipped tests will not be marked as 'To Investigate' on application. |No |
-|rp.batch.size.logs                             |In order to rise up performance and reduce number of requests to server. Default = 10 |No |
-|rp.keystore.resource                           |Put your JKS file into resources and specify path to it | No|
-|rp.keystore.password                           |Access password for JKS (certificate storage) package, mentioned above |No |
+| **Parameter**                            | **Description**      | **Required**|
+|------------------------------------------|----------------------|-------------|
+|rp.endpoint                               |URL of web service, where requests should be send |Yes |
+|rp.api.key or rp.uuid                     |Api token of user     |Yes |
+|rp.launch                                 |The unique name of Launch (Run). Based on that name a history of runs will be created for particular name |Yes |
+|rp.project                                |Project name to identify scope |Yes |
+|rp.enable                                 |Enable/Disable logging to Report Portal: rp.enable=true - enable log to RP server.  Any other value means 'false': rp.enable=false - disable log to RP server.  If parameter is absent in  properties file then automation project results will be posted on RP. |No |
+|rp.description                            |Launch description    |No |
+|rp.attributes                             |Set of attributes for specifying additional meta information for current launch. Format: key:value;value;build:12345-6. Attributes should be separated by “;”, keys and values - “:”. |No |
+|rp.reporting.async                        |Enables asynchronous reporting. Available values - `true` or `false`(by default). Supported only in 5+ vesion |No |
+|rp.reporting.callback                     |Enables [callback reporting](https://github.com/reportportal/client-java/wiki/Callback-reporting-usefulness). Available values - `true` or `false`(by default). Supported only in 5+ vesion |No |
+|rp.rerun                                  |Enables [rerun mode](https://github.com/reportportal/documentation/blob/master/src/md/src/DevGuides/rerun.md). Available values - `true` or `false`(by default). Supported only in 5+ version | No |
+|rp.rerun.of                               |Specifies UUID of launch that has to be reruned |No |
+|rp.convertimage                           |Colored log images can be converted to grayscale for reducing image size. Values: ‘true’ – will be converted. Any other value means ‘false’. |No |
+|rp.mode                                   |ReportPortal provides possibility to specify visibility of executing launch. Currently two modes are supported: DEFAULT  - all users from project can see this launch; DEBUG - all users except of Customer role can see this launch (in debug sub tab). Note: for all java based clients (TestNG, Junit) mode will be set automatically to "DEFAULT" if it is not specified. |No |
+|rp.skipped.issue                          |ReportPortal provides feature to mark skipped tests as not 'To Investigate' items on WS side. Parameter could be equal boolean values: *TRUE* - skipped tests considered as issues and will be marked as 'To Investigate' on Report Portal. *FALSE* - skipped tests will not be marked as 'To Investigate' on application. |No |
+|rp.batch.size.logs                        | Put logs into batches of specified size in order to rise up performance and reduce number of requests to server. Default = 10 |No |
+|rp.rx.buffer.size                         | Internal queue size for log processing, increase this value along with log batch size if you see not all your logs passing to server. Default = 128 |No |
+|rp.keystore.resource                      |Put your JKS file into resources and specify path to it | No|
+|rp.keystore.password                      |Access password for JKS (certificate storage) package, mentioned above |No |
 
 Launch name can be edited once, and should be edited once, before first
 execution. As usual, parts of launches are fixed for a long time. Keeping the

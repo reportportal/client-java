@@ -1,29 +1,31 @@
-plugins {
-    id 'net.researchgate.release' version '2.8.1'
-    id 'com.jfrog.bintray' version '1.8.4'
-    id 'com.github.johnrengelman.shadow' version '5.1.0'
-}
+/*
+ *  Copyright 2021 EPAM Systems
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 
 apply plugin: 'java'
-apply from: 'release.gradle'
+
+apply from: "${project.scripts_url}/${project.scripts_branch}/build-quality.gradle"
+apply from: "${project.scripts_url}/${project.scripts_branch}/release-fat.gradle"
+apply from: "${project.scripts_url}/${project.scripts_branch}/signing.gradle"
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
-compileTestJava.options.encoding = "UTF-8"
-
-project.ext.releaseMode = project.hasProperty("releaseMode")
 
 repositories {
-    jcenter()
-    mavenLocal()
-    maven { url "http://dl.bintray.com/epam/reportportal" }
+    mavenCentral()
     maven { url "https://jitpack.io" }
-}
-
-processResources {
-    filesMatching('client.properties') {
-        expand(project.properties)
-    }
 }
 
 sourceSets {
@@ -37,10 +39,7 @@ sourceSets {
     }
 }
 
-//configurations.shadow.extendsFrom(configurations.runtime)
-
 shadowJar {
-//    configurations = [project.configurations.runtime]
 
     dependencies {
         include(dependency('com.epam.reportportal:restendpoint'))
@@ -73,17 +72,16 @@ dependencies {
     shadow 'org.apache.tika:tika-core:1.20'
     shadow 'org.slf4j:slf4j-api:1.7.25'
 
-    testImplementation('org.junit.platform:junit-platform-runner:1.6.0') {
+    testImplementation("org.junit.platform:junit-platform-runner:${project.junit_runner_version}") {
         exclude module: 'junit'
     }
-    testImplementation 'org.junit.platform:junit-platform-launcher:1.6.0'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
-    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.6.0'
-    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${project.junit_version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${project.junit_version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:${project.junit_version}"
 
     testImplementation 'org.hamcrest:hamcrest-core:2.2'
-    testImplementation 'org.mockito:mockito-core:3.3.3'
-    testImplementation 'org.mockito:mockito-junit-jupiter:3.3.3'
+    testImplementation "org.mockito:mockito-core:${project.mockito_version}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${project.mockito_version}"
     testImplementation 'ch.qos.logback:logback-classic:1.2.3'
     testImplementation('org.awaitility:awaitility:4.0.2') {
         exclude group: 'org.hamcrest'
@@ -102,4 +100,10 @@ test {
 
 wrapper {
     gradleVersion = '5.4.1'
+}
+
+processResources {
+    filesMatching('client.properties') {
+        expand(project.properties)
+    }
 }
