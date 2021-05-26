@@ -288,14 +288,14 @@ public class LaunchTest {
 		StartTestItemRQ testRq = standardStartSuiteRequest();
 		testRq.setName(testRq.getName() + RandomStringUtils.random(1025 - testRq.getName().length()));
 
-		Maybe<String> launchUuid = launch.start();
+		launch.start();
 		Maybe<String> suiteRs = launch.startTestItem(suiteRq);
-		Maybe<String> testRs = launch.startTestItem(suiteRs, testRq);
+		launch.startTestItem(suiteRs, testRq);
 
 		ArgumentCaptor<StartTestItemRQ> suiteCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(rpClient).startTestItem(suiteCaptor.capture());
+		verify(rpClient, timeout(1000)).startTestItem(suiteCaptor.capture());
 		ArgumentCaptor<StartTestItemRQ> testCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(rpClient).startTestItem(same(suiteRs.blockingGet()), testCaptor.capture());
+		verify(rpClient, timeout(1000)).startTestItem(same(suiteRs.blockingGet()), testCaptor.capture());
 
 		String suiteName = suiteCaptor.getValue().getName();
 		assertThat(suiteName, allOf(hasLength(1024), endsWith("...")));
