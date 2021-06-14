@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics;
+package com.epam.reportportal.service.statistics;
 
-import com.epam.reportportal.service.analytics.item.StatisticsEvent;
+import com.epam.reportportal.service.statistics.item.StatisticsEvent;
 import org.apache.http.HttpVersion;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;

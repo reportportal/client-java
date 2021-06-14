@@ -20,7 +20,7 @@ import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.aspect.StepAspectCommon;
 import com.epam.reportportal.exception.ReportPortalException;
-import com.epam.reportportal.service.analytics.StatisticsService;
+import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.ta.reportportal.ws.model.*;

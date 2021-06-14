@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics.item;
+package com.epam.reportportal.service.statistics.item;
 
-import com.epam.reportportal.service.analytics.StatisticsClient;
+import com.epam.reportportal.service.statistics.StatisticsClient;
 
 import java.util.Map;
 

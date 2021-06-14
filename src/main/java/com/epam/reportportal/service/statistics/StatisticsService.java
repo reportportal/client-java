@@ -14,10 +14,10 @@
  *  limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics;
+package com.epam.reportportal.service.statistics;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.analytics.item.StatisticsEvent;
+import com.epam.reportportal.service.statistics.item.StatisticsEvent;
 import com.epam.reportportal.utils.properties.ClientProperties;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;

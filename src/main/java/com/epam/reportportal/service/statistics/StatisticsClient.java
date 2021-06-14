@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics;
+package com.epam.reportportal.service.statistics;
 
-import com.epam.reportportal.service.analytics.item.StatisticsItem;
+import com.epam.reportportal.service.statistics.item.StatisticsItem;
 import io.reactivex.Maybe;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;

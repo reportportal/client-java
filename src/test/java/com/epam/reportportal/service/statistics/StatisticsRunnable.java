@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics;
+package com.epam.reportportal.service.statistics;
 
 import com.epam.reportportal.test.TestUtils;
 

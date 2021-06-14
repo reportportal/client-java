@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics.item;
+package com.epam.reportportal.service.statistics.item;
 
 import com.google.common.collect.Maps;
 import io.reactivex.annotations.Nullable;
