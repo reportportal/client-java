@@ -47,7 +47,7 @@ public class StatisticsServiceTest {
 			super(listenerParameters);
 		}
 
-		public void setAnalytics(Statistics statistics) {
+		public void setStatistics(Statistics statistics) {
 			this.statistics = statistics;
 		}
 
@@ -58,7 +58,7 @@ public class StatisticsServiceTest {
 	}
 
 	@Mock
-	private StatisticsClient analytics;
+	private StatisticsClient statisticsClient;
 
 	private final Maybe<String> launchMaybe = Maybe.create(emitter -> {
 		Thread.sleep(300);
@@ -73,11 +73,11 @@ public class StatisticsServiceTest {
 	public void setup() {
 		parameters = TestUtils.standardParameters();
 		service = new TestStatisticsService(parameters);
-		service.setAnalytics(analytics);
+		service.setStatistics(statisticsClient);
 	}
 
 	@Test
-	public void test_analytics_send_event_with_agent() {
+	public void test_statistics_send_event_with_agent() {
 		StartLaunchRQ launchRq = TestUtils.standardLaunchRequest(parameters);
 		launchRq.setAttributes(Collections.singleton(new ItemAttributesRQ("agent", "agent-java-testng|test-version-1", true)));
 
@@ -85,7 +85,7 @@ public class StatisticsServiceTest {
 		service.close();
 
 		ArgumentCaptor<StatisticsItem> argumentCaptor = ArgumentCaptor.forClass(StatisticsItem.class);
-		verify(analytics, times(1)).send(argumentCaptor.capture());
+		verify(statisticsClient, times(1)).send(argumentCaptor.capture());
 
 		StatisticsItem value = argumentCaptor.getValue();
 
@@ -103,14 +103,14 @@ public class StatisticsServiceTest {
 	}
 
 	@Test
-	public void test_analytics_send_event_no_agent_record() {
+	public void test_statistics_send_event_no_agent_record() {
 		StartLaunchRQ launchRq = TestUtils.standardLaunchRequest(parameters);
 
 		service.sendEvent(launchMaybe, launchRq);
 		service.close();
 
 		ArgumentCaptor<StatisticsItem> argumentCaptor = ArgumentCaptor.forClass(StatisticsItem.class);
-		verify(analytics, times(1)).send(argumentCaptor.capture());
+		verify(statisticsClient, times(1)).send(argumentCaptor.capture());
 
 		StatisticsItem value = argumentCaptor.getValue();
 		Map<String, String> params = value.getParams();
@@ -127,9 +127,9 @@ public class StatisticsServiceTest {
 	}
 
 	@Test
-	public void test_analytics_send_event_async() {
+	public void test_statistics_send_event_async() {
 		StartLaunchRQ launchRq = TestUtils.standardLaunchRequest(parameters);
 		service.sendEvent(launchMaybe, launchRq);
-		verify(analytics, timeout(2000).times(1)).send(any());
+		verify(statisticsClient, timeout(2000).times(1)).send(any());
 	}
 }

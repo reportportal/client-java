@@ -58,8 +58,8 @@ public class StatisticsTest {
 
 		when(httpClient.execute(any(HttpPost.class))).thenThrow(new RuntimeException("Internal error"));
 
-		StatisticsClient googleAnalytics = new StatisticsClient("id", httpClient);
-		Boolean result = googleAnalytics.send(new StatisticsEvent(null, null, null));
+		StatisticsClient statisticsClient = new StatisticsClient("id", httpClient);
+		Boolean result = statisticsClient.send(new StatisticsEvent(null, null, null));
 
 		verify(httpClient, times(1)).execute(any(HttpPost.class));
 

@@ -27,7 +27,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class StatisticsServiceOnOffTest {
 	@Test
-	public void test_analytics_property_off() throws IOException, InterruptedException {
+	public void test_statistics_property_off() throws IOException, InterruptedException {
 		Process process = ProcessUtils.buildProcess(
 				true,
 				StatisticsRunnable.class,
@@ -38,7 +38,7 @@ public class StatisticsServiceOnOffTest {
 	}
 
 	@Test
-	public void test_analytics_property_on() throws IOException, InterruptedException {
+	public void test_statistics_property_on() throws IOException, InterruptedException {
 		Process process = ProcessUtils.buildProcess(true, StatisticsRunnable.class, StatisticsClient.class.getCanonicalName());
 		assertThat("Exit code should be '0'", process.waitFor(), equalTo(0));
 	}
