@@ -58,7 +58,8 @@ public class Statistics implements Analytics {
 
 	private static final String DEFAULT_BASE_URL = "https://www.google-analytics.com/collect";
 
-	private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36";
+	private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+			+ "Chrome/91.0.4472.101 Safari/537.36";
 
 	private final String baseUrl;
 
@@ -87,7 +88,8 @@ public class Statistics implements Analytics {
 				new BasicNameValuePair("de", "UTF-8"),
 				new BasicNameValuePair("v", "1"),
 				new BasicNameValuePair("cid", UUID.randomUUID().toString()),
-				new BasicNameValuePair("tid", trackingId)
+				new BasicNameValuePair("tid", trackingId),
+				new BasicNameValuePair("cd1", System.getProperty("java.vendor") + ", " + System.getProperty("java.version"))
 		);
 
 		this.httpClient = httpClient;
