@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 import static java.util.Optional.ofNullable;
 
 /**
- * Google analytics asynchronous client. Required for sending analytics event to the resource identified by provided `trackingId`
+ * Statistics backend service asynchronous client. Require resource identifier by provided `trackingId` for sending statistics event.
  *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
@@ -76,9 +76,9 @@ public class StatisticsClient implements Statistics {
 	 * de - Encoding
 	 * v - Protocol version
 	 * cid - Client id
-	 * tid - Google analytics resource id
+	 * tid - Statistics resource id
 	 *
-	 * @param trackingId ID of the `Google analytics` resource
+	 * @param trackingId ID of the statistics resource
 	 * @param httpClient {@link HttpClient} instance
 	 */
 	public StatisticsClient(String trackingId, HttpClient httpClient) {
@@ -104,7 +104,7 @@ public class StatisticsClient implements Statistics {
 	}
 
 	/**
-	 * Convert and send {@link StatisticsItem} to the `Google analytics` instance. Quietly consumes exceptions to not affect reporting flow
+	 * Convert and send {@link StatisticsItem} to backend statistics service. Quietly consumes exceptions to not affect reporting flow
 	 *
 	 * @param item {@link StatisticsItem}
 	 * @return true - if successfully send, otherwise - false wrapped in the {@link Maybe}

@@ -22,10 +22,9 @@ import io.reactivex.annotations.Nullable;
 import java.util.Map;
 
 /**
- * Representation of the `Google analytics` EVENT entity
+ * Representation of the Statistics EVENT entity
  *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
- * @see <a href="https://support.google.com/analytics/answer/1033068">Google analytics event</a>
  */
 public class StatisticsEvent implements StatisticsItem {
 

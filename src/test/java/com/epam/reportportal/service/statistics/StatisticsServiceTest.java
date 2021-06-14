@@ -52,7 +52,7 @@ public class StatisticsServiceTest {
 		}
 
 		@Override
-		protected Statistics getAnalytics() {
+		protected Statistics getStatistics() {
 			return statistics;
 		}
 	}

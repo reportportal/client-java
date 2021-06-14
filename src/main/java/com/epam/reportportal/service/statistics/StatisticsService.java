@@ -45,7 +45,7 @@ import static java.util.Optional.ofNullable;
 public class StatisticsService implements Closeable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(StatisticsService.class);
 
-	public static final String ANALYTICS_PROPERTY = "AGENT_NO_ANALYTICS";
+	public static final String DISABLE_PROPERTY = "AGENT_NO_ANALYTICS";
 
 	private static final String CLIENT_PROPERTIES_FILE = "client.properties";
 	private static final String START_LAUNCH_EVENT_ACTION = "Start launch";
@@ -62,11 +62,11 @@ public class StatisticsService implements Closeable {
 
 	public StatisticsService(ListenerParameters listenerParameters) {
 		this.parameters = listenerParameters;
-		boolean isDisabled = System.getenv(ANALYTICS_PROPERTY) != null;
+		boolean isDisabled = System.getenv(DISABLE_PROPERTY) != null;
 		statistics = isDisabled ? new DummyStatistics() : new StatisticsClient("UA-173456809-1", parameters.getProxyUrl());
 	}
 
-	protected Statistics getAnalytics() {
+	protected Statistics getStatistics() {
 		return statistics;
 	}
 
@@ -89,12 +89,12 @@ public class StatisticsService implements Closeable {
 				.map(a -> a.split(Pattern.quote(SystemAttributesExtractor.ATTRIBUTE_VALUE_SEPARATOR)))
 				.filter(a -> a.length >= 2)
 				.ifPresent(agentAttribute -> statisticsEventBuilder.withLabel(String.format(AGENT_VALUE_FORMAT, (Object[]) agentAttribute)));
-		Maybe<Boolean> analyticsMaybe = launchIdMaybe.map(l -> getAnalytics().send(statisticsEventBuilder.build()))
+		Maybe<Boolean> statisticsMaybe = launchIdMaybe.map(l -> getStatistics().send(statisticsEventBuilder.build()))
 				.cache()
 				.subscribeOn(scheduler);
-		dependencies.add(analyticsMaybe.ignoreElement());
+		dependencies.add(statisticsMaybe.ignoreElement());
 		//noinspection ResultOfMethodCallIgnored
-		analyticsMaybe.subscribe(t -> {
+		statisticsMaybe.subscribe(t -> {
 		});
 	}
 
@@ -115,7 +115,7 @@ public class StatisticsService implements Closeable {
 				//do nothing
 			}
 			try {
-				getAnalytics().close();
+				getStatistics().close();
 			} catch (IOException ignore) {
 			}
 		}

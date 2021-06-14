@@ -31,7 +31,7 @@ public class StatisticsServiceOnOffTest {
 		Process process = ProcessUtils.buildProcess(
 				true,
 				StatisticsRunnable.class,
-				Collections.singletonMap(StatisticsService.ANALYTICS_PROPERTY, "1"),
+				Collections.singletonMap(StatisticsService.DISABLE_PROPERTY, "1"),
 				DummyStatistics.class.getCanonicalName()
 		);
 		assertThat("Exit code should be '0'", process.waitFor(), equalTo(0));

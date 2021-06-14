@@ -21,7 +21,7 @@ import com.epam.reportportal.service.statistics.StatisticsClient;
 import java.util.Map;
 
 /**
- * Interface for mapping any `Google analytics` entity to the parameters mapping
+ * Interface for mapping any Statistics entity to the parameters mapping
  * that will be used in the {@link StatisticsClient#send(StatisticsItem)}
  *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
