@@ -45,8 +45,8 @@ public class StatisticsEvent implements StatisticsItem {
 		this.params = params;
 	}
 
-	public static AnalyticsEventBuilder builder() {
-		return new AnalyticsEventBuilder();
+	public static StatisticsEventBuilder builder() {
+		return new StatisticsEventBuilder();
 	}
 
 	@Override
@@ -54,26 +54,26 @@ public class StatisticsEvent implements StatisticsItem {
 		return params;
 	}
 
-	public static class AnalyticsEventBuilder {
+	public static class StatisticsEventBuilder {
 
 		private final Map<String, String> params;
 
-		public AnalyticsEventBuilder() {
+		public StatisticsEventBuilder() {
 			params = Maps.newHashMapWithExpectedSize(4);
 			params.put("t", TYPE);
 		}
 
-		public AnalyticsEventBuilder withCategory(String category) {
+		public StatisticsEventBuilder withCategory(String category) {
 			params.put("ec", category);
 			return this;
 		}
 
-		public AnalyticsEventBuilder withAction(String action) {
+		public StatisticsEventBuilder withAction(String action) {
 			params.put("ea", action);
 			return this;
 		}
 
-		public AnalyticsEventBuilder withLabel(String label) {
+		public StatisticsEventBuilder withLabel(String label) {
 			params.put("el", label);
 			return this;
 		}

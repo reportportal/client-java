@@ -52,9 +52,9 @@ public class StatisticsService implements Closeable {
 	private static final String CLIENT_VALUE_FORMAT = "Client name \"%s\", version \"%s\"";
 	private static final String AGENT_VALUE_FORMAT = "Agent name \"%s\", version \"%s\"";
 
-	private final ExecutorService googleAnalyticsExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(
+	private final ExecutorService statisticsExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(
 			"rp-stat-%s").setDaemon(true).build());
-	private final Scheduler scheduler = Schedulers.from(googleAnalyticsExecutor);
+	private final Scheduler scheduler = Schedulers.from(statisticsExecutor);
 	private final Statistics statistics;
 	private final List<Completable> dependencies = new CopyOnWriteArrayList<>();
 
@@ -71,14 +71,14 @@ public class StatisticsService implements Closeable {
 	}
 
 	public void sendEvent(Maybe<String> launchIdMaybe, StartLaunchRQ rq) {
-		StatisticsEvent.AnalyticsEventBuilder analyticsEventBuilder = StatisticsEvent.builder().withAction(START_LAUNCH_EVENT_ACTION);
+		StatisticsEvent.StatisticsEventBuilder statisticsEventBuilder = StatisticsEvent.builder().withAction(START_LAUNCH_EVENT_ACTION);
 		SystemAttributesExtractor.extract(CLIENT_PROPERTIES_FILE, getClass().getClassLoader(), ClientProperties.CLIENT)
 				.stream()
 				.map(ItemAttributeResource::getValue)
 				.map(a -> a.split(Pattern.quote(SystemAttributesExtractor.ATTRIBUTE_VALUE_SEPARATOR)))
 				.filter(a -> a.length >= 2)
 				.findFirst()
-				.ifPresent(clientAttribute -> analyticsEventBuilder.withCategory(String.format(CLIENT_VALUE_FORMAT,
+				.ifPresent(clientAttribute -> statisticsEventBuilder.withCategory(String.format(CLIENT_VALUE_FORMAT,
 						(Object[]) clientAttribute
 				)));
 
@@ -88,8 +88,8 @@ public class StatisticsService implements Closeable {
 				.map(ItemAttributeResource::getValue)
 				.map(a -> a.split(Pattern.quote(SystemAttributesExtractor.ATTRIBUTE_VALUE_SEPARATOR)))
 				.filter(a -> a.length >= 2)
-				.ifPresent(agentAttribute -> analyticsEventBuilder.withLabel(String.format(AGENT_VALUE_FORMAT, (Object[]) agentAttribute)));
-		Maybe<Boolean> analyticsMaybe = launchIdMaybe.map(l -> getAnalytics().send(analyticsEventBuilder.build()))
+				.ifPresent(agentAttribute -> statisticsEventBuilder.withLabel(String.format(AGENT_VALUE_FORMAT, (Object[]) agentAttribute)));
+		Maybe<Boolean> analyticsMaybe = launchIdMaybe.map(l -> getAnalytics().send(statisticsEventBuilder.build()))
 				.cache()
 				.subscribeOn(scheduler);
 		dependencies.add(analyticsMaybe.ignoreElement());
@@ -106,10 +106,10 @@ public class StatisticsService implements Closeable {
 				LOGGER.warn("Unable to complete execution of all dependencies", result);
 			}
 		} finally {
-			googleAnalyticsExecutor.shutdown();
+			statisticsExecutor.shutdown();
 			try {
-				if (!googleAnalyticsExecutor.awaitTermination(parameters.getReportingTimeout(), TimeUnit.SECONDS)) {
-					googleAnalyticsExecutor.shutdownNow();
+				if (!statisticsExecutor.awaitTermination(parameters.getReportingTimeout(), TimeUnit.SECONDS)) {
+					statisticsExecutor.shutdownNow();
 				}
 			} catch (InterruptedException exc) {
 				//do nothing
