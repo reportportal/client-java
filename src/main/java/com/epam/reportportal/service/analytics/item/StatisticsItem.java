@@ -16,17 +16,17 @@
 
 package com.epam.reportportal.service.analytics.item;
 
-import com.epam.reportportal.service.analytics.Statistics;
+import com.epam.reportportal.service.analytics.StatisticsClient;
 
 import java.util.Map;
 
 /**
  * Interface for mapping any `Google analytics` entity to the parameters mapping
- * that will be used in the {@link Statistics#send(AnalyticsItem)}
+ * that will be used in the {@link StatisticsClient#send(StatisticsItem)}
  *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
-public interface AnalyticsItem {
+public interface StatisticsItem {
 
 	Map<String, String> getParams();
 

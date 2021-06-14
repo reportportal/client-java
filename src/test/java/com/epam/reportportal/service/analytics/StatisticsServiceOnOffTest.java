@@ -25,21 +25,21 @@ import java.util.Collections;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-public class AnalyticsServiceOnOffTest {
+public class StatisticsServiceOnOffTest {
 	@Test
 	public void test_analytics_property_off() throws IOException, InterruptedException {
 		Process process = ProcessUtils.buildProcess(
 				true,
-				AnalyticsRunnable.class,
-				Collections.singletonMap(AnalyticsService.ANALYTICS_PROPERTY, "1"),
-				DummyAnalytics.class.getCanonicalName()
+				StatisticsRunnable.class,
+				Collections.singletonMap(StatisticsService.ANALYTICS_PROPERTY, "1"),
+				DummyStatistics.class.getCanonicalName()
 		);
 		assertThat("Exit code should be '0'", process.waitFor(), equalTo(0));
 	}
 
 	@Test
 	public void test_analytics_property_on() throws IOException, InterruptedException {
-		Process process = ProcessUtils.buildProcess(true, AnalyticsRunnable.class, Statistics.class.getCanonicalName());
+		Process process = ProcessUtils.buildProcess(true, StatisticsRunnable.class, StatisticsClient.class.getCanonicalName());
 		assertThat("Exit code should be '0'", process.waitFor(), equalTo(0));
 	}
 }

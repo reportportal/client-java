@@ -27,13 +27,13 @@ import java.util.Map;
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  * @see <a href="https://support.google.com/analytics/answer/1033068">Google analytics event</a>
  */
-public class AnalyticsEvent implements AnalyticsItem {
+public class StatisticsEvent implements StatisticsItem {
 
 	private static final String TYPE = "event";
 
 	private final Map<String, String> params;
 
-	public AnalyticsEvent(@Nullable String eventCategory, @Nullable String eventAction, @Nullable String eventLabel) {
+	public StatisticsEvent(@Nullable String eventCategory, @Nullable String eventAction, @Nullable String eventLabel) {
 		params = Maps.newHashMapWithExpectedSize(4);
 		params.put("t", TYPE);
 		params.put("ec", eventCategory);
@@ -41,7 +41,7 @@ public class AnalyticsEvent implements AnalyticsItem {
 		params.put("el", eventLabel);
 	}
 
-	private AnalyticsEvent(Map<String, String> params) {
+	private StatisticsEvent(Map<String, String> params) {
 		this.params = params;
 	}
 
@@ -78,8 +78,8 @@ public class AnalyticsEvent implements AnalyticsItem {
 			return this;
 		}
 
-		public AnalyticsEvent build() {
-			return new AnalyticsEvent(params);
+		public StatisticsEvent build() {
+			return new StatisticsEvent(params);
 		}
 	}
 }

@@ -20,7 +20,7 @@ import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.aspect.StepAspectCommon;
 import com.epam.reportportal.exception.ReportPortalException;
-import com.epam.reportportal.service.analytics.AnalyticsService;
+import com.epam.reportportal.service.analytics.StatisticsService;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.ta.reportportal.ws.model.*;
@@ -178,7 +178,7 @@ public class LaunchTest {
 	}
 
 	@Mock
-	private AnalyticsService analyticsService;
+	private StatisticsService statisticsService;
 
 	@Test
 	@SuppressWarnings("unchecked")
@@ -189,15 +189,15 @@ public class LaunchTest {
 		StartLaunchRQ startRq = standardLaunchRequest(STANDARD_PARAMETERS);
 		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, startRq, executor) {
 			@Override
-			AnalyticsService getAnalyticsService() {
-				return analyticsService;
+			StatisticsService getAnalyticsService() {
+				return statisticsService;
 			}
 		};
 		launch.start();
 		launch.finish(standardLaunchFinishRequest());
 
-		verify(analyticsService).sendEvent(any(Maybe.class), same(startRq));
-		verify(analyticsService).close();
+		verify(statisticsService).sendEvent(any(Maybe.class), same(startRq));
+		verify(statisticsService).close();
 	}
 
 	@Test
@@ -208,16 +208,16 @@ public class LaunchTest {
 		Maybe<String> launchUuid = CommonUtils.createMaybe("launchUuid");
 		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, launchUuid, executor) {
 			@Override
-			AnalyticsService getAnalyticsService() {
-				return analyticsService;
+			StatisticsService getAnalyticsService() {
+				return statisticsService;
 			}
 		};
 		launch.start();
 		launch.finish(standardLaunchFinishRequest());
 
 		ArgumentCaptor<StartLaunchRQ> startRqCaptor = ArgumentCaptor.forClass(StartLaunchRQ.class);
-		verify(analyticsService).sendEvent(any(Maybe.class), startRqCaptor.capture());
-		verify(analyticsService).close();
+		verify(statisticsService).sendEvent(any(Maybe.class), startRqCaptor.capture());
+		verify(statisticsService).close();
 
 		StartLaunchRQ startRq = startRqCaptor.getAllValues().get(0);
 		assertThat(startRq.getAttributes(), notNullValue());

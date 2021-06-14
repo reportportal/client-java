@@ -16,12 +16,12 @@
 
 package com.epam.reportportal.service.analytics;
 
-import com.epam.reportportal.service.analytics.item.AnalyticsItem;
+import com.epam.reportportal.service.analytics.item.StatisticsItem;
 
-public class DummyAnalytics implements Analytics {
+public class DummyStatistics implements Statistics {
 
 	@Override
-	public Boolean send(AnalyticsItem item) {
+	public Boolean send(StatisticsItem item) {
 		return Boolean.TRUE;
 	}
 

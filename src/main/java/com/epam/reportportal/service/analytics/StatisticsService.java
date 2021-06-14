@@ -17,7 +17,7 @@
 package com.epam.reportportal.service.analytics;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.analytics.item.AnalyticsEvent;
+import com.epam.reportportal.service.analytics.item.StatisticsEvent;
 import com.epam.reportportal.utils.properties.ClientProperties;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
@@ -28,6 +28,8 @@ import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.Scheduler;
 import io.reactivex.schedulers.Schedulers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -40,7 +42,9 @@ import java.util.regex.Pattern;
 
 import static java.util.Optional.ofNullable;
 
-public class AnalyticsService implements Closeable {
+public class StatisticsService implements Closeable {
+	private static final Logger LOGGER = LoggerFactory.getLogger(StatisticsService.class);
+
 	public static final String ANALYTICS_PROPERTY = "AGENT_NO_ANALYTICS";
 
 	private static final String CLIENT_PROPERTIES_FILE = "client.properties";
@@ -51,23 +55,23 @@ public class AnalyticsService implements Closeable {
 	private final ExecutorService googleAnalyticsExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(
 			"rp-stat-%s").setDaemon(true).build());
 	private final Scheduler scheduler = Schedulers.from(googleAnalyticsExecutor);
-	private final Analytics analytics;
+	private final Statistics statistics;
 	private final List<Completable> dependencies = new CopyOnWriteArrayList<>();
 
 	private final ListenerParameters parameters;
 
-	public AnalyticsService(ListenerParameters listenerParameters) {
+	public StatisticsService(ListenerParameters listenerParameters) {
 		this.parameters = listenerParameters;
 		boolean isDisabled = System.getenv(ANALYTICS_PROPERTY) != null;
-		analytics = isDisabled ? new DummyAnalytics() : new Statistics("UA-173456809-1", parameters.getProxyUrl());
+		statistics = isDisabled ? new DummyStatistics() : new StatisticsClient("UA-173456809-1", parameters.getProxyUrl());
 	}
 
-	protected Analytics getAnalytics() {
-		return analytics;
+	protected Statistics getAnalytics() {
+		return statistics;
 	}
 
 	public void sendEvent(Maybe<String> launchIdMaybe, StartLaunchRQ rq) {
-		AnalyticsEvent.AnalyticsEventBuilder analyticsEventBuilder = AnalyticsEvent.builder().withAction(START_LAUNCH_EVENT_ACTION);
+		StatisticsEvent.AnalyticsEventBuilder analyticsEventBuilder = StatisticsEvent.builder().withAction(START_LAUNCH_EVENT_ACTION);
 		SystemAttributesExtractor.extract(CLIENT_PROPERTIES_FILE, getClass().getClassLoader(), ClientProperties.CLIENT)
 				.stream()
 				.map(ItemAttributeResource::getValue)
@@ -99,7 +103,7 @@ public class AnalyticsService implements Closeable {
 		try {
 			Throwable result = Completable.concat(dependencies).timeout(parameters.getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
 			if (result != null) {
-				throw new RuntimeException("Unable to complete execution of all dependencies", result);
+				LOGGER.warn("Unable to complete execution of all dependencies", result);
 			}
 		} finally {
 			googleAnalyticsExecutor.shutdown();

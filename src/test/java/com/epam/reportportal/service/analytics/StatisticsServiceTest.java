@@ -17,7 +17,7 @@
 package com.epam.reportportal.service.analytics;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.analytics.item.AnalyticsItem;
+import com.epam.reportportal.service.analytics.item.StatisticsItem;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -35,30 +35,30 @@ import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
-public class AnalyticsServiceTest {
+public class StatisticsServiceTest {
 
 	private static final String SEMANTIC_VERSION_PATTERN = "(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?";
 	private static final String FULL_PATTERN = "Client name \"client-java\", version \"" + SEMANTIC_VERSION_PATTERN + "\"";
 
-	private static class TestAnalyticsService extends AnalyticsService {
-		private Analytics analytics;
+	private static class TestStatisticsService extends StatisticsService {
+		private Statistics statistics;
 
-		public TestAnalyticsService(ListenerParameters listenerParameters) {
+		public TestStatisticsService(ListenerParameters listenerParameters) {
 			super(listenerParameters);
 		}
 
-		public void setAnalytics(Analytics analytics) {
-			this.analytics = analytics;
+		public void setAnalytics(Statistics statistics) {
+			this.statistics = statistics;
 		}
 
 		@Override
-		protected Analytics getAnalytics() {
-			return analytics;
+		protected Statistics getAnalytics() {
+			return statistics;
 		}
 	}
 
 	@Mock
-	private Statistics analytics;
+	private StatisticsClient analytics;
 
 	private final Maybe<String> launchMaybe = Maybe.create(emitter -> {
 		Thread.sleep(300);
@@ -66,13 +66,13 @@ public class AnalyticsServiceTest {
 		emitter.onComplete();
 	});
 
-	private TestAnalyticsService service;
+	private TestStatisticsService service;
 	private ListenerParameters parameters;
 
 	@BeforeEach
 	public void setup() {
 		parameters = TestUtils.standardParameters();
-		service = new TestAnalyticsService(parameters);
+		service = new TestStatisticsService(parameters);
 		service.setAnalytics(analytics);
 	}
 
@@ -84,10 +84,10 @@ public class AnalyticsServiceTest {
 		service.sendEvent(launchMaybe, launchRq);
 		service.close();
 
-		ArgumentCaptor<AnalyticsItem> argumentCaptor = ArgumentCaptor.forClass(AnalyticsItem.class);
+		ArgumentCaptor<StatisticsItem> argumentCaptor = ArgumentCaptor.forClass(StatisticsItem.class);
 		verify(analytics, times(1)).send(argumentCaptor.capture());
 
-		AnalyticsItem value = argumentCaptor.getValue();
+		StatisticsItem value = argumentCaptor.getValue();
 
 		Map<String, String> params = value.getParams();
 
@@ -109,10 +109,10 @@ public class AnalyticsServiceTest {
 		service.sendEvent(launchMaybe, launchRq);
 		service.close();
 
-		ArgumentCaptor<AnalyticsItem> argumentCaptor = ArgumentCaptor.forClass(AnalyticsItem.class);
+		ArgumentCaptor<StatisticsItem> argumentCaptor = ArgumentCaptor.forClass(StatisticsItem.class);
 		verify(analytics, times(1)).send(argumentCaptor.capture());
 
-		AnalyticsItem value = argumentCaptor.getValue();
+		StatisticsItem value = argumentCaptor.getValue();
 		Map<String, String> params = value.getParams();
 
 		String type = params.get("t");
