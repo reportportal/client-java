@@ -89,7 +89,7 @@ public class StatisticsClient implements Statistics {
 				new BasicNameValuePair("v", "1"),
 				new BasicNameValuePair("cid", UUID.randomUUID().toString()),
 				new BasicNameValuePair("tid", trackingId),
-				new BasicNameValuePair("cd1",  "Java " + System.getProperty("java.version"))
+				new BasicNameValuePair("uid",  "Java " + System.getProperty("java.version") + "; uid: " + UUID.randomUUID())
 		);
 
 		this.httpClient = httpClient;
