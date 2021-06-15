@@ -49,8 +49,8 @@ public class StatisticsService implements Closeable {
 
 	private static final String CLIENT_PROPERTIES_FILE = "client.properties";
 	private static final String START_LAUNCH_EVENT_ACTION = "Start launch";
-	private static final String CLIENT_VALUE_FORMAT = "Client name \"%s\", version \"%s\"";
-	private static final String AGENT_VALUE_FORMAT = "Agent name \"%s\", version \"%s\"";
+	private static final String CATEGORY_VALUE_FORMAT = "Client name \"%s\", version \"%s\", interpreter \"Java %s\"";
+	private static final String LABEL_VALUE_FORMAT = "Agent name \"%s\", version \"%s\"";
 
 	private final ExecutorService statisticsExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(
 			"rp-stat-%s").setDaemon(true).build());
@@ -77,10 +77,14 @@ public class StatisticsService implements Closeable {
 				.map(ItemAttributeResource::getValue)
 				.map(a -> a.split(Pattern.quote(SystemAttributesExtractor.ATTRIBUTE_VALUE_SEPARATOR)))
 				.filter(a -> a.length >= 2)
+				.map(a -> {
+					Object[] r = new Object[a.length + 1];
+					System.arraycopy(a, 0, r, 0, a.length);
+					r[a.length] = System.getProperty("java.version");
+					return r;
+				})
 				.findFirst()
-				.ifPresent(clientAttribute -> statisticsEventBuilder.withCategory(String.format(CLIENT_VALUE_FORMAT,
-						(Object[]) clientAttribute
-				)));
+				.ifPresent(clientAttribute -> statisticsEventBuilder.withCategory(String.format(CATEGORY_VALUE_FORMAT, clientAttribute)));
 
 		ofNullable(rq.getAttributes()).flatMap(r -> r.stream()
 				.filter(attribute -> attribute.isSystem() && DefaultProperties.AGENT.getName().equalsIgnoreCase(attribute.getKey()))
@@ -88,7 +92,10 @@ public class StatisticsService implements Closeable {
 				.map(ItemAttributeResource::getValue)
 				.map(a -> a.split(Pattern.quote(SystemAttributesExtractor.ATTRIBUTE_VALUE_SEPARATOR)))
 				.filter(a -> a.length >= 2)
-				.ifPresent(agentAttribute -> statisticsEventBuilder.withLabel(String.format(AGENT_VALUE_FORMAT, (Object[]) agentAttribute)));
+				.ifPresent(agentAttribute -> statisticsEventBuilder.withLabel(String.format(
+						LABEL_VALUE_FORMAT,
+						(Object[]) agentAttribute
+				)));
 		Maybe<Boolean> statisticsMaybe = launchIdMaybe.map(l -> getStatistics().send(statisticsEventBuilder.build()))
 				.cache()
 				.subscribeOn(scheduler);

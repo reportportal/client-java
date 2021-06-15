@@ -38,7 +38,10 @@ import static org.mockito.Mockito.*;
 public class StatisticsServiceTest {
 
 	private static final String SEMANTIC_VERSION_PATTERN = "(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?";
-	private static final String FULL_PATTERN = "Client name \"client-java\", version \"" + SEMANTIC_VERSION_PATTERN + "\"";
+	private static final String LOCAL_TEST_PATTERN =
+			"Client name \"\\$\\{name}\", version \"\\$\\{version}\", interpreter \"Java [^\"]+\"";
+	private static final String FULL_PATTERN =
+			"Client name \"client-java\", version \"" + SEMANTIC_VERSION_PATTERN + "\", interpreter \"Java [^\"]+\"";
 
 	private static class TestStatisticsService extends StatisticsService {
 		private Statistics statistics;
@@ -98,7 +101,7 @@ public class StatisticsServiceTest {
 
 		assertThat(type, equalTo("event"));
 		assertThat(eventAction, equalTo("Start launch"));
-		assertThat(eventCategory, anyOf(equalTo("Client name \"${name}\", version \"${version}\""), matchesRegex(FULL_PATTERN)));
+		assertThat(eventCategory, anyOf(matchesRegex(LOCAL_TEST_PATTERN), matchesRegex(FULL_PATTERN)));
 		assertThat(eventLabel, equalTo("Agent name \"agent-java-testng\", version \"test-version-1\""));
 	}
 
@@ -122,7 +125,7 @@ public class StatisticsServiceTest {
 
 		assertThat(type, equalTo("event"));
 		assertThat(eventAction, equalTo("Start launch"));
-		assertThat(eventCategory, anyOf(equalTo("Client name \"${name}\", version \"${version}\""), matchesRegex(FULL_PATTERN)));
+		assertThat(eventCategory, anyOf(matchesRegex(LOCAL_TEST_PATTERN), matchesRegex(FULL_PATTERN)));
 		assertThat(eventLabel, nullValue());
 	}
 
