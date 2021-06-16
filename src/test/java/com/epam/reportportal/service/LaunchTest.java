@@ -42,8 +42,8 @@ import java.util.concurrent.Executors;
 import static com.epam.reportportal.test.TestUtils.*;
 import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -145,8 +145,7 @@ public class LaunchTest {
 
 		// Verify Launch set on creation
 		ExecutorService launchCreateExecutor = Executors.newSingleThreadExecutor();
-		Launch launchOnCreate = launchCreateExecutor.submit(() -> new LaunchImpl(
-				rpClient,
+		Launch launchOnCreate = launchCreateExecutor.submit(() -> new LaunchImpl(rpClient,
 				STANDARD_PARAMETERS,
 				standardLaunchRequest(STANDARD_PARAMETERS),
 				executor
@@ -189,7 +188,7 @@ public class LaunchTest {
 		StartLaunchRQ startRq = standardLaunchRequest(STANDARD_PARAMETERS);
 		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, startRq, executor) {
 			@Override
-			StatisticsService getAnalyticsService() {
+			StatisticsService getStatisticsService() {
 				return statisticsService;
 			}
 		};
@@ -208,7 +207,7 @@ public class LaunchTest {
 		Maybe<String> launchUuid = CommonUtils.createMaybe("launchUuid");
 		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, launchUuid, executor) {
 			@Override
-			StatisticsService getAnalyticsService() {
+			StatisticsService getStatisticsService() {
 				return statisticsService;
 			}
 		};

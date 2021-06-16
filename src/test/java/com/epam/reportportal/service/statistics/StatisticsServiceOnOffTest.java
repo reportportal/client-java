@@ -39,7 +39,7 @@ public class StatisticsServiceOnOffTest {
 
 	@Test
 	public void test_statistics_property_on() throws IOException, InterruptedException {
-		Process process = ProcessUtils.buildProcess(true, StatisticsRunnable.class, StatisticsClient.class.getCanonicalName());
+		Process process = ProcessUtils.buildProcess(true, StatisticsRunnable.class, StatisticsApiClient.class.getCanonicalName());
 		assertThat("Exit code should be '0'", process.waitFor(), equalTo(0));
 	}
 }

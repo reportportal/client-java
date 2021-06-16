@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics;
+package com.epam.reportportal.service.statistics;
 
-import com.epam.reportportal.service.analytics.item.AnalyticsEvent;
+import com.epam.reportportal.service.statistics.item.StatisticsEvent;
 import io.reactivex.Maybe;
 import okhttp3.MediaType;
 import okhttp3.ResponseBody;
@@ -34,16 +34,17 @@ import static org.mockito.Mockito.*;
  */
 public class StatisticsClientTest {
 
-	private final StatisticsClient httpClient = mock(StatisticsClient.class);
+	private final StatisticsApiClient httpClient = mock(StatisticsApiClient.class);
 
 	@Test
 	void sendRequestWithoutError() {
 
 		when(httpClient.send(any())).thenReturn(Maybe.create(e-> e.onSuccess(Response.success(ResponseBody.create(MediaType.get("text/plain"), "")))));
 
-		StatisticsService googleAnalytics = new StatisticsService("id", httpClient);
-		Maybe<Response<ResponseBody>> result = googleAnalytics.send(new AnalyticsEvent(null, null, null));
+		StatisticsClient googleAnalytics = new StatisticsClient("id", httpClient);
+		Maybe<Response<ResponseBody>> result = googleAnalytics.send(new StatisticsEvent(null, null, null));
 
+		//noinspection unchecked
 		verify(httpClient).send(any(Map.class));
 
 		assertNotNull(result);
@@ -54,11 +55,13 @@ public class StatisticsClientTest {
 
 		when(httpClient.send(any())).thenReturn(Maybe.error(new RuntimeException("Internal error")));
 
-		StatisticsService googleAnalytics = new StatisticsService("id", httpClient);
-		Maybe<Response<ResponseBody>> result = googleAnalytics.send(new AnalyticsEvent(null, null, null));
+		StatisticsClient googleAnalytics = new StatisticsClient("id", httpClient);
+		Maybe<Response<ResponseBody>> result = googleAnalytics.send(new StatisticsEvent(null, null, null));
 
+		//noinspection unchecked
 		verify(httpClient, times(1)).send(any(Map.class));
 
-		Assertions.assertThrows(RuntimeException.class, () -> result.blockingGet());
+		//noinspection ResultOfMethodCallIgnored
+		Assertions.assertThrows(RuntimeException.class, result::blockingGet);
 	}
 }

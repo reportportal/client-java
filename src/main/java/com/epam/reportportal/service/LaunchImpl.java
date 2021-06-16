@@ -133,6 +133,7 @@ public class LaunchImpl extends Launch {
 					.doOnSuccess(LAUNCH_SUCCESS_CONSUMER)
 					.doOnError(LOG_ERROR)).subscribeOn(getScheduler()).cache();
 
+			//noinspection ResultOfMethodCallIgnored
 			launchPromise.subscribe(rs -> emitter.onSuccess(rs.getId()), t -> {
 				LOG_ERROR.accept(t);
 				emitter.onComplete();
@@ -148,13 +149,13 @@ public class LaunchImpl extends Launch {
 		executor = requireNonNull(executorService);
 		scheduler = createScheduler(executor);
 		statisticsService = new StatisticsService(parameters);
-		startRq = emptyStartLaunchForAnalytics();
+		startRq = emptyStartLaunchForStatistics();
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 		launch = launchMaybe.cache();
 	}
 
-	private static StartLaunchRQ emptyStartLaunchForAnalytics() {
+	private static StartLaunchRQ emptyStartLaunchForStatistics() {
 		StartLaunchRQ result = new StartLaunchRQ();
 		result.setAttributes(Collections.singleton(new ItemAttributesRQ(DefaultProperties.AGENT.getName(), CUSTOM_AGENT, true)));
 		return result;
@@ -182,7 +183,7 @@ public class LaunchImpl extends Launch {
 		return scheduler;
 	}
 
-	StatisticsService getAnalyticsService() {
+	StatisticsService getStatisticsService() {
 		return statisticsService;
 	}
 
@@ -198,7 +199,7 @@ public class LaunchImpl extends Launch {
 				getScheduler(),
 				getParameters()
 		);
-		getAnalyticsService().sendEvent(launch, startRq);
+		getStatisticsService().sendEvent(launch, startRq);
 		return this.launch;
 	}
 
@@ -223,7 +224,7 @@ public class LaunchImpl extends Launch {
 					LOGGER.error("Unable to finish launch in ReportPortal", error);
 				}
 		} finally {
-			getAnalyticsService().close();
+			getStatisticsService().close();
 		}
 	}
 
