@@ -20,7 +20,7 @@ import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.analytics.AnalyticsService;
+import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.utils.RetryWithDelay;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.ta.reportportal.ws.model.*;
@@ -111,7 +111,7 @@ public class LaunchImpl extends Launch {
 	protected final Maybe<String> launch;
 	private final ExecutorService executor;
 	private final Scheduler scheduler;
-	private final AnalyticsService analyticsService;
+	private final StatisticsService statisticsService;
 	private final StartLaunchRQ startRq;
 
 	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
@@ -121,7 +121,7 @@ public class LaunchImpl extends Launch {
 		requireNonNull(parameters, "Parameters shouldn't be NULL");
 		executor = requireNonNull(executorService);
 		scheduler = createScheduler(executor);
-		analyticsService = new AnalyticsService(parameters);
+		statisticsService = new StatisticsService(parameters);
 		startRq = rq;
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
@@ -147,7 +147,7 @@ public class LaunchImpl extends Launch {
 		requireNonNull(parameters, "Parameters shouldn't be NULL");
 		executor = requireNonNull(executorService);
 		scheduler = createScheduler(executor);
-		analyticsService = new AnalyticsService(parameters);
+		statisticsService = new StatisticsService(parameters);
 		startRq = emptyStartLaunchForAnalytics();
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
@@ -182,8 +182,8 @@ public class LaunchImpl extends Launch {
 		return scheduler;
 	}
 
-	AnalyticsService getAnalyticsService() {
-		return analyticsService;
+	StatisticsService getAnalyticsService() {
+		return statisticsService;
 	}
 
 	/**

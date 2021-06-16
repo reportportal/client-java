@@ -14,12 +14,16 @@
  *  limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics;
+package com.epam.reportportal.service.statistics;
 
-import com.epam.reportportal.service.analytics.item.AnalyticsItem;
+import com.epam.reportportal.test.TestUtils;
 
-import java.io.Closeable;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 
-public interface Analytics extends Closeable {
-	Boolean send(AnalyticsItem item);
+public class StatisticsRunnable {
+	public static void main(String... args) throws ClassNotFoundException {
+		StatisticsService service = new StatisticsService(TestUtils.standardParameters());
+		assertThat(service.getStatistics(), instanceOf(Class.forName(args[0])));
+	}
 }

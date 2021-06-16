@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics;
+package com.epam.reportportal.service.statistics;
 
-import com.epam.reportportal.service.analytics.item.AnalyticsItem;
+import com.epam.reportportal.service.statistics.item.StatisticsItem;
 import io.reactivex.Maybe;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -43,13 +43,13 @@ import java.util.stream.Collectors;
 import static java.util.Optional.ofNullable;
 
 /**
- * Google analytics asynchronous client. Required for sending analytics event to the resource identified by provided `trackingId`
+ * Statistics backend service asynchronous client. Require resource identifier by provided `trackingId` for sending statistics event.
  *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
-public class Statistics implements Analytics {
+public class StatisticsClient implements Statistics {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(Statistics.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(StatisticsClient.class);
 
 	private static final Function<Map<String, String>, List<NameValuePair>> PARAMETERS_CONVERTER = params -> params.entrySet()
 			.stream()
@@ -58,7 +58,8 @@ public class Statistics implements Analytics {
 
 	private static final String DEFAULT_BASE_URL = "https://www.google-analytics.com/collect";
 
-	private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36";
+	private static final String USER_AGENT =
+			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " + "Chrome/91.0.4472.101 Safari/537.36";
 
 	private final String baseUrl;
 
@@ -66,7 +67,7 @@ public class Statistics implements Analytics {
 
 	private final HttpClient httpClient;
 
-	public Statistics(String trackingId, String proxyUrl) {
+	public StatisticsClient(String trackingId, String proxyUrl) {
 		this(trackingId, buildDefaultHttpClient(proxyUrl));
 	}
 
@@ -75,12 +76,12 @@ public class Statistics implements Analytics {
 	 * de - Encoding
 	 * v - Protocol version
 	 * cid - Client id
-	 * tid - Google analytics resource id
+	 * tid - Statistics resource id
 	 *
-	 * @param trackingId ID of the `Google analytics` resource
+	 * @param trackingId ID of the statistics resource
 	 * @param httpClient {@link HttpClient} instance
 	 */
-	public Statistics(String trackingId, HttpClient httpClient) {
+	public StatisticsClient(String trackingId, HttpClient httpClient) {
 		this.baseUrl = DEFAULT_BASE_URL;
 		Collections.addAll(
 				defaultRequestParams,
@@ -102,13 +103,13 @@ public class Statistics implements Analytics {
 	}
 
 	/**
-	 * Convert and send {@link AnalyticsItem} to the `Google analytics` instance. Quietly consumes exceptions to not affect reporting flow
+	 * Convert and send {@link StatisticsItem} to backend statistics service. Quietly consumes exceptions to not affect reporting flow
 	 *
-	 * @param item {@link AnalyticsItem}
+	 * @param item {@link StatisticsItem}
 	 * @return true - if successfully send, otherwise - false wrapped in the {@link Maybe}
 	 */
 	@Override
-	public Boolean send(AnalyticsItem item) {
+	public Boolean send(StatisticsItem item) {
 		try {
 			HttpPost httpPost = buildPostRequest(item);
 			HttpResponse response = httpClient.execute(httpPost);
@@ -126,7 +127,7 @@ public class Statistics implements Analytics {
 		}
 	}
 
-	private HttpPost buildPostRequest(AnalyticsItem item) {
+	private HttpPost buildPostRequest(StatisticsItem item) {
 		List<NameValuePair> nameValuePairs = PARAMETERS_CONVERTER.apply(item.getParams());
 		nameValuePairs.addAll(defaultRequestParams);
 		UrlEncodedFormEntity entity = new UrlEncodedFormEntity(nameValuePairs, StandardCharsets.UTF_8);

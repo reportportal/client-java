@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics;
+package com.epam.reportportal.service.statistics;
 
-import com.epam.reportportal.service.analytics.item.AnalyticsEvent;
+import com.epam.reportportal.service.statistics.item.StatisticsEvent;
 import org.apache.http.HttpVersion;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -33,7 +33,7 @@ import static org.mockito.Mockito.*;
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
-public class GoogleAnalyticsTest {
+public class StatisticsTest {
 
 	private final HttpClient httpClient = mock(HttpClient.class);
 
@@ -45,8 +45,8 @@ public class GoogleAnalyticsTest {
 				"OK"
 		)));
 
-		Statistics googleAnalytics = new Statistics("id", httpClient);
-		Boolean result = googleAnalytics.send(new AnalyticsEvent(null, null, null));
+		StatisticsClient statisticsClient = new StatisticsClient("id", httpClient);
+		Boolean result = statisticsClient.send(new StatisticsEvent(null, null, null));
 
 		verify(httpClient, times(1)).execute(any(HttpPost.class));
 
@@ -58,8 +58,8 @@ public class GoogleAnalyticsTest {
 
 		when(httpClient.execute(any(HttpPost.class))).thenThrow(new RuntimeException("Internal error"));
 
-		Statistics googleAnalytics = new Statistics("id", httpClient);
-		Boolean result = googleAnalytics.send(new AnalyticsEvent(null, null, null));
+		StatisticsClient statisticsClient = new StatisticsClient("id", httpClient);
+		Boolean result = statisticsClient.send(new StatisticsEvent(null, null, null));
 
 		verify(httpClient, times(1)).execute(any(HttpPost.class));
 
