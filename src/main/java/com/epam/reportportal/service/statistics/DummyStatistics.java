@@ -14,19 +14,23 @@
  *  limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics;
+package com.epam.reportportal.service.statistics;
 
-import com.epam.reportportal.service.analytics.item.AnalyticsItem;
+import com.epam.reportportal.service.statistics.item.StatisticsItem;
 import io.reactivex.Maybe;
+import okhttp3.MediaType;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
 
-import java.io.Closeable;
-
-public interface Statistics extends Closeable {
-
-	Maybe<Response<ResponseBody>> send(AnalyticsItem item);
+public class DummyStatistics implements Statistics {
 
 	@Override
-	void close();
+	public Maybe<Response<ResponseBody>> send(StatisticsItem item) {
+		return Maybe.create(e-> e.onSuccess(Response.success(ResponseBody.create(MediaType.get("text/plain"), ""))));
+	}
+
+	@Override
+	public void close() {
+		// did nothing - do nothing
+	}
 }

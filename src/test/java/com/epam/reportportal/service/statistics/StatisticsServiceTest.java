@@ -14,10 +14,10 @@
  *  limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics;
+package com.epam.reportportal.service.statistics;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.analytics.item.AnalyticsItem;
+import com.epam.reportportal.service.statistics.item.StatisticsItem;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -38,38 +38,41 @@ import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
-public class AnalyticsServiceTest {
+public class StatisticsServiceTest {
 
 	private static final String SEMANTIC_VERSION_PATTERN = "(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?";
-	private static final String FULL_PATTERN = "Client name \"client-java\", version \"" + SEMANTIC_VERSION_PATTERN + "\"";
+	private static final String LOCAL_TEST_PATTERN =
+			"Client name \"\\$\\{name}\", version \"\\$\\{version}\", interpreter \"Java [^\"]+\"";
+	private static final String FULL_PATTERN =
+			"Client name \"client-java\", version \"" + SEMANTIC_VERSION_PATTERN + "\", interpreter \"Java [^\"]+\"";
 
-	private static class TestAnalyticsService extends AnalyticsService {
-		private Statistics analytics;
+	private static class TestStatisticsService extends StatisticsService {
+		private Statistics statistics;
 
-		public TestAnalyticsService(ListenerParameters listenerParameters) {
+		public TestStatisticsService(ListenerParameters listenerParameters) {
 			super(listenerParameters);
 		}
 
-		public void setAnalytics(Statistics analytics) {
-			this.analytics = analytics;
+		public void setStatistics(Statistics statistics) {
+			this.statistics = statistics;
 		}
 
 		@Override
 		protected Statistics getStatistics() {
-			return analytics;
+			return statistics;
 		}
 	}
 
 	@Mock
-	private StatisticsService analytics;
+	private StatisticsService statisticsClient;
 
 	private final Maybe<String> launchMaybe = Maybe.create(emitter -> {
-		Thread.sleep(200);
+		Thread.sleep(300);
 		emitter.onSuccess("launchId");
 		emitter.onComplete();
 	});
 
-	private TestAnalyticsService service;
+	private TestStatisticsService service;
 	private ListenerParameters parameters;
 
 	@BeforeEach
@@ -84,17 +87,17 @@ public class AnalyticsServiceTest {
 	}
 
 	@Test
-	public void test_analytics_send_event_with_agent() {
+	public void test_statistics_send_event_with_agent() {
 		StartLaunchRQ launchRq = TestUtils.standardLaunchRequest(parameters);
 		launchRq.setAttributes(Collections.singleton(new ItemAttributesRQ("agent", "agent-java-testng|test-version-1", true)));
 
 		service.sendEvent(launchMaybe, launchRq);
 		service.close();
 
-		ArgumentCaptor<AnalyticsItem> argumentCaptor = ArgumentCaptor.forClass(AnalyticsItem.class);
-		verify(analytics, times(1)).send(argumentCaptor.capture());
+		ArgumentCaptor<StatisticsItem> argumentCaptor = ArgumentCaptor.forClass(StatisticsItem.class);
+		verify(statisticsClient, times(1)).send(argumentCaptor.capture());
 
-		AnalyticsItem value = argumentCaptor.getValue();
+		StatisticsItem value = argumentCaptor.getValue();
 
 		Map<String, String> params = value.getParams();
 
@@ -105,21 +108,21 @@ public class AnalyticsServiceTest {
 
 		assertThat(type, equalTo("event"));
 		assertThat(eventAction, equalTo("Start launch"));
-		assertThat(eventCategory, anyOf(equalTo("Client name \"${name}\", version \"${version}\""), matchesRegex(FULL_PATTERN)));
+		assertThat(eventCategory, anyOf(matchesRegex(LOCAL_TEST_PATTERN), matchesRegex(FULL_PATTERN)));
 		assertThat(eventLabel, equalTo("Agent name \"agent-java-testng\", version \"test-version-1\""));
 	}
 
 	@Test
-	public void test_analytics_send_event_no_agent_record() {
+	public void test_statistics_send_event_no_agent_record() {
 		StartLaunchRQ launchRq = TestUtils.standardLaunchRequest(parameters);
 
 		service.sendEvent(launchMaybe, launchRq);
 		service.close();
 
-		ArgumentCaptor<AnalyticsItem> argumentCaptor = ArgumentCaptor.forClass(AnalyticsItem.class);
-		verify(analytics, times(1)).send(argumentCaptor.capture());
+		ArgumentCaptor<StatisticsItem> argumentCaptor = ArgumentCaptor.forClass(StatisticsItem.class);
+		verify(statisticsClient, times(1)).send(argumentCaptor.capture());
 
-		AnalyticsItem value = argumentCaptor.getValue();
+		StatisticsItem value = argumentCaptor.getValue();
 		Map<String, String> params = value.getParams();
 
 		String type = params.get("t");
@@ -129,14 +132,14 @@ public class AnalyticsServiceTest {
 
 		assertThat(type, equalTo("event"));
 		assertThat(eventAction, equalTo("Start launch"));
-		assertThat(eventCategory, anyOf(equalTo("Client name \"${name}\", version \"${version}\""), matchesRegex(FULL_PATTERN)));
+		assertThat(eventCategory, anyOf(matchesRegex(LOCAL_TEST_PATTERN), matchesRegex(FULL_PATTERN)));
 		assertThat(eventLabel, nullValue());
 	}
 
 	@Test
-	public void test_analytics_send_event_async() {
+	public void test_statistics_send_event_async() {
 		StartLaunchRQ launchRq = TestUtils.standardLaunchRequest(parameters);
 		service.sendEvent(launchMaybe, launchRq);
-		verify(analytics, timeout(2000).times(1)).send(any());
+		verify(statisticsClient, timeout(2000).times(1)).send(any());
 	}
 }

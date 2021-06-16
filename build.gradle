@@ -13,43 +13,29 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+
 apply plugin: 'java-library'
 
-project.ext.releaseMode = project.hasProperty('releaseMode')
-def branch = releaseMode ? '5.0.0' : 'develop'
-apply from: "https://raw.githubusercontent.com/reportportal/gradle-scripts/$branch/release-commons.gradle"
+apply from: "${project.scripts_url}/${project.scripts_branch}/build-quality.gradle"
+apply from: "${project.scripts_url}/${project.scripts_branch}/release-fat.gradle"
+apply from: "${project.scripts_url}/${project.scripts_branch}/signing.gradle"
+apply from: "${project.scripts_url}/${project.scripts_branch}/jacoco.gradle"
+
+project.ext.limits = [
+        'instruction': 70,
+        'branch'     : 53,
+        'line'       : 70,
+        'complexity' : 60,
+        'method'     : 65,
+        'class'      : 90
+]
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
-compileTestJava.options.encoding = "UTF-8"
 
 repositories {
-    jcenter()
-    mavenLocal()
-    maven { url "http://dl.bintray.com/epam/reportportal" }
+    mavenCentral()
     maven { url "https://jitpack.io" }
-}
-
-project.ext.githubUserName = project.hasProperty('githubUserName') ? githubUserName : ""
-project.ext.githubToken = project.hasProperty('githubToken') ? githubToken : ""
-
-publishing {
-    repositories {
-        maven {
-            name = "JUnit5 GitHub Packages"
-            url = uri("https://maven.pkg.github.com/reportportal/client-java")
-            credentials {
-                username = githubUserName
-                password = githubToken
-            }
-        }
-    }
-}
-
-processResources {
-    filesMatching('client.properties') {
-        expand(project.properties)
-    }
 }
 
 dependencies {
@@ -66,20 +52,19 @@ dependencies {
     api "org.aspectj:aspectjrt:${project.aspectj_version}"
     implementation "org.aspectj:aspectjweaver:${project.aspectj_version}"
 
-    api 'org.apache.tika:tika-core:1.19' // newer tika versions break Android compatibility, so deprecated
+    api 'org.apache.tika:tika-core:1.12' // newer tika versions break Android compatibility, so deprecated
     implementation 'org.slf4j:slf4j-api:1.7.25'
 
-    testImplementation('org.junit.platform:junit-platform-runner:1.6.0') {
+    testImplementation("org.junit.platform:junit-platform-runner:${project.junit_runner_version}") {
         exclude module: 'junit'
     }
-    testImplementation 'org.junit.platform:junit-platform-launcher:1.6.0'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
-    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.6.0'
-    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${project.junit_version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${project.junit_version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine:${project.junit_version}"
 
     testImplementation 'org.hamcrest:hamcrest-core:2.2'
-    testImplementation 'org.mockito:mockito-core:3.3.3'
-    testImplementation 'org.mockito:mockito-junit-jupiter:3.3.3'
+    testImplementation "org.mockito:mockito-core:${project.mockito_version}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${project.mockito_version}"
     testImplementation 'ch.qos.logback:logback-classic:1.2.3'
     testImplementation('org.awaitility:awaitility:4.0.2') {
         exclude group: 'org.hamcrest'
@@ -106,6 +91,10 @@ release {
     }
 }
 
-def releaseDependencies = [bintrayUpload, publish]
-releaseDependencies.addAll(afterReleaseBuild.getDependsOn())
-afterReleaseBuild.setDependsOn(releaseDependencies)
+processResources {
+    filesMatching('client.properties') {
+        expand(project.properties)
+    }
+}
+
+build.dependsOn jacocoTestReport

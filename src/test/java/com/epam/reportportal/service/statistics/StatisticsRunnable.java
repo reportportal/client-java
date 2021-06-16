@@ -14,23 +14,16 @@
  *  limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics;
+package com.epam.reportportal.service.statistics;
 
-import com.epam.reportportal.service.analytics.item.AnalyticsItem;
-import io.reactivex.Maybe;
-import okhttp3.MediaType;
-import okhttp3.ResponseBody;
-import retrofit2.Response;
+import com.epam.reportportal.test.TestUtils;
 
-public class DummyAnalytics implements Statistics {
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 
-	@Override
-	public Maybe<Response<ResponseBody>> send(AnalyticsItem item) {
-		return Maybe.create(e-> e.onSuccess(Response.success(ResponseBody.create(MediaType.get("text/plain"), ""))));
-	}
-
-	@Override
-	public void close() {
-		// did nothing - do nothing
+public class StatisticsRunnable {
+	public static void main(String... args) throws ClassNotFoundException {
+		StatisticsService service = new StatisticsService(TestUtils.standardParameters());
+		assertThat(service.getStatistics(), instanceOf(Class.forName(args[0])));
 	}
 }

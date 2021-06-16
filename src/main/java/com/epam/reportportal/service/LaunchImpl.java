@@ -20,7 +20,7 @@ import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.analytics.AnalyticsService;
+import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.utils.RetryWithDelay;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.ta.reportportal.ws.model.*;
@@ -84,6 +84,12 @@ public class LaunchImpl extends Launch {
 			TimeUnit.SECONDS.toMillis(ITEM_FINISH_RETRY_TIMEOUT)
 	);
 
+	/**
+	 * @deprecated use {@link Launch#NOT_ISSUE}
+	 */
+	@Deprecated
+	public static final String NOT_ISSUE = "NOT_ISSUE";
+
 	public static final String CUSTOM_AGENT = "CUSTOM";
 
 	/**
@@ -105,7 +111,7 @@ public class LaunchImpl extends Launch {
 	protected final Maybe<String> launch;
 	private final ExecutorService executor;
 	private final Scheduler scheduler;
-	private final AnalyticsService analyticsService;
+	private final StatisticsService statisticsService;
 	private final StartLaunchRQ startRq;
 
 	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
@@ -115,7 +121,7 @@ public class LaunchImpl extends Launch {
 		requireNonNull(parameters, "Parameters shouldn't be NULL");
 		executor = requireNonNull(executorService);
 		scheduler = createScheduler(executor);
-		analyticsService = new AnalyticsService(parameters);
+		statisticsService = new StatisticsService(parameters);
 		startRq = rq;
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
@@ -141,7 +147,7 @@ public class LaunchImpl extends Launch {
 		requireNonNull(parameters, "Parameters shouldn't be NULL");
 		executor = requireNonNull(executorService);
 		scheduler = createScheduler(executor);
-		analyticsService = new AnalyticsService(parameters);
+		statisticsService = new StatisticsService(parameters);
 		startRq = emptyStartLaunchForAnalytics();
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
@@ -176,8 +182,8 @@ public class LaunchImpl extends Launch {
 		return scheduler;
 	}
 
-	AnalyticsService getAnalyticsService() {
-		return analyticsService;
+	StatisticsService getAnalyticsService() {
+		return statisticsService;
 	}
 
 	/**
@@ -226,6 +232,17 @@ public class LaunchImpl extends Launch {
 		return createConstantMaybe(cause);
 	}
 
+	private void truncateName(@Nonnull final StartTestItemRQ rq) {
+		if(getParameters().isTruncateItemNames()) {
+			String name = rq.getName();
+			int limit = getParameters().getTruncateItemNamesLimit();
+			if(name.length() > limit) {
+				String replacement = getParameters().getTruncateItemNamesReplacement();
+				rq.setName(name.substring(0, limit - replacement.length()) + replacement);
+			}
+		}
+	}
+
 	/**
 	 * Starts new test item in ReportPortal asynchronously (non-blocking)
 	 *
@@ -240,6 +257,7 @@ public class LaunchImpl extends Launch {
 			 */
 			return createErrorResponse(new NullPointerException("StartTestItemRQ should not be null"));
 		}
+		truncateName(rq);
 
 		Maybe<String> item = launch.flatMap((Function<String, Maybe<String>>) launchId -> {
 			rq.setLaunchUuid(launchId);
@@ -267,9 +285,18 @@ public class LaunchImpl extends Launch {
 	 * @return Test Item ID promise
 	 */
 	public Maybe<String> startTestItem(final Maybe<String> parentId, final StartTestItemRQ rq) {
-		if (null == parentId) {
+		if (parentId == null) {
 			return startTestItem(rq);
 		}
+		if (rq == null) {
+			/*
+			 * This usually happens when we have a bug inside an agent or supported framework. But in any case we shouldn't rise an exception,
+			 * since we are reporting tool and our problems	should not fail launches.
+			 */
+			return createErrorResponse(new NullPointerException("StartTestItemRQ should not be null"));
+		}
+		truncateName(rq);
+
 		final Maybe<String> item = launch.flatMap((Function<String, Maybe<String>>) lId -> parentId.flatMap((Function<String, MaybeSource<String>>) pId -> {
 			rq.setLaunchUuid(lId);
 			LOGGER.debug("Starting test item..." + Thread.currentThread().getName());

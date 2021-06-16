@@ -56,7 +56,11 @@ public enum ListenerProperty {
     LOCK_FILE_NAME("rp.client.join.lock.file.name", false),
     SYNC_FILE_NAME("rp.client.join.sync.file.name", false),
     FILE_WAIT_TIMEOUT_MS("rp.client.join.file.wait.timeout.ms", false),
-    RX_BUFFER_SIZE("rp.rx.buffer.size", false);
+    RX_BUFFER_SIZE("rp.rx.buffer.size", false),
+
+    TRUNCATE_ITEM_NAMES("rp.item.name.truncate", false),
+    TRUNCATE_ITEM_LIMIT("rp.item.name.truncate.limit", false),
+    TRUNCATE_ITEM_REPLACEMENT("rp.item.name.truncate.replacement", false);
     //formatter:on
 
     private final String propertyName;

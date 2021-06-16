@@ -14,6 +14,10 @@
 - try-catch refactoring in `ReportPortal.Builder` class to get better stack traces
 - Introducing "Retrofit 2" as RP client
 
+## [5.0.22]
+### Added
+- Item names truncation, issue #154
+
 ## [5.0.21]
 ### Changed
 - try-catch refactoring in `ReportPortal.Builder` class to get better stack traces

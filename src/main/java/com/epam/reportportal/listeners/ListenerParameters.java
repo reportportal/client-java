@@ -52,6 +52,10 @@ public class ListenerParameters implements Cloneable {
 	private static final long DEFAULT_FILE_WAIT_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
 	private static final int DEFAULT_RX_BUFFER_SIZE = 128;
 
+	private static final boolean DEFAULT_TRUNCATE_ITEM_NAMES = true;
+	private static final int DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT = 1024;
+	private static final String DEFAULT_TRUNCATE_REPLACEMENT = "...";
+
 	private String description;
 	private String apiKey;
 	private String baseUrl;
@@ -81,6 +85,10 @@ public class ListenerParameters implements Cloneable {
 
 	private int rxBufferSize;
 
+	private boolean truncateItemNames;
+	private int truncateItemNamesLimit;
+	private String truncateItemNamesReplacement;
+
 	public ListenerParameters() {
 
 		this.isSkippedAnIssue = DEFAULT_SKIP_ISSUE;
@@ -104,6 +112,10 @@ public class ListenerParameters implements Cloneable {
 		this.syncFileName = DEFAULT_SYNC_FILE_NAME;
 		this.fileWaitTimeout = DEFAULT_FILE_WAIT_TIMEOUT_MS;
 		this.rxBufferSize = DEFAULT_RX_BUFFER_SIZE;
+
+		this.truncateItemNames = DEFAULT_TRUNCATE_ITEM_NAMES;
+		this.truncateItemNamesLimit = DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT;
+		this.truncateItemNamesReplacement = DEFAULT_TRUNCATE_REPLACEMENT;
 	}
 
 	public ListenerParameters(PropertiesLoader properties) {
@@ -139,6 +151,10 @@ public class ListenerParameters implements Cloneable {
 		this.fileWaitTimeout = properties.getPropertyAsInt(FILE_WAIT_TIMEOUT_MS, (int) DEFAULT_FILE_WAIT_TIMEOUT_MS);
 
 		this.rxBufferSize = properties.getPropertyAsInt(RX_BUFFER_SIZE, DEFAULT_RX_BUFFER_SIZE);
+
+		this.truncateItemNames = properties.getPropertyAsBoolean(TRUNCATE_ITEM_NAMES, DEFAULT_TRUNCATE_ITEM_NAMES);
+		this.truncateItemNamesLimit = properties.getPropertyAsInt(TRUNCATE_ITEM_LIMIT, DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT);
+		this.truncateItemNamesReplacement = properties.getProperty(TRUNCATE_ITEM_REPLACEMENT, DEFAULT_TRUNCATE_REPLACEMENT);
 	}
 
 	public String getDescription() {
@@ -350,6 +366,30 @@ public class ListenerParameters implements Cloneable {
 
 	public void setRxBufferSize(int size) {
 		rxBufferSize = size;
+	}
+
+	public boolean isTruncateItemNames() {
+		return truncateItemNames;
+	}
+
+	public void setTruncateItemNames(boolean truncate) {
+		this.truncateItemNames = truncate;
+	}
+
+	public int getTruncateItemNamesLimit() {
+		return truncateItemNamesLimit;
+	}
+
+	public void setTruncateItemNamesLimit(int limit) {
+		this.truncateItemNamesLimit = limit;
+	}
+
+	public String getTruncateItemNamesReplacement() {
+		return truncateItemNamesReplacement;
+	}
+
+	public void setTruncateItemNamesReplacement(String replacement) {
+		this.truncateItemNamesReplacement = replacement;
 	}
 
 	@VisibleForTesting

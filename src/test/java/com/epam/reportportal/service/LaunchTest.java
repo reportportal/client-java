@@ -20,13 +20,14 @@ import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.aspect.StepAspectCommon;
 import com.epam.reportportal.exception.ReportPortalException;
-import com.epam.reportportal.service.analytics.AnalyticsService;
+import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,7 @@ import static com.epam.reportportal.test.TestUtils.*;
 import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.endsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -100,10 +102,10 @@ public class LaunchTest {
 		launch.finishTestItem(suiteRs, positiveFinishRequest());
 		launch.finish(new FinishExecutionRQ());
 
-		verify(rpClient, times(1)).finishTestItem(eq(stepRs.blockingGet()), any());
-		verify(rpClient, times(1)).finishTestItem(eq(testRs.blockingGet()), any());
-		verify(rpClient, times(1)).finishTestItem(eq(suiteRs.blockingGet()), any());
-		verify(rpClient, times(1)).finishLaunch(eq(launchUuid.blockingGet()), any());
+		verify(rpClient).finishTestItem(eq(stepRs.blockingGet()), any());
+		verify(rpClient).finishTestItem(eq(testRs.blockingGet()), any());
+		verify(rpClient).finishTestItem(eq(suiteRs.blockingGet()), any());
+		verify(rpClient).finishLaunch(eq(launchUuid.blockingGet()), any());
 	}
 
 	@Test
@@ -130,9 +132,9 @@ public class LaunchTest {
 		launch.finishTestItem(suiteRs, positiveFinishRequest());
 		launch.finish(new FinishExecutionRQ());
 
-		verify(rpClient, times(1)).finishTestItem(eq(testRs.blockingGet()), any());
-		verify(rpClient, times(1)).finishTestItem(eq(suiteRs.blockingGet()), any());
-		verify(rpClient, times(1)).finishLaunch(eq(launchUuid.blockingGet()), any());
+		verify(rpClient).finishTestItem(eq(testRs.blockingGet()), any());
+		verify(rpClient).finishTestItem(eq(suiteRs.blockingGet()), any());
+		verify(rpClient).finishLaunch(eq(launchUuid.blockingGet()), any());
 	}
 
 	@Test
@@ -176,7 +178,7 @@ public class LaunchTest {
 	}
 
 	@Mock
-	private AnalyticsService analyticsService;
+	private StatisticsService statisticsService;
 
 	@Test
 	@SuppressWarnings("unchecked")
@@ -187,15 +189,15 @@ public class LaunchTest {
 		StartLaunchRQ startRq = standardLaunchRequest(STANDARD_PARAMETERS);
 		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, startRq, executor) {
 			@Override
-			AnalyticsService getAnalyticsService() {
-				return analyticsService;
+			StatisticsService getAnalyticsService() {
+				return statisticsService;
 			}
 		};
 		launch.start();
 		launch.finish(standardLaunchFinishRequest());
 
-		verify(analyticsService, times(1)).sendEvent(any(Maybe.class), same(startRq));
-		verify(analyticsService, times(1)).close();
+		verify(statisticsService).sendEvent(any(Maybe.class), same(startRq));
+		verify(statisticsService).close();
 	}
 
 	@Test
@@ -206,16 +208,16 @@ public class LaunchTest {
 		Maybe<String> launchUuid = CommonUtils.createMaybe("launchUuid");
 		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, launchUuid, executor) {
 			@Override
-			AnalyticsService getAnalyticsService() {
-				return analyticsService;
+			StatisticsService getAnalyticsService() {
+				return statisticsService;
 			}
 		};
 		launch.start();
 		launch.finish(standardLaunchFinishRequest());
 
 		ArgumentCaptor<StartLaunchRQ> startRqCaptor = ArgumentCaptor.forClass(StartLaunchRQ.class);
-		verify(analyticsService, times(1)).sendEvent(any(Maybe.class), startRqCaptor.capture());
-		verify(analyticsService, times(1)).close();
+		verify(statisticsService).sendEvent(any(Maybe.class), startRqCaptor.capture());
+		verify(statisticsService).close();
 
 		StartLaunchRQ startRq = startRqCaptor.getAllValues().get(0);
 		assertThat(startRq.getAttributes(), notNullValue());
@@ -271,5 +273,34 @@ public class LaunchTest {
 		ArgumentCaptor<FinishTestItemRQ> captor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
 		verify(rpClient, times(1)).finishTestItem(same(firstStepRs.blockingGet()), captor.capture());
 		captor.getAllValues().forEach(i -> assertThat(i.getStatus(), equalTo("PASSED")));
+	}
+
+	@Test
+	public void launch_should_truncate_long_item_names() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateStartChildTestItemResponse(rpClient);
+
+		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor);
+
+		StartTestItemRQ suiteRq = standardStartSuiteRequest();
+		suiteRq.setName(suiteRq.getName() + RandomStringUtils.random(1025 - suiteRq.getName().length()));
+		StartTestItemRQ testRq = standardStartSuiteRequest();
+		testRq.setName(testRq.getName() + RandomStringUtils.random(1025 - testRq.getName().length()));
+
+		launch.start();
+		Maybe<String> suiteRs = launch.startTestItem(suiteRq);
+		launch.startTestItem(suiteRs, testRq);
+
+		ArgumentCaptor<StartTestItemRQ> suiteCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(rpClient, timeout(1000)).startTestItem(suiteCaptor.capture());
+		ArgumentCaptor<StartTestItemRQ> testCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(rpClient, timeout(1000)).startTestItem(same(suiteRs.blockingGet()), testCaptor.capture());
+
+		String suiteName = suiteCaptor.getValue().getName();
+		assertThat(suiteName, allOf(hasLength(1024), endsWith("...")));
+
+		String testName = testCaptor.getValue().getName();
+		assertThat(testName, allOf(hasLength(1024), endsWith("...")));
 	}
 }
