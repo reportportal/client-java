@@ -41,14 +41,9 @@ class StepRequestUtils {
 	}
 
 	static StartTestItemRQ buildStartStepRequest(MethodSignature signature, Step step, JoinPoint joinPoint) {
-		UniqueID uniqueIdAnnotation = signature.getMethod().getAnnotation(UniqueID.class);
-		String uniqueId = uniqueIdAnnotation != null ? uniqueIdAnnotation.value() : null;
 		String name = StepNameUtils.getStepName(step, signature, joinPoint);
 
 		StartTestItemRQ request = new StartTestItemRQ();
-		if (uniqueId != null && !uniqueId.trim().isEmpty()) {
-			request.setUniqueId(uniqueId);
-		}
 		request.setAttributes(createStepAttributes(signature));
 		if (!step.description().isEmpty()) {
 			request.setDescription(step.description());
