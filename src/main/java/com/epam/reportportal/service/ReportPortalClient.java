@@ -57,4 +57,7 @@ public interface ReportPortalClient {
 
 	@GET("v1/{projectName}/launch/uuid/{launchUuid}")
 	Maybe<LaunchResource> getLaunchByUuid(@Path("launchUuid") String launchUuid);
+
+	@GET("v1/{projectName}/item/uuid/{itemUuid}")
+	Maybe<TestItemResource> getItemByUuid(@Path("itemUuid") String itemUuid);
 }
