@@ -71,6 +71,8 @@ public class LaunchTest {
 
 	@Mock
 	private ReportPortalClient rpClient;
+	@Mock
+	private StatisticsService statisticsService;
 
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -85,7 +87,12 @@ public class LaunchTest {
 		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
 
-		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor);
+		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
+			@Override
+			StatisticsService getStatisticsService() {
+				return statisticsService;
+			}
+		};
 
 		Maybe<String> launchUuid = launch.start();
 		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
@@ -114,7 +121,12 @@ public class LaunchTest {
 		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
 
-		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor);
+		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
+			@Override
+			StatisticsService getStatisticsService() {
+				return statisticsService;
+			}
+		};
 
 		Maybe<String> launchUuid = launch.start();
 		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
@@ -175,9 +187,6 @@ public class LaunchTest {
 		assertThat(launchGet, sameInstance(launchOnCreate));
 		shutdownExecutorService(launchChildStartExecutor);
 	}
-
-	@Mock
-	private StatisticsService statisticsService;
 
 	@Test
 	@SuppressWarnings("unchecked")
@@ -244,7 +253,12 @@ public class LaunchTest {
 		simulateFinishLaunchResponse(rpClient);
 		simulateBatchLogResponse(rpClient);
 
-		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor);
+		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
+			@Override
+			StatisticsService getStatisticsService() {
+				return statisticsService;
+			}
+		};
 
 		launch.start();
 		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
@@ -280,7 +294,12 @@ public class LaunchTest {
 		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
 
-		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor);
+		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
+			@Override
+			StatisticsService getStatisticsService() {
+				return statisticsService;
+			}
+		};
 
 		StartTestItemRQ suiteRq = standardStartSuiteRequest();
 		suiteRq.setName(suiteRq.getName() + RandomStringUtils.random(1025 - suiteRq.getName().length()));
