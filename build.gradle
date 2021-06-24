@@ -17,7 +17,7 @@
 apply plugin: 'java-library'
 
 apply from: "${project.scripts_url}/${project.scripts_branch}/build-quality.gradle"
-apply from: "${project.scripts_url}/${project.scripts_branch}/release-fat.gradle"
+apply from: "${project.scripts_url}/${project.scripts_branch}/release-commons.gradle"
 apply from: "${project.scripts_url}/${project.scripts_branch}/signing.gradle"
 apply from: "${project.scripts_url}/${project.scripts_branch}/jacoco.gradle"
 
@@ -79,6 +79,11 @@ test {
     forkEvery(1)
     maxParallelForks(5)
     outputs.upToDateWhen { false }
+    testLogging {
+        events "failed"
+        exceptionFormat "full"
+        showStandardStreams true
+    }
 }
 
 wrapper {
