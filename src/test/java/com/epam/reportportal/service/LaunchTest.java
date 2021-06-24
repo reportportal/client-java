@@ -161,7 +161,12 @@ public class LaunchTest {
 				STANDARD_PARAMETERS,
 				standardLaunchRequest(STANDARD_PARAMETERS),
 				executor
-		)).get();
+		){
+			@Override
+			StatisticsService getStatisticsService() {
+				return statisticsService;
+			}
+		}).get();
 		Launch launchGet = launchCreateExecutor.submit(Launch::currentLaunch).get();
 		assertThat(launchGet, sameInstance(launchOnCreate));
 		shutdownExecutorService(launchCreateExecutor);
