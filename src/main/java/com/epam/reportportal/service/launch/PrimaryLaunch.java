@@ -19,8 +19,8 @@ package com.epam.reportportal.service.launch;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.LaunchImpl;
-import com.epam.reportportal.service.LaunchIdLockFile;
 import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.service.launch.lock.LaunchIdLock;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 
@@ -32,13 +32,13 @@ import java.util.concurrent.atomic.AtomicReference;
  * The class represents a {@link Launch} which starts and reports into its own one.
  */
 public class PrimaryLaunch extends LaunchImpl {
-	private final LaunchIdLockFile launchIdLockFile;
+	private final LaunchIdLock launchIdLock;
 	private final AtomicReference<String> instanceUuid;
 
 	public PrimaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, StartLaunchRQ launch, ExecutorService executorService,
-			LaunchIdLockFile launchIdLockFile, AtomicReference<String> instanceUuid) {
+			LaunchIdLock launchIdLock, AtomicReference<String> instanceUuid) {
 		super(rpClient, parameters, launch, executorService);
-		this.launchIdLockFile = launchIdLockFile;
+		this.launchIdLock = launchIdLock;
 		this.instanceUuid = instanceUuid;
 	}
 
@@ -47,7 +47,7 @@ public class PrimaryLaunch extends LaunchImpl {
 		try {
 			super.finish(rq);
 		} finally {
-			launchIdLockFile.finishInstanceUuid(instanceUuid.get());
+			launchIdLock.finishInstanceUuid(instanceUuid.get());
 			instanceUuid.set(UUID.randomUUID().toString());
 		}
 	}

@@ -17,7 +17,11 @@
 package com.epam.reportportal.service.launch;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.*;
+import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.service.LaunchImpl;
+import com.epam.reportportal.service.LaunchLoggingContext;
+import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.service.launch.lock.LaunchIdLock;
 import com.epam.reportportal.utils.Waiter;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.launch.LaunchResource;
@@ -41,14 +45,14 @@ public class SecondaryLaunch extends LaunchImpl {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SecondaryLaunch.class);
 
 	private final ReportPortalClient rpClient;
-	private final LaunchIdLockFile launchIdLockFile;
+	private final LaunchIdLock launchIdLock;
 	private final AtomicReference<String> instanceUuid;
 
 	public SecondaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch,
-			ExecutorService executorService, LaunchIdLockFile launchIdLockFile, AtomicReference<String> instanceUuid) {
+			ExecutorService executorService, LaunchIdLock launchIdLock, AtomicReference<String> instanceUuid) {
 		super(rpClient, parameters, launch, executorService);
 		this.rpClient = rpClient;
-		this.launchIdLockFile = launchIdLockFile;
+		this.launchIdLock = launchIdLock;
 		this.instanceUuid = instanceUuid;
 	}
 
@@ -92,14 +96,15 @@ public class SecondaryLaunch extends LaunchImpl {
 	public void finish(final FinishExecutionRQ rq) {
 		QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
 		try {
-			Throwable throwable = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren()).
-					timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
+			Throwable throwable = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren())
+					.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS)
+					.blockingGet();
 			if (throwable != null) {
 				LOGGER.error("Unable to finish secondary launch in ReportPortal", throwable);
 			}
 		} finally {
 			// ignore super call, since only primary launch should finish it
-			launchIdLockFile.finishInstanceUuid(instanceUuid.get());
+			launchIdLock.finishInstanceUuid(instanceUuid.get());
 		}
 	}
 }

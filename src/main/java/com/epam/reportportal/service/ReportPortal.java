@@ -21,6 +21,7 @@ import com.epam.reportportal.message.ReportPortalMessage;
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.service.launch.PrimaryLaunch;
 import com.epam.reportportal.service.launch.SecondaryLaunch;
+import com.epam.reportportal.service.launch.lock.LaunchIdLock;
 import com.epam.reportportal.utils.SslUtils;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.reportportal.utils.properties.ListenerProperty;
@@ -82,7 +83,7 @@ public class ReportPortal {
 	private final AtomicReference<String> instanceUuid = new AtomicReference<>(UUID.randomUUID().toString());
 
 	private final ListenerParameters parameters;
-	private final LaunchIdLockFile launchIdLockFile;
+	private final LaunchIdLock launchIdLock;
 	private final ReportPortalClient rpClient;
 	private final ExecutorService executor;
 
@@ -91,11 +92,11 @@ public class ReportPortal {
 	 * @param parameters Listener Parameters
 	 */
 	ReportPortal(@Nullable ReportPortalClient rpClient, @Nonnull ExecutorService executor, @Nonnull ListenerParameters parameters,
-			@Nullable LaunchIdLockFile launchIdLockFile) {
+			@Nullable LaunchIdLock launchIdLock) {
 		this.rpClient = rpClient;
 		this.executor = executor;
 		this.parameters = parameters;
-		this.launchIdLockFile = launchIdLockFile;
+		this.launchIdLock = launchIdLock;
 	}
 
 	/**
@@ -109,12 +110,12 @@ public class ReportPortal {
 			return Launch.NOOP_LAUNCH;
 		}
 
-		if (launchIdLockFile == null) {
+		if (launchIdLock == null) {
 			// do not use multi-client mode
 			return new LaunchImpl(rpClient, parameters, rq, executor);
 		}
 
-		final String uuid = launchIdLockFile.obtainLaunchUuid(instanceUuid.get());
+		final String uuid = launchIdLock.obtainLaunchUuid(instanceUuid.get());
 		if (uuid == null) {
 			// timeout locking on file or interrupted, anyway it should be logged already
 			// we continue to operate normally, since this flag is set by default and we shouldn't fail launches because of it
@@ -127,7 +128,7 @@ public class ReportPortal {
 			try {
 				StartLaunchRQ rqCopy = objectMapper.readValue(objectMapper.writeValueAsString(rq), StartLaunchRQ.class);
 				rqCopy.setUuid(uuid);
-				return new PrimaryLaunch(rpClient, parameters, rqCopy, executor, launchIdLockFile, instanceUuid);
+				return new PrimaryLaunch(rpClient, parameters, rqCopy, executor, launchIdLock, instanceUuid);
 			} catch (IOException e) {
 				throw new InternalReportPortalClientException("Unable to clone start launch request:", e);
 			}
@@ -136,7 +137,7 @@ public class ReportPortal {
 				emitter.onSuccess(uuid);
 				emitter.onComplete();
 			});
-			return new SecondaryLaunch(rpClient, parameters, launch, executor, launchIdLockFile, instanceUuid);
+			return new SecondaryLaunch(rpClient, parameters, launch, executor, launchIdLock, instanceUuid);
 		}
 	}
 
@@ -173,11 +174,8 @@ public class ReportPortal {
 		return new Builder();
 	}
 
-	private static LaunchIdLockFile getLockFile(ListenerParameters parameters) {
-		if (parameters.getClientJoin()) {
-			return new LaunchIdLockFile(parameters);
-		}
-		return null;
+	private static LaunchIdLock getLockFile(ListenerParameters parameters) {
+		return parameters.getClientJoin().getInstance(parameters);
 	}
 
 	/**
@@ -551,7 +549,7 @@ public class ReportPortal {
 			return builder.build();
 		}
 
-		protected LaunchIdLockFile buildLockFile(ListenerParameters parameters) {
+		protected LaunchIdLock buildLockFile(ListenerParameters parameters) {
 			return getLockFile(parameters);
 		}
 

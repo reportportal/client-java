@@ -53,9 +53,21 @@ public enum ListenerProperty {
      * so using that property should allow to merge them all in one.
      */
     CLIENT_JOIN_MODE("rp.client.join", false),
+    @SuppressWarnings("DeprecatedIsStillUsed")
+    @Deprecated
     LOCK_FILE_NAME("rp.client.join.lock.file.name", false),
+    @SuppressWarnings("DeprecatedIsStillUsed")
+    @Deprecated
     SYNC_FILE_NAME("rp.client.join.sync.file.name", false),
+    @SuppressWarnings("DeprecatedIsStillUsed")
+    @Deprecated
     FILE_WAIT_TIMEOUT_MS("rp.client.join.file.wait.timeout.ms", false),
+    FILE_LOCK_NAME("rp.client.join.file.lock.name", false),
+    FILE_SYNC_NAME("rp.client.join.file.sync.name", false),
+    CLIENT_JOIN_LOCK_PORT("rp.client.join.port", false),
+    CLIENT_JOIN_TIMEOUT_VALUE("rp.client.join.timeout.value", false),
+    CLIENT_JOIN_TIMEOUT_UNIT("rp.client.join.timeout.unit", false),
+
     RX_BUFFER_SIZE("rp.rx.buffer.size", false),
 
     TRUNCATE_ITEM_NAMES("rp.item.name.truncate", false),

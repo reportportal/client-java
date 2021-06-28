@@ -18,6 +18,7 @@ package com.epam.reportportal.test;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.service.launch.lock.LaunchIdLockMode;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.utils.SubscriptionUtils;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
@@ -57,7 +58,7 @@ public class TestUtils {
 	public static ListenerParameters standardParameters() {
 		ListenerParameters result = new ListenerParameters();
 		result.setBaseUrl("http://localhost:8080");
-		result.setClientJoin(false);
+		result.setClientJoin(LaunchIdLockMode.NONE);
 		result.setBatchLogsSize(1);
 		result.setLaunchName("My-test-launch" + generateUniqueId());
 		result.setProjectName("unit-test");

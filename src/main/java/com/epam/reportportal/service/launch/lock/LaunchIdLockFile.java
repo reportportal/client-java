@@ -1,20 +1,20 @@
 /*
- * Copyright 2019 EPAM Systems
+ *  Copyright 2021 EPAM Systems
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
 
-package com.epam.reportportal.service;
+package com.epam.reportportal.service.launch.lock;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.listeners.ListenerParameters;
@@ -32,7 +32,11 @@ import java.io.RandomAccessFile;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
-import java.util.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Optional.ofNullable;
@@ -44,10 +48,10 @@ import static java.util.Optional.ofNullable;
  *
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
-public class LaunchIdLockFile implements LaunchIdLock {
+public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLock {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LaunchIdLockFile.class);
 
-	public static final String LOCK_FILE_CHARSET = "US-ASCII";
+	public static final Charset LOCK_FILE_CHARSET = StandardCharsets.ISO_8859_1;
 	private static final String LINE_SEPARATOR = System.getProperty("line.separator");
 	private static final float MAX_WAIT_TIME_DISCREPANCY = 0.1f;
 
@@ -57,10 +61,11 @@ public class LaunchIdLockFile implements LaunchIdLock {
 	private volatile String lockUuid;
 	private volatile Pair<RandomAccessFile, FileLock> mainLock;
 
-	public LaunchIdLockFile(ListenerParameters parameters) {
+	public LaunchIdLockFile(ListenerParameters listenerParameters) {
+		super(listenerParameters);
 		lockFile = new File(parameters.getLockFileName());
 		syncFile = new File(parameters.getSyncFileName());
-		fileWaitTimeout = parameters.getFileWaitTimeout();
+		fileWaitTimeout = parameters.getLockWaitTimeout();
 	}
 
 	private Pair<RandomAccessFile, FileLock> obtainLock(final File file) {
@@ -282,21 +287,16 @@ public class LaunchIdLockFile implements LaunchIdLock {
 
 		Boolean isLast = executeBlockingOperation(uuidRemove, syncFile);
 		if (isLast != null && isLast) {
-			if(!syncFile.delete()) {
+			if (!syncFile.delete()) {
 				LOGGER.warn("Unable to delete synchronization file: " + syncFile.getPath());
 			}
 		}
 
 		if (mainLock != null && lockUuid.equals(uuid)) {
 			reset();
-			if(!lockFile.delete()) {
+			if (!lockFile.delete()) {
 				LOGGER.warn("Unable to delete locking file: " + lockFile.getPath());
 			}
 		}
-	}
-
-	@Override
-	public Collection<String> getLiveInstanceUuids() {
-		return Collections.emptyList();
 	}
 }
