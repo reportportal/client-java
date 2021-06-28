@@ -33,10 +33,10 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class PrimaryLaunch extends LaunchImpl {
 	private final LaunchIdLock launchIdLock;
-	private final AtomicReference<String> instanceUuid;
+	private volatile String instanceUuid;
 
 	public PrimaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, StartLaunchRQ launch, ExecutorService executorService,
-			LaunchIdLock launchIdLock, AtomicReference<String> instanceUuid) {
+			LaunchIdLock launchIdLock, String instanceUuid) {
 		super(rpClient, parameters, launch, executorService);
 		this.launchIdLock = launchIdLock;
 		this.instanceUuid = instanceUuid;
@@ -47,8 +47,8 @@ public class PrimaryLaunch extends LaunchImpl {
 		try {
 			super.finish(rq);
 		} finally {
-			launchIdLock.finishInstanceUuid(instanceUuid.get());
-			instanceUuid.set(UUID.randomUUID().toString());
+			launchIdLock.finishInstanceUuid(instanceUuid);
+			instanceUuid = UUID.randomUUID().toString();
 		}
 	}
 }

@@ -61,7 +61,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static com.epam.reportportal.service.LaunchLoggingContext.DEFAULT_LAUNCH_KEY;
@@ -79,8 +78,6 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 public class ReportPortal {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportPortal.class);
-
-	private final AtomicReference<String> instanceUuid = new AtomicReference<>(UUID.randomUUID().toString());
 
 	private final ListenerParameters parameters;
 	private final LaunchIdLock launchIdLock;
@@ -115,14 +112,15 @@ public class ReportPortal {
 			return new LaunchImpl(rpClient, parameters, rq, executor);
 		}
 
-		final String uuid = launchIdLock.obtainLaunchUuid(instanceUuid.get());
+		final String instanceUuid = UUID.randomUUID().toString();
+		final String uuid = launchIdLock.obtainLaunchUuid(instanceUuid);
 		if (uuid == null) {
 			// timeout locking on file or interrupted, anyway it should be logged already
 			// we continue to operate normally, since this flag is set by default and we shouldn't fail launches because of it
 			return new LaunchImpl(rpClient, parameters, rq, executor);
 		}
 
-		if (instanceUuid.get().equals(uuid)) {
+		if (instanceUuid.equals(uuid)) {
 			// We got our own UUID as launch UUID, that means we are primary launch.
 			ObjectMapper objectMapper = new ObjectMapper();
 			try {
