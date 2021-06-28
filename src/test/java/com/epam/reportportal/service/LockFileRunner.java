@@ -37,7 +37,7 @@ public class LockFileRunner {
 		ListenerParameters params = new ListenerParameters();
 		params.setLockFileName(lockFileName);
 		params.setSyncFileName(syncFileName);
-		LockFile lock = new LockFile(params);
+		LaunchIdLockFile lock = new LaunchIdLockFile(params);
 		System.out.println(WELCOME_MESSAGE);
 		InputStreamReader isr = new InputStreamReader(System.in);
 		isr.read(new char[3]);

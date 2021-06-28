@@ -16,6 +16,8 @@
 
 package com.epam.reportportal.service;
 
+import java.util.Collection;
+
 /**
  * A service to perform blocking operation to get single launch UUID for multiple clients.
  *
@@ -38,4 +40,11 @@ public interface LaunchIdLock {
 	 * @param uuid a Client instance UUID.
 	 */
 	void finishInstanceUuid(String uuid);
+
+	/**
+	 * Return all instance UUIDs which are still running.
+	 *
+	 * @return a collection of live instance UUIDs
+	 */
+	Collection<String> getLiveInstanceUuids();
 }

@@ -41,14 +41,14 @@ public class SecondaryLaunch extends LaunchImpl {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SecondaryLaunch.class);
 
 	private final ReportPortalClient rpClient;
-	private final LockFile lockFile;
+	private final LaunchIdLockFile launchIdLockFile;
 	private final AtomicReference<String> instanceUuid;
 
 	public SecondaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch,
-			ExecutorService executorService, LockFile lockFile, AtomicReference<String> instanceUuid) {
+			ExecutorService executorService, LaunchIdLockFile launchIdLockFile, AtomicReference<String> instanceUuid) {
 		super(rpClient, parameters, launch, executorService);
 		this.rpClient = rpClient;
-		this.lockFile = lockFile;
+		this.launchIdLockFile = launchIdLockFile;
 		this.instanceUuid = instanceUuid;
 	}
 
@@ -99,7 +99,7 @@ public class SecondaryLaunch extends LaunchImpl {
 			}
 		} finally {
 			// ignore super call, since only primary launch should finish it
-			lockFile.finishInstanceUuid(instanceUuid.get());
+			launchIdLockFile.finishInstanceUuid(instanceUuid.get());
 		}
 	}
 }

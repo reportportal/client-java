@@ -82,7 +82,7 @@ public class ReportPortal {
 	private final AtomicReference<String> instanceUuid = new AtomicReference<>(UUID.randomUUID().toString());
 
 	private final ListenerParameters parameters;
-	private final LockFile lockFile;
+	private final LaunchIdLockFile launchIdLockFile;
 	private final ReportPortalClient rpClient;
 	private final ExecutorService executor;
 
@@ -91,11 +91,11 @@ public class ReportPortal {
 	 * @param parameters Listener Parameters
 	 */
 	ReportPortal(@Nullable ReportPortalClient rpClient, @Nonnull ExecutorService executor, @Nonnull ListenerParameters parameters,
-			@Nullable LockFile lockFile) {
+			@Nullable LaunchIdLockFile launchIdLockFile) {
 		this.rpClient = rpClient;
 		this.executor = executor;
 		this.parameters = parameters;
-		this.lockFile = lockFile;
+		this.launchIdLockFile = launchIdLockFile;
 	}
 
 	/**
@@ -109,12 +109,12 @@ public class ReportPortal {
 			return Launch.NOOP_LAUNCH;
 		}
 
-		if (lockFile == null) {
+		if (launchIdLockFile == null) {
 			// do not use multi-client mode
 			return new LaunchImpl(rpClient, parameters, rq, executor);
 		}
 
-		final String uuid = lockFile.obtainLaunchUuid(instanceUuid.get());
+		final String uuid = launchIdLockFile.obtainLaunchUuid(instanceUuid.get());
 		if (uuid == null) {
 			// timeout locking on file or interrupted, anyway it should be logged already
 			// we continue to operate normally, since this flag is set by default and we shouldn't fail launches because of it
@@ -127,7 +127,7 @@ public class ReportPortal {
 			try {
 				StartLaunchRQ rqCopy = objectMapper.readValue(objectMapper.writeValueAsString(rq), StartLaunchRQ.class);
 				rqCopy.setUuid(uuid);
-				return new PrimaryLaunch(rpClient, parameters, rqCopy, executor, lockFile, instanceUuid);
+				return new PrimaryLaunch(rpClient, parameters, rqCopy, executor, launchIdLockFile, instanceUuid);
 			} catch (IOException e) {
 				throw new InternalReportPortalClientException("Unable to clone start launch request:", e);
 			}
@@ -136,7 +136,7 @@ public class ReportPortal {
 				emitter.onSuccess(uuid);
 				emitter.onComplete();
 			});
-			return new SecondaryLaunch(rpClient, parameters, launch, executor, lockFile, instanceUuid);
+			return new SecondaryLaunch(rpClient, parameters, launch, executor, launchIdLockFile, instanceUuid);
 		}
 	}
 
@@ -173,9 +173,9 @@ public class ReportPortal {
 		return new Builder();
 	}
 
-	private static LockFile getLockFile(ListenerParameters parameters) {
+	private static LaunchIdLockFile getLockFile(ListenerParameters parameters) {
 		if (parameters.getClientJoin()) {
-			return new LockFile(parameters);
+			return new LaunchIdLockFile(parameters);
 		}
 		return null;
 	}
@@ -551,7 +551,7 @@ public class ReportPortal {
 			return builder.build();
 		}
 
-		protected LockFile buildLockFile(ListenerParameters parameters) {
+		protected LaunchIdLockFile buildLockFile(ListenerParameters parameters) {
 			return getLockFile(parameters);
 		}
 

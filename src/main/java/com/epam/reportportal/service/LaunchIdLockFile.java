@@ -32,9 +32,7 @@ import java.io.RandomAccessFile;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Optional.ofNullable;
@@ -46,8 +44,8 @@ import static java.util.Optional.ofNullable;
  *
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
-public class LockFile implements LaunchIdLock {
-	private static final Logger LOGGER = LoggerFactory.getLogger(LockFile.class);
+public class LaunchIdLockFile implements LaunchIdLock {
+	private static final Logger LOGGER = LoggerFactory.getLogger(LaunchIdLockFile.class);
 
 	public static final String LOCK_FILE_CHARSET = "US-ASCII";
 	private static final String LINE_SEPARATOR = System.getProperty("line.separator");
@@ -59,7 +57,7 @@ public class LockFile implements LaunchIdLock {
 	private volatile String lockUuid;
 	private volatile Pair<RandomAccessFile, FileLock> mainLock;
 
-	public LockFile(ListenerParameters parameters) {
+	public LaunchIdLockFile(ListenerParameters parameters) {
 		lockFile = new File(parameters.getLockFileName());
 		syncFile = new File(parameters.getSyncFileName());
 		fileWaitTimeout = parameters.getFileWaitTimeout();
@@ -91,12 +89,6 @@ public class LockFile implements LaunchIdLock {
 		}
 		closeAccess(lockAccess);
 		return null;
-	}
-
-	private Pair<RandomAccessFile, FileLock> waitForLock(final File file) {
-		return new Waiter("Wait for file '" + file.getPath() + "' lock").duration(fileWaitTimeout, TimeUnit.MILLISECONDS)
-				.applyRandomDiscrepancy(MAX_WAIT_TIME_DISCREPANCY)
-				.till(() -> obtainLock(file));
 	}
 
 	private static void releaseLock(FileLock lock) {
@@ -290,13 +282,21 @@ public class LockFile implements LaunchIdLock {
 
 		Boolean isLast = executeBlockingOperation(uuidRemove, syncFile);
 		if (isLast != null && isLast) {
-			syncFile.delete();
+			if(!syncFile.delete()) {
+				LOGGER.warn("Unable to delete synchronization file: " + syncFile.getPath());
+			}
 		}
 
 		if (mainLock != null && lockUuid.equals(uuid)) {
 			reset();
-			lockFile.delete();
+			if(!lockFile.delete()) {
+				LOGGER.warn("Unable to delete locking file: " + lockFile.getPath());
+			}
 		}
 	}
-}
 
+	@Override
+	public Collection<String> getLiveInstanceUuids() {
+		return Collections.emptyList();
+	}
+}
