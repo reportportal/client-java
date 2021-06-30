@@ -60,7 +60,9 @@ public class ListenerParameters implements Cloneable {
 	private static final String DEFAULT_LOCK_FILE_NAME = "reportportal.lock";
 	private static final String DEFAULT_SYNC_FILE_NAME = "reportportal.sync";
 	private static final long DEFAULT_FILE_WAIT_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+	private static final long DEFAULT_CLIENT_JOIN_TIMEOUT = TimeUnit.MINUTES.toMillis(30);
 	private static final String DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT = "MILLISECONDS";
+	private static final String DEFAULT_CLIENT_JOIN_LOCK_TIMEOUT_UNIT = DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT;
 	private static final int DEFAULT_CLIENT_JOIN_LOCK_PORT = 25464;
 
 	private static final boolean DEFAULT_TRUNCATE_ITEM_NAMES = true;
@@ -94,6 +96,7 @@ public class ListenerParameters implements Cloneable {
 	private String lockFileName;
 	private String syncFileName;
 	private long lockWaitTimeout;
+	private long clientJoinTimeout;
 	private int lockPortNumber;
 
 	private int rxBufferSize;
@@ -160,11 +163,16 @@ public class ListenerParameters implements Cloneable {
 		this.ioPoolSize = properties.getPropertyAsInt(IO_POOL_SIZE, DEFAULT_IO_POOL_SIZE);
 
 		clientJoin = properties.getPropertyAsBoolean(CLIENT_JOIN_MODE, DEFAULT_CLIENT_JOIN);
-		if(clientJoin) {
+		if (clientJoin) {
 			clientJoinMode = LaunchIdLockMode.valueOf(properties.getProperty(CLIENT_JOIN_MODE_VALUE, DEFAULT_CLIENT_JOIN_MODE));
 		} else {
 			clientJoinMode = LaunchIdLockMode.NONE;
 		}
+
+		clientJoinTimeout = ofNullable(properties.getProperty(CLIENT_JOIN_TIMEOUT_VALUE)).map(t -> TimeUnit.valueOf(properties.getProperty(
+				CLIENT_JOIN_TIMEOUT_UNIT,
+				DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT
+		)).toMillis(Long.parseLong(t))).orElse(DEFAULT_CLIENT_JOIN_TIMEOUT);
 
 		lockFileName = properties.getProperty(LOCK_FILE_NAME);
 		if (lockFileName != null) {
@@ -183,16 +191,17 @@ public class ListenerParameters implements Cloneable {
 
 		String fileWaitTimeoutStr = properties.getProperty(FILE_WAIT_TIMEOUT_MS);
 		if (fileWaitTimeoutStr != null) {
-			LOGGER.warn(
-					PROPERTY_WILL_BE_REMOVED,
+			LOGGER.warn(PROPERTY_WILL_BE_REMOVED,
 					FILE_WAIT_TIMEOUT_MS.getPropertyName(),
-					CLIENT_JOIN_TIMEOUT_VALUE.getPropertyName() + "," + CLIENT_JOIN_TIMEOUT_UNIT.getPropertyName()
+					CLIENT_JOIN_LOCK_TIMEOUT_VALUE.getPropertyName() + "," + CLIENT_JOIN_LOCK_TIMEOUT_UNIT.getPropertyName()
 			);
-			lockWaitTimeout = Integer.parseInt(fileWaitTimeoutStr);
+			lockWaitTimeout = Long.parseLong(fileWaitTimeoutStr);
 		}
-		String waitTimeoutStr = properties.getProperty(CLIENT_JOIN_TIMEOUT_VALUE);
-		if(waitTimeoutStr != null) {
-			TimeUnit waitTimeUnit = TimeUnit.valueOf(properties.getProperty(CLIENT_JOIN_TIMEOUT_UNIT, DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT));
+		String waitTimeoutStr = properties.getProperty(CLIENT_JOIN_LOCK_TIMEOUT_VALUE);
+		if (waitTimeoutStr != null) {
+			TimeUnit waitTimeUnit = TimeUnit.valueOf(properties.getProperty(CLIENT_JOIN_LOCK_TIMEOUT_UNIT,
+					DEFAULT_CLIENT_JOIN_LOCK_TIMEOUT_UNIT
+			));
 			this.lockWaitTimeout = waitTimeUnit.toMillis(Long.parseLong(waitTimeoutStr));
 		}
 
@@ -370,8 +379,8 @@ public class ListenerParameters implements Cloneable {
 	}
 
 	public void setClientJoin(boolean mode) {
-		if(mode) {
-			if(clientJoinMode == LaunchIdLockMode.NONE) {
+		if (mode) {
+			if (clientJoinMode == LaunchIdLockMode.NONE) {
 				clientJoinMode = LaunchIdLockMode.valueOf(DEFAULT_CLIENT_JOIN_MODE);
 			}
 		} else {
@@ -402,6 +411,14 @@ public class ListenerParameters implements Cloneable {
 
 	public void setSyncFileName(String fileName) {
 		this.syncFileName = fileName;
+	}
+
+	public long getClientJoinTimeout() {
+		return clientJoinTimeout;
+	}
+
+	public void setClientJoinTimeout(long clientJoinTimeout) {
+		this.clientJoinTimeout = clientJoinTimeout;
 	}
 
 	public long getLockWaitTimeout() {
@@ -515,6 +532,7 @@ public class ListenerParameters implements Cloneable {
 		sb.append(", callbackReportingEnabled=").append(callbackReportingEnabled);
 		sb.append(", clientJoin=").append(clientJoin);
 		sb.append(", clientJoinMode=").append(ofNullable(clientJoinMode).map(Enum::name).orElse(null));
+		sb.append(", clientJoinTimeout=").append(clientJoinTimeout);
 		sb.append(", lockFileName=").append(lockFileName);
 		sb.append(", syncFileName=").append(syncFileName);
 		sb.append(", lockWaitTimeout=").append(lockWaitTimeout);
