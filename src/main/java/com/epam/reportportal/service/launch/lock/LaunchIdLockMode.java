@@ -17,6 +17,7 @@
 package com.epam.reportportal.service.launch.lock;
 
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.LaunchIdLock;
 
 import javax.annotation.Nonnull;
 import java.lang.reflect.Constructor;

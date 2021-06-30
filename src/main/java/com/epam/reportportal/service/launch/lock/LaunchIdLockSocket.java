@@ -17,6 +17,7 @@
 package com.epam.reportportal.service.launch.lock;
 
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.LaunchIdLock;
 import com.epam.reportportal.utils.properties.ListenerProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -21,7 +21,7 @@ import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.LaunchImpl;
 import com.epam.reportportal.service.LaunchLoggingContext;
 import com.epam.reportportal.service.ReportPortalClient;
-import com.epam.reportportal.service.launch.lock.LaunchIdLock;
+import com.epam.reportportal.service.LaunchIdLock;
 import com.epam.reportportal.utils.Waiter;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.launch.LaunchResource;
@@ -36,7 +36,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * The class represents a {@link Launch} which reports into existing one and never starts its own.

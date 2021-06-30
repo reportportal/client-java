@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package com.epam.reportportal.service.launch.lock;
+package com.epam.reportportal.service;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

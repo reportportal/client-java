@@ -18,6 +18,7 @@ package com.epam.reportportal.service.launch.lock;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.LaunchIdLock;
 import com.epam.reportportal.utils.Waiter;
 import com.epam.reportportal.utils.properties.ListenerProperty;
 import org.apache.commons.lang3.tuple.Pair;

@@ -20,7 +20,6 @@ import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.launch.PrimaryLaunch;
 import com.epam.reportportal.service.launch.SecondaryLaunch;
-import com.epam.reportportal.service.launch.lock.LaunchIdLock;
 import com.epam.reportportal.service.launch.lock.LaunchIdLockMode;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.utils.SubscriptionUtils;
