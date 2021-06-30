@@ -21,6 +21,7 @@ import com.epam.reportportal.message.ReportPortalMessage;
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.service.launch.PrimaryLaunch;
 import com.epam.reportportal.service.launch.SecondaryLaunch;
+import com.epam.reportportal.service.launch.lock.LaunchIdLockNone;
 import com.epam.reportportal.utils.SslUtils;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.reportportal.utils.properties.ListenerProperty;
@@ -106,7 +107,7 @@ public class ReportPortal {
 			return Launch.NOOP_LAUNCH;
 		}
 
-		if (launchIdLock == null) {
+		if (launchIdLock == null || launchIdLock.getClass() == LaunchIdLockNone.class) {
 			// do not use multi-client mode
 			return new LaunchImpl(rpClient, parameters, rq, executor);
 		}
@@ -171,8 +172,8 @@ public class ReportPortal {
 		return new Builder();
 	}
 
-	private static LaunchIdLock getLockFile(ListenerParameters parameters) {
-		return parameters.getClientJoin().getInstance(parameters);
+	private static LaunchIdLock getLaunchLock(ListenerParameters parameters) {
+		return parameters.getClientJoinMode().getInstance(parameters);
 	}
 
 	/**
@@ -196,7 +197,7 @@ public class ReportPortal {
 	 */
 	public static ReportPortal create(@Nonnull final ReportPortalClient client, @Nonnull final ListenerParameters params,
 			@Nonnull final ExecutorService executor) {
-		return new ReportPortal(client, executor, params, getLockFile(params));
+		return new ReportPortal(client, executor, params, getLaunchLock(params));
 	}
 
 	/**
@@ -546,8 +547,18 @@ public class ReportPortal {
 			return builder.build();
 		}
 
+		/**
+		 * @param parameters Report Portal parameters
+		 * @return Launch lock instance
+		 * @deprecated use {@link #buildLaunchLock(ListenerParameters)}
+		 */
+		@Deprecated
 		protected LaunchIdLock buildLockFile(ListenerParameters parameters) {
-			return getLockFile(parameters);
+			return buildLaunchLock(parameters);
+		}
+
+		protected LaunchIdLock buildLaunchLock(ListenerParameters parameters) {
+			return getLaunchLock(parameters);
 		}
 
 		protected PropertiesLoader defaultPropertiesLoader() {

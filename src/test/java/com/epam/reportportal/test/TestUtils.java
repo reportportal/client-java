@@ -58,7 +58,7 @@ public class TestUtils {
 	public static ListenerParameters standardParameters() {
 		ListenerParameters result = new ListenerParameters();
 		result.setBaseUrl("http://localhost:8080");
-		result.setClientJoin(LaunchIdLockMode.NONE);
+		result.setClientJoin(false);
 		result.setBatchLogsSize(1);
 		result.setLaunchName("My-test-launch" + generateUniqueId());
 		result.setProjectName("unit-test");
@@ -218,6 +218,7 @@ public class TestUtils {
 	}
 
 	public static void simulateBatchLogResponse(final ReportPortalClient client) {
+		//noinspection unchecked
 		when(client.log(any(List.class))).then((Answer<Maybe<BatchSaveOperatingRS>>) invocation -> {
 			List<MultipartBody.Part> rq = invocation.getArgument(0);
 			List<String> saveRqs = extractJsonParts(rq).stream()

@@ -68,10 +68,11 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 	 * @param uuid a Client instance UUID.
 	 */
 	@Override
-	public void finishInstanceUuid(final String uuid) {
+	public void finishInstanceUuid(@Nonnull final String uuid) {
 
 	}
 
+	@Nonnull
 	@Override
 	public Collection<String> getLiveInstanceUuids() {
 		return Collections.emptyList();

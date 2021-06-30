@@ -53,6 +53,7 @@ public enum ListenerProperty {
      * so using that property should allow to merge them all in one.
      */
     CLIENT_JOIN_MODE("rp.client.join", false),
+    CLIENT_JOIN_MODE_VALUE("rp.client.join.mode", false),
     @SuppressWarnings("DeprecatedIsStillUsed")
     @Deprecated
     LOCK_FILE_NAME("rp.client.join.lock.file.name", false),

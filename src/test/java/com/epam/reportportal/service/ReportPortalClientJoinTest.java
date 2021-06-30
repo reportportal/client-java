@@ -34,6 +34,7 @@ import io.reactivex.Maybe;
 import io.reactivex.Scheduler;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
+import okhttp3.OkHttpClient;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -72,7 +73,7 @@ public class ReportPortalClientJoinTest {
 
 	private final Supplier<ListenerParameters> params = () -> {
 		ListenerParameters p = TestUtils.standardParameters();
-		p.setClientJoin(LaunchIdLockMode.FILE);
+		p.setClientJoin(true);
 		return p;
 	};
 
@@ -229,9 +230,11 @@ public class ReportPortalClientJoinTest {
 	@Test
 	public void test_standard_launch_returned_if_the_feature_is_off() {
 		ListenerParameters p = params.get();
-		p.setClientJoin(LaunchIdLockMode.FILE);
-		ReportPortal rp1 = new ReportPortal(rpClient, executor, p, null);
-		ReportPortal rp2 = new ReportPortal(rpClient, executor, p, null);
+		p.setClientJoin(false);
+		ReportPortal rp1 = ReportPortal.builder().withHttpClient(new OkHttpClient.Builder()).withExecutorService(executor).withParameters(p)
+				.build();
+		ReportPortal rp2 = ReportPortal.builder().withHttpClient(new OkHttpClient.Builder()).withExecutorService(executor).withParameters(p)
+				.build();
 
 		Launch firstLaunch = rp1.newLaunch(standardLaunchRequest(p));
 		Launch secondLaunch = rp2.newLaunch(standardLaunchRequest(p));

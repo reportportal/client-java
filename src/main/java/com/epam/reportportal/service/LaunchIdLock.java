@@ -33,7 +33,8 @@ public interface LaunchIdLock {
 	 *
 	 * @param instanceUuid a Client instance UUID, which will be used to identify a Client and a Launch. If it the first one UUID passed to
 	 *                     the method it will be returned to every other client instance.
-	 * @return either instanceUuid, either the first UUID passed to the method.
+	 * @return either instanceUuid, if the process managed obtain the lock and become the primary Launch, either the primary Launch UUID,
+	 * or null in case of execution errors
 	 */
 	@Nullable
 	String obtainLaunchUuid(@Nonnull final String instanceUuid);

@@ -249,7 +249,7 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 	 * @param uuid a Client instance UUID.
 	 */
 	@Override
-	public void finishInstanceUuid(final String uuid) {
+	public void finishInstanceUuid(@Nonnull final String uuid) {
 		if (uuid == null) {
 			return;
 		}

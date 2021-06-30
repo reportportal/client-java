@@ -55,6 +55,7 @@ public class ListenerParameters implements Cloneable {
 	private static final boolean DEFAULT_HTTP_LOGGING = false;
 	private static final int DEFAULT_RX_BUFFER_SIZE = 128;
 
+	private static final boolean DEFAULT_CLIENT_JOIN = true;
 	private static final String DEFAULT_CLIENT_JOIN_MODE = "FILE";
 	private static final String DEFAULT_LOCK_FILE_NAME = "reportportal.lock";
 	private static final String DEFAULT_SYNC_FILE_NAME = "reportportal.sync";
@@ -88,7 +89,8 @@ public class ListenerParameters implements Cloneable {
 	private boolean callbackReportingEnabled;
 	private Integer ioPoolSize;
 
-	private LaunchIdLockMode clientJoin;
+	private boolean clientJoin;
+	private LaunchIdLockMode clientJoinMode;
 	private String lockFileName;
 	private String syncFileName;
 	private long lockWaitTimeout;
@@ -118,7 +120,8 @@ public class ListenerParameters implements Cloneable {
 
 		this.ioPoolSize = DEFAULT_IO_POOL_SIZE;
 
-		this.clientJoin = LaunchIdLockMode.valueOf(DEFAULT_CLIENT_JOIN_MODE);
+		this.clientJoin = DEFAULT_CLIENT_JOIN;
+		this.clientJoinMode = LaunchIdLockMode.valueOf(DEFAULT_CLIENT_JOIN_MODE);
 		this.lockFileName = DEFAULT_LOCK_FILE_NAME;
 		this.syncFileName = DEFAULT_SYNC_FILE_NAME;
 		this.lockWaitTimeout = DEFAULT_FILE_WAIT_TIMEOUT_MS;
@@ -156,15 +159,11 @@ public class ListenerParameters implements Cloneable {
 
 		this.ioPoolSize = properties.getPropertyAsInt(IO_POOL_SIZE, DEFAULT_IO_POOL_SIZE);
 
-		final String clientJoinStr = properties.getProperty(CLIENT_JOIN_MODE, DEFAULT_CLIENT_JOIN_MODE);
-		try {
-			this.clientJoin = LaunchIdLockMode.valueOf(clientJoinStr);
-		} catch (IllegalArgumentException e) {
-			if (Boolean.parseBoolean(clientJoinStr)) {
-				clientJoin = LaunchIdLockMode.FILE;
-			} else {
-				clientJoin = LaunchIdLockMode.NONE;
-			}
+		clientJoin = properties.getPropertyAsBoolean(CLIENT_JOIN_MODE, DEFAULT_CLIENT_JOIN);
+		if(clientJoin) {
+			clientJoinMode = LaunchIdLockMode.valueOf(properties.getProperty(CLIENT_JOIN_MODE_VALUE, DEFAULT_CLIENT_JOIN_MODE));
+		} else {
+			clientJoinMode = LaunchIdLockMode.NONE;
 		}
 
 		lockFileName = properties.getProperty(LOCK_FILE_NAME);
@@ -366,12 +365,27 @@ public class ListenerParameters implements Cloneable {
 		this.ioPoolSize = ioPoolSize;
 	}
 
-	public LaunchIdLockMode getClientJoin() {
+	public boolean getClientJoin() {
 		return clientJoin;
 	}
 
-	public void setClientJoin(LaunchIdLockMode mode) {
+	public void setClientJoin(boolean mode) {
+		if(mode) {
+			if(clientJoinMode == LaunchIdLockMode.NONE) {
+				clientJoinMode = LaunchIdLockMode.valueOf(DEFAULT_CLIENT_JOIN_MODE);
+			}
+		} else {
+			clientJoinMode = LaunchIdLockMode.NONE;
+		}
 		this.clientJoin = mode;
+	}
+
+	public LaunchIdLockMode getClientJoinMode() {
+		return clientJoinMode;
+	}
+
+	public void setClientJoinMode(LaunchIdLockMode clientJoinMode) {
+		this.clientJoinMode = clientJoinMode;
 	}
 
 	public String getLockFileName() {
@@ -499,7 +513,8 @@ public class ListenerParameters implements Cloneable {
 		sb.append(", asyncReporting=").append(asyncReporting);
 		sb.append(", ioPoolSize=").append(ioPoolSize);
 		sb.append(", callbackReportingEnabled=").append(callbackReportingEnabled);
-		sb.append(", clientJoin=").append(clientJoin.name());
+		sb.append(", clientJoin=").append(clientJoin);
+		sb.append(", clientJoinMode=").append(ofNullable(clientJoinMode).map(Enum::name).orElse(null));
 		sb.append(", lockFileName=").append(lockFileName);
 		sb.append(", syncFileName=").append(syncFileName);
 		sb.append(", lockWaitTimeout=").append(lockWaitTimeout);
