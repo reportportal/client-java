@@ -66,7 +66,7 @@ public class AbstractJoinedLaunch extends LaunchImpl {
 	}
 
 	void stopRunning() {
-		updateTask.cancel(true);
+		updateTask.cancel(false);
 		updater.shutdown();
 	}
 }
