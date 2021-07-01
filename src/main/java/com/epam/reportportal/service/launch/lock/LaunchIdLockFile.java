@@ -36,10 +36,9 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
 
@@ -54,8 +53,8 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 	private static final Logger LOGGER = LoggerFactory.getLogger(LaunchIdLockFile.class);
 
 	public static final Charset LOCK_FILE_CHARSET = StandardCharsets.ISO_8859_1;
+	public static final String TIME_SEPARATOR = ":";
 	private static final String LINE_SEPARATOR = System.getProperty("line.separator");
-	private static final float MAX_WAIT_TIME_DISCREPANCY = 0.1f;
 
 	private final File lockFile;
 	private final File syncFile;
@@ -117,8 +116,13 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 		}
 	}
 
+	@Nullable
 	private static String readLaunchUuid(@Nonnull final RandomAccessFile access) throws IOException {
-		return access.readLine();
+		String launchRecord = access.readLine();
+		if (launchRecord == null) {
+			return null;
+		}
+		return launchRecord.substring(launchRecord.indexOf(TIME_SEPARATOR) + 1);
 	}
 
 	private static void writeString(@Nonnull final RandomAccessFile access, @Nonnull final String text) throws IOException {
@@ -179,10 +183,16 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 		lockUuid = null;
 	}
 
+	@Nonnull
+	private static String getRecord(@Nonnull final String instanceUuid) {
+		return System.currentTimeMillis() + TIME_SEPARATOR + instanceUuid;
+	}
+
 	private void writeLaunchUuid(@Nonnull final Pair<RandomAccessFile, FileLock> syncIo) {
+		String launchRecord = getRecord(lockUuid);
 		try {
-			rewriteWith(syncIo.getLeft(), lockUuid);
-			rewriteWith(mainLock.getLeft(), lockUuid);
+			rewriteWith(syncIo.getLeft(), launchRecord);
+			rewriteWith(mainLock.getLeft(), launchRecord);
 		} catch (IOException e) {
 			// operations failed with IOException
 			String error = "Unable to read/write a file after obtaining lock: " + e.getMessage();
@@ -194,7 +204,7 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 
 	private static void appendUuid(@Nonnull final RandomAccessFile access, @Nonnull final String uuid) throws IOException {
 		access.seek(access.length());
-		writeLine(access, uuid);
+		writeLine(access, getRecord(uuid));
 	}
 
 	private void writeInstanceUuid(@Nonnull final String instanceUuid) {
@@ -264,41 +274,78 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 	}
 
 	/**
-	 * Remove self UUID from sync file, means that a client finished its Launch. If this is the last UUID in the sync file, lock and sync
-	 * files will be removed.
+	 * Update timestamp for instance record in sync file.
 	 *
-	 * @param uuid a Client instance UUID.
+	 * @param instanceUuid instanceUuid a Client instance UUID
 	 */
 	@Override
-	public void finishInstanceUuid(@Nonnull final String uuid) {
-		if (uuid == null) {
-			return;
-		}
-		IoOperation<Boolean> uuidRemove = fileIo -> {
+	public void updateInstanceUuid(@Nonnull String instanceUuid) {
+		IoOperation<Boolean> uuidUpdate = fileIo -> {
 			String line;
-			List<String> uuidList = new ArrayList<>();
+			List<String> recordList = new ArrayList<>();
 			RandomAccessFile fileAccess = fileIo.getKey();
 			boolean needUpdate = false;
 			while ((line = fileAccess.readLine()) != null) {
-				String trimmedLine = line.trim();
-				if (uuid.equals(trimmedLine)) {
+				String record = line.trim();
+				String uuid = record.substring(record.indexOf(TIME_SEPARATOR) + 1);
+				if (instanceUuid.equals(uuid)) {
+					String newRecord = getRecord(instanceUuid);
+					if (!newRecord.equals(record)) {
+						needUpdate = true;
+						recordList.add(newRecord);
+					} else {
+						recordList.add(record);
+					}
+				} else {
+					recordList.add(record);
+				}
+			}
+
+			if (needUpdate) {
+				fileAccess.seek(0);
+				for (String record : recordList) {
+					writeLine(fileAccess, record);
+				}
+			}
+			return needUpdate;
+		};
+		executeBlockingOperation(uuidUpdate, syncFile);
+	}
+
+	/**
+	 * Remove self UUID from sync file, means that a client finished its Launch. If this is the last UUID in the sync file, lock and sync
+	 * files will be removed.
+	 *
+	 * @param instanceUuid a Client instance UUID.
+	 */
+	@Override
+	public void finishInstanceUuid(@Nonnull final String instanceUuid) {
+		IoOperation<Boolean> uuidRemove = fileIo -> {
+			String line;
+			List<String> recordList = new ArrayList<>();
+			RandomAccessFile fileAccess = fileIo.getKey();
+			boolean needUpdate = false;
+			while ((line = fileAccess.readLine()) != null) {
+				String record = line.trim();
+				String launchUuid = record.substring(record.indexOf(TIME_SEPARATOR) + 1);
+				if (instanceUuid.equals(launchUuid)) {
 					needUpdate = true;
 					continue;
 				}
-				uuidList.add(trimmedLine);
+				recordList.add(record);
 			}
 
 			if (!needUpdate) {
 				return false;
 			}
 
-			String uuidNl = uuid + LINE_SEPARATOR;
-			long newLength = fileAccess.length() - uuidNl.length();
+			String recordNl = System.currentTimeMillis() + TIME_SEPARATOR + instanceUuid + LINE_SEPARATOR;
+			long newLength = fileAccess.length() - recordNl.length();
 			if (newLength > 0) {
 				fileAccess.setLength(newLength);
 				fileAccess.seek(0);
-				for (String uuid1 : uuidList) {
-					writeLine(fileAccess, uuid1);
+				for (String record : recordList) {
+					writeLine(fileAccess, record);
 				}
 				return false;
 			} else {
@@ -314,11 +361,33 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 			}
 		}
 
-		if (mainLock != null && lockUuid.equals(uuid)) {
+		if (mainLock != null && lockUuid.equals(instanceUuid)) {
 			reset();
 			if (!lockFile.delete()) {
 				LOGGER.warn("Unable to delete locking file: " + lockFile.getPath());
 			}
 		}
+	}
+
+	@Nonnull
+	@Override
+	public Collection<String> getLiveInstanceUuids() {
+		IoOperation<List<String>> uuids = fileIo -> {
+			String line;
+			List<String> recordList = new ArrayList<>();
+			RandomAccessFile fileAccess = fileIo.getKey();
+			while ((line = fileAccess.readLine()) != null) {
+				String record = line.trim();
+				recordList.add(record);
+			}
+			return recordList;
+		};
+		long timeoutTime = System.currentTimeMillis() + fileWaitTimeout;
+		return ofNullable(executeBlockingOperation(uuids, syncFile)).orElse(Collections.emptyList())
+				.stream()
+				.map(r -> Pair.of(Long.parseLong(r.substring(0, r.indexOf(TIME_SEPARATOR))), r.substring(r.indexOf(TIME_SEPARATOR) + 1)))
+				.filter(r -> r.getKey() > timeoutTime)
+				.map(Pair::getValue)
+				.collect(Collectors.toSet());
 	}
 }

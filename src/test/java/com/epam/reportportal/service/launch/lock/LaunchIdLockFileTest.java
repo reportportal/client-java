@@ -44,6 +44,7 @@ import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
@@ -166,8 +167,11 @@ public class LaunchIdLockFileTest {
 		String launchUuid = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList()).iterator().next();
 
 		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LaunchIdLockFile.LOCK_FILE_CHARSET.name());
-		assertThat(syncFileContent.get(0), equalTo(launchUuid));
-		assertThat(syncFileContent, containsInAnyOrder(tasks.keySet().toArray(new String[0])));
+		assertThat(syncFileContent.get(0), matchesPattern("\\d+:" + launchUuid));
+		List<String> syncFileContentUuids = syncFileContent.stream()
+				.map(r -> r.substring(r.indexOf(LaunchIdLockFile.TIME_SEPARATOR) + 1))
+				.collect(Collectors.toList());
+		assertThat(syncFileContentUuids, containsInAnyOrder(tasks.keySet().toArray(new String[0])));
 	}
 
 	private <T> Supplier<T> iterableSupplier(final Iterable<T> instanceIterable) {
@@ -195,8 +199,7 @@ public class LaunchIdLockFileTest {
 	@Test
 	public void test_temp_files_are_removed_after_last_uuid_removed_finishInstanceUuid() throws InterruptedException {
 		int threadNum = 3;
-		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(
-				threadNum,
+		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(threadNum,
 				Collections.nCopies(threadNum, launchIdLockFile)
 		);
 		Iterator<String> uuidIterator = uuidSet.getLeft().iterator();
@@ -215,8 +218,7 @@ public class LaunchIdLockFileTest {
 	@SuppressWarnings("unchecked")
 	public void test_uuid_remove_finishInstanceUuid() throws InterruptedException, IOException {
 		int threadNum = 3;
-		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(
-				threadNum,
+		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(threadNum,
 				Collections.nCopies(threadNum, launchIdLockFile)
 		);
 
@@ -238,8 +240,7 @@ public class LaunchIdLockFileTest {
 	@MethodSource("threadNumProvider")
 	public void test_new_uuid_remove_does_not_spoil_lock_file_finishInstanceUuid(final int threadNum)
 			throws InterruptedException, IOException {
-		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(
-				threadNum,
+		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(threadNum,
 				Collections.nCopies(threadNum, launchIdLockFile)
 		);
 
@@ -247,9 +248,12 @@ public class LaunchIdLockFileTest {
 		launchIdLockFile.finishInstanceUuid(uuidToRemove);
 
 		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LaunchIdLockFile.LOCK_FILE_CHARSET.name());
-		assertThat(syncFileContent, Matchers.hasSize(threadNum));
-		assertThat(syncFileContent, not(hasItem(uuidToRemove)));
-		assertThat(syncFileContent, containsInAnyOrder(uuidSet.getLeft().toArray(new String[0])));
+		List<String> syncFileContentUuids = syncFileContent.stream()
+				.map(r -> r.substring(r.indexOf(LaunchIdLockFile.TIME_SEPARATOR) + 1))
+				.collect(Collectors.toList());
+		assertThat(syncFileContentUuids, Matchers.hasSize(threadNum));
+		assertThat(syncFileContentUuids, not(hasItem(uuidToRemove)));
+		assertThat(syncFileContentUuids, containsInAnyOrder(uuidSet.getLeft().toArray(new String[0])));
 	}
 
 	@ParameterizedTest
@@ -287,11 +291,11 @@ public class LaunchIdLockFileTest {
 
 		List<String> lockFileContent = FileUtils.readLines(new File(lockFileName), LaunchIdLockFile.LOCK_FILE_CHARSET.name());
 		assertThat(lockFileContent, Matchers.hasSize(1));
-		assertThat(lockFileContent, contains(secondLaunchUuid));
+		assertThat(lockFileContent, contains(matchesPattern("\\d+:" + secondLaunchUuid)));
 
 		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LaunchIdLockFile.LOCK_FILE_CHARSET.name());
 		assertThat(syncFileContent, Matchers.hasSize(1));
-		assertThat(syncFileContent, contains(secondLaunchUuid));
+		assertThat(syncFileContent, contains(matchesPattern("\\d+:" + secondLaunchUuid)));
 	}
 
 	@Test

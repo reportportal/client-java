@@ -18,36 +18,59 @@ package com.epam.reportportal.service.launch;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
-import com.epam.reportportal.service.LaunchImpl;
-import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.service.LaunchIdLock;
+import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.utils.Waiter;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 
+import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * The class represents a {@link Launch} which starts and reports into its own one.
  */
-public class PrimaryLaunch extends LaunchImpl {
-	private final LaunchIdLock launchIdLock;
-	private volatile String instanceUuid;
-
+public class PrimaryLaunch extends AbstractJoinedLaunch {
 	public PrimaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, StartLaunchRQ launch, ExecutorService executorService,
 			LaunchIdLock launchIdLock, String instanceUuid) {
-		super(rpClient, parameters, launch, executorService);
-		this.launchIdLock = launchIdLock;
-		this.instanceUuid = instanceUuid;
+		super(rpClient, parameters, launch, executorService, launchIdLock, instanceUuid);
 	}
 
 	@Override
 	public void finish(final FinishExecutionRQ rq) {
-		try {
-			super.finish(rq);
-		} finally {
-			launchIdLock.finishInstanceUuid(instanceUuid);
-			instanceUuid = UUID.randomUUID().toString();
+		stopRunning();
+		lock.finishInstanceUuid(uuid);
+		uuid = UUID.randomUUID().toString();
+
+		Callable<Boolean> finishCondition = new Callable<Boolean>() {
+			private volatile Collection<String> launches;
+
+			@Override
+			public Boolean call() {
+				Collection<String> current = lock.getLiveInstanceUuids();
+				if (current.isEmpty()) {
+					return true;
+				}
+				Boolean changed = ofNullable(launches).map(l -> !l.equals(current)).orElse(Boolean.TRUE);
+				launches = current;
+				if (changed) {
+					return false;
+				}
+				return null;
+			}
+		};
+
+		Boolean finished = Boolean.FALSE;
+		while (finished != Boolean.TRUE && finished != null) {
+			Waiter waiter = new Waiter("Wait for all launches end").duration(getParameters().getClientJoinTimeout(), TimeUnit.MILLISECONDS)
+					.pollingEvery(1, TimeUnit.SECONDS);
+			finished = waiter.till(finishCondition);
 		}
+		super.finish(rq);
 	}
 }

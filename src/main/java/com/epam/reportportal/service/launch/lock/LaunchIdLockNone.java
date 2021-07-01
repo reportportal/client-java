@@ -43,6 +43,10 @@ public class LaunchIdLockNone extends AbstractLaunchIdLock implements LaunchIdLo
 	}
 
 	@Override
+	public void updateInstanceUuid(@Nonnull String instanceUuid) {
+	}
+
+	@Override
 	public void finishInstanceUuid(@Nonnull final String uuid) {
 	}
 

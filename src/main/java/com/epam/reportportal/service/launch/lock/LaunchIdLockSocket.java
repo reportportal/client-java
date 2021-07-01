@@ -61,6 +61,11 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 		return uuid;
 	}
 
+	@Override
+	public void updateInstanceUuid(@Nonnull String instanceUuid) {
+
+	}
+
 	/**
 	 * Remove self UUID from sync file, means that a client finished its Launch. If this is the last UUID in the sync file, lock and sync
 	 * files will be removed.

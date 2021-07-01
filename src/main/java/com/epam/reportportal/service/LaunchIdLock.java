@@ -27,6 +27,7 @@ import java.util.Collections;
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
 public interface LaunchIdLock {
+	float MAX_WAIT_TIME_DISCREPANCY = 0.1f;
 
 	/**
 	 * Returns a Launch UUID for many clients.
@@ -40,11 +41,18 @@ public interface LaunchIdLock {
 	String obtainLaunchUuid(@Nonnull final String instanceUuid);
 
 	/**
+	 * Update self UUID in a lock, means that the Client still executing its Launch.
+	 *
+	 * @param instanceUuid instanceUuid a Client instance UUID
+	 */
+	void updateInstanceUuid(@Nonnull final String instanceUuid);
+
+	/**
 	 * Remove self UUID from a lock, means that a Client finished its Launch.
 	 *
-	 * @param uuid a Client instance UUID.
+	 * @param instanceUuid a Client instance UUID
 	 */
-	void finishInstanceUuid(@Nonnull final String uuid);
+	void finishInstanceUuid(@Nonnull final String instanceUuid);
 
 	/**
 	 * Return all instance UUIDs which are still running.
