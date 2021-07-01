@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -45,7 +46,7 @@ import static java.util.Optional.ofNullable;
 /**
  * A service to perform blocking I/O operations on '.lock' and '.sync' file to get single launch UUID for multiple clients on a machine.
  * This class uses a local storage disk, therefore applicable in scope of a single hardware machine. You can control lock and sync file
- * paths with {@link ListenerProperty#LOCK_FILE_NAME} and {@link ListenerProperty#SYNC_FILE_NAME} properties.
+ * paths with {@link ListenerProperty#FILE_LOCK_NAME} and {@link ListenerProperty#FILE_SYNC_NAME} properties.
  *
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
@@ -69,7 +70,7 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 		fileWaitTimeout = parameters.getLockWaitTimeout();
 	}
 
-	private Pair<RandomAccessFile, FileLock> obtainLock(final File file) {
+	private Pair<RandomAccessFile, FileLock> obtainLock(@Nonnull final File file) {
 		final String filePath = file.getPath();
 		RandomAccessFile lockAccess;
 		try {
@@ -128,7 +129,7 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 	}
 
 	private interface IoOperation<T> {
-		T execute(Pair<RandomAccessFile, FileLock> lock) throws IOException;
+		T execute(@Nonnull final Pair<RandomAccessFile, FileLock> lock) throws IOException;
 	}
 
 	private static void closeIo(Pair<RandomAccessFile, FileLock> io) {
@@ -136,17 +137,26 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 		closeAccess(io.getLeft());
 	}
 
-	private <T> T executeBlockingOperation(final IoOperation<T> operation, final File file) {
+	@Nullable
+	private <T> T executeOperation(@Nonnull final IoOperation<T> operation, final Pair<RandomAccessFile, FileLock> fileIo) {
+		try {
+			return operation.execute(fileIo);
+		} catch (IOException e) {
+			// operations failed with IOException will be retried according to timeout and retries number
+			LOGGER.error("Unable to read/write a file after obtaining mainLock: " + e.getMessage(), e);
+		}
+		return null;
+	}
+
+	@Nullable
+	private <T> T executeBlockingOperation(@Nonnull final IoOperation<T> operation, @Nonnull final File file) {
 		return new Waiter("Wait for a blocking operation on file '" + file.getPath() + "'").duration(fileWaitTimeout, TimeUnit.MILLISECONDS)
 				.applyRandomDiscrepancy(MAX_WAIT_TIME_DISCREPANCY)
 				.till(() -> {
 					Pair<RandomAccessFile, FileLock> fileIo = obtainLock(file);
 					if (fileIo != null) {
 						try {
-							return operation.execute(fileIo);
-						} catch (IOException e) {
-							// operations failed with IOException will be retried according to timeout and retries number
-							LOGGER.error("Unable to read/write a file after obtaining mainLock: " + e.getMessage(), e);
+							return executeOperation(operation, fileIo);
 						} finally {
 							closeIo(fileIo);
 						}
@@ -226,12 +236,20 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 				if (mainLock == null) {
 					Pair<RandomAccessFile, FileLock> lock = obtainLock(lockFile);
 					if (lock != null) {
-						// we are the main thread
-						mainLock = lock;
+						// we are the main thread / process
 						lockUuid = uuid;
+						mainLock = lock;
 						writeLaunchUuid(syncLock);
 						return uuid;
 					}
+				} else {
+					// another thread obtained main lock while we wait for .sync file
+					IoOperation<String> uuidAppend = fileIo -> {
+						RandomAccessFile access = fileIo.getKey();
+						appendUuid(access, uuid);
+						return lockUuid;
+					};
+					return executeOperation(uuidAppend, syncLock);
 				}
 			} finally {
 				closeIo(syncLock);

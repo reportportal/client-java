@@ -151,6 +151,7 @@ public class LaunchIdLockFileTest {
 		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(launchIdLockFile));
 
 		Collection<String> results = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
+		assertThat(results, hasSize(threadNum));
 		assertThat(results, Matchers.everyItem(equalTo(results.iterator().next())));
 	}
 
