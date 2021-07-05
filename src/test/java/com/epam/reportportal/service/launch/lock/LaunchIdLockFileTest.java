@@ -17,16 +17,12 @@
 package com.epam.reportportal.service.launch.lock;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.LockFileRunner;
 import com.epam.reportportal.util.test.ProcessUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.awaitility.Awaitility;
-import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -42,13 +38,11 @@ import java.nio.channels.FileLock;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static com.epam.reportportal.service.launch.lock.LockTestUtil.*;
 import static java.util.stream.Collectors.toList;
-import static org.apache.commons.lang3.StringUtils.isEmpty;
-import static org.apache.commons.lang3.StringUtils.join;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
@@ -325,56 +319,6 @@ public class LaunchIdLockFileTest {
 			assertThat(this.launchIdLockFile.obtainLaunchUuid(launchUuid), equalTo(launchUuid));
 		}
 	}
-
-	private static Triple<OutputStreamWriter, BufferedReader, BufferedReader> getProcessIos(Process process) {
-		return ImmutableTriple.of(new OutputStreamWriter(process.getOutputStream()),
-				new BufferedReader(new InputStreamReader(process.getInputStream())),
-				new BufferedReader(new InputStreamReader(process.getErrorStream()))
-		);
-	}
-
-	private static void closeIos(Triple<OutputStreamWriter, BufferedReader, BufferedReader> io) {
-		try {
-			io.getLeft().close();
-			io.getMiddle().close();
-			io.getRight().close();
-		} catch (IOException ignore) {
-
-		}
-	}
-
-	private static final Predicate<String> WELCOME_MESSAGE_PREDICATE = LockFileRunner.WELCOME_MESSAGE::equals;
-
-	@SuppressWarnings("unchecked")
-	private static String waitForLine(final BufferedReader reader, final BufferedReader errorReader, final Predicate<String> linePredicate)
-			throws IOException {
-		try {
-			return Awaitility.await("Waiting for a line")
-					.timeout(8, TimeUnit.SECONDS)
-					.pollInterval(100, TimeUnit.MILLISECONDS)
-					.until(() -> {
-						if (!reader.ready()) {
-							return null;
-						}
-						String line;
-						while ((line = reader.readLine()) != null) {
-							if (linePredicate.test(line)) {
-								return line;
-							}
-						}
-						return null;
-					}, notNullValue());
-		} catch (ConditionTimeoutException e) {
-			List<String> errorLines = Collections.EMPTY_LIST;
-			if (errorReader.ready()) {
-				errorLines = IOUtils.readLines(errorReader);
-			}
-			String lineSeparator = System.getProperty("line.separator");
-			throw new IllegalStateException("Unable to run test class: " + join(errorLines, lineSeparator));
-		}
-	}
-
-	private static final Predicate<String> ANY_STRING_PREDICATE = input -> !isEmpty(input);
 
 	@Test
 	@Timeout(10)

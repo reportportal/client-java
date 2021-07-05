@@ -23,10 +23,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * A service to perform blocking I/O operations on network sockets to get single launch UUID for multiple clients on a machine.
@@ -39,14 +47,126 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 	private static final Logger LOGGER = LoggerFactory.getLogger(LaunchIdLockSocket.class);
 
 	public static final Charset TRANSFER_CHARSET = StandardCharsets.ISO_8859_1;
-	private static final float MAX_WAIT_TIME_DISCREPANCY = 0.1f;
+	private static final int SOCKET_BACKLOG = 50;
+	private static final String COMMAND_DELIMITER = " - ";
+	private static final String OK_SUFFIX = COMMAND_DELIMITER + "OK";
+	private static final Map<String, Date> INSTANCES = new ConcurrentHashMap<>();
+
+	private static volatile ServerSocket mainLock;
+	private static volatile String lockUuid;
+	private static volatile ServerHandler handler;
 
 	private final int portNumber;
-	private volatile String lockUuid;
+	private final long instanceWaitTimeout;
+
+	/**
+	 * Internal supported communication commands. Should be exactly 6 characters long.
+	 */
+	private enum Command {
+		UPDATE,
+		FINISH
+	}
+
+	private static class ServerHandler extends Thread {
+
+		public ServerHandler() {
+			setDaemon(true);
+			setName("rp-launch-join");
+		}
+
+		@Override
+		public void run() {
+			try {
+				//noinspection InfiniteLoopStatement
+				while (true) {
+					Socket s = mainLock.accept();
+					OutputStream os = s.getOutputStream();
+					byte[] launchUuid = lockUuid.getBytes(TRANSFER_CHARSET);
+					os.write(launchUuid);
+					os.flush();
+					byte[] updateUuid = new byte[(Command.UPDATE.name() + COMMAND_DELIMITER + lockUuid).getBytes(TRANSFER_CHARSET).length];
+					InputStream is = s.getInputStream();
+					//noinspection ResultOfMethodCallIgnored
+					is.read(updateUuid);
+					String data = new String(updateUuid, TRANSFER_CHARSET);
+					final Command command = Command.valueOf(data.substring(0, data.indexOf(COMMAND_DELIMITER)));
+					final String instanceUuid = data.substring(data.indexOf(COMMAND_DELIMITER) + COMMAND_DELIMITER.length());
+					switch (command) {
+						case UPDATE:
+							INSTANCES.put(instanceUuid, new Date());
+							break;
+						case FINISH:
+							INSTANCES.remove(instanceUuid);
+							break;
+					}
+					String answer = instanceUuid + OK_SUFFIX;
+					byte[] answerBuffer = answer.getBytes(TRANSFER_CHARSET);
+					os.write(answerBuffer);
+					os.flush();
+				}
+			} catch (SocketException ignore) {
+				// OK on finish
+			} catch (IOException e) {
+				LOGGER.warn("Error serving server connections: ", e);
+			} finally {
+				try {
+					mainLock.close();
+				} catch (IOException e) {
+					LOGGER.warn("Unable to close server socket properly", e);
+				}
+			}
+		}
+	}
 
 	public LaunchIdLockSocket(ListenerParameters listenerParameters) {
 		super(listenerParameters);
 		portNumber = listenerParameters.getLockPortNumber();
+		instanceWaitTimeout = listenerParameters.getLockWaitTimeout();
+	}
+
+	private String writeCommand(@Nonnull final Command command, @Nonnull final String instanceUuid) {
+		if (mainLock != null) {
+			switch (command) {
+				case UPDATE:
+					INSTANCES.put(instanceUuid, new Date());
+					break;
+				case FINISH:
+					INSTANCES.remove(instanceUuid);
+					break;
+			}
+			return lockUuid;
+		}
+		try {
+			Socket socket = new Socket(InetAddress.getLocalHost(), portNumber);
+			byte[] launchAnswerBuffer = new byte[instanceUuid.getBytes(TRANSFER_CHARSET).length];
+			InputStream is = socket.getInputStream();
+			//noinspection ResultOfMethodCallIgnored
+			is.read(launchAnswerBuffer);
+			String launchUuid = new String(launchAnswerBuffer, TRANSFER_CHARSET);
+
+			byte[] saveBuffer = (command.name() + COMMAND_DELIMITER + instanceUuid).getBytes(TRANSFER_CHARSET);
+			OutputStream os = socket.getOutputStream();
+			os.write(saveBuffer);
+			os.flush();
+			String expectedAnswer = instanceUuid + OK_SUFFIX;
+			byte[] answerBuffer = new byte[expectedAnswer.getBytes(TRANSFER_CHARSET).length];
+			//noinspection ResultOfMethodCallIgnored
+			is.read(answerBuffer);
+			socket.close();
+			String answer = new String(answerBuffer, TRANSFER_CHARSET);
+			if (!expectedAnswer.equals(answer)) {
+				LOGGER.warn("Invalid server instance UUID '{}' answer", command.name());
+				return instanceUuid;
+			}
+			return launchUuid;
+		} catch (IOException e) {
+			LOGGER.warn("Unable to '{}' instance UUID, connection error", command.name(), e);
+			return instanceUuid;
+		}
+	}
+
+	private String writeInstanceUuid(@Nonnull final String instanceUuid) {
+		return writeCommand(Command.UPDATE, instanceUuid);
 	}
 
 	/**
@@ -58,28 +178,97 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 	 */
 	@Override
 	public String obtainLaunchUuid(@Nonnull final String uuid) {
-		return uuid;
+		Objects.requireNonNull(uuid);
+		if (mainLock != null) {
+			if (!uuid.equals(lockUuid)) {
+				writeInstanceUuid(uuid);
+			}
+			return lockUuid;
+		}
+		try {
+			synchronized (LaunchIdLockSocket.class) {
+				if (mainLock == null) {
+					mainLock = new ServerSocket(portNumber, SOCKET_BACKLOG, InetAddress.getLocalHost());
+					lockUuid = uuid;
+					INSTANCES.put(uuid, new Date());
+				}
+			}
+			if (!uuid.equals(lockUuid)) {
+				// Another thread acquired lock while synchronization wait
+				writeInstanceUuid(uuid);
+			} else {
+				// This is the main thread, serve clients
+				handler = new ServerHandler();
+				handler.start();
+			}
+			return lockUuid;
+		} catch (IOException e) {
+			// already busy, try to connect
+			LOGGER.debug("Unable to obtain lock socket", e);
+			return writeInstanceUuid(uuid);
+		}
 	}
 
 	@Override
-	public void updateInstanceUuid(@Nonnull String instanceUuid) {
-
+	public void updateInstanceUuid(@Nonnull final String instanceUuid) {
+		writeInstanceUuid(instanceUuid);
 	}
 
 	/**
 	 * Remove self UUID from sync file, means that a client finished its Launch. If this is the last UUID in the sync file, lock and sync
 	 * files will be removed.
 	 *
-	 * @param uuid a Client instance UUID.
+	 * @param instanceUuid a Client instance UUID.
 	 */
 	@Override
-	public void finishInstanceUuid(@Nonnull final String uuid) {
-
+	public void finishInstanceUuid(@Nonnull final String instanceUuid) {
+		if (mainLock != null) {
+			if (instanceUuid.equals(lockUuid)) {
+				synchronized (LaunchIdLockSocket.class) {
+					if (mainLock != null) {
+						handler.interrupt();
+						handler = null;
+						try {
+							mainLock.close();
+						} catch (IOException e) {
+							LOGGER.warn("Unable to close server socket properly", e);
+						}
+						mainLock = null;
+						lockUuid = null;
+						INSTANCES.remove(instanceUuid);
+					}
+				}
+			}
+		}
+		writeCommand(Command.FINISH, instanceUuid);
 	}
 
 	@Nonnull
 	@Override
 	public Collection<String> getLiveInstanceUuids() {
-		return Collections.emptyList();
+		Calendar calendar = Calendar.getInstance();
+		calendar.add(Calendar.MILLISECOND, instanceWaitTimeout > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) instanceWaitTimeout);
+		Date timeoutTime = calendar.getTime();
+		return INSTANCES.entrySet()
+				.stream()
+				.filter(e -> e.getValue().before(timeoutTime))
+				.map(Map.Entry::getKey)
+				.collect(Collectors.toList());
+	}
+
+	void reset() {
+		if (handler != null) {
+			handler.interrupt();
+			handler = null;
+		}
+		if (mainLock != null) {
+			try {
+				mainLock.close();
+			} catch (IOException e) {
+				LOGGER.warn("Unable to close server socket properly", e);
+			}
+			mainLock = null;
+		}
+		lockUuid = null;
 	}
 }

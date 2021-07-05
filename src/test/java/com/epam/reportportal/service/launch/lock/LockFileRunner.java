@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019 EPAM Systems
+ *  Copyright 2021 EPAM Systems
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package com.epam.reportportal.service;
+package com.epam.reportportal.service.launch.lock;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.launch.lock.LaunchIdLockFile;
@@ -22,13 +22,14 @@ import com.epam.reportportal.service.launch.lock.LaunchIdLockFile;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import static com.epam.reportportal.service.launch.lock.LockTestUtil.WELCOME_MESSAGE;
+
 /**
  * An utility class which runs LockFile from a new application context. Used for testing LockFile service in separate processes.
  *
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
 public class LockFileRunner {
-	public static final String WELCOME_MESSAGE = "Lock ready, press any key to continue...";
 
 	public static void main(String[] args) throws IOException {
 		String lockFileName = args[0];
@@ -41,8 +42,10 @@ public class LockFileRunner {
 		LaunchIdLockFile lock = new LaunchIdLockFile(params);
 		System.out.println(WELCOME_MESSAGE);
 		InputStreamReader isr = new InputStreamReader(System.in);
+		//noinspection ResultOfMethodCallIgnored
 		isr.read(new char[3]);
 		System.out.println(lock.obtainLaunchUuid(instanceUuid));
+		//noinspection ResultOfMethodCallIgnored
 		isr.read(new char[3]);
 		lock.finishInstanceUuid(instanceUuid);
 		isr.close();

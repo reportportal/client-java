@@ -133,6 +133,7 @@ public class ListenerParameters implements Cloneable {
 		this.truncateItemNames = DEFAULT_TRUNCATE_ITEM_NAMES;
 		this.truncateItemNamesLimit = DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT;
 		this.truncateItemNamesReplacement = DEFAULT_TRUNCATE_REPLACEMENT;
+		this.lockPortNumber = DEFAULT_CLIENT_JOIN_LOCK_PORT;
 	}
 
 	public ListenerParameters(PropertiesLoader properties) {
