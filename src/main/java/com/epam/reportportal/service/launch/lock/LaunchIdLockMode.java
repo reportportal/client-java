@@ -28,8 +28,7 @@ import java.lang.reflect.InvocationTargetException;
  */
 public enum LaunchIdLockMode {
 	FILE(LaunchIdLockFile.class),
-	SOCKET(LaunchIdLockSocket.class),
-	NONE(LaunchIdLockNone.class);
+	SOCKET(LaunchIdLockSocket.class);
 
 	private final Class<? extends AbstractLaunchIdLock> clazz;
 

@@ -164,11 +164,7 @@ public class ListenerParameters implements Cloneable {
 		this.ioPoolSize = properties.getPropertyAsInt(IO_POOL_SIZE, DEFAULT_IO_POOL_SIZE);
 
 		clientJoin = properties.getPropertyAsBoolean(CLIENT_JOIN_MODE, DEFAULT_CLIENT_JOIN);
-		if (clientJoin) {
-			clientJoinMode = LaunchIdLockMode.valueOf(properties.getProperty(CLIENT_JOIN_MODE_VALUE, DEFAULT_CLIENT_JOIN_MODE));
-		} else {
-			clientJoinMode = LaunchIdLockMode.NONE;
-		}
+		clientJoinMode = LaunchIdLockMode.valueOf(properties.getProperty(CLIENT_JOIN_MODE_VALUE, DEFAULT_CLIENT_JOIN_MODE));
 
 		clientJoinTimeout = ofNullable(properties.getProperty(CLIENT_JOIN_TIMEOUT_VALUE)).map(t -> TimeUnit.valueOf(properties.getProperty(
 				CLIENT_JOIN_TIMEOUT_UNIT,
@@ -380,13 +376,6 @@ public class ListenerParameters implements Cloneable {
 	}
 
 	public void setClientJoin(boolean mode) {
-		if (mode) {
-			if (clientJoinMode == LaunchIdLockMode.NONE) {
-				clientJoinMode = LaunchIdLockMode.valueOf(DEFAULT_CLIENT_JOIN_MODE);
-			}
-		} else {
-			clientJoinMode = LaunchIdLockMode.NONE;
-		}
 		this.clientJoin = mode;
 	}
 

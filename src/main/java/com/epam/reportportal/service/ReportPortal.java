@@ -21,7 +21,6 @@ import com.epam.reportportal.message.ReportPortalMessage;
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.service.launch.PrimaryLaunch;
 import com.epam.reportportal.service.launch.SecondaryLaunch;
-import com.epam.reportportal.service.launch.lock.LaunchIdLockNone;
 import com.epam.reportportal.utils.SslUtils;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.reportportal.utils.properties.ListenerProperty;
@@ -107,7 +106,7 @@ public class ReportPortal {
 			return Launch.NOOP_LAUNCH;
 		}
 
-		if (launchIdLock == null || launchIdLock.getClass() == LaunchIdLockNone.class) {
+		if (launchIdLock == null) {
 			// do not use multi-client mode
 			return new LaunchImpl(rpClient, parameters, rq, executor);
 		}
@@ -173,7 +172,7 @@ public class ReportPortal {
 	}
 
 	private static LaunchIdLock getLaunchLock(ListenerParameters parameters) {
-		return parameters.getClientJoinMode().getInstance(parameters);
+		return parameters.getClientJoin() ? parameters.getClientJoinMode().getInstance(parameters) : null;
 	}
 
 	/**
