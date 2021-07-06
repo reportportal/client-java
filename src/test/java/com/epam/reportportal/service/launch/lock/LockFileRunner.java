@@ -17,7 +17,6 @@
 package com.epam.reportportal.service.launch.lock;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.launch.lock.LaunchIdLockFile;
 
 import java.io.IOException;
 import java.io.InputStreamReader;

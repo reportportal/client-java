@@ -283,11 +283,11 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 	@Override
 	public Collection<String> getLiveInstanceUuids() {
 		Calendar calendar = Calendar.getInstance();
-		calendar.add(Calendar.MILLISECOND, instanceWaitTimeout > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) instanceWaitTimeout);
+		calendar.add(Calendar.MILLISECOND, -instanceWaitTimeout < Integer.MIN_VALUE ? Integer.MIN_VALUE : (int) -instanceWaitTimeout);
 		Date timeoutTime = calendar.getTime();
 		return INSTANCES.entrySet()
 				.stream()
-				.filter(e -> e.getValue().before(timeoutTime))
+				.filter(e -> e.getValue().after(timeoutTime))
 				.map(Map.Entry::getKey)
 				.collect(Collectors.toList());
 	}

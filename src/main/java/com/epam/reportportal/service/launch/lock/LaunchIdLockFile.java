@@ -399,7 +399,7 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 			}
 			return recordList;
 		};
-		long timeoutTime = System.currentTimeMillis() + fileWaitTimeout;
+		long timeoutTime = System.currentTimeMillis() - fileWaitTimeout;
 		return ofNullable(executeBlockingOperation(uuidListRead, syncFile)).orElse(Collections.emptyList())
 				.stream()
 				.map(r -> Pair.of(Long.parseLong(r.substring(0, r.indexOf(TIME_SEPARATOR))), r.substring(r.indexOf(TIME_SEPARATOR) + 1)))

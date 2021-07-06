@@ -19,24 +19,20 @@ package com.epam.reportportal.service.launch.lock;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.LaunchIdLock;
 import com.epam.reportportal.util.test.ProcessUtils;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
-import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -57,7 +53,7 @@ public class LaunchIdLockSocketTest {
 	private ListenerParameters getParameters() {
 		ListenerParameters params = new ListenerParameters();
 		params.setEnable(Boolean.TRUE);
-		params.setLockWaitTimeout(TimeUnit.SECONDS.toMillis(5));
+		params.setLockWaitTimeout(LOCK_TIMEOUT);
 		return params;
 	}
 
@@ -178,7 +174,7 @@ public class LaunchIdLockSocketTest {
 			Collections.reverse(processIos);
 			Collections.reverse(processes);
 
-			IntStream.range(0, processIos.size()).forEach(i->{
+			IntStream.range(0, processIos.size()).forEach(i -> {
 				Triple<OutputStreamWriter, BufferedReader, BufferedReader> io = processIos.get(i);
 				Process p = processes.get(i);
 				try {
@@ -199,8 +195,8 @@ public class LaunchIdLockSocketTest {
 		assertThat(results, everyItem(equalTo(results.iterator().next())));
 	}
 
-	private Pair<Set<String>, Collection<String>> executeParallelLaunchUuidSync(int threadNum,
-			Iterable<LaunchIdLock> lockFileCollection) throws InterruptedException {
+	private Pair<Set<String>, Collection<String>> executeParallelLaunchUuidSync(int threadNum, Iterable<LaunchIdLock> lockFileCollection)
+			throws InterruptedException {
 		ExecutorService executor = testExecutor(threadNum);
 		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, iterableSupplier(lockFileCollection));
 		Collection<String> result = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
@@ -225,5 +221,40 @@ public class LaunchIdLockSocketTest {
 	public void test_launch_uuid_should_not_be_null_obtainLaunchUuid() {
 		//noinspection ConstantConditions
 		Assertions.assertThrows(NullPointerException.class, () -> launchIdLockSocket.obtainLaunchUuid(null));
+	}
+
+	@Test
+	public void test_instance_uuid_returns_in_live_list_before_timeout() {
+		String launchUuid = UUID.randomUUID().toString();
+		launchIdLockSocket.obtainLaunchUuid(launchUuid);
+
+		Collection<String> liveUuids = launchIdLockSocket.getLiveInstanceUuids();
+		assertThat(liveUuids, hasSize(1));
+		assertThat(liveUuids, contains(launchUuid));
+	}
+
+	@Test
+	public void test_instance_uuid_remove_from_live_after_timeout() throws InterruptedException {
+		String launchUuid = UUID.randomUUID().toString();
+		launchIdLockSocket.obtainLaunchUuid(launchUuid);
+
+		Thread.sleep(LOCK_TIMEOUT + 10);
+
+		Collection<String> liveUuids = launchIdLockSocket.getLiveInstanceUuids();
+		assertThat(liveUuids, hasSize(0));
+	}
+
+	@Test
+	public void test_instance_uuid_stay_live_after_timeout_if_updated() throws InterruptedException {
+		String launchUuid = UUID.randomUUID().toString();
+		launchIdLockSocket.obtainLaunchUuid(launchUuid);
+
+		Thread.sleep(LOCK_TIMEOUT - 100);
+		launchIdLockSocket.updateInstanceUuid(launchUuid);
+		Thread.sleep(120);
+
+		Collection<String> liveUuids = launchIdLockSocket.getLiveInstanceUuids();
+		assertThat(liveUuids, hasSize(1));
+		assertThat(liveUuids, contains(launchUuid));
 	}
 }

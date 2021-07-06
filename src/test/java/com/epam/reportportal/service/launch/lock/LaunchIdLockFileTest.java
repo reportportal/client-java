@@ -17,7 +17,6 @@
 package com.epam.reportportal.service.launch.lock;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.LaunchIdLock;
 import com.epam.reportportal.util.test.ProcessUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -37,7 +36,8 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.channels.FileLock;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.service.launch.lock.LockTestUtil.*;
@@ -64,7 +64,7 @@ public class LaunchIdLockFileTest {
 		params.setLockFileName(lockFileName);
 		params.setSyncFileName(syncFileName);
 		params.setEnable(Boolean.TRUE);
-		params.setLockWaitTimeout(TimeUnit.SECONDS.toMillis(5));
+		params.setLockWaitTimeout(LOCK_TIMEOUT);
 		return params;
 	}
 
@@ -314,5 +314,40 @@ public class LaunchIdLockFileTest {
 			processes.getKey().destroyForcibly();
 			processes.getValue().destroyForcibly();
 		}
+	}
+
+	@Test
+	public void test_instance_uuid_returns_in_live_list_before_timeout() {
+		String launchUuid = UUID.randomUUID().toString();
+		launchIdLockFile.obtainLaunchUuid(launchUuid);
+
+		Collection<String> liveUuids = launchIdLockFile.getLiveInstanceUuids();
+		assertThat(liveUuids, hasSize(1));
+		assertThat(liveUuids, contains(launchUuid));
+	}
+
+	@Test
+	public void test_instance_uuid_remove_from_live_after_timeout() throws InterruptedException {
+		String launchUuid = UUID.randomUUID().toString();
+		launchIdLockFile.obtainLaunchUuid(launchUuid);
+
+		Thread.sleep(LOCK_TIMEOUT + 10);
+
+		Collection<String> liveUuids = launchIdLockFile.getLiveInstanceUuids();
+		assertThat(liveUuids, hasSize(0));
+	}
+
+	@Test
+	public void test_instance_uuid_stay_live_after_timeout_if_updated() throws InterruptedException {
+		String launchUuid = UUID.randomUUID().toString();
+		launchIdLockFile.obtainLaunchUuid(launchUuid);
+
+		Thread.sleep(LOCK_TIMEOUT - 100);
+		launchIdLockFile.updateInstanceUuid(launchUuid);
+		Thread.sleep(120);
+
+		Collection<String> liveUuids = launchIdLockFile.getLiveInstanceUuids();
+		assertThat(liveUuids, hasSize(1));
+		assertThat(liveUuids, contains(launchUuid));
 	}
 }

@@ -42,6 +42,8 @@ import static org.hamcrest.Matchers.notNullValue;
 public class LockTestUtil {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LockTestUtil.class);
 
+	public static final long LOCK_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+
 	public static final String WELCOME_MESSAGE = "Lock ready, press any key to continue...";
 
 	public static final Predicate<String> WELCOME_MESSAGE_PREDICATE = WELCOME_MESSAGE::equals;
