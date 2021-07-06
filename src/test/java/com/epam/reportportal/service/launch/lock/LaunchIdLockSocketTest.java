@@ -266,5 +266,33 @@ public class LaunchIdLockSocketTest {
 		Collection<String> liveUuids = launchIdLockSocket.getLiveInstanceUuids();
 		assertThat(liveUuids, hasSize(0));
 	}
-}
 
+	@Test
+	public void test_live_instance_uuid_update_through_socket() {
+		String launchUuid = UUID.randomUUID().toString();
+		String clientUuid = UUID.randomUUID().toString();
+		launchIdLockSocket.obtainLaunchUuid(launchUuid);
+		launchIdLockSocket.sendCommand(LaunchIdLockSocket.Command.UPDATE, clientUuid);
+		Collection<String> liveUuids = launchIdLockSocket.getLiveInstanceUuids();
+		assertThat(liveUuids, hasSize(2));
+		assertThat(liveUuids, containsInAnyOrder(launchUuid, clientUuid));
+	}
+
+	@Test
+	public void test_live_instance_uuid_remove_through_socket() {
+		String launchUuid = UUID.randomUUID().toString();
+		String clientUuid = UUID.randomUUID().toString();
+		String removeUuid = UUID.randomUUID().toString();
+		launchIdLockSocket.obtainLaunchUuid(launchUuid);
+		launchIdLockSocket.sendCommand(LaunchIdLockSocket.Command.UPDATE, removeUuid);
+		launchIdLockSocket.sendCommand(LaunchIdLockSocket.Command.UPDATE, clientUuid);
+		Collection<String> liveUuids = launchIdLockSocket.getLiveInstanceUuids();
+		assertThat(liveUuids, hasSize(3));
+		assertThat(liveUuids, containsInAnyOrder(launchUuid, clientUuid, removeUuid));
+
+		launchIdLockSocket.sendCommand(LaunchIdLockSocket.Command.FINISH, removeUuid);
+		liveUuids = launchIdLockSocket.getLiveInstanceUuids();
+		assertThat(liveUuids, hasSize(2));
+		assertThat(liveUuids, containsInAnyOrder(launchUuid, clientUuid));
+	}
+}

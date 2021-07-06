@@ -64,7 +64,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 	/**
 	 * Internal supported communication commands. Should be exactly 6 characters long.
 	 */
-	private enum Command {
+	enum Command {
 		UPDATE,
 		FINISH
 	}
@@ -152,19 +152,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 		instanceWaitTimeout = listenerParameters.getLockWaitTimeout();
 	}
 
-	private String writeCommand(@Nonnull final Command command, @Nonnull final String instanceUuid) {
-		if (mainLock != null) {
-			switch (command) {
-				case UPDATE:
-					INSTANCES.put(instanceUuid, new Date());
-					break;
-				case FINISH:
-					INSTANCES.remove(instanceUuid);
-					break;
-			}
-			return lockUuid;
-		}
-
+	String sendCommand(@Nonnull final Command command, @Nonnull final String instanceUuid) {
 		String result = new Waiter("Wait for a socket connection").duration(instanceWaitTimeout, TimeUnit.MILLISECONDS)
 				.applyRandomDiscrepancy(MAX_WAIT_TIME_DISCREPANCY)
 				.pollingEvery(1, TimeUnit.SECONDS)
@@ -200,8 +188,24 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 		return result == null ? instanceUuid : result;
 	}
 
+	private String executeCommand(@Nonnull final Command command, @Nonnull final String instanceUuid) {
+		if (mainLock != null) {
+			switch (command) {
+				case UPDATE:
+					INSTANCES.put(instanceUuid, new Date());
+					break;
+				case FINISH:
+					INSTANCES.remove(instanceUuid);
+					break;
+			}
+			return lockUuid;
+		}
+
+		return sendCommand(command, instanceUuid);
+	}
+
 	private String writeInstanceUuid(@Nonnull final String instanceUuid) {
-		return writeCommand(Command.UPDATE, instanceUuid);
+		return executeCommand(Command.UPDATE, instanceUuid);
 	}
 
 	/**
@@ -257,8 +261,8 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 	 */
 	@Override
 	public void finishInstanceUuid(@Nonnull final String instanceUuid) {
+		executeCommand(Command.FINISH, instanceUuid);
 		if (mainLock != null) {
-			INSTANCES.remove(instanceUuid);
 			if (instanceUuid.equals(lockUuid)) {
 				synchronized (LaunchIdLockSocket.class) {
 					if (mainLock != null) {
@@ -274,8 +278,6 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 					}
 				}
 			}
-		} else {
-			writeCommand(Command.FINISH, instanceUuid);
 		}
 	}
 
