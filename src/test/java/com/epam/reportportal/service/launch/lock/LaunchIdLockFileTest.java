@@ -350,4 +350,13 @@ public class LaunchIdLockFileTest {
 		assertThat(liveUuids, hasSize(1));
 		assertThat(liveUuids, contains(launchUuid));
 	}
+
+	@Test
+	public void test_instance_uuid_removed_from_live_after_finish() {
+		String launchUuid = UUID.randomUUID().toString();
+		launchIdLockFile.obtainLaunchUuid(launchUuid);
+		launchIdLockFile.finishInstanceUuid(launchUuid);
+		Collection<String> liveUuids = launchIdLockFile.getLiveInstanceUuids();
+		assertThat(liveUuids, hasSize(0));
+	}
 }

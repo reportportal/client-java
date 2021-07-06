@@ -257,4 +257,14 @@ public class LaunchIdLockSocketTest {
 		assertThat(liveUuids, hasSize(1));
 		assertThat(liveUuids, contains(launchUuid));
 	}
+
+	@Test
+	public void test_instance_uuid_removed_from_live_after_finish() {
+		String launchUuid = UUID.randomUUID().toString();
+		launchIdLockSocket.obtainLaunchUuid(launchUuid);
+		launchIdLockSocket.finishInstanceUuid(launchUuid);
+		Collection<String> liveUuids = launchIdLockSocket.getLiveInstanceUuids();
+		assertThat(liveUuids, hasSize(0));
+	}
 }
+
