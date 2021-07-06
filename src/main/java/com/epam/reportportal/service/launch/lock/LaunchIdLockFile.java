@@ -59,8 +59,42 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 	private final File lockFile;
 	private final File syncFile;
 	private final long fileWaitTimeout;
-	private volatile String lockUuid;
-	private volatile Pair<RandomAccessFile, FileLock> mainLock;
+	private static volatile String lockUuid;
+	private static volatile Pair<RandomAccessFile, FileLock> mainLock;
+
+	private interface IoOperation<T> {
+		T execute(@Nonnull final Pair<RandomAccessFile, FileLock> lock) throws IOException;
+	}
+
+	private static class UuidAppend implements IoOperation<String> {
+		final String uuid;
+
+		public UuidAppend(@Nonnull final String instanceUuid) {
+			uuid = instanceUuid;
+		}
+
+		@Override
+		public String execute(@Nonnull Pair<RandomAccessFile, FileLock> lock) throws IOException {
+			RandomAccessFile access = lock.getKey();
+			appendUuid(access, uuid);
+			return uuid;
+		}
+	}
+
+	private static class LaunchRead extends UuidAppend {
+
+		public LaunchRead(@Nonnull final String instanceUuid) {
+			super(instanceUuid);
+		}
+
+		@Override
+		public String execute(@Nonnull Pair<RandomAccessFile, FileLock> lock) throws IOException {
+			RandomAccessFile access = lock.getKey();
+			String launchUuid = readLaunchUuid(access);
+			super.execute(lock);
+			return ofNullable(launchUuid).orElse(uuid);
+		}
+	}
 
 	public LaunchIdLockFile(@Nonnull final ListenerParameters listenerParameters) {
 		super(listenerParameters);
@@ -131,10 +165,6 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 
 	private static void writeLine(@Nonnull final RandomAccessFile access, @Nonnull final String text) throws IOException {
 		writeString(access, text + LINE_SEPARATOR);
-	}
-
-	private interface IoOperation<T> {
-		T execute(@Nonnull final Pair<RandomAccessFile, FileLock> lock) throws IOException;
 	}
 
 	private static void closeIo(@Nonnull Pair<RandomAccessFile, FileLock> io) {
@@ -208,38 +238,28 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 	}
 
 	private void writeInstanceUuid(@Nonnull final String instanceUuid) {
-		IoOperation<Boolean> uuidRead = fileIo -> {
-			appendUuid(fileIo.getKey(), instanceUuid);
-			return Boolean.TRUE;
-		};
-		executeBlockingOperation(uuidRead, syncFile);
+		executeBlockingOperation(new UuidAppend(instanceUuid), syncFile);
 	}
 
 	@Nullable
 	private String obtainLaunch(@Nonnull final String instanceUuid) {
-		IoOperation<String> uuidRead = fileIo -> {
-			RandomAccessFile access = fileIo.getKey();
-			String uuid = readLaunchUuid(access);
-			appendUuid(access, instanceUuid);
-			return ofNullable(uuid).orElse(instanceUuid);
-		};
-		return executeBlockingOperation(uuidRead, syncFile);
+		return executeBlockingOperation(new LaunchRead(instanceUuid), syncFile);
 	}
 
 	/**
 	 * Returns a Launch UUID for many Clients launched on one machine.
 	 *
-	 * @param uuid a Client instance UUID, which will be written to lock and sync files and, if it the first thread which managed to
+	 * @param instanceUuid a Client instance UUID, which will be written to lock and sync files and, if it the first thread which managed to
 	 *             obtain lock on '.lock' file, returned to every client instance.
 	 * @return either a Client instance UUID, either the first UUID which thread managed to place a lock on a '.lock' file.
 	 */
 	@Override
 	@Nullable
-	public String obtainLaunchUuid(@Nonnull final String uuid) {
-		Objects.requireNonNull(uuid);
+	public String obtainLaunchUuid(@Nonnull final String instanceUuid) {
+		Objects.requireNonNull(instanceUuid);
 		if (mainLock != null) {
-			if (!uuid.equals(lockUuid)) {
-				writeInstanceUuid(uuid);
+			if (!instanceUuid.equals(lockUuid)) {
+				writeInstanceUuid(instanceUuid);
 			}
 			return lockUuid;
 		}
@@ -250,27 +270,24 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 					Pair<RandomAccessFile, FileLock> lock = obtainLock(lockFile);
 					if (lock != null) {
 						// we are the main thread / process
-						lockUuid = uuid;
+						lockUuid = instanceUuid;
 						mainLock = lock;
 						writeLaunchUuid(syncLock);
-						return uuid;
+						return instanceUuid;
+					} else {
+						executeOperation(new LaunchRead(instanceUuid), syncLock);
 					}
 				} else {
 					// another thread obtained main lock while we wait for .sync file
-					IoOperation<String> uuidAppend = fileIo -> {
-						RandomAccessFile access = fileIo.getKey();
-						appendUuid(access, uuid);
-						return lockUuid;
-					};
-					return executeOperation(uuidAppend, syncLock);
+					executeOperation(new UuidAppend(instanceUuid), syncLock);
+					return lockUuid;
 				}
 			} finally {
 				closeIo(syncLock);
 			}
 			// main lock file already locked, just close sync lock and proceed with secondary launch logic
 		}
-
-		return obtainLaunch(uuid);
+		return obtainLaunch(instanceUuid);
 	}
 
 	/**
@@ -372,7 +389,7 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 	@Nonnull
 	@Override
 	public Collection<String> getLiveInstanceUuids() {
-		IoOperation<List<String>> uuids = fileIo -> {
+		IoOperation<List<String>> uuidListRead = fileIo -> {
 			String line;
 			List<String> recordList = new ArrayList<>();
 			RandomAccessFile fileAccess = fileIo.getKey();
@@ -383,7 +400,7 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 			return recordList;
 		};
 		long timeoutTime = System.currentTimeMillis() + fileWaitTimeout;
-		return ofNullable(executeBlockingOperation(uuids, syncFile)).orElse(Collections.emptyList())
+		return ofNullable(executeBlockingOperation(uuidListRead, syncFile)).orElse(Collections.emptyList())
 				.stream()
 				.map(r -> Pair.of(Long.parseLong(r.substring(0, r.indexOf(TIME_SEPARATOR))), r.substring(r.indexOf(TIME_SEPARATOR) + 1)))
 				.filter(r -> r.getKey() > timeoutTime)

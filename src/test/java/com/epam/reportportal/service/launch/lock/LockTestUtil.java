@@ -16,34 +16,40 @@
 
 package com.epam.reportportal.service.launch.lock;
 
+import com.epam.reportportal.service.LaunchIdLock;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.join;
 import static org.hamcrest.Matchers.notNullValue;
 
 public class LockTestUtil {
+	private static final Logger LOGGER = LoggerFactory.getLogger(LockTestUtil.class);
+
 	public static final String WELCOME_MESSAGE = "Lock ready, press any key to continue...";
 
 	public static final Predicate<String> WELCOME_MESSAGE_PREDICATE = WELCOME_MESSAGE::equals;
 	public static final Predicate<String> ANY_STRING_PREDICATE = input -> !isEmpty(input);
 
-
 	public static Triple<OutputStreamWriter, BufferedReader, BufferedReader> getProcessIos(Process process) {
-		return ImmutableTriple.of(new OutputStreamWriter(process.getOutputStream()),
+		return ImmutableTriple.of(
+				new OutputStreamWriter(process.getOutputStream()),
 				new BufferedReader(new InputStreamReader(process.getInputStream())),
 				new BufferedReader(new InputStreamReader(process.getErrorStream()))
 		);
@@ -88,4 +94,54 @@ public class LockTestUtil {
 		}
 	}
 
+	public static Callable<String> getObtainLaunchUuidReadCallable(final String selfUuid, final LaunchIdLock launchIdLock) {
+		return () -> launchIdLock.obtainLaunchUuid(selfUuid);
+	}
+
+	public static final class GetFutureResults<T> implements Function<Future<T>, T> {
+		@Override
+		public T apply(Future<T> input) {
+			try {
+				return input.get();
+			} catch (InterruptedException e) {
+				LOGGER.error("Interrupted: ", e);
+			} catch (ExecutionException e) {
+				LOGGER.error("Failed: ", e);
+			}
+			return null;
+		}
+	}
+
+	public static <T extends LaunchIdLock> Map<String, Callable<String>> getLaunchUuidReadCallables(int num, Supplier<T> serviceProvider) {
+		Map<String, Callable<String>> results = new HashMap<>();
+		for (int i = 0; i < num; i++) {
+			String uuid = UUID.randomUUID().toString();
+			Callable<String> task = getObtainLaunchUuidReadCallable(uuid, serviceProvider.get());
+			results.put(uuid, task);
+		}
+		return results;
+	}
+
+	public static <T> Supplier<T> singletonSupplier(final T value) {
+		return () -> value;
+	}
+
+	public static ExecutorService testExecutor(final int threadNum) {
+		return Executors.newFixedThreadPool(threadNum, r -> {
+			Thread t = Executors.defaultThreadFactory().newThread(r);
+			t.setDaemon(true);
+			return t;
+		});
+	}
+
+	public static <T> Supplier<T> iterableSupplier(final Iterable<T> instanceIterable) {
+		return new Supplier<T>() {
+			private final Iterator<T> instanceIterator = instanceIterable.iterator();
+
+			@Override
+			public T get() {
+				return instanceIterator.next();
+			}
+		};
+	}
 }

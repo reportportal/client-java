@@ -18,6 +18,7 @@ package com.epam.reportportal.service.launch.lock;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.LaunchIdLock;
+import com.epam.reportportal.utils.Waiter;
 import com.epam.reportportal.utils.properties.ListenerProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -69,6 +71,9 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 
 	private static class ServerHandler extends Thread {
 
+		private final Random random = new Random();
+		private final Queue<Socket> workSockets = new LinkedList<>();
+
 		public ServerHandler() {
 			setDaemon(true);
 			setName("rp-launch-join");
@@ -80,6 +85,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 				//noinspection InfiniteLoopStatement
 				while (true) {
 					Socket s = mainLock.accept();
+					workSockets.add(s);
 					OutputStream os = s.getOutputStream();
 					byte[] launchUuid = lockUuid.getBytes(TRANSFER_CHARSET);
 					os.write(launchUuid);
@@ -103,14 +109,36 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 					byte[] answerBuffer = answer.getBytes(TRANSFER_CHARSET);
 					os.write(answerBuffer);
 					os.flush();
+					if (random.nextInt(5) == 0) {
+						Collection<Socket> checked = new LinkedList<>();
+						Socket current;
+						while ((current = workSockets.poll()) != null) {
+							if (!current.isClosed()) {
+								checked.add(current);
+							}
+						}
+						workSockets.addAll(checked);
+					}
 				}
 			} catch (SocketException ignore) {
 				// OK on finish
 			} catch (IOException e) {
 				LOGGER.warn("Error serving server connections: ", e);
 			} finally {
+				Socket current;
+				while ((current = workSockets.poll()) != null) {
+					if (!current.isClosed()) {
+						try {
+							current.close();
+						} catch (IOException e) {
+							LOGGER.warn("Unable to close socket properly", e);
+						}
+					}
+				}
 				try {
-					mainLock.close();
+					if (mainLock != null && !mainLock.isClosed()) {
+						mainLock.close();
+					}
 				} catch (IOException e) {
 					LOGGER.warn("Unable to close server socket properly", e);
 				}
@@ -136,33 +164,40 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 			}
 			return lockUuid;
 		}
-		try {
-			Socket socket = new Socket(InetAddress.getLocalHost(), portNumber);
-			byte[] launchAnswerBuffer = new byte[instanceUuid.getBytes(TRANSFER_CHARSET).length];
-			InputStream is = socket.getInputStream();
-			//noinspection ResultOfMethodCallIgnored
-			is.read(launchAnswerBuffer);
-			String launchUuid = new String(launchAnswerBuffer, TRANSFER_CHARSET);
 
-			byte[] saveBuffer = (command.name() + COMMAND_DELIMITER + instanceUuid).getBytes(TRANSFER_CHARSET);
-			OutputStream os = socket.getOutputStream();
-			os.write(saveBuffer);
-			os.flush();
-			String expectedAnswer = instanceUuid + OK_SUFFIX;
-			byte[] answerBuffer = new byte[expectedAnswer.getBytes(TRANSFER_CHARSET).length];
-			//noinspection ResultOfMethodCallIgnored
-			is.read(answerBuffer);
-			socket.close();
-			String answer = new String(answerBuffer, TRANSFER_CHARSET);
-			if (!expectedAnswer.equals(answer)) {
-				LOGGER.warn("Invalid server instance UUID '{}' answer", command.name());
-				return instanceUuid;
-			}
-			return launchUuid;
-		} catch (IOException e) {
-			LOGGER.warn("Unable to '{}' instance UUID, connection error", command.name(), e);
-			return instanceUuid;
-		}
+		String result = new Waiter("Wait for a socket connection").duration(instanceWaitTimeout, TimeUnit.MILLISECONDS)
+				.applyRandomDiscrepancy(MAX_WAIT_TIME_DISCREPANCY)
+				.pollingEvery(1, TimeUnit.SECONDS)
+				.till(() -> {
+					try {
+						Socket socket = new Socket(InetAddress.getLocalHost(), portNumber);
+						byte[] launchAnswerBuffer = new byte[instanceUuid.getBytes(TRANSFER_CHARSET).length];
+						InputStream is = socket.getInputStream();
+						//noinspection ResultOfMethodCallIgnored
+						is.read(launchAnswerBuffer);
+						String launchUuid = new String(launchAnswerBuffer, TRANSFER_CHARSET);
+						byte[] saveBuffer = (command.name() + COMMAND_DELIMITER + instanceUuid).getBytes(TRANSFER_CHARSET);
+						OutputStream os = socket.getOutputStream();
+						os.write(saveBuffer);
+						os.flush();
+						String expectedAnswer = instanceUuid + OK_SUFFIX;
+						byte[] answerBuffer = new byte[expectedAnswer.getBytes(TRANSFER_CHARSET).length];
+						//noinspection ResultOfMethodCallIgnored
+						is.read(answerBuffer);
+						socket.close();
+						String answer = new String(answerBuffer, TRANSFER_CHARSET);
+						if (!expectedAnswer.equals(answer)) {
+							LOGGER.warn("Invalid server instance UUID '{}' answer", command.name());
+							return null;
+						}
+						return launchUuid;
+					} catch (IOException e) {
+						LOGGER.warn("Unable to '{}' instance UUID, connection error", command.name(), e);
+						return null;
+					}
+				});
+
+		return result == null ? instanceUuid : result;
 	}
 
 	private String writeInstanceUuid(@Nonnull final String instanceUuid) {
@@ -223,6 +258,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 	@Override
 	public void finishInstanceUuid(@Nonnull final String instanceUuid) {
 		if (mainLock != null) {
+			INSTANCES.remove(instanceUuid);
 			if (instanceUuid.equals(lockUuid)) {
 				synchronized (LaunchIdLockSocket.class) {
 					if (mainLock != null) {
@@ -235,12 +271,12 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 						}
 						mainLock = null;
 						lockUuid = null;
-						INSTANCES.remove(instanceUuid);
 					}
 				}
 			}
+		} else {
+			writeCommand(Command.FINISH, instanceUuid);
 		}
-		writeCommand(Command.FINISH, instanceUuid);
 	}
 
 	@Nonnull
@@ -270,5 +306,6 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 			mainLock = null;
 		}
 		lockUuid = null;
+		INSTANCES.clear();
 	}
 }

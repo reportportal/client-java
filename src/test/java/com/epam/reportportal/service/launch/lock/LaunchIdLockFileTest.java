@@ -17,6 +17,7 @@
 package com.epam.reportportal.service.launch.lock;
 
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.LaunchIdLock;
 import com.epam.reportportal.util.test.ProcessUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -37,8 +38,6 @@ import java.io.*;
 import java.nio.channels.FileLock;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.service.launch.lock.LockTestUtil.*;
@@ -58,7 +57,7 @@ public class LaunchIdLockFileTest {
 	private final String lockFileName = String.format(LOCK_FILE_NAME_PATTERN, fileName);
 	private final String syncFileName = String.format(SYNC_FILE_NAME_PATTERN, fileName);
 	private LaunchIdLockFile launchIdLockFile = new LaunchIdLockFile(getParameters());
-	private Collection<LaunchIdLockFile> launchIdLockFileCollection;
+	private Collection<LaunchIdLockFile> launchIdLockCollection;
 
 	private ListenerParameters getParameters() {
 		ListenerParameters params = new ListenerParameters();
@@ -72,8 +71,8 @@ public class LaunchIdLockFileTest {
 	@AfterEach
 	public void cleanUp() {
 		launchIdLockFile.reset();
-		if (launchIdLockFileCollection != null) {
-			for (LaunchIdLockFile file : launchIdLockFileCollection) {
+		if (launchIdLockCollection != null) {
+			for (LaunchIdLockFile file : launchIdLockCollection) {
 				file.reset();
 			}
 		}
@@ -97,46 +96,6 @@ public class LaunchIdLockFileTest {
 		String secondLaunchUuid = launchIdLockFile.obtainLaunchUuid(secondUuid);
 
 		assertThat(secondLaunchUuid, equalTo(firstLaunchUuid));
-	}
-
-	private static Callable<String> getObtainLaunchUuidReadCallable(final String selfUuid, final LaunchIdLockFile launchIdLockFile) {
-		return () -> launchIdLockFile.obtainLaunchUuid(selfUuid);
-	}
-
-	private static final class GetFutureResults<T> implements Function<Future<T>, T> {
-		@Override
-		public T apply(Future<T> input) {
-			try {
-				return input.get();
-			} catch (InterruptedException e) {
-				LOGGER.error("Interrupted: ", e);
-			} catch (ExecutionException e) {
-				LOGGER.error("Failed: ", e);
-			}
-			return null;
-		}
-	}
-
-	private Map<String, Callable<String>> getLaunchUuidReadCallables(int num, Supplier<LaunchIdLockFile> serviceProvider) {
-		Map<String, Callable<String>> results = new HashMap<>();
-		for (int i = 0; i < num; i++) {
-			String uuid = UUID.randomUUID().toString();
-			Callable<String> task = getObtainLaunchUuidReadCallable(uuid, serviceProvider.get());
-			results.put(uuid, task);
-		}
-		return results;
-	}
-
-	private <T> Supplier<T> singletonSupplier(final T value) {
-		return () -> value;
-	}
-
-	private ExecutorService testExecutor(final int threadNum) {
-		return Executors.newFixedThreadPool(threadNum, r -> {
-			Thread t = Executors.defaultThreadFactory().newThread(r);
-			t.setDaemon(true);
-			return t;
-		});
 	}
 
 	@Test
@@ -166,17 +125,6 @@ public class LaunchIdLockFileTest {
 				.map(r -> r.substring(r.indexOf(LaunchIdLockFile.TIME_SEPARATOR) + 1))
 				.collect(Collectors.toList());
 		assertThat(syncFileContentUuids, containsInAnyOrder(tasks.keySet().toArray(new String[0])));
-	}
-
-	private <T> Supplier<T> iterableSupplier(final Iterable<T> instanceIterable) {
-		return new Supplier<T>() {
-			private final Iterator<T> instanceIterator = instanceIterable.iterator();
-
-			@Override
-			public T get() {
-				return instanceIterator.next();
-			}
-		};
 	}
 
 	private Pair<Set<String>, Collection<String>> executeParallelLaunchUuidSync(int threadNum,
@@ -253,13 +201,13 @@ public class LaunchIdLockFileTest {
 	@ParameterizedTest
 	@MethodSource("threadNumProvider")
 	public void test_different_lock_file_service_instances_synchronize_correctly(final int threadNum) throws InterruptedException {
-		launchIdLockFileCollection = new ArrayList<>(threadNum);
-		launchIdLockFileCollection.add(launchIdLockFile);
+		launchIdLockCollection = new ArrayList<>(threadNum);
+		launchIdLockCollection.add(launchIdLockFile);
 		for (int i = 1; i < threadNum; i++) {
-			launchIdLockFileCollection.add(new LaunchIdLockFile(getParameters()));
+			launchIdLockCollection.add(new LaunchIdLockFile(getParameters()));
 		}
 
-		Pair<Set<String>, Collection<String>> result = executeParallelLaunchUuidSync(threadNum, launchIdLockFileCollection);
+		Pair<Set<String>, Collection<String>> result = executeParallelLaunchUuidSync(threadNum, launchIdLockCollection);
 		Set<String> instanceUuids = result.getLeft();
 		Collection<String> launchUuids = result.getRight();
 		String launchUuid = launchUuids.iterator().next();
