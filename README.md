@@ -50,27 +50,35 @@ rp.keystore.password = <PASSWORD_OF_YOUR_KEYSTORE>
 
 User should provide next parameters to agent.
 
-| **Parameter**                            | **Description**      | **Required**|
-|------------------------------------------|----------------------|-------------|
-|rp.endpoint                               |URL of web service, where requests should be send |Yes |
-|rp.api.key or rp.uuid                     |Api token of user     |Yes |
-|rp.launch                                 |The unique name of Launch (Run). Based on that name a history of runs will be created for particular name |Yes |
-|rp.project                                |Project name to identify scope |Yes |
-|rp.enable                                 |Enable/Disable logging to Report Portal: rp.enable=true - enable log to RP server.  Any other value means 'false': rp.enable=false - disable log to RP server.  If parameter is absent in  properties file then automation project results will be posted on RP. |No |
-|rp.description                            |Launch description    |No |
-|rp.attributes                             |Set of attributes for specifying additional meta information for current launch. Format: key:value;value;build:12345-6. Attributes should be separated by “;”, keys and values - “:”. |No |
-|rp.reporting.async                        |Enables asynchronous reporting. Available values - `true` or `false`(by default). Supported only in 5+ vesion |No |
-|rp.reporting.callback                     |Enables [callback reporting](https://github.com/reportportal/client-java/wiki/Callback-reporting-usefulness). Available values - `true` or `false`(by default). Supported only in 5+ vesion |No |
-|rp.rerun                                  |Enables [rerun mode](https://github.com/reportportal/documentation/blob/master/src/md/src/DevGuides/rerun.md). Available values - `true` or `false`(by default). Supported only in 5+ version | No |
-|rp.rerun.of                               |Specifies UUID of launch that has to be reruned |No |
-|rp.convertimage                           |Colored log images can be converted to grayscale for reducing image size. Values: ‘true’ – will be converted. Any other value means ‘false’. |No |
-|rp.mode                                   |ReportPortal provides possibility to specify visibility of executing launch. Currently two modes are supported: DEFAULT  - all users from project can see this launch; DEBUG - all users except of Customer role can see this launch (in debug sub tab). Note: for all java based clients (TestNG, Junit) mode will be set automatically to "DEFAULT" if it is not specified. |No |
-|rp.skipped.issue                          |ReportPortal provides feature to mark skipped tests as not 'To Investigate' items on WS side. Parameter could be equal boolean values: *TRUE* - skipped tests considered as issues and will be marked as 'To Investigate' on Report Portal. *FALSE* - skipped tests will not be marked as 'To Investigate' on application. |No |
-|rp.batch.size.logs                        | Put logs into batches of specified size in order to rise up performance and reduce number of requests to server. Default = 10 |No |
-|rp.rx.buffer.size                         | Internal queue size for log processing, increase this value along with log batch size if you see not all your logs passing to server. Default = 128 |No |
-|rp.keystore.resource                      |Put your JKS file into resources and specify path to it | No|
-|rp.keystore.password                      |Access password for JKS (certificate storage) package, mentioned above |No |
-
+| **Property name**      | **Type** | **Description**      | **Required**|
+|------------------------|----------|----------------------|-------------|
+|rp.endpoint             | String   |URL of web service, where requests should be send |Yes |
+|rp.api.key or rp.uuid   | String   |Api token of user     |Yes |
+|rp.launch               | String   |The unique name of Launch (Run). Based on that name a history of runs will be created for particular name |Yes |
+|rp.project              | String   |Project name to identify scope |Yes |
+|rp.enable               | Boolean  |Enable/Disable logging to Report Portal: rp.enable=true - enable log to RP server.  Any other value means 'false': rp.enable=false - disable log to RP server.  If parameter is absent in  properties file then automation project results will be posted on RP. |No |
+|rp.description          | String   |Launch description    |No |
+|rp.attributes           | String   |Set of attributes for specifying additional meta information for current launch. Format: key:value;value;build:12345-6. Attributes should be separated by “;”, keys and values - “:”. |No |
+|rp.reporting.async      | Boolean  |Enables asynchronous reporting. Available values - `true` or `false`(by default). Supported only in 5+ vesion |No |
+|rp.reporting.callback   | Boolean  |Enables [callback reporting](https://github.com/reportportal/client-java/wiki/Callback-reporting-usefulness). Available values - `true` or `false`(by default). Supported only in 5+ vesion |No |
+|rp.rerun                | Boolean  |Enables [rerun mode](https://github.com/reportportal/documentation/blob/master/src/md/src/DevGuides/rerun.md). Available values - `true` or `false`(by default). Supported only in 5+ version | No |
+|rp.rerun.of             | String   |Specifies UUID of launch that has to be reruned |No |
+|rp.convertimage         | Boolean  |Colored log images can be converted to grayscale for reducing image size. Values: ‘true’ – will be converted. Any other value means ‘false’. |No |
+|rp.mode                 | Enum     |ReportPortal provides possibility to specify visibility of executing launch. Currently two modes are supported: DEFAULT  - all users from project can see this launch; DEBUG - all users except of Customer role can see this launch (in debug sub tab). Note: for all java based clients (TestNG, Junit) mode will be set automatically to "DEFAULT" if it is not specified. |No |
+|rp.skipped.issue        | Boolean  |ReportPortal provides feature to mark skipped tests as not 'To Investigate' items on WS side. Parameter could be equal boolean values: *TRUE* - skipped tests considered as issues and will be marked as 'To Investigate' on Report Portal. *FALSE* - skipped tests will not be marked as 'To Investigate' on application. |No |
+|rp.batch.size.logs      | Integer  |Put logs into batches of specified size in order to rise up performance and reduce number of requests to server. Default = 10 |No |
+|rp.rx.buffer.size       | Integer  |Internal queue size for log processing, increase this value along with log batch size if you see not all your logs passing to server. Default = 128 |No |
+|rp.keystore.resource    | String   |Put your JKS file into resources and specify path to it | No|
+|rp.keystore.password    | String   |Access password for JKS (certificate storage) package, mentioned above |No |
+|rp.client.join          | Boolean  |Enable / Disable multi-process launch join mode |No |
+|rp.client.join.mode     | Enum     |\[FILE, SOCKET], Default: `FILE`<br/> Which mechanism will be used to join multi-process launches:<br/> <li>`FILE` - the client will create a locking file<li>`SOCKET` - the client will open a socket|No |
+|rp.client.join.port     | Integer  |Default: 25464<br>If client join mode set to `SOCKET`, this property controls port number of the socket|No |
+|rp.client.join.timeout.value|Integer|Default: 1.8M milliseconds (30 minutes)<br>|No |
+|rp.client.join.timeout.unit | Enum |Default: `MILLISECONDS`<br> |No |
+|rp.client.join.file.lock.name|String|Default: `reportportal.lock`<br>|No |
+|rp.client.join.file.sync.name|String|Default: `reportportal.sync`<br>|No |
+|rp.client.join.lock.timeout.value|Integer|Default: 60K milliseconds (1 minute)<br>|No |
+|rp.client.join.lock.timeout.unit|Enum|Default: `MILLISECONDS`<br> |No |
 Launch name can be edited once, and should be edited once, before first
 execution. As usual, parts of launches are fixed for a long time. Keeping the
 same name for launch, here we will understand a fixed list of suites under
