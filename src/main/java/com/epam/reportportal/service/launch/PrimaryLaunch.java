@@ -44,9 +44,6 @@ public class PrimaryLaunch extends AbstractJoinedLaunch {
 	@Override
 	public void finish(final FinishExecutionRQ rq) {
 		stopRunning();
-		lock.finishInstanceUuid(uuid);
-		uuid = UUID.randomUUID().toString();
-		lock.obtainLaunchUuid(uuid);
 
 		Callable<Boolean> finishCondition = new Callable<Boolean>() {
 			private volatile Collection<String> launches;
@@ -54,7 +51,7 @@ public class PrimaryLaunch extends AbstractJoinedLaunch {
 			@Override
 			public Boolean call() {
 				Collection<String> current = lock.getLiveInstanceUuids();
-				if (current.isEmpty()) {
+				if (current.isEmpty() || (current.size() == 1 && uuid.equals(current.iterator().next()))) {
 					return true;
 				}
 				Boolean changed = ofNullable(launches).map(l -> !l.equals(current)).orElse(Boolean.TRUE);
@@ -72,6 +69,7 @@ public class PrimaryLaunch extends AbstractJoinedLaunch {
 					.pollingEvery(1, TimeUnit.SECONDS);
 			finished = waiter.till(finishCondition);
 		}
+		lock.finishInstanceUuid(uuid);
 		super.finish(rq);
 	}
 }
