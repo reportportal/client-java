@@ -125,6 +125,7 @@ public class ListenerParameters implements Cloneable {
 
 		this.clientJoin = DEFAULT_CLIENT_JOIN;
 		this.clientJoinMode = LaunchIdLockMode.valueOf(DEFAULT_CLIENT_JOIN_MODE);
+		this.clientJoinTimeout = DEFAULT_CLIENT_JOIN_TIMEOUT;
 		this.lockFileName = DEFAULT_LOCK_FILE_NAME;
 		this.syncFileName = DEFAULT_SYNC_FILE_NAME;
 		this.lockWaitTimeout = DEFAULT_FILE_WAIT_TIMEOUT_MS;
