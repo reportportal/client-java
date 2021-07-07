@@ -60,7 +60,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static com.epam.reportportal.service.LaunchLoggingContext.DEFAULT_LAUNCH_KEY;
@@ -79,10 +78,8 @@ public class ReportPortal {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportPortal.class);
 
-	private final AtomicReference<String> instanceUuid = new AtomicReference<>(UUID.randomUUID().toString());
-
 	private final ListenerParameters parameters;
-	private final LockFile lockFile;
+	private final LaunchIdLock launchIdLock;
 	private final ReportPortalClient rpClient;
 	private final ExecutorService executor;
 
@@ -91,11 +88,11 @@ public class ReportPortal {
 	 * @param parameters Listener Parameters
 	 */
 	ReportPortal(@Nullable ReportPortalClient rpClient, @Nonnull ExecutorService executor, @Nonnull ListenerParameters parameters,
-			@Nullable LockFile lockFile) {
+			@Nullable LaunchIdLock launchIdLock) {
 		this.rpClient = rpClient;
 		this.executor = executor;
 		this.parameters = parameters;
-		this.lockFile = lockFile;
+		this.launchIdLock = launchIdLock;
 	}
 
 	/**
@@ -109,25 +106,26 @@ public class ReportPortal {
 			return Launch.NOOP_LAUNCH;
 		}
 
-		if (lockFile == null) {
+		if (launchIdLock == null) {
 			// do not use multi-client mode
 			return new LaunchImpl(rpClient, parameters, rq, executor);
 		}
 
-		final String uuid = lockFile.obtainLaunchUuid(instanceUuid.get());
+		final String instanceUuid = UUID.randomUUID().toString();
+		final String uuid = launchIdLock.obtainLaunchUuid(instanceUuid);
 		if (uuid == null) {
 			// timeout locking on file or interrupted, anyway it should be logged already
 			// we continue to operate normally, since this flag is set by default and we shouldn't fail launches because of it
 			return new LaunchImpl(rpClient, parameters, rq, executor);
 		}
 
-		if (instanceUuid.get().equals(uuid)) {
+		if (instanceUuid.equals(uuid)) {
 			// We got our own UUID as launch UUID, that means we are primary launch.
 			ObjectMapper objectMapper = new ObjectMapper();
 			try {
 				StartLaunchRQ rqCopy = objectMapper.readValue(objectMapper.writeValueAsString(rq), StartLaunchRQ.class);
 				rqCopy.setUuid(uuid);
-				return new PrimaryLaunch(rpClient, parameters, rqCopy, executor, lockFile, instanceUuid);
+				return new PrimaryLaunch(rpClient, parameters, rqCopy, executor, launchIdLock, instanceUuid);
 			} catch (IOException e) {
 				throw new InternalReportPortalClientException("Unable to clone start launch request:", e);
 			}
@@ -136,7 +134,7 @@ public class ReportPortal {
 				emitter.onSuccess(uuid);
 				emitter.onComplete();
 			});
-			return new SecondaryLaunch(rpClient, parameters, launch, executor, lockFile, instanceUuid);
+			return new SecondaryLaunch(rpClient, parameters, launch, executor, launchIdLock, instanceUuid);
 		}
 	}
 
@@ -173,11 +171,8 @@ public class ReportPortal {
 		return new Builder();
 	}
 
-	private static LockFile getLockFile(ListenerParameters parameters) {
-		if (parameters.getClientJoin()) {
-			return new LockFile(parameters);
-		}
-		return null;
+	private static LaunchIdLock getLaunchLock(ListenerParameters parameters) {
+		return parameters.getClientJoin() ? parameters.getClientJoinMode().getInstance(parameters) : null;
 	}
 
 	/**
@@ -201,7 +196,7 @@ public class ReportPortal {
 	 */
 	public static ReportPortal create(@Nonnull final ReportPortalClient client, @Nonnull final ListenerParameters params,
 			@Nonnull final ExecutorService executor) {
-		return new ReportPortal(client, executor, params, getLockFile(params));
+		return new ReportPortal(client, executor, params, getLaunchLock(params));
 	}
 
 	/**
@@ -551,8 +546,18 @@ public class ReportPortal {
 			return builder.build();
 		}
 
-		protected LockFile buildLockFile(ListenerParameters parameters) {
-			return getLockFile(parameters);
+		/**
+		 * @param parameters Report Portal parameters
+		 * @return Launch lock instance
+		 * @deprecated use {@link #buildLaunchLock(ListenerParameters)}
+		 */
+		@Deprecated
+		protected LaunchIdLock buildLockFile(ListenerParameters parameters) {
+			return buildLaunchLock(parameters);
+		}
+
+		protected LaunchIdLock buildLaunchLock(ListenerParameters parameters) {
+			return getLaunchLock(parameters);
 		}
 
 		protected PropertiesLoader defaultPropertiesLoader() {

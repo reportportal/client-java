@@ -17,7 +17,10 @@
 package com.epam.reportportal.service.launch;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.*;
+import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.service.LaunchIdLock;
+import com.epam.reportportal.service.LaunchLoggingContext;
+import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.utils.Waiter;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.launch.LaunchResource;
@@ -32,24 +35,19 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * The class represents a {@link Launch} which reports into existing one and never starts its own.
  */
-public class SecondaryLaunch extends LaunchImpl {
+public class SecondaryLaunch extends AbstractJoinedLaunch {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SecondaryLaunch.class);
 
-	private final ReportPortalClient rpClient;
-	private final LockFile lockFile;
-	private final AtomicReference<String> instanceUuid;
+	private final ReportPortalClient client;
 
 	public SecondaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, Maybe<String> launch,
-			ExecutorService executorService, LockFile lockFile, AtomicReference<String> instanceUuid) {
-		super(rpClient, parameters, launch, executorService);
-		this.rpClient = rpClient;
-		this.lockFile = lockFile;
-		this.instanceUuid = instanceUuid;
+			ExecutorService executorService, LaunchIdLock launchIdLock, String instanceUuid) {
+		super(rpClient, parameters, launch, executorService, launchIdLock, instanceUuid);
+		client = rpClient;
 	}
 
 	private void waitForLaunchStart() {
@@ -61,7 +59,7 @@ public class SecondaryLaunch extends LaunchImpl {
 			public Boolean call() {
 				if (result == null) {
 					disposables.add(launch.subscribe(uuid -> {
-						Maybe<LaunchResource> maybeRs = rpClient.getLaunchByUuid(uuid);
+						Maybe<LaunchResource> maybeRs = client.getLaunchByUuid(uuid);
 						if (maybeRs != null) {
 							disposables.add(maybeRs.subscribe(
 									launchResource -> result = Boolean.TRUE,
@@ -92,14 +90,16 @@ public class SecondaryLaunch extends LaunchImpl {
 	public void finish(final FinishExecutionRQ rq) {
 		QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
 		try {
-			Throwable throwable = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren()).
-					timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
+			Throwable throwable = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren())
+					.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS)
+					.blockingGet();
 			if (throwable != null) {
 				LOGGER.error("Unable to finish secondary launch in ReportPortal", throwable);
 			}
 		} finally {
 			// ignore super call, since only primary launch should finish it
-			lockFile.finishInstanceUuid(instanceUuid.get());
+			stopRunning();
+			lock.finishInstanceUuid(uuid);
 		}
 	}
 }
