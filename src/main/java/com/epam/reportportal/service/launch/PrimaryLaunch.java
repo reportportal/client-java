@@ -46,6 +46,7 @@ public class PrimaryLaunch extends AbstractJoinedLaunch {
 		stopRunning();
 		lock.finishInstanceUuid(uuid);
 		uuid = UUID.randomUUID().toString();
+		lock.obtainLaunchUuid(uuid);
 
 		Callable<Boolean> finishCondition = new Callable<Boolean>() {
 			private volatile Collection<String> launches;

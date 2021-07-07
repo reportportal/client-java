@@ -31,6 +31,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
@@ -325,5 +326,20 @@ public class LaunchTest {
 
 		String testName = testCaptor.getValue().getName();
 		assertThat(testName, allOf(hasLength(1024), endsWith("...")));
+	}
+
+	@Test
+	@Timeout(10)
+	public void launch_should_not_throw_exceptions_or_hang_if_finished_and_started_again() {
+		simulateStartLaunchResponse(rpClient);
+		simulateFinishLaunchResponse(rpClient);
+
+		StartLaunchRQ startRq = standardLaunchRequest(STANDARD_PARAMETERS);
+		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, startRq, executor);
+		launch.start();
+		launch.finish(standardLaunchFinishRequest());
+
+		launch.start();
+		launch.finish(standardLaunchFinishRequest());
 	}
 }

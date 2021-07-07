@@ -111,7 +111,7 @@ public class LaunchImpl extends Launch {
 	protected final Maybe<String> launch;
 	private final ExecutorService executor;
 	private final Scheduler scheduler;
-	private final StatisticsService statisticsService;
+	private StatisticsService statisticsService;
 	private final StartLaunchRQ startRq;
 
 	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
@@ -225,6 +225,7 @@ public class LaunchImpl extends Launch {
 				}
 		} finally {
 			getStatisticsService().close();
+			statisticsService = new StatisticsService(getParameters());
 		}
 	}
 
