@@ -22,6 +22,7 @@ import com.epam.reportportal.util.test.ProcessUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -273,8 +275,11 @@ public class LaunchIdLockSocketTest {
 		String clientUuid = UUID.randomUUID().toString();
 		launchIdLockSocket.obtainLaunchUuid(launchUuid);
 		launchIdLockSocket.sendCommand(LaunchIdLockSocket.Command.UPDATE, clientUuid);
-		Collection<String> liveUuids = launchIdLockSocket.getLiveInstanceUuids();
-		assertThat(liveUuids, hasSize(2));
+		Collection<String> liveUuids = Awaitility.await()
+				.pollDelay(Duration.ZERO)
+				.pollInterval(Duration.ofMillis(100))
+				.atMost(Duration.ofSeconds(5))
+				.until(launchIdLockSocket::getLiveInstanceUuids, hasSize(2));
 		assertThat(liveUuids, containsInAnyOrder(launchUuid, clientUuid));
 	}
 
