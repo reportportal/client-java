@@ -52,7 +52,6 @@ dependencies {
     api "org.aspectj:aspectjrt:${project.aspectj_version}"
     implementation "org.aspectj:aspectjweaver:${project.aspectj_version}"
 
-    api 'org.apache.tika:tika-core:1.12' // newer tika versions break Android compatibility, so deprecated
     implementation 'org.slf4j:slf4j-api:1.7.25'
 
     testImplementation("org.junit.platform:junit-platform-runner:${project.junit_runner_version}") {

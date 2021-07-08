@@ -18,7 +18,6 @@ package com.epam.reportportal.test;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.ReportPortalClient;
-import com.epam.reportportal.service.launch.lock.LaunchIdLockMode;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.utils.SubscriptionUtils;
 import com.epam.reportportal.utils.http.HttpRequestUtils;

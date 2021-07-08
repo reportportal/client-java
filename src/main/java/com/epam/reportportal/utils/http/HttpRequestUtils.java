@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteSource;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
-import org.apache.tika.mime.MimeTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +51,7 @@ public class HttpRequestUtils {
 		MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
 
-	private static final String DEFAULT_TYPE = MimeTypes.OCTET_STREAM;
+	private static final String DEFAULT_TYPE = "application/octet-stream";
 
 	private HttpRequestUtils() {
 		//static only

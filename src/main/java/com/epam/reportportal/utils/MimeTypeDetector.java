@@ -16,16 +16,11 @@
 package com.epam.reportportal.utils;
 
 import com.google.common.io.ByteSource;
-import org.apache.tika.detect.Detector;
-import org.apache.tika.io.IOUtils;
-import org.apache.tika.io.TikaInputStream;
-import org.apache.tika.metadata.Metadata;
-import org.apache.tika.parser.AutoDetectParser;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-
-import static com.google.common.base.Strings.isNullOrEmpty;
+import java.net.URLConnection;
 
 /**
  * Utility stuff to detect mime type of binary data
@@ -34,40 +29,17 @@ import static com.google.common.base.Strings.isNullOrEmpty;
  */
 public class MimeTypeDetector {
 
-	private static final Detector detector = new AutoDetectParser().getDetector();
-
 	private MimeTypeDetector() {
 		//statics only
 	}
 
 	public static String detect(File file) throws IOException {
-		final Metadata metadata = new Metadata();
-		metadata.set(Metadata.RESOURCE_NAME_KEY, file.getName());
-		TikaInputStream is  = TikaInputStream.get(file.toPath());
-		try {
-			return detect(is, metadata);
-		} finally {
-			IOUtils.closeQuietly(is);
-		}
-
+		String type = URLConnection.guessContentTypeFromStream(new FileInputStream(file));
+		return type == null ? URLConnection.guessContentTypeFromName(file.getName()) : type;
 	}
 
 	public static String detect(ByteSource source, String resourceName) throws IOException {
-
-		final Metadata metadata = new Metadata();
-		if (!isNullOrEmpty(resourceName)) {
-			metadata.set(Metadata.RESOURCE_NAME_KEY, resourceName);
-		}
-		TikaInputStream is = TikaInputStream.get(source.openBufferedStream());
-		try {
-			return detect(is, metadata);
-		} finally {
-			IOUtils.closeQuietly(is);
-		}
-
-	}
-
-	public static String detect(TikaInputStream is, Metadata metadata) throws IOException {
-		return detector.detect(is, metadata).toString();
+		String type = URLConnection.guessContentTypeFromStream(source.openStream());
+		return type == null ? URLConnection.guessContentTypeFromName(resourceName) : type;
 	}
 }
