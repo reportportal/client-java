@@ -74,6 +74,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 
 		private final Random random = new Random();
 		private final Queue<Socket> workSockets = new LinkedList<>();
+		private volatile boolean running = true;
 
 		public ServerHandler() {
 			setDaemon(true);
@@ -83,8 +84,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 		@Override
 		public void run() {
 			try {
-				//noinspection InfiniteLoopStatement
-				while (true) {
+				while (running) {
 					Socket s = mainLock.accept();
 					workSockets.add(s);
 					OutputStream os = s.getOutputStream();
@@ -219,43 +219,62 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 	@Override
 	public String obtainLaunchUuid(@Nonnull final String uuid) {
 		Objects.requireNonNull(uuid);
-		if (mainLock != null) {
-			if (!uuid.equals(lockUuid)) {
-				writeInstanceUuid(uuid);
-			}
-			return lockUuid;
-		}
-		try {
-			synchronized (LaunchIdLockSocket.class) {
-				if (mainLock == null) {
-					mainLock = new Waiter("Wait for server socket acquire").pollingEvery(200, TimeUnit.MILLISECONDS)
-							.duration(1, TimeUnit.SECONDS)
-							.ignore(IOException.class)
-							.timeoutFail()
-							.till(() -> new ServerSocket(portNumber, SOCKET_BACKLOG, InetAddress.getLocalHost()));
-					lockUuid = uuid;
-					INSTANCES.put(uuid, new Date());
+		if (mainLock == null) {
+			try {
+				synchronized (LaunchIdLockSocket.class) {
+					if (mainLock == null) {
+						mainLock = new Waiter("Wait for server socket acquire").pollingEvery(200, TimeUnit.MILLISECONDS)
+								.duration(1, TimeUnit.SECONDS)
+								.ignore(IOException.class)
+								.timeoutFail()
+								.till(() -> new ServerSocket(portNumber, SOCKET_BACKLOG, InetAddress.getLocalHost()));
+						lockUuid = uuid;
+						INSTANCES.put(uuid, new Date());
+					}
 				}
+				if (uuid.equals(lockUuid)) {
+					// This is the main thread, serve clients
+					handler = new ServerHandler();
+					handler.start();
+				} else {
+					// Another thread acquired lock while synchronization wait
+					writeInstanceUuid(uuid);
+				}
+				return lockUuid;
+			} catch (InternalReportPortalClientException e) {
+				// already busy, try to connect
+				LOGGER.debug("Unable to obtain lock socket", e);
+				return writeInstanceUuid(uuid);
 			}
+		} else {
 			if (!uuid.equals(lockUuid)) {
-				// Another thread acquired lock while synchronization wait
 				writeInstanceUuid(uuid);
-			} else {
-				// This is the main thread, serve clients
-				handler = new ServerHandler();
-				handler.start();
 			}
 			return lockUuid;
-		} catch (InternalReportPortalClientException e) {
-			// already busy, try to connect
-			LOGGER.debug("Unable to obtain lock socket", e);
-			return writeInstanceUuid(uuid);
 		}
 	}
 
 	@Override
 	public void updateInstanceUuid(@Nonnull final String instanceUuid) {
 		writeInstanceUuid(instanceUuid);
+	}
+
+	void reset() {
+		if (handler != null) {
+			handler.running = false;
+			handler = null;
+		}
+		if (mainLock != null) {
+			ServerSocket socket = mainLock;
+			mainLock = null; // faster than closing connection
+			try {
+				socket.close();
+			} catch (IOException e) {
+				LOGGER.warn("Unable to close server socket properly", e);
+			}
+		}
+		lockUuid = null;
+		INSTANCES.clear();
 	}
 
 	/**
@@ -271,15 +290,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 			if (instanceUuid.equals(lockUuid)) {
 				synchronized (LaunchIdLockSocket.class) {
 					if (mainLock != null) {
-						handler.interrupt();
-						handler = null;
-						try {
-							mainLock.close();
-						} catch (IOException e) {
-							LOGGER.warn("Unable to close server socket properly", e);
-						}
-						mainLock = null;
-						lockUuid = null;
+						reset();
 					}
 				}
 			}
@@ -297,24 +308,5 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 				.filter(e -> e.getValue().after(timeoutTime))
 				.map(Map.Entry::getKey)
 				.collect(Collectors.toList());
-	}
-
-	void reset() {
-		if (handler != null) {
-			handler.interrupt();
-			handler = null;
-		}
-		if (mainLock != null) {
-			ServerSocket socket = mainLock;
-			mainLock = null; // faster than closing connection
-			try {
-				socket.close();
-			} catch (IOException e) {
-				LOGGER.warn("Unable to close server socket properly", e);
-			}
-			mainLock = null;
-		}
-		lockUuid = null;
-		INSTANCES.clear();
 	}
 }
