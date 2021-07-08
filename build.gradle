@@ -89,12 +89,6 @@ wrapper {
     gradleVersion = '5.4.1'
 }
 
-release {
-    git {
-        requireBranch = 'retrofit'
-    }
-}
-
 processResources {
     filesMatching('client.properties') {
         expand(project.properties)
