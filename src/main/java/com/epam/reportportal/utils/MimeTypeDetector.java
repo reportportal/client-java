@@ -15,12 +15,18 @@
  */
 package com.epam.reportportal.utils;
 
+import com.epam.reportportal.utils.files.Utils;
 import com.google.common.io.ByteSource;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /**
  * Utility stuff to detect mime type of binary data
@@ -28,18 +34,34 @@ import java.net.URLConnection;
  * @author Andrei Varabyeu
  */
 public class MimeTypeDetector {
+	private static final String UNKNOWN_TYPE = "application/octet-stream";
 
 	private MimeTypeDetector() {
 		//statics only
 	}
 
-	public static String detect(File file) throws IOException {
-		String type = URLConnection.guessContentTypeFromStream(new FileInputStream(file));
-		return type == null ? URLConnection.guessContentTypeFromName(file.getName()) : type;
+	@Nonnull
+	public static String detect(@Nonnull final File file) throws IOException {
+		String type = URLConnection.guessContentTypeFromStream(new ByteArrayInputStream(Utils.readInputStreamToBytes(new FileInputStream(
+				file))));
+		if (type == null) {
+			type = Files.probeContentType(file.toPath());
+		}
+		if (type == null) {
+			type = URLConnection.guessContentTypeFromName(file.getName());
+		}
+		return type == null ? UNKNOWN_TYPE : type;
 	}
 
-	public static String detect(ByteSource source, String resourceName) throws IOException {
+	@Nonnull
+	public static String detect(@Nonnull final ByteSource source, @Nullable final String resourceName) throws IOException {
 		String type = URLConnection.guessContentTypeFromStream(source.openStream());
-		return type == null ? URLConnection.guessContentTypeFromName(resourceName) : type;
+		if (type == null && resourceName != null) {
+			type = Files.probeContentType(Paths.get(resourceName));
+		}
+		if (type == null && resourceName != null) {
+			type = URLConnection.guessContentTypeFromName(resourceName);
+		}
+		return type == null ? UNKNOWN_TYPE : type;
 	}
 }
