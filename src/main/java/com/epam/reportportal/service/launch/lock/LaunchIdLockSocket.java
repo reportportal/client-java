@@ -30,7 +30,6 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -82,8 +81,9 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 
 		@Override
 		public void run() {
-			try {
-				while (running) {
+
+			while (running) {
+				try {
 					Socket s = mainLock.accept();
 					workSockets.add(s);
 					OutputStream os = s.getOutputStream();
@@ -119,28 +119,19 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 						}
 						workSockets.addAll(checked);
 					}
-				}
-			} catch (SocketException ignore) {
-				// OK on finish
-			} catch (IOException e) {
-				LOGGER.warn("Error serving server connections: ", e);
-			} finally {
-				Socket current;
-				while ((current = workSockets.poll()) != null) {
-					if (!current.isClosed()) {
-						try {
-							current.close();
-						} catch (IOException e) {
-							LOGGER.warn("Unable to close socket properly", e);
-						}
-					}
-				}
-				try {
-					if (mainLock != null && !mainLock.isClosed()) {
-						mainLock.close();
-					}
 				} catch (IOException e) {
-					LOGGER.warn("Unable to close server socket properly", e);
+					LOGGER.warn("Error serving server connections: ", e);
+				}
+			}
+
+			Socket current;
+			while ((current = workSockets.poll()) != null) {
+				if (!current.isClosed()) {
+					try {
+						current.close();
+					} catch (IOException e) {
+						LOGGER.warn("Unable to close socket properly", e);
+					}
 				}
 			}
 		}
@@ -157,8 +148,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 				.applyRandomDiscrepancy(MAX_WAIT_TIME_DISCREPANCY)
 				.pollingEvery(1, TimeUnit.SECONDS)
 				.till(() -> {
-					try {
-						Socket socket = new Socket(InetAddress.getLocalHost(), portNumber);
+					try (Socket socket = new Socket(InetAddress.getLocalHost(), portNumber)) {
 						byte[] launchAnswerBuffer = new byte[instanceUuid.getBytes(TRANSFER_CHARSET).length];
 						InputStream is = socket.getInputStream();
 						//noinspection ResultOfMethodCallIgnored
@@ -172,7 +162,6 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 						byte[] answerBuffer = new byte[expectedAnswer.getBytes(TRANSFER_CHARSET).length];
 						//noinspection ResultOfMethodCallIgnored
 						is.read(answerBuffer);
-						socket.close();
 						String answer = new String(answerBuffer, TRANSFER_CHARSET);
 						if (!expectedAnswer.equals(answer)) {
 							LOGGER.warn("Invalid server instance UUID '{}' answer", command.name());
