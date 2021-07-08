@@ -36,7 +36,7 @@ public class MimeTypeDetectorTest {
 				new Object[] { new File("src/test/resources/files/simple_response.txt"), "text/plain" },
 				new Object[] { new File("src/test/resources/hello.json"), "application/json" },
 				new Object[] { new File("src/test/resources/logback-test.xml"), "application/xml" },
-				new Object[] { new File("src/test/resources/junit-platform.properties"), "application/octet-stream" }
+				new Object[] { new File("src/test/resources/junit-platform.properties"), "text/plain" }
 		);
 	}
 

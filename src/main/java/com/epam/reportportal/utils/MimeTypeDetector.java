@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Utility stuff to detect mime type of binary data
@@ -35,9 +37,22 @@ import java.nio.file.Paths;
  */
 public class MimeTypeDetector {
 	private static final String UNKNOWN_TYPE = "application/octet-stream";
+	private static final String EXTENSION_DELIMITER = ".";
+
+	private static final Map<String, String> ADDITIONAL_EXTENSION_MAPPING = new HashMap<String, String>(){{
+		put(".properties", "text/plain");
+	}};
 
 	private MimeTypeDetector() {
 		//statics only
+	}
+
+	private static String detectByExtensionInternal(String name) {
+		int extensionIndex = name.lastIndexOf(EXTENSION_DELIMITER);
+		if(extensionIndex >= 0) {
+			return ADDITIONAL_EXTENSION_MAPPING.get(name.substring(extensionIndex));
+		}
+		return null;
 	}
 
 	@Nonnull
@@ -50,17 +65,24 @@ public class MimeTypeDetector {
 		if (type == null) {
 			type = URLConnection.guessContentTypeFromName(file.getName());
 		}
+		if (type == null) {
+			type = detectByExtensionInternal(file.getName());
+		}
 		return type == null ? UNKNOWN_TYPE : type;
 	}
 
 	@Nonnull
 	public static String detect(@Nonnull final ByteSource source, @Nullable final String resourceName) throws IOException {
 		String type = URLConnection.guessContentTypeFromStream(source.openStream());
-		if (type == null && resourceName != null) {
-			type = Files.probeContentType(Paths.get(resourceName));
-		}
-		if (type == null && resourceName != null) {
-			type = URLConnection.guessContentTypeFromName(resourceName);
+		if(resourceName != null) {
+			if (type == null) {
+				type = Files.probeContentType(Paths.get(resourceName));
+			} if (type == null) {
+				type = URLConnection.guessContentTypeFromName(resourceName);
+			}
+			if (type == null) {
+				type = detectByExtensionInternal(resourceName);
+			}
 		}
 		return type == null ? UNKNOWN_TYPE : type;
 	}
