@@ -16,7 +16,6 @@
 
 package com.epam.reportportal.service.launch.lock;
 
-import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.LaunchIdLock;
 import com.epam.reportportal.utils.Waiter;
@@ -223,11 +222,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 			try {
 				synchronized (LaunchIdLockSocket.class) {
 					if (mainLock == null) {
-						mainLock = new Waiter("Wait for server socket acquire").pollingEvery(200, TimeUnit.MILLISECONDS)
-								.duration(1, TimeUnit.SECONDS)
-								.ignore(IOException.class)
-								.timeoutFail()
-								.till(() -> new ServerSocket(portNumber, SOCKET_BACKLOG, InetAddress.getLocalHost()));
+						mainLock = new ServerSocket(portNumber, SOCKET_BACKLOG, InetAddress.getLocalHost());
 						lockUuid = uuid;
 						INSTANCES.put(uuid, new Date());
 					}
@@ -241,7 +236,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 					writeInstanceUuid(uuid);
 				}
 				return lockUuid;
-			} catch (InternalReportPortalClientException e) {
+			} catch (IOException e) {
 				// already busy, try to connect
 				LOGGER.debug("Unable to obtain lock socket", e);
 				return writeInstanceUuid(uuid);

@@ -31,6 +31,9 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -46,17 +49,22 @@ import static org.hamcrest.Matchers.*;
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class LaunchIdLockSocketTest {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LaunchIdLockSocketTest.class);
 
 	private final LaunchIdLockSocket launchIdLockSocket = new LaunchIdLockSocket(getParameters());
 
 	private ListenerParameters getParameters() {
-		ListenerParameters params = new ListenerParameters();
-		params.setEnable(Boolean.TRUE);
-		params.setLockWaitTimeout(LOCK_TIMEOUT);
-		return params;
+		try (ServerSocket ss = new ServerSocket(0,20,InetAddress.getLocalHost())) {
+			int port = ss.getLocalPort();
+			ListenerParameters params = new ListenerParameters();
+			params.setEnable(Boolean.TRUE);
+			params.setLockPortNumber(port);
+			params.setLockWaitTimeout(LOCK_TIMEOUT);
+			return params;
+		} catch (IOException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 
 	@AfterEach
@@ -212,7 +220,9 @@ public class LaunchIdLockSocketTest {
 				Collections.nCopies(threadNum, launchIdLockSocket)
 		);
 
-		String uuidToRemove = uuidSet.getLeft().stream().skip(2).iterator().next();
+		String firstUuid = uuidSet.getRight().iterator().next();
+		uuidSet.getLeft().remove(firstUuid);
+		String uuidToRemove = uuidSet.getLeft().iterator().next();
 		launchIdLockSocket.finishInstanceUuid(uuidToRemove);
 
 		assertThat(launchIdLockSocket.getLiveInstanceUuids(), Matchers.hasSize(threadNum - 1));
