@@ -17,7 +17,6 @@
 package com.epam.reportportal.service.step;
 
 import com.epam.reportportal.listeners.ItemStatus;
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
@@ -27,8 +26,8 @@ import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
-import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import okhttp3.MultipartBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -143,8 +142,7 @@ public class ManualNestedStepTest {
 
 		List<String> parentUuids = stepParentUuidCaptor.getAllValues()
 				.subList(0, 4); // I believe due to mockito bug there are over 9000 items in this list
-		assertThat(
-				parentUuids,
+		assertThat(parentUuids,
 				contains(equalTo(testLaunchUuid), equalTo(testClassUuid), equalTo(testMethodUuid), equalTo(testMethodUuid))
 		);
 
@@ -202,9 +200,8 @@ public class ManualNestedStepTest {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void verify_nested_step_with_a_batch_of_logs() {
-		when(client.log(any(MultiPartRequest.class))).thenReturn(createConstantMaybe(new BatchSaveOperatingRS()));
+		when(client.log(any(List.class))).thenReturn(createConstantMaybe(new BatchSaveOperatingRS()));
 
 		int logNumber = 3;
 
@@ -214,7 +211,7 @@ public class ManualNestedStepTest {
 
 		ArgumentCaptor<StartTestItemRQ> stepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, timeout(1000).times(1)).startTestItem(eq(testMethodUuid), stepCaptor.capture());
-		ArgumentCaptor<MultiPartRequest> logCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
+		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, timeout(1000).times(logNumber)).log(logCaptor.capture());
 
 		StartTestItemRQ nestedStep = stepCaptor.getValue();
@@ -222,8 +219,7 @@ public class ManualNestedStepTest {
 
 		List<Pair<String, String>> logRequests = logCaptor.getAllValues()
 				.stream()
-				.flatMap(rq -> rq.getSerializedRQs().stream())
-				.flatMap(e -> ((List<SaveLogRQ>) e.getRequest()).stream())
+				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())
 				.map(e -> Pair.of(e.getLevel(), e.getMessage()))
 				.collect(Collectors.toList());
 

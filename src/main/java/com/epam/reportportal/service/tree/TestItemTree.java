@@ -56,39 +56,12 @@ public class TestItemTree {
 	/**
 	 * Create a Test Item Leaf for a tree of Test Items
 	 *
-	 * @deprecated use {@link TestItemTree#createTestItemLeaf(Maybe)}
-	 * @param itemId an ID of the leaf
-	 * @param expectedChildrenCount not used anymore
-	 * @return a leaf object
-	 */
-	@Deprecated
-	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> itemId, int expectedChildrenCount) {
-		return createTestItemLeaf(itemId);
-	}
-
-	/**
-	 * Create a Test Item Leaf for a tree of Test Items
-	 *
 	 * @param parentId an ID of a parent Test Item (leaf)
 	 * @param itemId an ID of the leaf
 	 * @return a leaf object
 	 */
 	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> parentId, Maybe<String> itemId) {
 		return new TestItemTree.TestItemLeaf(parentId, itemId);
-	}
-
-	/**
-	 * Create a Test Item Leaf for a tree of Test Items
-	 *
-	 * @deprecated use {@link TestItemTree#createTestItemLeaf(Maybe)}
-	 * @param parentId an ID of a parent Test Item (leaf)
-	 * @param itemId an ID of the leaf
-	 * @param expectedChildrenCount not used anymore
-	 * @return a leaf object
-	 */
-	@Deprecated
-	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> parentId, Maybe<String> itemId, int expectedChildrenCount) {
-		return createTestItemLeaf(parentId, itemId);
 	}
 
 	/**

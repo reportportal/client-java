@@ -28,36 +28,38 @@ import retrofit2.http.*;
 
 import java.util.List;
 
-public interface ReportPortalClient {
+public interface ReportPortalClientV2 extends ReportPortalClient {
 
-	@POST("v1/{projectName}/launch")
+	@Override
+	@POST("v2/{projectName}/launch")
 	Maybe<StartLaunchRS> startLaunch(@Body StartLaunchRQ rq);
 
-	@POST("v1/{projectName}/launch/merge")
+	@Override
+	@POST("v2/{projectName}/launch/merge")
 	Maybe<LaunchResource> mergeLaunches(@Body MergeLaunchesRQ rq);
 
-	@PUT("v1/{projectName}/launch/{launchId}/finish")
+	@Override
+	@PUT("v2/{projectName}/launch/{launchId}/finish")
 	Maybe<OperationCompletionRS> finishLaunch(@Path("launchId") String launch, @Body FinishExecutionRQ rq);
 
-	@POST("v1/{projectName}/item")
+	@Override
+	@POST("v2/{projectName}/item")
 	Maybe<ItemCreatedRS> startTestItem(@Body StartTestItemRQ rq);
 
-	@POST("v1/{projectName}/item/{parent}")
+	@Override
+	@POST("v2/{projectName}/item/{parent}")
 	Maybe<ItemCreatedRS> startTestItem(@Path("parent") String parent, @Body StartTestItemRQ rq);
 
-	@PUT("v1/{projectName}/item/{itemId}")
+	@Override
+	@PUT("v2/{projectName}/item/{itemId}")
 	Maybe<OperationCompletionRS> finishTestItem(@Path("itemId") String itemId, @Body FinishTestItemRQ rq);
 
-	@POST("v1/{projectName}/log")
+	@Override
+	@POST("v2/{projectName}/log")
 	Maybe<EntryCreatedAsyncRS> log(@Body SaveLogRQ rq);
 
+	@Override
 	@Multipart
-	@POST("v1/{projectName}/log")
+	@POST("v2/{projectName}/log")
 	Maybe<BatchSaveOperatingRS> log(@Part List<MultipartBody.Part> parts);
-
-	@GET("v1/{projectName}/launch/uuid/{launchUuid}")
-	Maybe<LaunchResource> getLaunchByUuid(@Path("launchUuid") String launchUuid);
-
-	@GET("v1/{projectName}/item/uuid/{itemUuid}")
-	Maybe<TestItemResource> getItemByUuid(@Path("itemUuid") String itemUuid);
 }

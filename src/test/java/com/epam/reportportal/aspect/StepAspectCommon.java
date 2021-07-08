@@ -19,18 +19,19 @@ package com.epam.reportportal.aspect;
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.attribute.Attribute;
 import com.epam.reportportal.annotations.attribute.Attributes;
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
+import okhttp3.MultipartBody;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.Signature;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.aspectj.lang.reflect.SourceLocation;
 
 import java.lang.reflect.Method;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.lenient;
@@ -43,7 +44,7 @@ public class StepAspectCommon {
 
 	static void simulateLaunch(ReportPortalClient client, String launchId) {
 		when(client.startLaunch(any())).thenReturn(TestUtils.startLaunchResponse(launchId));
-		lenient().when(client.log(any(MultiPartRequest.class))).thenReturn(CommonUtils.createMaybe(new BatchSaveOperatingRS()));
+		lenient().when(client.log(any(List.class))).thenReturn(CommonUtils.createMaybe(new BatchSaveOperatingRS()));
 		when(client.finishLaunch(anyString(),
 				any(FinishExecutionRQ.class)
 		)).thenReturn(CommonUtils.createMaybe(new OperationCompletionRS()));

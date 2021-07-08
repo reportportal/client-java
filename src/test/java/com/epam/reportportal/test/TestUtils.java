@@ -17,24 +17,25 @@
 package com.epam.reportportal.test;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.utils.SubscriptionUtils;
+import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.reactivex.Maybe;
+import okhttp3.MultipartBody;
+import okio.Buffer;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
+import java.io.IOException;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -99,8 +100,7 @@ public class TestUtils {
 	}
 
 	public static void simulateFinishLaunchResponse(final ReportPortalClient client) {
-		when(client.finishLaunch(
-				anyString(),
+		when(client.finishLaunch(anyString(),
 				any(FinishExecutionRQ.class)
 		)).thenReturn(CommonUtils.createMaybe(new OperationCompletionRS()));
 	}
@@ -137,8 +137,7 @@ public class TestUtils {
 	}
 
 	public static void simulateFinishTestItemResponse(final ReportPortalClient client) {
-		when(client.finishTestItem(
-				anyString(),
+		when(client.finishTestItem(anyString(),
 				any(FinishTestItemRQ.class)
 		)).then((Answer<Maybe<OperationCompletionRS>>) invocation -> finishTestItemResponse());
 	}
@@ -191,14 +190,37 @@ public class TestUtils {
 		return SubscriptionUtils.createConstantMaybe(rs);
 	}
 
-	@SuppressWarnings("unchecked")
+	public static List<SaveLogRQ> extractJsonParts(List<MultipartBody.Part> parts) {
+		return parts.stream()
+				.filter(p -> ofNullable(p.headers()).map(headers -> headers.get("Content-Disposition"))
+						.map(h -> h.contains(Constants.LOG_REQUEST_JSON_PART))
+						.orElse(false))
+				.map(MultipartBody.Part::body)
+				.map(b -> {
+					Buffer buf = new Buffer();
+					try {
+						b.writeTo(buf);
+					} catch (IOException ignore) {
+					}
+					return buf.readByteArray();
+				})
+				.map(b -> {
+					try {
+						return HttpRequestUtils.MAPPER.readValue(b, new TypeReference<List<SaveLogRQ>>() {
+						});
+					} catch (IOException e) {
+						return Collections.<SaveLogRQ>emptyList();
+					}
+				})
+				.flatMap(Collection::stream)
+				.collect(Collectors.toList());
+	}
+
 	public static void simulateBatchLogResponse(final ReportPortalClient client) {
-		when(client.log(any(MultiPartRequest.class))).then((Answer<Maybe<BatchSaveOperatingRS>>) invocation -> {
-			MultiPartRequest rq = invocation.getArgument(0);
-			List<String> saveRqs = rq.getSerializedRQs()
-					.stream()
-					.map(r -> (List<SaveLogRQ>) r.getRequest())
-					.flatMap(Collection::stream)
+		//noinspection unchecked
+		when(client.log(any(List.class))).then((Answer<Maybe<BatchSaveOperatingRS>>) invocation -> {
+			List<MultipartBody.Part> rq = invocation.getArgument(0);
+			List<String> saveRqs = extractJsonParts(rq).stream()
 					.peek(r -> LOGGER.info(r.getItemUuid() + " - " + r.getMessage()))
 					.map(s -> ofNullable(s.getUuid()).orElseGet(() -> UUID.randomUUID().toString()))
 					.collect(Collectors.toList());

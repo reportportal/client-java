@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics.item;
+package com.epam.reportportal.service.statistics.item;
 
 import com.google.common.collect.Maps;
 import io.reactivex.annotations.Nullable;
@@ -22,18 +22,17 @@ import io.reactivex.annotations.Nullable;
 import java.util.Map;
 
 /**
- * Representation of the `Google analytics` EVENT entity
+ * Representation of the Statistics EVENT entity
  *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
- * @see <a href="https://support.google.com/analytics/answer/1033068">Google analytics event</a>
  */
-public class AnalyticsEvent implements AnalyticsItem {
+public class StatisticsEvent implements StatisticsItem {
 
 	private static final String TYPE = "event";
 
 	private final Map<String, String> params;
 
-	public AnalyticsEvent(@Nullable String eventCategory, @Nullable String eventAction, @Nullable String eventLabel) {
+	public StatisticsEvent(@Nullable String eventCategory, @Nullable String eventAction, @Nullable String eventLabel) {
 		params = Maps.newHashMapWithExpectedSize(4);
 		params.put("t", TYPE);
 		params.put("ec", eventCategory);
@@ -41,12 +40,12 @@ public class AnalyticsEvent implements AnalyticsItem {
 		params.put("el", eventLabel);
 	}
 
-	private AnalyticsEvent(Map<String, String> params) {
+	private StatisticsEvent(Map<String, String> params) {
 		this.params = params;
 	}
 
-	public static AnalyticsEventBuilder builder() {
-		return new AnalyticsEventBuilder();
+	public static StatisticsEventBuilder builder() {
+		return new StatisticsEventBuilder();
 	}
 
 	@Override
@@ -54,32 +53,32 @@ public class AnalyticsEvent implements AnalyticsItem {
 		return params;
 	}
 
-	public static class AnalyticsEventBuilder {
+	public static class StatisticsEventBuilder {
 
 		private final Map<String, String> params;
 
-		public AnalyticsEventBuilder() {
+		public StatisticsEventBuilder() {
 			params = Maps.newHashMapWithExpectedSize(4);
 			params.put("t", TYPE);
 		}
 
-		public AnalyticsEventBuilder withCategory(String category) {
+		public StatisticsEventBuilder withCategory(String category) {
 			params.put("ec", category);
 			return this;
 		}
 
-		public AnalyticsEventBuilder withAction(String action) {
+		public StatisticsEventBuilder withAction(String action) {
 			params.put("ea", action);
 			return this;
 		}
 
-		public AnalyticsEventBuilder withLabel(String label) {
+		public StatisticsEventBuilder withLabel(String label) {
 			params.put("el", label);
 			return this;
 		}
 
-		public AnalyticsEvent build() {
-			return new AnalyticsEvent(params);
+		public StatisticsEvent build() {
+			return new StatisticsEvent(params);
 		}
 	}
 }

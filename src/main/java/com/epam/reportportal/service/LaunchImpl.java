@@ -20,7 +20,7 @@ import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.analytics.AnalyticsService;
+import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.utils.RetryWithDelay;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.ta.reportportal.ws.model.*;
@@ -111,7 +111,7 @@ public class LaunchImpl extends Launch {
 	protected final Maybe<String> launch;
 	private final ExecutorService executor;
 	private final Scheduler scheduler;
-	private final AnalyticsService analyticsService;
+	private StatisticsService statisticsService;
 	private final StartLaunchRQ startRq;
 
 	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
@@ -121,7 +121,7 @@ public class LaunchImpl extends Launch {
 		requireNonNull(parameters, "Parameters shouldn't be NULL");
 		executor = requireNonNull(executorService);
 		scheduler = createScheduler(executor);
-		analyticsService = new AnalyticsService(parameters);
+		statisticsService = new StatisticsService(parameters);
 		startRq = rq;
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
@@ -133,6 +133,7 @@ public class LaunchImpl extends Launch {
 					.doOnSuccess(LAUNCH_SUCCESS_CONSUMER)
 					.doOnError(LOG_ERROR)).subscribeOn(getScheduler()).cache();
 
+			//noinspection ResultOfMethodCallIgnored
 			launchPromise.subscribe(rs -> emitter.onSuccess(rs.getId()), t -> {
 				LOG_ERROR.accept(t);
 				emitter.onComplete();
@@ -147,14 +148,14 @@ public class LaunchImpl extends Launch {
 		requireNonNull(parameters, "Parameters shouldn't be NULL");
 		executor = requireNonNull(executorService);
 		scheduler = createScheduler(executor);
-		analyticsService = new AnalyticsService(parameters);
-		startRq = emptyStartLaunchForAnalytics();
+		statisticsService = new StatisticsService(parameters);
+		startRq = emptyStartLaunchForStatistics();
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 		launch = launchMaybe.cache();
 	}
 
-	private static StartLaunchRQ emptyStartLaunchForAnalytics() {
+	private static StartLaunchRQ emptyStartLaunchForStatistics() {
 		StartLaunchRQ result = new StartLaunchRQ();
 		result.setAttributes(Collections.singleton(new ItemAttributesRQ(DefaultProperties.AGENT.getName(), CUSTOM_AGENT, true)));
 		return result;
@@ -182,8 +183,8 @@ public class LaunchImpl extends Launch {
 		return scheduler;
 	}
 
-	AnalyticsService getAnalyticsService() {
-		return analyticsService;
+	StatisticsService getStatisticsService() {
+		return statisticsService;
 	}
 
 	/**
@@ -198,7 +199,7 @@ public class LaunchImpl extends Launch {
 				getScheduler(),
 				getParameters()
 		);
-		getAnalyticsService().sendEvent(launch, startRq);
+		getStatisticsService().sendEvent(launch, startRq);
 		return this.launch;
 	}
 
@@ -218,16 +219,13 @@ public class LaunchImpl extends Launch {
 				.ignoreElement()
 				.cache();
 		try {
-			try {
 				Throwable error = finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
 				if (error != null) {
 					LOGGER.error("Unable to finish launch in ReportPortal", error);
 				}
-			} finally {
-				rpClient.close();
-			}
 		} finally {
-			getAnalyticsService().close();
+			getStatisticsService().close();
+			statisticsService = new StatisticsService(getParameters());
 		}
 	}
 

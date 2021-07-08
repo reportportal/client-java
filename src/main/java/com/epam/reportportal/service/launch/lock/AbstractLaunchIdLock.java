@@ -1,5 +1,5 @@
 /*
- *  Copyright 2020 EPAM Systems
+ *  Copyright 2021 EPAM Systems
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,18 +14,16 @@
  *  limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics;
+package com.epam.reportportal.service.launch.lock;
 
-import com.epam.reportportal.service.analytics.item.AnalyticsItem;
+import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.LaunchIdLock;
 
-public class DummyAnalytics implements Analytics {
+public abstract class AbstractLaunchIdLock implements LaunchIdLock {
 
-	@Override
-	public Boolean send(AnalyticsItem item) {
-		return Boolean.TRUE;
-	}
+	protected ListenerParameters parameters;
 
-	@Override
-	public void close() {
+	public AbstractLaunchIdLock(ListenerParameters listenerParameters) {
+		parameters = listenerParameters;
 	}
 }

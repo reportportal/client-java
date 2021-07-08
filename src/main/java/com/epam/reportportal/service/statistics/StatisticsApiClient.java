@@ -14,12 +14,20 @@
  *  limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics;
+package com.epam.reportportal.service.statistics;
 
-import com.epam.reportportal.service.analytics.item.AnalyticsItem;
+import io.reactivex.Maybe;
+import okhttp3.ResponseBody;
+import retrofit2.Response;
+import retrofit2.http.FieldMap;
+import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.POST;
 
-import java.io.Closeable;
+import java.util.Map;
 
-public interface Analytics extends Closeable {
-	Boolean send(AnalyticsItem item);
+public interface StatisticsApiClient {
+
+	@FormUrlEncoded
+	@POST("collect")
+	Maybe<Response<ResponseBody>> send(@FieldMap Map<String, String> params);
 }

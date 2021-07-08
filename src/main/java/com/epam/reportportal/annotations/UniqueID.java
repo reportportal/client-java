@@ -29,9 +29,11 @@ import java.lang.annotation.Target;
  *
  * @author Pavel Bortnik
  * @since Report Portal Api v3.1.0
+ * @deprecated use {@link TestCaseId} instead
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE, ElementType.METHOD })
+@Deprecated
 public @interface UniqueID {
 
 	/**

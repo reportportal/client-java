@@ -15,15 +15,17 @@
  */
 package com.epam.reportportal.service;
 
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.protocol.HttpContext;
+import com.google.common.net.HttpHeaders;
+import okhttp3.Interceptor;
+import okhttp3.Request;
+import okhttp3.Response;
+
+import java.io.IOException;
 
 /**
  * Adds Bearer TOKEN to the request headers
  */
-public class BearerAuthInterceptor implements HttpRequestInterceptor {
+public class BearerAuthInterceptor implements Interceptor {
 
 	private final String uuid;
 
@@ -32,7 +34,8 @@ public class BearerAuthInterceptor implements HttpRequestInterceptor {
 	}
 
 	@Override
-	public void process(HttpRequest request, HttpContext context) {
-		request.setHeader(HttpHeaders.AUTHORIZATION, "bearer " + uuid);
+	public Response intercept(Chain chain)  throws IOException {
+		Request rq = chain.request().newBuilder().addHeader(HttpHeaders.AUTHORIZATION, "bearer " + uuid).build();
+		return chain.proceed(rq);
 	}
 }
