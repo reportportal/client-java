@@ -180,7 +180,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 						}
 						return launchUuid;
 					} catch (IOException e) {
-						LOGGER.warn("Unable to '{}' instance UUID, connection error", command.name(), e);
+						LOGGER.warn("Unable to '{}' instance UUID on port '{}', connection error", command.name(), portNumber, e);
 						return null;
 					}
 				});
