@@ -57,7 +57,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 
 	private static volatile ServerSocket mainLock;
 	private static volatile String lockUuid;
-	private static volatile ServerHandler handler;
+	private volatile ServerHandler handler;
 
 	private final int portNumber;
 	private final long instanceWaitTimeout;
