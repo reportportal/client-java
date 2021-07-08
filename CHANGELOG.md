@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.0-RC-1]
 ### Added
 - New distributed Launch join mechanism: sockets
 - New properties: `rp.client.join.mode`, `rp.client.join.file.lock.name`, `rp.client.join.file.sync.name`, `rp.client.join.timeout.value`, 
