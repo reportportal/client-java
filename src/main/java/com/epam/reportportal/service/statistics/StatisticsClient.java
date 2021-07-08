@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics;
+package com.epam.reportportal.service.statistics;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.analytics.item.AnalyticsItem;
+import com.epam.reportportal.service.statistics.item.StatisticsItem;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HttpHeaders;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -27,7 +27,6 @@ import io.reactivex.schedulers.Schedulers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.ResponseBody;
-import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
@@ -48,12 +47,13 @@ import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
- * Google analytics asynchronous client. Required for sending analytics event to the resource identified by provided `trackingId`
+ * Statistics backend service asynchronous client. Require resource identifier by provided `trackingId` for sending statistics event.
  *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
-public class StatisticsService implements Statistics {
-	private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36";
+public class StatisticsClient implements Statistics {
+	private static final String USER_AGENT =
+			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " + "Chrome/91.0.4472.101 Safari/537.36";
 	private static final String BASE_URL = "https://www.google-analytics.com/";
 
 	private static final Map<String, String> CONSTANT_REQUEST_PARAMS = ImmutableMap.<String, String>builder().put("de", "UTF-8")
@@ -61,7 +61,7 @@ public class StatisticsService implements Statistics {
 			.build();
 
 	private final Map<String, String> commonParameters;
-	private final StatisticsClient client;
+	private final StatisticsApiClient client;
 	private OkHttpClient httpClient;
 	private ExecutorService executor;
 
@@ -86,14 +86,14 @@ public class StatisticsService implements Statistics {
 		return okHttpClient.build();
 	}
 
-	private static StatisticsClient buildClient(OkHttpClient httpClient, Scheduler scheduler) {
+	private static StatisticsApiClient buildClient(OkHttpClient httpClient, Scheduler scheduler) {
 		RxJava2CallAdapterFactory rxFactory = RxJava2CallAdapterFactory.createWithScheduler(scheduler);
 		Retrofit retrofit = new Retrofit.Builder().baseUrl(BASE_URL)
 				.addConverterFactory(JacksonConverterFactory.create())
 				.addCallAdapterFactory(rxFactory)
 				.client(httpClient)
 				.build();
-		return retrofit.create(StatisticsClient.class);
+		return retrofit.create(StatisticsApiClient.class);
 	}
 
 	private static Map<String, String> buildParams(String trackingId) {
@@ -103,17 +103,7 @@ public class StatisticsService implements Statistics {
 				.build();
 	}
 
-	/**
-	 * Adds set of mandatory parameters to the request params:
-	 * de - Encoding
-	 * v - Protocol version
-	 * cid - Client id
-	 * tid - Google analytics resource id
-	 *
-	 * @param trackingId ID of the `Google analytics` resource
-	 * @param parameters {@link ListenerParameters} Report Portal client parameters
-	 */
-	public StatisticsService(String trackingId, ListenerParameters parameters) {
+	public StatisticsClient(String trackingId, ListenerParameters parameters) {
 		commonParameters = buildParams(trackingId);
 		executor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("rp-stat-%s").setDaemon(true).build());
 		httpClient = buildHttpClient(parameters);
@@ -125,28 +115,28 @@ public class StatisticsService implements Statistics {
 	 * de - Encoding
 	 * v - Protocol version
 	 * cid - Client id
-	 * tid - Google analytics resource id
+	 * tid - Statistics resource id
 	 *
-	 * @param trackingId       ID of the `Google analytics` resource
-	 * @param statisticsClient {@link ListenerParameters} Report Portal client parameters
+	 * @param trackingId ID of the statistics resource
+	 * @param statisticsApiClient {@link StatisticsApiClient} instance
 	 */
-	public StatisticsService(String trackingId, StatisticsClient statisticsClient) {
+	public StatisticsClient(String trackingId, StatisticsApiClient statisticsApiClient) {
 		commonParameters = buildParams(trackingId);
-		client = statisticsClient;
+		client = statisticsApiClient;
 	}
 
 	/**
-	 * Convert and send {@link AnalyticsItem} to the `Google analytics` instance. Quietly consumes exceptions to not affect reporting flow
+	 * Convert and send {@link StatisticsItem} to backend statistics service. Quietly consumes exceptions to not affect reporting flow
 	 *
-	 * @param item {@link AnalyticsItem}
+	 * @param item {@link StatisticsItem}
 	 * @return true - if successfully send, otherwise - false wrapped in the {@link Maybe}
 	 */
 	@Override
-	public Maybe<Response<ResponseBody>> send(AnalyticsItem item) {
+	public Maybe<Response<ResponseBody>> send(StatisticsItem item) {
 		return client.send(buildPostRequest(item));
 	}
 
-	private Map<String, String> buildPostRequest(AnalyticsItem item) {
+	private Map<String, String> buildPostRequest(StatisticsItem item) {
 		Map<String, String> nameValuePairs = new HashMap<>(item.getParams());
 		nameValuePairs.putAll(commonParameters);
 		return nameValuePairs;

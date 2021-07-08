@@ -1,5 +1,5 @@
 /*
- *  Copyright 2020 EPAM Systems
+ *  Copyright 2021 EPAM Systems
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,23 +14,16 @@
  *  limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics;
+package com.epam.reportportal.service.launch.lock;
 
-import com.epam.reportportal.service.analytics.item.AnalyticsItem;
-import io.reactivex.Maybe;
-import okhttp3.MediaType;
-import okhttp3.ResponseBody;
-import retrofit2.Response;
+import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.LaunchIdLock;
 
-public class DummyAnalytics implements Statistics {
+public abstract class AbstractLaunchIdLock implements LaunchIdLock {
 
-	@Override
-	public Maybe<Response<ResponseBody>> send(AnalyticsItem item) {
-		return Maybe.create(e-> e.onSuccess(Response.success(ResponseBody.create(MediaType.get("text/plain"), ""))));
-	}
+	protected ListenerParameters parameters;
 
-	@Override
-	public void close() {
-		// did nothing - do nothing
+	public AbstractLaunchIdLock(ListenerParameters listenerParameters) {
+		parameters = listenerParameters;
 	}
 }

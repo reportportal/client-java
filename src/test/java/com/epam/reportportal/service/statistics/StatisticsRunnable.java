@@ -14,20 +14,16 @@
  *  limitations under the License.
  */
 
-package com.epam.reportportal.service.analytics;
+package com.epam.reportportal.service.statistics;
 
-import io.reactivex.Maybe;
-import okhttp3.ResponseBody;
-import retrofit2.Response;
-import retrofit2.http.FieldMap;
-import retrofit2.http.FormUrlEncoded;
-import retrofit2.http.POST;
+import com.epam.reportportal.test.TestUtils;
 
-import java.util.Map;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 
-public interface StatisticsClient {
-
-	@FormUrlEncoded
-	@POST("collect")
-	Maybe<Response<ResponseBody>> send(@FieldMap Map<String, String> params);
+public class StatisticsRunnable {
+	public static void main(String... args) throws ClassNotFoundException {
+		StatisticsService service = new StatisticsService(TestUtils.standardParameters());
+		assertThat(service.getStatistics(), instanceOf(Class.forName(args[0])));
+	}
 }

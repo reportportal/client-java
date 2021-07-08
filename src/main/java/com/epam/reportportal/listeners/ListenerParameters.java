@@ -16,11 +16,14 @@
 package com.epam.reportportal.listeners;
 
 import com.epam.reportportal.service.LoggingContext;
+import com.epam.reportportal.service.launch.lock.LaunchIdLockMode;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.Mode;
 import com.google.common.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -37,10 +40,12 @@ import static java.util.Optional.ofNullable;
  */
 public class ListenerParameters implements Cloneable {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(ListenerParameters.class);
+
+	private static final String PROPERTY_WILL_BE_REMOVED = "Property '{}' will be removed in the next major version, please use '{}' instead";
+
 	private static final int DEFAULT_REPORTING_TIMEOUT = 5 * 60;
 	private static final int DEFAULT_IO_POOL_SIZE = 100;
-	private static final int DEFAULT_MAX_CONNECTIONS_PER_ROUTE = 50;
-	private static final int DEFAULT_MAX_CONNECTIONS_TOTAL = 100;
 	private static final boolean DEFAULT_ENABLE = true;
 	private static final boolean DEFAULT_SKIP_ISSUE = true;
 	private static final boolean DEFAULT_CONVERT_IMAGE = false;
@@ -48,10 +53,21 @@ public class ListenerParameters implements Cloneable {
 	private static final boolean DEFAULT_ASYNC_REPORTING = false;
 	private static final boolean DEFAULT_CALLBACK_REPORTING_ENABLED = false;
 	private static final boolean DEFAULT_HTTP_LOGGING = false;
-	private static final boolean DEFAULT_CLIENT_JOIN_MODE = true;
+	private static final int DEFAULT_RX_BUFFER_SIZE = 128;
+
+	private static final boolean DEFAULT_CLIENT_JOIN = true;
+	private static final String DEFAULT_CLIENT_JOIN_MODE = "FILE";
 	private static final String DEFAULT_LOCK_FILE_NAME = "reportportal.lock";
 	private static final String DEFAULT_SYNC_FILE_NAME = "reportportal.sync";
 	private static final long DEFAULT_FILE_WAIT_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+	private static final long DEFAULT_CLIENT_JOIN_TIMEOUT = TimeUnit.MINUTES.toMillis(30);
+	private static final String DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT = "MILLISECONDS";
+	private static final String DEFAULT_CLIENT_JOIN_LOCK_TIMEOUT_UNIT = DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT;
+	private static final int DEFAULT_CLIENT_JOIN_LOCK_PORT = 25464;
+
+	private static final boolean DEFAULT_TRUNCATE_ITEM_NAMES = true;
+	private static final int DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT = 1024;
+	private static final String DEFAULT_TRUNCATE_REPLACEMENT = "...";
 
 	private String description;
 	private String apiKey;
@@ -76,15 +92,24 @@ public class ListenerParameters implements Cloneable {
 	private Integer ioPoolSize;
 
 	private boolean clientJoin;
+	private LaunchIdLockMode clientJoinMode;
 	private String lockFileName;
 	private String syncFileName;
-	private long fileWaitTimeout;
+	private long lockWaitTimeout;
+	private long clientJoinTimeout;
+	private int lockPortNumber;
+
+	private int rxBufferSize;
+
+	private boolean truncateItemNames;
+	private int truncateItemNamesLimit;
+	private String truncateItemNamesReplacement;
 
 	public ListenerParameters() {
 
 		this.isSkippedAnIssue = DEFAULT_SKIP_ISSUE;
 
-		this.batchLogsSize = LoggingContext.DEFAULT_BUFFER_SIZE;
+		this.batchLogsSize = LoggingContext.DEFAULT_LOG_BATCH_SIZE;
 		this.convertImage = DEFAULT_CONVERT_IMAGE;
 		this.reportingTimeout = DEFAULT_REPORTING_TIMEOUT;
 		this.httpLogging = DEFAULT_HTTP_LOGGING;
@@ -98,10 +123,18 @@ public class ListenerParameters implements Cloneable {
 
 		this.ioPoolSize = DEFAULT_IO_POOL_SIZE;
 
-		this.clientJoin = DEFAULT_CLIENT_JOIN_MODE;
+		this.clientJoin = DEFAULT_CLIENT_JOIN;
+		this.clientJoinMode = LaunchIdLockMode.valueOf(DEFAULT_CLIENT_JOIN_MODE);
+		this.clientJoinTimeout = DEFAULT_CLIENT_JOIN_TIMEOUT;
 		this.lockFileName = DEFAULT_LOCK_FILE_NAME;
 		this.syncFileName = DEFAULT_SYNC_FILE_NAME;
-		this.fileWaitTimeout = DEFAULT_FILE_WAIT_TIMEOUT_MS;
+		this.lockWaitTimeout = DEFAULT_FILE_WAIT_TIMEOUT_MS;
+		this.rxBufferSize = DEFAULT_RX_BUFFER_SIZE;
+
+		this.truncateItemNames = DEFAULT_TRUNCATE_ITEM_NAMES;
+		this.truncateItemNamesLimit = DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT;
+		this.truncateItemNamesReplacement = DEFAULT_TRUNCATE_REPLACEMENT;
+		this.lockPortNumber = DEFAULT_CLIENT_JOIN_LOCK_PORT;
 	}
 
 	public ListenerParameters(PropertiesLoader properties) {
@@ -116,7 +149,7 @@ public class ListenerParameters implements Cloneable {
 		this.enable = properties.getPropertyAsBoolean(ENABLE, DEFAULT_ENABLE);
 		this.isSkippedAnIssue = properties.getPropertyAsBoolean(SKIPPED_AS_ISSUE, DEFAULT_SKIP_ISSUE);
 
-		this.batchLogsSize = properties.getPropertyAsInt(BATCH_SIZE_LOGS, LoggingContext.DEFAULT_BUFFER_SIZE);
+		this.batchLogsSize = properties.getPropertyAsInt(BATCH_SIZE_LOGS, LoggingContext.DEFAULT_LOG_BATCH_SIZE);
 		this.convertImage = properties.getPropertyAsBoolean(IS_CONVERT_IMAGE, DEFAULT_CONVERT_IMAGE);
 		this.reportingTimeout = properties.getPropertyAsInt(REPORTING_TIMEOUT, DEFAULT_REPORTING_TIMEOUT);
 		this.httpLogging = properties.getPropertyAsBoolean(HTTP_LOGGING, DEFAULT_HTTP_LOGGING);
@@ -131,10 +164,52 @@ public class ListenerParameters implements Cloneable {
 
 		this.ioPoolSize = properties.getPropertyAsInt(IO_POOL_SIZE, DEFAULT_IO_POOL_SIZE);
 
-		this.clientJoin = properties.getPropertyAsBoolean(CLIENT_JOIN_MODE, DEFAULT_CLIENT_JOIN_MODE);
-		this.lockFileName = properties.getProperty(LOCK_FILE_NAME, DEFAULT_LOCK_FILE_NAME);
-		this.syncFileName = properties.getProperty(SYNC_FILE_NAME, DEFAULT_SYNC_FILE_NAME);
-		this.fileWaitTimeout = properties.getPropertyAsInt(FILE_WAIT_TIMEOUT_MS, (int) DEFAULT_FILE_WAIT_TIMEOUT_MS);
+		clientJoin = properties.getPropertyAsBoolean(CLIENT_JOIN_MODE, DEFAULT_CLIENT_JOIN);
+		clientJoinMode = LaunchIdLockMode.valueOf(properties.getProperty(CLIENT_JOIN_MODE_VALUE, DEFAULT_CLIENT_JOIN_MODE));
+
+		clientJoinTimeout = ofNullable(properties.getProperty(CLIENT_JOIN_TIMEOUT_VALUE)).map(t -> TimeUnit.valueOf(properties.getProperty(
+				CLIENT_JOIN_TIMEOUT_UNIT,
+				DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT
+		)).toMillis(Long.parseLong(t))).orElse(DEFAULT_CLIENT_JOIN_TIMEOUT);
+
+		lockFileName = properties.getProperty(LOCK_FILE_NAME);
+		if (lockFileName != null) {
+			LOGGER.warn(PROPERTY_WILL_BE_REMOVED, LOCK_FILE_NAME.getPropertyName(), FILE_LOCK_NAME.getPropertyName());
+			lockFileName = properties.getProperty(FILE_LOCK_NAME, lockFileName);
+		} else {
+			lockFileName = properties.getProperty(FILE_LOCK_NAME, DEFAULT_LOCK_FILE_NAME);
+		}
+		syncFileName = properties.getProperty(SYNC_FILE_NAME);
+		if (syncFileName != null) {
+			LOGGER.warn(PROPERTY_WILL_BE_REMOVED, SYNC_FILE_NAME.getPropertyName(), FILE_SYNC_NAME.getPropertyName());
+			syncFileName = properties.getProperty(FILE_SYNC_NAME, syncFileName);
+		} else {
+			syncFileName = properties.getProperty(FILE_SYNC_NAME, DEFAULT_SYNC_FILE_NAME);
+		}
+
+		String fileWaitTimeoutStr = properties.getProperty(FILE_WAIT_TIMEOUT_MS);
+		if (fileWaitTimeoutStr != null) {
+			LOGGER.warn(PROPERTY_WILL_BE_REMOVED,
+					FILE_WAIT_TIMEOUT_MS.getPropertyName(),
+					CLIENT_JOIN_LOCK_TIMEOUT_VALUE.getPropertyName() + "," + CLIENT_JOIN_LOCK_TIMEOUT_UNIT.getPropertyName()
+			);
+			lockWaitTimeout = Long.parseLong(fileWaitTimeoutStr);
+		}
+		String waitTimeoutStr = properties.getProperty(CLIENT_JOIN_LOCK_TIMEOUT_VALUE);
+		if (waitTimeoutStr != null) {
+			TimeUnit waitTimeUnit = TimeUnit.valueOf(properties.getProperty(CLIENT_JOIN_LOCK_TIMEOUT_UNIT,
+					DEFAULT_CLIENT_JOIN_LOCK_TIMEOUT_UNIT
+			));
+			this.lockWaitTimeout = waitTimeUnit.toMillis(Long.parseLong(waitTimeoutStr));
+		}
+
+		lockPortNumber = properties.getPropertyAsInt(CLIENT_JOIN_LOCK_PORT, DEFAULT_CLIENT_JOIN_LOCK_PORT);
+
+		this.rxBufferSize = properties.getPropertyAsInt(RX_BUFFER_SIZE, DEFAULT_RX_BUFFER_SIZE);
+
+		this.truncateItemNames = properties.getPropertyAsBoolean(TRUNCATE_ITEM_NAMES, DEFAULT_TRUNCATE_ITEM_NAMES);
+		this.truncateItemNamesLimit = properties.getPropertyAsInt(TRUNCATE_ITEM_LIMIT, DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT);
+		this.truncateItemNamesReplacement = properties.getProperty(TRUNCATE_ITEM_REPLACEMENT, DEFAULT_TRUNCATE_REPLACEMENT);
 	}
 
 	public String getDescription() {
@@ -305,6 +380,14 @@ public class ListenerParameters implements Cloneable {
 		this.clientJoin = mode;
 	}
 
+	public LaunchIdLockMode getClientJoinMode() {
+		return clientJoinMode;
+	}
+
+	public void setClientJoinMode(LaunchIdLockMode clientJoinMode) {
+		this.clientJoinMode = clientJoinMode;
+	}
+
 	public String getLockFileName() {
 		return lockFileName;
 	}
@@ -321,12 +404,28 @@ public class ListenerParameters implements Cloneable {
 		this.syncFileName = fileName;
 	}
 
-	public long getFileWaitTimeout() {
-		return fileWaitTimeout;
+	public long getClientJoinTimeout() {
+		return clientJoinTimeout;
 	}
 
-	public void setFileWaitTimeout(long timeout) {
-		this.fileWaitTimeout = timeout;
+	public void setClientJoinTimeout(long clientJoinTimeout) {
+		this.clientJoinTimeout = clientJoinTimeout;
+	}
+
+	public long getLockWaitTimeout() {
+		return lockWaitTimeout;
+	}
+
+	public void setLockWaitTimeout(long timeout) {
+		this.lockWaitTimeout = timeout;
+	}
+
+	public int getLockPortNumber() {
+		return lockPortNumber;
+	}
+
+	public void setLockPortNumber(int lockPortNumber) {
+		this.lockPortNumber = lockPortNumber;
 	}
 
 	public boolean isHttpLogging() {
@@ -335,6 +434,38 @@ public class ListenerParameters implements Cloneable {
 
 	public void setHttpLogging(boolean httpLogging) {
 		this.httpLogging = httpLogging;
+	}
+
+	public int getRxBufferSize() {
+		return ofNullable(System.getProperty("rx2.buffer-size")).map(Integer::valueOf).map(s -> Math.max(1, s)).orElse(rxBufferSize);
+	}
+
+	public void setRxBufferSize(int size) {
+		rxBufferSize = size;
+	}
+
+	public boolean isTruncateItemNames() {
+		return truncateItemNames;
+	}
+
+	public void setTruncateItemNames(boolean truncate) {
+		this.truncateItemNames = truncate;
+	}
+
+	public int getTruncateItemNamesLimit() {
+		return truncateItemNamesLimit;
+	}
+
+	public void setTruncateItemNamesLimit(int limit) {
+		this.truncateItemNamesLimit = limit;
+	}
+
+	public String getTruncateItemNamesReplacement() {
+		return truncateItemNamesReplacement;
+	}
+
+	public void setTruncateItemNamesReplacement(String replacement) {
+		this.truncateItemNamesReplacement = replacement;
 	}
 
 	@VisibleForTesting
@@ -367,6 +498,7 @@ public class ListenerParameters implements Cloneable {
 
 	@Override
 	public String toString() {
+		@SuppressWarnings("StringBufferReplaceableByString")
 		final StringBuilder sb = new StringBuilder("ListenerParameters{");
 		sb.append("description='").append(description).append('\'');
 		sb.append(", apiKey='").append(apiKey).append('\'');
@@ -390,9 +522,13 @@ public class ListenerParameters implements Cloneable {
 		sb.append(", ioPoolSize=").append(ioPoolSize);
 		sb.append(", callbackReportingEnabled=").append(callbackReportingEnabled);
 		sb.append(", clientJoin=").append(clientJoin);
+		sb.append(", clientJoinMode=").append(ofNullable(clientJoinMode).map(Enum::name).orElse(null));
+		sb.append(", clientJoinTimeout=").append(clientJoinTimeout);
 		sb.append(", lockFileName=").append(lockFileName);
 		sb.append(", syncFileName=").append(syncFileName);
-		sb.append(", fileWaitTimeout=").append(fileWaitTimeout);
+		sb.append(", lockWaitTimeout=").append(lockWaitTimeout);
+		sb.append(", lockPortNumber=").append(lockPortNumber);
+		sb.append(", rxBufferSize=").append(rxBufferSize);
 		sb.append('}');
 		return sb.toString();
 	}

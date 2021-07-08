@@ -1,6 +1,15 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- New distributed Launch join mechanism: sockets
+- New properties: `rp.client.join.mode`, `rp.client.join.file.lock.name`, `rp.client.join.file.sync.name`, `rp.client.join.timeout.value`, 
+  `rp.client.join.timeout.unit`, `rp.client.join.lock.timeout.value`, `rp.client.join.lock.timeout.unit`, `rp.client.join.port`
+### Changed
+- Apache Tika version degraded on 1.12 for Android compatibility
+- UniqueID annotation deprecated
+- It's now possible to assign Attributes annotation on classes
+- Property deprecation: `rp.client.join.lock.file.name`, `rp.client.join.sync.file.name`, `rp.client.join.file.wait.timeout.ms`
 ### Removed
 - Tags annotation since it looks like it is not in use anywhere
 
@@ -10,6 +19,16 @@
 - Common Jackson ObjectMapper moved to HttpRequestUtils class
 - try-catch refactoring in `ReportPortal.Builder` class to get better stack traces
 - Introducing "Retrofit 2" as RP client
+
+## [5.0.22]
+### Added
+- Item names truncation, issue #154
+
+## [5.0.21]
+### Changed
+- try-catch refactoring in `ReportPortal.Builder` class to get better stack traces
+### Added
+- `rp.rx.buffer.size` property handling
 
 ## [5.0.18]
 ### Added

@@ -217,6 +217,7 @@ public class TestUtils {
 	}
 
 	public static void simulateBatchLogResponse(final ReportPortalClient client) {
+		//noinspection unchecked
 		when(client.log(any(List.class))).then((Answer<Maybe<BatchSaveOperatingRS>>) invocation -> {
 			List<MultipartBody.Part> rq = invocation.getArgument(0);
 			List<String> saveRqs = extractJsonParts(rq).stream()

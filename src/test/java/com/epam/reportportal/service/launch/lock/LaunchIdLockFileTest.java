@@ -1,5 +1,5 @@
 /*
- *  Copyright 2019 EPAM Systems
+ *  Copyright 2021 EPAM Systems
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,20 +14,20 @@
  *  limitations under the License.
  */
 
-package com.epam.reportportal.service;
+package com.epam.reportportal.service.launch.lock;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.util.test.ProcessUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.awaitility.Awaitility;
-import org.awaitility.core.ConditionTimeoutException;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
@@ -36,45 +36,43 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.channels.FileLock;
 import java.util.*;
-import java.util.concurrent.*;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
+import static com.epam.reportportal.service.launch.lock.LockTestUtil.*;
 import static java.util.stream.Collectors.toList;
-import static org.apache.commons.lang3.StringUtils.isEmpty;
-import static org.apache.commons.lang3.StringUtils.join;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
-public class LockFileTest {
-	private static final Logger LOGGER = LoggerFactory.getLogger(LockFileTest.class);
+public class LaunchIdLockFileTest {
+	private static final Logger LOGGER = LoggerFactory.getLogger(LaunchIdLockFileTest.class);
 	private static final String LOCK_FILE_NAME_PATTERN = "%s.reportportal.lock";
 	private static final String SYNC_FILE_NAME_PATTERN = "%s.reportportal.sync";
 
 	private final String fileName = UUID.randomUUID().toString();
 	private final String lockFileName = String.format(LOCK_FILE_NAME_PATTERN, fileName);
 	private final String syncFileName = String.format(SYNC_FILE_NAME_PATTERN, fileName);
-	private LockFile lockFile = new LockFile(getParameters());
-	private Collection<LockFile> lockFileCollection;
+	private LaunchIdLockFile launchIdLockFile = new LaunchIdLockFile(getParameters());
+	private Collection<LaunchIdLockFile> launchIdLockCollection;
 
 	private ListenerParameters getParameters() {
 		ListenerParameters params = new ListenerParameters();
 		params.setLockFileName(lockFileName);
 		params.setSyncFileName(syncFileName);
 		params.setEnable(Boolean.TRUE);
-		params.setFileWaitTimeout(TimeUnit.SECONDS.toMillis(5));
+		params.setLockWaitTimeout(LOCK_TIMEOUT);
 		return params;
 	}
 
 	@AfterEach
 	public void cleanUp() {
-		lockFile.reset();
-		if (lockFileCollection != null) {
-			for (LockFile file : lockFileCollection) {
+		launchIdLockFile.reset();
+		if (launchIdLockCollection != null) {
+			for (LaunchIdLockFile file : launchIdLockCollection) {
 				file.reset();
 			}
 		}
@@ -94,90 +92,43 @@ public class LockFileTest {
 		String secondUuid = UUID.randomUUID().toString();
 		assertThat(secondUuid, is(not(equalTo(firstUuid))));
 
-		String firstLaunchUuid = lockFile.obtainLaunchUuid(firstUuid);
-		String secondLaunchUuid = lockFile.obtainLaunchUuid(secondUuid);
+		String firstLaunchUuid = launchIdLockFile.obtainLaunchUuid(firstUuid);
+		String secondLaunchUuid = launchIdLockFile.obtainLaunchUuid(secondUuid);
 
 		assertThat(secondLaunchUuid, equalTo(firstLaunchUuid));
-	}
-
-	private static Callable<String> getObtainLaunchUuidReadCallable(final String selfUuid, final LockFile lockFile) {
-		return () -> lockFile.obtainLaunchUuid(selfUuid);
-	}
-
-	private static final class GetFutureResults<T> implements Function<Future<T>, T> {
-		@Override
-		public T apply(Future<T> input) {
-			try {
-				return input.get();
-			} catch (InterruptedException e) {
-				LOGGER.error("Interrupted: ", e);
-			} catch (ExecutionException e) {
-				LOGGER.error("Failed: ", e);
-			}
-			return null;
-		}
-	}
-
-	private Map<String, Callable<String>> getLaunchUuidReadCallables(int num, Supplier<LockFile> serviceProvider) {
-		Map<String, Callable<String>> results = new HashMap<>();
-		for (int i = 0; i < num; i++) {
-			String uuid = UUID.randomUUID().toString();
-			Callable<String> task = getObtainLaunchUuidReadCallable(uuid, serviceProvider.get());
-			results.put(uuid, task);
-		}
-		return results;
-	}
-
-	private <T> Supplier<T> singletonSupplier(final T value) {
-		return () -> value;
-	}
-
-	private ExecutorService testExecutor(final int threadNum) {
-		return Executors.newFixedThreadPool(threadNum, r -> {
-			Thread t = Executors.defaultThreadFactory().newThread(r);
-			t.setDaemon(true);
-			return t;
-		});
 	}
 
 	@Test
 	public void test_launch_uuid_will_be_the_same_for_ten_threads_obtainLaunchUuid() throws InterruptedException {
 		int threadNum = 10;
 		ExecutorService executor = testExecutor(threadNum);
-		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(lockFile));
+		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(launchIdLockFile));
 
 		Collection<String> results = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
+		assertThat(results, hasSize(threadNum));
 		assertThat(results, Matchers.everyItem(equalTo(results.iterator().next())));
 	}
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void test_lock_file_contains_all_thread_uuids_obtainLaunchUuid() throws InterruptedException, IOException {
+	public void test_sync_file_contains_all_thread_uuids_obtainLaunchUuid() throws InterruptedException, IOException {
 		int threadNum = 5;
 		ExecutorService executor = testExecutor(threadNum);
-		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(lockFile));
+		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(launchIdLockFile));
 
 		// Call Future#get to wait for execution.
 		String launchUuid = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList()).iterator().next();
 
-		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LockFile.LOCK_FILE_CHARSET);
-		assertThat(syncFileContent.get(0), equalTo(launchUuid));
-		assertThat(syncFileContent, containsInAnyOrder(tasks.keySet().toArray(new String[0])));
+		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LaunchIdLockFile.LOCK_FILE_CHARSET.name());
+		assertThat(syncFileContent.get(0), matchesPattern("\\d+:" + launchUuid));
+		List<String> syncFileContentUuids = syncFileContent.stream()
+				.map(r -> r.substring(r.indexOf(LaunchIdLockFile.TIME_SEPARATOR) + 1))
+				.collect(Collectors.toList());
+		assertThat(syncFileContentUuids, containsInAnyOrder(tasks.keySet().toArray(new String[0])));
 	}
 
-	private <T> Supplier<T> iterableSupplier(final Iterable<T> instanceIterable) {
-		return new Supplier<T>() {
-			private final Iterator<T> instanceIterator = instanceIterable.iterator();
-
-			@Override
-			public T get() {
-				return instanceIterator.next();
-			}
-		};
-	}
-
-	private Pair<Set<String>, Collection<String>> executeParallelLaunchUuidSync(int threadNum, Iterable<LockFile> lockFileCollection)
-			throws InterruptedException {
+	private Pair<Set<String>, Collection<String>> executeParallelLaunchUuidSync(int threadNum,
+			Iterable<LaunchIdLockFile> lockFileCollection) throws InterruptedException {
 		ExecutorService executor = testExecutor(threadNum);
 		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, iterableSupplier(lockFileCollection));
 		Collection<String> result = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
@@ -190,11 +141,13 @@ public class LockFileTest {
 	@Test
 	public void test_temp_files_are_removed_after_last_uuid_removed_finishInstanceUuid() throws InterruptedException {
 		int threadNum = 3;
-		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(threadNum, Collections.nCopies(threadNum, lockFile));
+		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(threadNum,
+				Collections.nCopies(threadNum, launchIdLockFile)
+		);
 		Iterator<String> uuidIterator = uuidSet.getLeft().iterator();
-		lockFile.finishInstanceUuid(uuidIterator.next());
-		lockFile.finishInstanceUuid(uuidIterator.next());
-		lockFile.finishInstanceUuid(uuidIterator.next());
+		launchIdLockFile.finishInstanceUuid(uuidIterator.next());
+		launchIdLockFile.finishInstanceUuid(uuidIterator.next());
+		launchIdLockFile.finishInstanceUuid(uuidIterator.next());
 
 		final File lockFile = new File(lockFileName);
 		Awaitility.await("Wait for .lock file removal").until(lockFile::exists, equalTo(Boolean.FALSE));
@@ -207,16 +160,19 @@ public class LockFileTest {
 	@SuppressWarnings("unchecked")
 	public void test_uuid_remove_finishInstanceUuid() throws InterruptedException, IOException {
 		int threadNum = 3;
-		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(threadNum, Collections.nCopies(threadNum, lockFile));
+		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(threadNum,
+				Collections.nCopies(threadNum, launchIdLockFile)
+		);
 
 		String uuidToRemove = uuidSet.getLeft().iterator().next();
-		lockFile.finishInstanceUuid(uuidToRemove);
+		launchIdLockFile.finishInstanceUuid(uuidToRemove);
 
-		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LockFile.LOCK_FILE_CHARSET);
+		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LaunchIdLockFile.LOCK_FILE_CHARSET.name());
 		assertThat(syncFileContent, Matchers.hasSize(threadNum - 1));
 		assertThat(syncFileContent, not(contains(uuidToRemove)));
 	}
 
+	@SuppressWarnings("unused")
 	public static Iterable<Integer> threadNumProvider() {
 		return Arrays.asList(5, 3, 1);
 	}
@@ -226,27 +182,32 @@ public class LockFileTest {
 	@MethodSource("threadNumProvider")
 	public void test_new_uuid_remove_does_not_spoil_lock_file_finishInstanceUuid(final int threadNum)
 			throws InterruptedException, IOException {
-		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(threadNum, Collections.nCopies(threadNum, lockFile));
+		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(threadNum,
+				Collections.nCopies(threadNum, launchIdLockFile)
+		);
 
 		String uuidToRemove = UUID.randomUUID().toString();
-		lockFile.finishInstanceUuid(uuidToRemove);
+		launchIdLockFile.finishInstanceUuid(uuidToRemove);
 
-		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LockFile.LOCK_FILE_CHARSET);
-		assertThat(syncFileContent, Matchers.hasSize(threadNum));
-		assertThat(syncFileContent, not(hasItem(uuidToRemove)));
-		assertThat(syncFileContent, containsInAnyOrder(uuidSet.getLeft().toArray(new String[0])));
+		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LaunchIdLockFile.LOCK_FILE_CHARSET.name());
+		List<String> syncFileContentUuids = syncFileContent.stream()
+				.map(r -> r.substring(r.indexOf(LaunchIdLockFile.TIME_SEPARATOR) + 1))
+				.collect(Collectors.toList());
+		assertThat(syncFileContentUuids, Matchers.hasSize(threadNum));
+		assertThat(syncFileContentUuids, not(hasItem(uuidToRemove)));
+		assertThat(syncFileContentUuids, containsInAnyOrder(uuidSet.getLeft().toArray(new String[0])));
 	}
 
 	@ParameterizedTest
 	@MethodSource("threadNumProvider")
 	public void test_different_lock_file_service_instances_synchronize_correctly(final int threadNum) throws InterruptedException {
-		lockFileCollection = new ArrayList<>(threadNum);
-		lockFileCollection.add(lockFile);
+		launchIdLockCollection = new ArrayList<>(threadNum);
+		launchIdLockCollection.add(launchIdLockFile);
 		for (int i = 1; i < threadNum; i++) {
-			lockFileCollection.add(new LockFile(getParameters()));
+			launchIdLockCollection.add(new LaunchIdLockFile(getParameters()));
 		}
 
-		Pair<Set<String>, Collection<String>> result = executeParallelLaunchUuidSync(threadNum, lockFileCollection);
+		Pair<Set<String>, Collection<String>> result = executeParallelLaunchUuidSync(threadNum, launchIdLockCollection);
 		Set<String> instanceUuids = result.getLeft();
 		Collection<String> launchUuids = result.getRight();
 		String launchUuid = launchUuids.iterator().next();
@@ -262,26 +223,27 @@ public class LockFileTest {
 		String secondUuid = UUID.randomUUID().toString();
 		assertThat(secondUuid, is(not(equalTo(firstUuid))));
 
-		String firstLaunchUuid = lockFile.obtainLaunchUuid(firstUuid);
-		lockFile.reset();
-		lockFile = new LockFile(getParameters());
-		String secondLaunchUuid = lockFile.obtainLaunchUuid(secondUuid);
+		String firstLaunchUuid = launchIdLockFile.obtainLaunchUuid(firstUuid);
+		launchIdLockFile.reset();
+		launchIdLockFile = new LaunchIdLockFile(getParameters());
+		String secondLaunchUuid = launchIdLockFile.obtainLaunchUuid(secondUuid);
 
 		assertThat(secondLaunchUuid, not(equalTo(firstLaunchUuid)));
-		lockFile.reset();
+		launchIdLockFile.reset();
 
-		List<String> lockFileContent = FileUtils.readLines(new File(lockFileName), LockFile.LOCK_FILE_CHARSET);
+		List<String> lockFileContent = FileUtils.readLines(new File(lockFileName), LaunchIdLockFile.LOCK_FILE_CHARSET.name());
 		assertThat(lockFileContent, Matchers.hasSize(1));
-		assertThat(lockFileContent, contains(secondLaunchUuid));
+		assertThat(lockFileContent, contains(matchesPattern("\\d+:" + secondLaunchUuid)));
 
-		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LockFile.LOCK_FILE_CHARSET);
+		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LaunchIdLockFile.LOCK_FILE_CHARSET.name());
 		assertThat(syncFileContent, Matchers.hasSize(1));
-		assertThat(syncFileContent, contains(secondLaunchUuid));
+		assertThat(syncFileContent, contains(matchesPattern("\\d+:" + secondLaunchUuid)));
 	}
 
 	@Test
 	public void test_launch_uuid_should_not_be_null_obtainLaunchUuid() {
-		Assertions.assertThrows(NullPointerException.class, () -> lockFile.obtainLaunchUuid(null));
+		//noinspection ConstantConditions
+		Assertions.assertThrows(NullPointerException.class, () -> launchIdLockFile.obtainLaunchUuid(null));
 	}
 
 	private FileLock getFileLock(File file) throws IOException {
@@ -293,7 +255,7 @@ public class LockFileTest {
 	public void test_lock_file_should_not_throw_exception_if_it_is_not_possible_to_write_sync_file() throws IOException {
 		File syncFile = new File(syncFileName);
 		try (FileLock ignored = getFileLock(syncFile)) {
-			assertThat(lockFile.obtainLaunchUuid(UUID.randomUUID().toString()), nullValue());
+			assertThat(launchIdLockFile.obtainLaunchUuid(UUID.randomUUID().toString()), nullValue());
 		}
 	}
 
@@ -302,60 +264,9 @@ public class LockFileTest {
 		String launchUuid = UUID.randomUUID().toString();
 		File lockFile = new File(lockFileName);
 		try (FileLock ignored = getFileLock(lockFile)) {
-			assertThat(this.lockFile.obtainLaunchUuid(launchUuid), equalTo(launchUuid));
+			assertThat(this.launchIdLockFile.obtainLaunchUuid(launchUuid), equalTo(launchUuid));
 		}
 	}
-
-	private static Triple<OutputStreamWriter, BufferedReader, BufferedReader> getProcessIos(Process process) {
-		return ImmutableTriple.of(
-				new OutputStreamWriter(process.getOutputStream()),
-				new BufferedReader(new InputStreamReader(process.getInputStream())),
-				new BufferedReader(new InputStreamReader(process.getErrorStream()))
-		);
-	}
-
-	private static void closeIos(Triple<OutputStreamWriter, BufferedReader, BufferedReader> io) {
-		try {
-			io.getLeft().close();
-			io.getMiddle().close();
-			io.getRight().close();
-		} catch (IOException ignore) {
-
-		}
-	}
-
-	private static final Predicate<String> WELCOME_MESSAGE_PREDICATE = LockFileRunner.WELCOME_MESSAGE::equals;
-
-	@SuppressWarnings("unchecked")
-	private static String waitForLine(final BufferedReader reader, final BufferedReader errorReader, final Predicate<String> linePredicate)
-			throws IOException {
-		try {
-			return Awaitility.await("Waiting for a line")
-					.timeout(8, TimeUnit.SECONDS)
-					.pollInterval(100, TimeUnit.MILLISECONDS)
-					.until(() -> {
-						if (!reader.ready()) {
-							return null;
-						}
-						String line;
-						while ((line = reader.readLine()) != null) {
-							if (linePredicate.test(line)) {
-								return line;
-							}
-						}
-						return null;
-					}, notNullValue());
-		} catch (ConditionTimeoutException e) {
-			List<String> errorLines = Collections.EMPTY_LIST;
-			if (errorReader.ready()) {
-				errorLines = IOUtils.readLines(errorReader);
-			}
-			String lineSeparator = System.getProperty("line.separator");
-			throw new IllegalStateException("Unable to run test class: " + join(errorLines, lineSeparator));
-		}
-	}
-
-	private static final Predicate<String> ANY_STRING_PREDICATE = input -> !isEmpty(input);
 
 	@Test
 	@Timeout(10)
@@ -403,5 +314,49 @@ public class LockFileTest {
 			processes.getKey().destroyForcibly();
 			processes.getValue().destroyForcibly();
 		}
+	}
+
+	@Test
+	public void test_instance_uuid_returns_in_live_list_before_timeout() {
+		String launchUuid = UUID.randomUUID().toString();
+		launchIdLockFile.obtainLaunchUuid(launchUuid);
+
+		Collection<String> liveUuids = launchIdLockFile.getLiveInstanceUuids();
+		assertThat(liveUuids, hasSize(1));
+		assertThat(liveUuids, contains(launchUuid));
+	}
+
+	@Test
+	public void test_instance_uuid_remove_from_live_after_timeout() throws InterruptedException {
+		String launchUuid = UUID.randomUUID().toString();
+		launchIdLockFile.obtainLaunchUuid(launchUuid);
+
+		Thread.sleep(LOCK_TIMEOUT + 10);
+
+		Collection<String> liveUuids = launchIdLockFile.getLiveInstanceUuids();
+		assertThat(liveUuids, hasSize(0));
+	}
+
+	@Test
+	public void test_instance_uuid_stay_live_after_timeout_if_updated() throws InterruptedException {
+		String launchUuid = UUID.randomUUID().toString();
+		launchIdLockFile.obtainLaunchUuid(launchUuid);
+
+		Thread.sleep(LOCK_TIMEOUT - 100);
+		launchIdLockFile.updateInstanceUuid(launchUuid);
+		Thread.sleep(120);
+
+		Collection<String> liveUuids = launchIdLockFile.getLiveInstanceUuids();
+		assertThat(liveUuids, hasSize(1));
+		assertThat(liveUuids, contains(launchUuid));
+	}
+
+	@Test
+	public void test_instance_uuid_removed_from_live_after_finish() {
+		String launchUuid = UUID.randomUUID().toString();
+		launchIdLockFile.obtainLaunchUuid(launchUuid);
+		launchIdLockFile.finishInstanceUuid(launchUuid);
+		Collection<String> liveUuids = launchIdLockFile.getLiveInstanceUuids();
+		assertThat(liveUuids, hasSize(0));
 	}
 }

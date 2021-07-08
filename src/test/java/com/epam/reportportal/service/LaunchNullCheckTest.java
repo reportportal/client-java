@@ -16,6 +16,7 @@
 
 package com.epam.reportportal.service;
 
+import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import io.reactivex.Maybe;
 import org.junit.jupiter.api.AfterEach;
@@ -34,6 +35,9 @@ public class LaunchNullCheckTest {
 	@Mock
 	private ReportPortalClient rpClient;
 
+	@Mock
+	private StatisticsService statisticsService;
+
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
 	@BeforeEach
@@ -49,7 +53,12 @@ public class LaunchNullCheckTest {
 	// See https://github.com/reportportal/client-java/issues/99
 	@Test
 	public void launch_should_not_throw_any_exceptions_if_an_agent_bypasses_null_start_rq_on_start_item() {
-		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor);
+		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
+			@Override
+			StatisticsService getStatisticsService() {
+				return statisticsService;
+			}
+		};
 
 		launch.start();
 		Maybe<String> result = launch.startTestItem(null);
@@ -59,7 +68,12 @@ public class LaunchNullCheckTest {
 
 	@Test
 	public void launch_should_not_throw_any_exceptions_if_an_agent_bypasses_null_parent_item_id_on_start_item() {
-		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor);
+		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
+			@Override
+			StatisticsService getStatisticsService() {
+				return statisticsService;
+			}
+		};
 		simulateStartTestItemResponse(rpClient);
 
 		launch.start();
@@ -71,7 +85,12 @@ public class LaunchNullCheckTest {
 
 	@Test
 	public void launch_should_not_throw_any_exceptions_if_an_agent_bypasses_null_item_id_on_finish_item() {
-		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor);
+		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
+			@Override
+			StatisticsService getStatisticsService() {
+				return statisticsService;
+			}
+		};
 		simulateStartTestItemResponse(rpClient);
 
 		launch.start();
@@ -83,7 +102,12 @@ public class LaunchNullCheckTest {
 
 	@Test
 	public void launch_should_not_throw_any_exceptions_if_an_agent_bypasses_null_finish_rq_on_finish_item() {
-		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor);
+		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
+			@Override
+			StatisticsService getStatisticsService() {
+				return statisticsService;
+			}
+		};
 		simulateStartTestItemResponse(rpClient);
 
 		launch.start();

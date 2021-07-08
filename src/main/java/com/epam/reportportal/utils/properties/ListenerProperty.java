@@ -53,9 +53,37 @@ public enum ListenerProperty {
      * so using that property should allow to merge them all in one.
      */
     CLIENT_JOIN_MODE("rp.client.join", false),
+    CLIENT_JOIN_MODE_VALUE("rp.client.join.mode", false),
+    @SuppressWarnings("DeprecatedIsStillUsed")
+    @Deprecated
     LOCK_FILE_NAME("rp.client.join.lock.file.name", false),
+    @SuppressWarnings("DeprecatedIsStillUsed")
+    @Deprecated
     SYNC_FILE_NAME("rp.client.join.sync.file.name", false),
-    FILE_WAIT_TIMEOUT_MS("rp.client.join.file.wait.timeout.ms", false);
+    @SuppressWarnings("DeprecatedIsStillUsed")
+    @Deprecated
+    FILE_WAIT_TIMEOUT_MS("rp.client.join.file.wait.timeout.ms", false),
+    FILE_LOCK_NAME("rp.client.join.file.lock.name", false),
+    FILE_SYNC_NAME("rp.client.join.file.sync.name", false),
+    CLIENT_JOIN_LOCK_PORT("rp.client.join.port", false),
+
+    /**
+     * General Launch Lock timeout value. For how long the primary launch will wait for secondary launches until finish and exit.
+     */
+    CLIENT_JOIN_TIMEOUT_VALUE("rp.client.join.timeout.value", false),
+    CLIENT_JOIN_TIMEOUT_UNIT("rp.client.join.timeout.unit", false),
+
+    /**
+     * Lock timeout. For how long a launch instance will try to obtain a lock.
+     */
+    CLIENT_JOIN_LOCK_TIMEOUT_VALUE("rp.client.join.lock.timeout.value", false),
+    CLIENT_JOIN_LOCK_TIMEOUT_UNIT("rp.client.join.lock.timeout.unit", false),
+
+    RX_BUFFER_SIZE("rp.rx.buffer.size", false),
+
+    TRUNCATE_ITEM_NAMES("rp.item.name.truncate", false),
+    TRUNCATE_ITEM_LIMIT("rp.item.name.truncate.limit", false),
+    TRUNCATE_ITEM_REPLACEMENT("rp.item.name.truncate.replacement", false);
     //formatter:on
 
     private final String propertyName;
