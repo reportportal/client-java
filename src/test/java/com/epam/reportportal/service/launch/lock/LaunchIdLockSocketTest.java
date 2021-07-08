@@ -278,7 +278,7 @@ public class LaunchIdLockSocketTest {
 		Collection<String> liveUuids = Awaitility.await()
 				.pollDelay(Duration.ZERO)
 				.pollInterval(Duration.ofMillis(100))
-				.atMost(Duration.ofSeconds(5))
+				.atMost(Duration.ofSeconds(10))
 				.until(launchIdLockSocket::getLiveInstanceUuids, hasSize(2));
 		assertThat(liveUuids, containsInAnyOrder(launchUuid, clientUuid));
 	}
