@@ -229,7 +229,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 			synchronized (LaunchIdLockSocket.class) {
 				if (mainLock == null) {
 					mainLock = new Waiter("Wait for server socket acquire").pollingEvery(200, TimeUnit.MILLISECONDS)
-							.duration(5, TimeUnit.SECONDS)
+							.duration(1, TimeUnit.SECONDS)
 							.ignore(IOException.class)
 							.timeoutFail()
 							.till(() -> new ServerSocket(portNumber, SOCKET_BACKLOG, InetAddress.getLocalHost()));
