@@ -16,13 +16,18 @@
 
 package com.epam.reportportal.service.statistics;
 
-import com.epam.reportportal.service.statistics.item.StatisticsItem;
 import io.reactivex.Maybe;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
+import retrofit2.http.FieldMap;
+import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.POST;
 
-import java.io.Closeable;
+import java.util.Map;
 
-public interface Statistics extends Closeable {
-	Maybe<Response<ResponseBody>> send(StatisticsItem item);
+public interface StatisticsApiClient {
+
+	@FormUrlEncoded
+	@POST("collect")
+	Maybe<Response<ResponseBody>> send(@FieldMap Map<String, String> params);
 }

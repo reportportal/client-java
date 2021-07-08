@@ -17,15 +17,20 @@
 package com.epam.reportportal.service.statistics;
 
 import com.epam.reportportal.service.statistics.item.StatisticsItem;
+import io.reactivex.Maybe;
+import okhttp3.MediaType;
+import okhttp3.ResponseBody;
+import retrofit2.Response;
 
 public class DummyStatistics implements Statistics {
 
 	@Override
-	public Boolean send(StatisticsItem item) {
-		return Boolean.TRUE;
+	public Maybe<Response<ResponseBody>> send(StatisticsItem item) {
+		return Maybe.create(e-> e.onSuccess(Response.success(ResponseBody.create(MediaType.get("text/plain"), ""))));
 	}
 
 	@Override
 	public void close() {
+		// did nothing - do nothing
 	}
 }

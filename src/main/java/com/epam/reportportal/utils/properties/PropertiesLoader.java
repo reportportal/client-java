@@ -176,26 +176,6 @@ public class PropertiesLoader {
 	}
 
 	/**
-	 * Current version of agents should load properties only from properties
-	 * file on classpath
-	 */
-	@SuppressWarnings("unused")
-	@Deprecated()
-	private static Properties loadFromFile() throws IOException {
-		Properties props = new Properties();
-		File propertiesFile = new File(PATH);
-
-		try (InputStream is = propertiesFile.exists() ?
-				new FileInputStream(propertiesFile) :
-				PropertiesLoader.class.getResourceAsStream(INNER_PATH)) {
-			try (InputStreamReader isr = new InputStreamReader(is, STANDARD_CHARSET)) {
-				props.load(isr);
-			}
-		}
-		return props;
-	}
-
-	/**
 	 * Validates properties
 	 */
 	public void validate() {

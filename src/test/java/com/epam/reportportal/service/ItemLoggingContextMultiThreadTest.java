@@ -17,10 +17,10 @@
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
+import com.epam.reportportal.test.TestUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
-import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import okhttp3.MultipartBody;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -152,12 +152,12 @@ public class ItemLoggingContextMultiThreadTest {
 		verify(rpClient, times(2)).startTestItem(anyString(), any());
 
 		// Verify 10 log are logged and save their requests
-		ArgumentCaptor<MultiPartRequest> obtainLogs = ArgumentCaptor.forClass(MultiPartRequest.class);
+		ArgumentCaptor<List<MultipartBody.Part>> obtainLogs = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, times(10)).log(obtainLogs.capture());
-		obtainLogs.getAllValues().forEach(rq -> rq.getSerializedRQs().forEach(rqm -> ((List<SaveLogRQ>) rqm.getRequest()).forEach(log -> {
+		obtainLogs.getAllValues().stream().flatMap(rq -> TestUtils.extractJsonParts(rq).stream()).forEach(log -> {
 			String logItemId = log.getItemUuid();
 			String logMessage = log.getMessage();
 			assertThat("First logItemUUID equals to first test UUID", logMessage, Matchers.endsWith(logItemId));
-		})));
+		});
 	}
 }

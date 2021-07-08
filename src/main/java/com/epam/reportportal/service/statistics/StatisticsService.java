@@ -28,8 +28,10 @@ import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.Scheduler;
 import io.reactivex.schedulers.Schedulers;
+import okhttp3.ResponseBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import retrofit2.Response;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -63,7 +65,7 @@ public class StatisticsService implements Closeable {
 	public StatisticsService(ListenerParameters listenerParameters) {
 		this.parameters = listenerParameters;
 		boolean isDisabled = System.getenv(DISABLE_PROPERTY) != null;
-		statistics = isDisabled ? new DummyStatistics() : new StatisticsClient("UA-173456809-1", parameters.getProxyUrl());
+		statistics = isDisabled ? new DummyStatistics() : new StatisticsClient("UA-173456809-1", parameters);
 	}
 
 	protected Statistics getStatistics() {
@@ -96,7 +98,7 @@ public class StatisticsService implements Closeable {
 						LABEL_VALUE_FORMAT,
 						(Object[]) agentAttribute
 				)));
-		Maybe<Boolean> statisticsMaybe = launchIdMaybe.map(l -> getStatistics().send(statisticsEventBuilder.build()))
+		Maybe<Maybe<Response<ResponseBody>>> statisticsMaybe = launchIdMaybe.map(l -> getStatistics().send(statisticsEventBuilder.build()))
 				.cache()
 				.subscribeOn(scheduler);
 		dependencies.add(statisticsMaybe.ignoreElement());

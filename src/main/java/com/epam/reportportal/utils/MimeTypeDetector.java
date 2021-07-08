@@ -15,17 +15,20 @@
  */
 package com.epam.reportportal.utils;
 
+import com.epam.reportportal.utils.files.Utils;
 import com.google.common.io.ByteSource;
-import org.apache.tika.detect.Detector;
-import org.apache.tika.io.IOUtils;
-import org.apache.tika.io.TikaInputStream;
-import org.apache.tika.metadata.Metadata;
-import org.apache.tika.parser.AutoDetectParser;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-
-import static com.google.common.base.Strings.isNullOrEmpty;
+import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Utility stuff to detect mime type of binary data
@@ -33,41 +36,54 @@ import static com.google.common.base.Strings.isNullOrEmpty;
  * @author Andrei Varabyeu
  */
 public class MimeTypeDetector {
+	private static final String UNKNOWN_TYPE = "application/octet-stream";
+	private static final String EXTENSION_DELIMITER = ".";
 
-	private static final Detector detector = new AutoDetectParser().getDetector();
+	private static final Map<String, String> ADDITIONAL_EXTENSION_MAPPING = new HashMap<String, String>(){{
+		put(".properties", "text/plain");
+	}};
 
 	private MimeTypeDetector() {
 		//statics only
 	}
 
-	public static String detect(File file) throws IOException {
-		final Metadata metadata = new Metadata();
-		metadata.set(Metadata.RESOURCE_NAME_KEY, file.getName());
-		TikaInputStream is  = TikaInputStream.get(file.toPath());
-		try {
-			return detect(is, metadata);
-		} finally {
-			IOUtils.closeQuietly(is);
+	private static String detectByExtensionInternal(String name) {
+		int extensionIndex = name.lastIndexOf(EXTENSION_DELIMITER);
+		if(extensionIndex >= 0) {
+			return ADDITIONAL_EXTENSION_MAPPING.get(name.substring(extensionIndex));
 		}
-
+		return null;
 	}
 
-	public static String detect(ByteSource source, String resourceName) throws IOException {
-
-		final Metadata metadata = new Metadata();
-		if (!isNullOrEmpty(resourceName)) {
-			metadata.set(Metadata.RESOURCE_NAME_KEY, resourceName);
+	@Nonnull
+	public static String detect(@Nonnull final File file) throws IOException {
+		String type = URLConnection.guessContentTypeFromStream(new ByteArrayInputStream(Utils.readInputStreamToBytes(new FileInputStream(
+				file))));
+		if (type == null) {
+			type = Files.probeContentType(file.toPath());
 		}
-		TikaInputStream is = TikaInputStream.get(source.openBufferedStream());
-		try {
-			return detect(is, metadata);
-		} finally {
-			IOUtils.closeQuietly(is);
+		if (type == null) {
+			type = URLConnection.guessContentTypeFromName(file.getName());
 		}
-
+		if (type == null) {
+			type = detectByExtensionInternal(file.getName());
+		}
+		return type == null ? UNKNOWN_TYPE : type;
 	}
 
-	public static String detect(TikaInputStream is, Metadata metadata) throws IOException {
-		return detector.detect(is, metadata).toString();
+	@Nonnull
+	public static String detect(@Nonnull final ByteSource source, @Nullable final String resourceName) throws IOException {
+		String type = URLConnection.guessContentTypeFromStream(source.openStream());
+		if(resourceName != null) {
+			if (type == null) {
+				type = Files.probeContentType(Paths.get(resourceName));
+			} if (type == null) {
+				type = URLConnection.guessContentTypeFromName(resourceName);
+			}
+			if (type == null) {
+				type = detectByExtensionInternal(resourceName);
+			}
+		}
+		return type == null ? UNKNOWN_TYPE : type;
 	}
 }

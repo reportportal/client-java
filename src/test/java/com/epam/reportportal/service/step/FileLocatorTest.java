@@ -16,7 +16,6 @@
 
 package com.epam.reportportal.service.step;
 
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
@@ -26,6 +25,8 @@ import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import okhttp3.MultipartBody;
+import okio.Buffer;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static java.util.Optional.ofNullable;
@@ -70,7 +72,7 @@ public class FileLocatorTest {
 	public void initMocks() {
 		Maybe<ItemCreatedRS> testMethodCreatedMaybe = createConstantMaybe(new ItemCreatedRS(testMethodUuid, testMethodUuid));
 		when(rpClient.startTestItem(eq(testClassUuid), any())).thenReturn(testMethodCreatedMaybe);
-		when(rpClient.log(any(MultiPartRequest.class))).thenReturn(createConstantMaybe(new BatchSaveOperatingRS()));
+		when(rpClient.log(any(List.class))).thenReturn(createConstantMaybe(new BatchSaveOperatingRS()));
 
 		// mock start nested steps
 		when(rpClient.startTestItem(eq(testMethodUuid),
@@ -87,11 +89,10 @@ public class FileLocatorTest {
 	public void test_file_location_by_relative_workdir_path() throws IOException {
 		sr.sendStep("Test image by relative workdir path", new File("src/test/resources/pug/lucky.jpg"));
 
-		ArgumentCaptor<MultiPartRequest> logCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
+		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000).times(1)).log(logCaptor.capture());
 
-		MultiPartRequest logRq = logCaptor.getValue();
-		verifyFile(logRq,
+		verifyFile(logCaptor.getValue(),
 				Utils.readInputStreamToBytes(ofNullable(getClass().getClassLoader().getResourceAsStream("pug/lucky.jpg")).orElse(
 						EMPTY_STREAM))
 		);
@@ -101,11 +102,10 @@ public class FileLocatorTest {
 	public void test_file_location_by_relative_classpath_path() throws IOException {
 		sr.sendStep("Test image by relative classpath path", new File("pug/unlucky.jpg"));
 
-		ArgumentCaptor<MultiPartRequest> logCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
+		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000).times(1)).log(logCaptor.capture());
 
-		MultiPartRequest logRq = logCaptor.getValue();
-		verifyFile(logRq,
+		verifyFile(logCaptor.getValue(),
 				Utils.readInputStreamToBytes(ofNullable(getClass().getClassLoader().getResourceAsStream("pug/unlucky.jpg")).orElse(
 						EMPTY_STREAM))
 		);
@@ -115,11 +115,10 @@ public class FileLocatorTest {
 	public void test_file_not_found_in_path() {
 		sr.sendStep("Test image by relative classpath path", new File("pug/not_exists.jpg"));
 
-		ArgumentCaptor<MultiPartRequest> logCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
+		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000).times(1)).log(logCaptor.capture());
 
-		MultiPartRequest logRq = logCaptor.getValue();
-		SaveLogRQ saveRq = verifyRq(logRq);
+		SaveLogRQ saveRq = verifyRq(logCaptor.getValue());
 		assertThat(saveRq.getFile(), nullValue());
 	}
 
@@ -138,37 +137,45 @@ public class FileLocatorTest {
 
 		sr.sendStep("Test image by relative classpath path", testFile);
 
-		ArgumentCaptor<MultiPartRequest> logCaptor = ArgumentCaptor.forClass(MultiPartRequest.class);
+		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, after(1000).times(1)).log(logCaptor.capture());
 
-		MultiPartRequest logRq = logCaptor.getValue();
-		verifyFile(logRq,
+		verifyFile(logCaptor.getValue(),
 				Utils.readInputStreamToBytes(ofNullable(getClass().getClassLoader().getResourceAsStream("pug/lucky.jpg")).orElse(
 						EMPTY_STREAM))
 		);
 	}
 
-	private void verifyFile(MultiPartRequest logRq, byte[] data) {
+	private void verifyFile(List<MultipartBody.Part> logRq, byte[] data) {
 		SaveLogRQ saveRq = verifyRq(logRq);
+
+		String fileName = saveRq.getFile().getName();
+		List<byte[]> binaries = logRq
+				.stream()
+				.filter(p -> ofNullable(p.headers()).map(h -> h.get("Content-Disposition"))
+						.map(h -> h.contains(String.format("filename=\"%s\"", fileName)))
+						.orElse(false))
+				.map(MultipartBody.Part::body)
+				.map(b -> {
+					Buffer buf = new Buffer();
+					try {
+						b.writeTo(buf);
+					} catch (IOException ignore) {
+					}
+					return buf.readByteArray();
+				})
+				.collect(Collectors.toList());
+
+		assertThat(binaries, hasSize(1));
 
 		assertThat(saveRq.getFile(), notNullValue());
 		assertThat("Do not publish file name as message", saveRq.getMessage(), emptyString());
-		SaveLogRQ.File file = saveRq.getFile();
-		assertThat("File binary content is invalid", file.getContent(), equalTo(data));
+		assertThat("File binary content is invalid", binaries.get(0), equalTo(data));
 	}
 
-	@SuppressWarnings("unchecked")
-	private SaveLogRQ verifyRq(MultiPartRequest logRq) {
-		List<MultiPartRequest.MultiPartSerialized<?>> mpRqs = logRq.getSerializedRQs();
-		assertThat(mpRqs, hasSize(1));
-
-		Object rqs = mpRqs.get(0).getRequest();
-		assertThat(rqs, instanceOf(List.class));
-		List<Object> rqList = (List<Object>) rqs;
+	private SaveLogRQ verifyRq(List<MultipartBody.Part> logRq) {
+		List<SaveLogRQ> rqList = TestUtils.extractJsonParts(logRq);
 		assertThat(rqList, hasSize(1));
-
-		Object rq = rqList.get(0);
-		assertThat(rq, instanceOf(SaveLogRQ.class));
-		return (SaveLogRQ) rq;
+		return rqList.get(0);
 	}
 }

@@ -16,41 +16,80 @@
 
 package com.epam.reportportal.utils.http;
 
-import com.epam.reportportal.restendpoint.http.MultiPartRequest;
+import com.epam.reportportal.exception.InternalReportPortalClientException;
+import com.epam.reportportal.utils.MimeTypeDetector;
 import com.epam.ta.reportportal.ws.model.Constants;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import com.google.common.net.MediaType;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.ByteSource;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
 
-import static com.google.common.io.ByteSource.wrap;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
 public class HttpRequestUtils {
+	private static final Logger LOGGER = LoggerFactory.getLogger(HttpRequestUtils.class);
+	public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
+	public static final ObjectMapper MAPPER;
+
+	static {
+		MAPPER = new ObjectMapper();
+		MAPPER.setDateFormat(new SimpleDateFormat(DEFAULT_DATE_FORMAT));
+		MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	}
+
+	private static final String DEFAULT_TYPE = "application/octet-stream";
 
 	private HttpRequestUtils() {
 		//static only
 	}
 
-	public static MultiPartRequest buildLogMultiPartRequest(List<SaveLogRQ> rqs) {
-		MultiPartRequest.Builder builder = new MultiPartRequest.Builder();
-
-		builder.addSerializedPart(Constants.LOG_REQUEST_JSON_PART, rqs);
+	public static List<MultipartBody.Part> buildLogMultiPartRequest(List<SaveLogRQ> rqs) {
+		List<MultipartBody.Part> result = new ArrayList<>();
+		try {
+			result.add(MultipartBody.Part.createFormData(
+					Constants.LOG_REQUEST_JSON_PART,
+					null,
+					RequestBody.create(okhttp3.MediaType.get("application/json; charset=utf-8"),
+							MAPPER.writerFor(new TypeReference<List<SaveLogRQ>>() {
+							}).writeValueAsString(rqs)
+					)
+			));
+		} catch (JsonProcessingException e) {
+			throw new InternalReportPortalClientException("Unable to process JSON", e);
+		}
 
 		for (SaveLogRQ rq : rqs) {
 			final SaveLogRQ.File file = rq.getFile();
 			if (null != file) {
-				builder.addBinaryPart(
-						Constants.LOG_REQUEST_BINARY_PART,
+				okhttp3.MediaType type;
+				try {
+					type = isBlank(file.getContentType()) ?
+							okhttp3.MediaType.get(MimeTypeDetector.detect(ByteSource.wrap(file.getContent()), file.getName())) :
+							okhttp3.MediaType.get(file.getContentType());
+				} catch (IOException e) {
+					LOGGER.error("Unable to parse content media type, default value was used: " + DEFAULT_TYPE, e);
+					type = okhttp3.MediaType.get(DEFAULT_TYPE);
+				}
+				result.add(MultipartBody.Part.createFormData(Constants.LOG_REQUEST_BINARY_PART,
 						file.getName(),
-						isBlank(file.getContentType()) ? MediaType.OCTET_STREAM.toString() : file.getContentType(),
-						wrap(file.getContent())
-				);
+						RequestBody.create(type, file.getContent())
+				));
 			}
 		}
-		return builder.build();
+		return result;
 	}
 }

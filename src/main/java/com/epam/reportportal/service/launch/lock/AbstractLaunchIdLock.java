@@ -1,5 +1,5 @@
 /*
- *  Copyright 2020 EPAM Systems
+ *  Copyright 2021 EPAM Systems
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -14,15 +14,16 @@
  *  limitations under the License.
  */
 
-package com.epam.reportportal.service.statistics;
+package com.epam.reportportal.service.launch.lock;
 
-import com.epam.reportportal.service.statistics.item.StatisticsItem;
-import io.reactivex.Maybe;
-import okhttp3.ResponseBody;
-import retrofit2.Response;
+import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.LaunchIdLock;
 
-import java.io.Closeable;
+public abstract class AbstractLaunchIdLock implements LaunchIdLock {
 
-public interface Statistics extends Closeable {
-	Maybe<Response<ResponseBody>> send(StatisticsItem item);
+	protected ListenerParameters parameters;
+
+	public AbstractLaunchIdLock(ListenerParameters listenerParameters) {
+		parameters = listenerParameters;
+	}
 }

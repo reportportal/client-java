@@ -22,10 +22,13 @@ import com.epam.reportportal.test.TestUtils;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
+import okhttp3.MediaType;
+import okhttp3.ResponseBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import retrofit2.Response;
 
 import java.util.Collections;
 import java.util.Map;
@@ -61,7 +64,7 @@ public class StatisticsServiceTest {
 	}
 
 	@Mock
-	private StatisticsClient statisticsClient;
+	private Statistics statistics;
 
 	private final Maybe<String> launchMaybe = Maybe.create(emitter -> {
 		Thread.sleep(300);
@@ -76,7 +79,11 @@ public class StatisticsServiceTest {
 	public void setup() {
 		parameters = TestUtils.standardParameters();
 		service = new TestStatisticsService(parameters);
-		service.setStatistics(statisticsClient);
+		service.setStatistics(statistics);
+		when(statistics.send(any())).thenReturn(Maybe.create(e -> e.onSuccess(Response.success(ResponseBody.create(
+				MediaType.get("text/plain"),
+				""
+		)))));
 	}
 
 	@Test
@@ -88,7 +95,7 @@ public class StatisticsServiceTest {
 		service.close();
 
 		ArgumentCaptor<StatisticsItem> argumentCaptor = ArgumentCaptor.forClass(StatisticsItem.class);
-		verify(statisticsClient, times(1)).send(argumentCaptor.capture());
+		verify(statistics, times(1)).send(argumentCaptor.capture());
 
 		StatisticsItem value = argumentCaptor.getValue();
 
@@ -113,7 +120,7 @@ public class StatisticsServiceTest {
 		service.close();
 
 		ArgumentCaptor<StatisticsItem> argumentCaptor = ArgumentCaptor.forClass(StatisticsItem.class);
-		verify(statisticsClient, times(1)).send(argumentCaptor.capture());
+		verify(statistics, times(1)).send(argumentCaptor.capture());
 
 		StatisticsItem value = argumentCaptor.getValue();
 		Map<String, String> params = value.getParams();
@@ -133,6 +140,6 @@ public class StatisticsServiceTest {
 	public void test_statistics_send_event_async() {
 		StartLaunchRQ launchRq = TestUtils.standardLaunchRequest(parameters);
 		service.sendEvent(launchMaybe, launchRq);
-		verify(statisticsClient, timeout(2000).times(1)).send(any());
+		verify(statistics, timeout(2000).times(1)).send(any());
 	}
 }
