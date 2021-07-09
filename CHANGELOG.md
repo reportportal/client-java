@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Incorrect MIME type attachment upload
 
 ## [5.1.0-RC-1]
 ### Added

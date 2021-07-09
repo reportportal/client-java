@@ -80,7 +80,7 @@ public class HttpRequestUtils {
 					type = isBlank(file.getContentType()) ?
 							okhttp3.MediaType.get(MimeTypeDetector.detect(ByteSource.wrap(file.getContent()), file.getName())) :
 							okhttp3.MediaType.get(file.getContentType());
-				} catch (IOException e) {
+				} catch (IOException | IllegalArgumentException e) {
 					LOGGER.error("Unable to parse content media type, default value was used: " + DEFAULT_TYPE, e);
 					type = okhttp3.MediaType.get(DEFAULT_TYPE);
 				}
