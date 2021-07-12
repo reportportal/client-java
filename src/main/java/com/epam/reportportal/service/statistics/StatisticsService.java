@@ -65,7 +65,7 @@ public class StatisticsService implements Closeable {
 	public StatisticsService(ListenerParameters listenerParameters) {
 		this.parameters = listenerParameters;
 		boolean isDisabled = System.getenv(DISABLE_PROPERTY) != null;
-		statistics = isDisabled ? new DummyStatistics() : new StatisticsClient("UA-173456809-1", parameters);
+		statistics = isDisabled ? new DummyClient() : new StatisticsClient("UA-173456809-1", parameters);
 	}
 
 	protected Statistics getStatistics() {

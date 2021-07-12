@@ -22,7 +22,7 @@ import okhttp3.MediaType;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
 
-public class DummyStatistics implements Statistics {
+public class DummyClient implements Statistics {
 
 	@Override
 	public Maybe<Response<ResponseBody>> send(StatisticsItem item) {

@@ -32,7 +32,7 @@ public class StatisticsServiceOnOffTest {
 				true,
 				StatisticsRunnable.class,
 				Collections.singletonMap(StatisticsService.DISABLE_PROPERTY, "1"),
-				DummyStatistics.class.getCanonicalName()
+				DummyClient.class.getCanonicalName()
 		);
 		assertThat("Exit code should be '0'", process.waitFor(), equalTo(0));
 	}
