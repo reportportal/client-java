@@ -89,22 +89,22 @@ public class StatisticsService implements Closeable {
 				.ifPresent(clientAttribute -> statisticsEventBuilder.withCategory(String.format(CATEGORY_VALUE_FORMAT, clientAttribute)));
 
 		ofNullable(rq.getAttributes()).flatMap(r -> r.stream()
-				.filter(attribute -> attribute.isSystem() && DefaultProperties.AGENT.getName().equalsIgnoreCase(attribute.getKey()))
-				.findAny())
+						.filter(attribute -> attribute.isSystem() && DefaultProperties.AGENT.getName().equalsIgnoreCase(attribute.getKey()))
+						.findAny())
 				.map(ItemAttributeResource::getValue)
 				.map(a -> a.split(Pattern.quote(SystemAttributesExtractor.ATTRIBUTE_VALUE_SEPARATOR)))
 				.filter(a -> a.length >= 2)
-				.ifPresent(agentAttribute -> statisticsEventBuilder.withLabel(String.format(
-						LABEL_VALUE_FORMAT,
+				.ifPresent(agentAttribute -> statisticsEventBuilder.withLabel(String.format(LABEL_VALUE_FORMAT,
 						(Object[]) agentAttribute
 				)));
-		Maybe<Maybe<Response<ResponseBody>>> statisticsMaybe = launchIdMaybe.map(l -> getStatistics().send(statisticsEventBuilder.build()))
+		Maybe<Response<ResponseBody>> statisticsMaybe = launchIdMaybe.flatMap(l -> getStatistics().send(statisticsEventBuilder.build()))
 				.cache()
 				.subscribeOn(scheduler);
 		dependencies.add(statisticsMaybe.ignoreElement());
 		//noinspection ResultOfMethodCallIgnored
 		statisticsMaybe.subscribe(t -> {
-		});
+			ofNullable(t.body()).ifPresent(ResponseBody::close);
+		}, t -> LOGGER.error("Unable to send statistics", t));
 	}
 
 	@Override

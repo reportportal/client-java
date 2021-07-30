@@ -32,7 +32,7 @@ public class StatisticsIdsRunnable {
 	public static void main(String... args) {
 
 		StatisticsApiClient api = mock(StatisticsApiClient.class);
-		when(api.send(any())).thenReturn(Maybe.create(e -> e.onSuccess(Response.success(ResponseBody.create(
+		when(api.send(anyString(), any())).thenReturn(Maybe.create(e -> e.onSuccess(Response.success(ResponseBody.create(
 				MediaType.get("text/plain"),
 				""
 		)))));
@@ -45,7 +45,7 @@ public class StatisticsIdsRunnable {
 		//noinspection rawtypes
 		ArgumentCaptor<Map> captor = ArgumentCaptor.forClass(Map.class);
 		//noinspection unchecked
-		verify(api).send(captor.capture());
+		verify(api).send(anyString(), captor.capture());
 
 		System.out.println("cid=" + captor.getValue().get("cid").toString());
 		System.out.println("uid=" + captor.getValue().get("uid").toString());

@@ -19,13 +19,11 @@ package com.epam.reportportal.service.statistics;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.statistics.item.StatisticsItem;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.net.HttpHeaders;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
 import io.reactivex.Scheduler;
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
 import retrofit2.Retrofit;
@@ -58,10 +56,9 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
 public class StatisticsClient implements Statistics {
-	private static final String USER_AGENT =
-			"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " + "Chrome/91.0.4472.101 Safari/537.36";
 	private static final String BASE_URL = "https://www.google-analytics.com/";
 	private static final String CLIENT_ID_PROPERTY = "client.id";
+	private static final String USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36";
 
 	private static final Map<String, String> CONSTANT_REQUEST_PARAMS = ImmutableMap.<String, String>builder()
 			.put("de", "UTF-8")
@@ -101,10 +98,7 @@ public class StatisticsClient implements Statistics {
 	}
 
 	private static OkHttpClient buildHttpClient(ListenerParameters parameters) {
-		OkHttpClient.Builder okHttpClient = new OkHttpClient.Builder().addInterceptor(chain -> {
-			Request newRequest = chain.request().newBuilder().addHeader(HttpHeaders.USER_AGENT, USER_AGENT).build();
-			return chain.proceed(newRequest);
-		});
+		OkHttpClient.Builder okHttpClient = new OkHttpClient.Builder();
 		String proxyStr = parameters.getProxyUrl();
 
 		if (isNotBlank(proxyStr)) {
@@ -170,7 +164,7 @@ public class StatisticsClient implements Statistics {
 	 */
 	@Override
 	public Maybe<Response<ResponseBody>> send(StatisticsItem item) {
-		return client.send(buildPostRequest(item));
+		return client.send(USER_AGENT, buildPostRequest(item));
 	}
 
 	private Map<String, String> buildPostRequest(StatisticsItem item) {

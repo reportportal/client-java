@@ -21,6 +21,7 @@ import okhttp3.ResponseBody;
 import retrofit2.Response;
 import retrofit2.http.FieldMap;
 import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.Header;
 import retrofit2.http.POST;
 
 import java.util.Map;
@@ -29,5 +30,5 @@ public interface StatisticsApiClient {
 
 	@FormUrlEncoded
 	@POST("collect")
-	Maybe<Response<ResponseBody>> send(@FieldMap Map<String, String> params);
+	Maybe<Response<ResponseBody>> send(@Header("User-Agent") String agent, @FieldMap Map<String, String> params);
 }
