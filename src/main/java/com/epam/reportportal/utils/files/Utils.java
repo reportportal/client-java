@@ -50,6 +50,7 @@ public class Utils {
 	 * @return the result
 	 * @throws IOException in case of a read error
 	 */
+	@Nonnull
 	public static String readInputStreamToString(@Nonnull InputStream is) throws IOException {
 		byte[] bytes = readInputStreamToBytes(is);
 		if (bytes.length <= 0) {
@@ -60,7 +61,7 @@ public class Utils {
 			return new String(bytes, StandardCharsets.UTF_8.name());
 		} catch (UnsupportedEncodingException e) {
 			// Most likely impossible case unless you run these tests on embedded controllers
-			return null;
+			throw new IllegalStateException("Unable to read InputStream", e);
 		}
 	}
 
