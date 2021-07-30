@@ -18,7 +18,7 @@ apply plugin: 'java-library'
 
 apply from: "${project.scripts_url}/${project.scripts_branch}/build-quality.gradle"
 apply from: "${project.scripts_url}/${project.scripts_branch}/release-commons.gradle"
-//apply from: "${project.scripts_url}/${project.scripts_branch}/signing.gradle"
+apply from: "${project.scripts_url}/${project.scripts_branch}/signing.gradle"
 apply from: "${project.scripts_url}/${project.scripts_branch}/jacoco.gradle"
 
 project.ext.limits = [
