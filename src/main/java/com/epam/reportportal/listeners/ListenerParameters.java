@@ -59,7 +59,7 @@ public class ListenerParameters implements Cloneable {
 	private static final String DEFAULT_CLIENT_JOIN_MODE = "FILE";
 	private static final String DEFAULT_LOCK_FILE_NAME = "reportportal.lock";
 	private static final String DEFAULT_SYNC_FILE_NAME = "reportportal.sync";
-	private static final long DEFAULT_FILE_WAIT_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+	public static final long DEFAULT_FILE_WAIT_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
 	private static final long DEFAULT_CLIENT_JOIN_TIMEOUT = TimeUnit.MINUTES.toMillis(30);
 	private static final String DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT = "MILLISECONDS";
 	private static final String DEFAULT_CLIENT_JOIN_LOCK_TIMEOUT_UNIT = DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT;
@@ -167,10 +167,10 @@ public class ListenerParameters implements Cloneable {
 		clientJoin = properties.getPropertyAsBoolean(CLIENT_JOIN_MODE, DEFAULT_CLIENT_JOIN);
 		clientJoinMode = LaunchIdLockMode.valueOf(properties.getProperty(CLIENT_JOIN_MODE_VALUE, DEFAULT_CLIENT_JOIN_MODE));
 
-		clientJoinTimeout = ofNullable(properties.getProperty(CLIENT_JOIN_TIMEOUT_VALUE)).map(t -> TimeUnit.valueOf(properties.getProperty(
-				CLIENT_JOIN_TIMEOUT_UNIT,
-				DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT
-		)).toMillis(Long.parseLong(t))).orElse(DEFAULT_CLIENT_JOIN_TIMEOUT);
+		clientJoinTimeout = ofNullable(properties.getProperty(CLIENT_JOIN_TIMEOUT_VALUE)).map(t -> TimeUnit.valueOf(properties.getProperty(CLIENT_JOIN_TIMEOUT_UNIT,
+						DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT
+				)).toMillis(Long.parseLong(t)))
+				.orElse(DEFAULT_CLIENT_JOIN_TIMEOUT);
 
 		lockFileName = properties.getProperty(LOCK_FILE_NAME);
 		if (lockFileName != null) {
@@ -200,7 +200,10 @@ public class ListenerParameters implements Cloneable {
 			TimeUnit waitTimeUnit = TimeUnit.valueOf(properties.getProperty(CLIENT_JOIN_LOCK_TIMEOUT_UNIT,
 					DEFAULT_CLIENT_JOIN_LOCK_TIMEOUT_UNIT
 			));
-			this.lockWaitTimeout = waitTimeUnit.toMillis(Long.parseLong(waitTimeoutStr));
+			lockWaitTimeout = waitTimeUnit.toMillis(Long.parseLong(waitTimeoutStr));
+		}
+		if (fileWaitTimeoutStr == null && waitTimeoutStr == null) {
+			lockWaitTimeout = DEFAULT_FILE_WAIT_TIMEOUT_MS;
 		}
 
 		lockPortNumber = properties.getPropertyAsInt(CLIENT_JOIN_LOCK_PORT, DEFAULT_CLIENT_JOIN_LOCK_PORT);
