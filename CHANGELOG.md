@@ -1,10 +1,8 @@
 # Changelog
 
 ## [Unreleased]
-
-## [5.1.0-RC-4]
-
-## [5.1.0-RC-3]
+### Fixed
+- Lock wait timeout property initialization
 
 ## [5.1.0-RC-2]
 ### Fixed

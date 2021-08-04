@@ -87,6 +87,6 @@ public class PropertiesLoaderTest {
 
 	@Test
 	public void testUtf() {
-		assertThat("Incorrect encoding!", PropertiesLoader.load("utf-demo.properties").getProperty("utf8"), is("привет мир!"));
+		assertThat("Incorrect encoding!", PropertiesLoader.load("property-test/utf-demo.properties").getProperty("utf8"), is("привет мир!"));
 	}
 }

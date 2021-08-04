@@ -46,7 +46,7 @@ public class ListenerParametersTest {
 
 	@Test
 	public void testOnlyApiKeyProvided() {
-		PropertiesLoader properties = PropertiesLoader.load("reportportal-api-key.properties");
+		PropertiesLoader properties = PropertiesLoader.load("property-test/reportportal-api-key.properties");
 		ListenerParameters listenerParameters = new ListenerParameters(properties);
 
 		assertEquals("test-api-key", listenerParameters.getApiKey());
@@ -54,7 +54,7 @@ public class ListenerParametersTest {
 
 	@Test
 	public void testOnlyUuidProvided() {
-		PropertiesLoader properties = PropertiesLoader.load("reportportal-uuid.properties");
+		PropertiesLoader properties = PropertiesLoader.load("property-test/reportportal-uuid.properties");
 		ListenerParameters listenerParameters = new ListenerParameters(properties);
 
 		assertEquals("test-uuid", listenerParameters.getApiKey());
@@ -84,7 +84,7 @@ public class ListenerParametersTest {
 
 	@Test
 	public void test_rx_buffer_size_property_file_bypass() {
-		PropertiesLoader properties = PropertiesLoader.load("reportportal-rx-size.properties");
+		PropertiesLoader properties = PropertiesLoader.load("property-test/reportportal-rx-size.properties");
 		ListenerParameters listenerParameters = new ListenerParameters(properties);
 
 		assertEquals(1024, listenerParameters.getRxBufferSize());
@@ -102,7 +102,7 @@ public class ListenerParametersTest {
 	@Test
 	public void test_rx_buffer_size_system_property_override() {
 		System.setProperty("rx2.buffer-size", "10");
-		PropertiesLoader properties = PropertiesLoader.load("reportportal-rx-size.properties");
+		PropertiesLoader properties = PropertiesLoader.load("property-test/reportportal-rx-size.properties");
 		ListenerParameters listenerParameters = new ListenerParameters(properties);
 
 		assertEquals(10, listenerParameters.getRxBufferSize());
@@ -111,7 +111,7 @@ public class ListenerParametersTest {
 
 	@Test
 	public void test_item_name_truncation_default_values() {
-		PropertiesLoader properties = PropertiesLoader.load("utf-demo.properties");
+		PropertiesLoader properties = PropertiesLoader.load("property-test/utf-demo.properties");
 		ListenerParameters listenerParameters = new ListenerParameters(properties);
 
 		assertTrue(listenerParameters.isTruncateItemNames());
@@ -121,11 +121,51 @@ public class ListenerParametersTest {
 
 	@Test
 	public void test_item_name_truncation_property_file_bypass() {
-		PropertiesLoader properties = PropertiesLoader.load("reportportal-item-names-truncation.properties");
+		PropertiesLoader properties = PropertiesLoader.load("property-test/reportportal-item-names-truncation.properties");
 		ListenerParameters listenerParameters = new ListenerParameters(properties);
 
 		assertFalse(listenerParameters.isTruncateItemNames());
 		assertEquals(512, listenerParameters.getTruncateItemNamesLimit());
 		assertEquals("\\", listenerParameters.getTruncateItemNamesReplacement());
+	}
+
+	@Test
+	public void verify_lock_wait_timeout_property_set_if_it_not_present_in_property_file() {
+		PropertiesLoader properties = PropertiesLoader.load("property-test/default-required.properties");
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		assertEquals(ListenerParameters.DEFAULT_FILE_WAIT_TIMEOUT_MS, listenerParameters.getLockWaitTimeout());
+	}
+
+	@Test
+	public void verify_lock_wait_timeout_property_set_by_file_wait_property() {
+		PropertiesLoader properties = PropertiesLoader.load("property-test/lock-wait-file.properties");
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		assertEquals(15223, listenerParameters.getLockWaitTimeout());
+	}
+
+	@Test
+	public void verify_lock_wait_timeout_property_set_by_client_join_lock_wait_property() {
+		PropertiesLoader properties = PropertiesLoader.load("property-test/lock-wait-client_lock.properties");
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		assertEquals(17000, listenerParameters.getLockWaitTimeout());
+	}
+
+	@Test
+	public void verify_lock_wait_timeout_property_client_join_lock_wait_property_override() {
+		PropertiesLoader properties = PropertiesLoader.load("property-test/lock-wait-client_lock_override.properties");
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		assertEquals(19000, listenerParameters.getLockWaitTimeout());
+	}
+
+	@Test
+	public void verify_lock_wait_timeout_property_set_by_client_join_lock_wait_property_no_time_unit() {
+		PropertiesLoader properties = PropertiesLoader.load("property-test/lock-wait-client_lock_no_time_unit.properties");
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		assertEquals(21, listenerParameters.getLockWaitTimeout());
 	}
 }
