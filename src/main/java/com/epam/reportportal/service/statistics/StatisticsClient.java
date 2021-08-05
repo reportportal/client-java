@@ -175,15 +175,6 @@ public class StatisticsClient implements Statistics {
 
 	@Override
 	public void close() {
-		ofNullable(executor).ifPresent(e -> {
-			e.shutdown();
-			try {
-				if (!e.awaitTermination(10, TimeUnit.SECONDS)) {
-					e.shutdownNow();
-				}
-			} catch (InterruptedException ignore) {
-			}
-		});
 		ofNullable(httpClient).ifPresent(c -> {
 			ExecutorService e = c.dispatcher().executorService();
 			e.shutdown();
@@ -195,5 +186,8 @@ public class StatisticsClient implements Statistics {
 			}
 			c.connectionPool().evictAll();
 		});
+		httpClient = null;
+		ofNullable(executor).ifPresent(ExecutorService::shutdownNow);
+		executor = null;
 	}
 }

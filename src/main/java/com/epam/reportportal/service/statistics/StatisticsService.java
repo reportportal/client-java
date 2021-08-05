@@ -104,7 +104,11 @@ public class StatisticsService implements Closeable {
 		//noinspection ResultOfMethodCallIgnored
 		statisticsMaybe.subscribe(t -> {
 			ofNullable(t.body()).ifPresent(ResponseBody::close);
-		}, t -> LOGGER.error("Unable to send statistics", t));
+			getStatistics().close();
+		}, t -> {
+			LOGGER.error("Unable to send statistics", t);
+			getStatistics().close();
+		});
 	}
 
 	@Override
