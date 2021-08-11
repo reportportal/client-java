@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Error message on incompatible OkHttp dependency version
 
 ## [5.1.0-RC-6]
 

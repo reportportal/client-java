@@ -450,9 +450,19 @@ public class ReportPortal {
 		protected Retrofit buildRestEndpoint(@Nonnull final ListenerParameters parameters, @Nonnull final OkHttpClient client,
 				@Nonnull final ExecutorService executor) {
 			String baseUrl = (parameters.getBaseUrl().endsWith("/") ? parameters.getBaseUrl() : parameters.getBaseUrl() + "/") + API_PATH;
-			return new Retrofit.Builder().client(client)
-					.baseUrl(baseUrl)
-					.addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(Schedulers.from(executor)))
+			Retrofit.Builder builder = new Retrofit.Builder().client(client);
+			try {
+				builder.baseUrl(baseUrl);
+			} catch (NoSuchMethodError e) {
+				throw new InternalReportPortalClientException("Unable to initialize OkHttp client. "
+						+ "Report Portal client supports OkHttp version 3.11.0 as minimum.\n"
+								+ "Please update OkHttp dependency.\n"
+								+ "Besides this usually happens due to old selenium-java version (it overrides our dependency), "
+								+ "please use selenium-java 3.141.0 as minimum.",
+						e
+				);
+			}
+			return builder.addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(Schedulers.from(executor)))
 					.addConverterFactory(JacksonConverterFactory.create(HttpRequestUtils.MAPPER))
 					.build();
 		}
