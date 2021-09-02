@@ -93,11 +93,6 @@ public class LaunchImpl extends Launch {
 	public static final String CUSTOM_AGENT = "CUSTOM";
 
 	/**
-	 * REST Client
-	 */
-	private final ReportPortalClient rpClient;
-
-	/**
 	 * Messages queue to track items execution order
 	 */
 	protected final LoadingCache<Maybe<String>, LaunchImpl.TreeItem> QUEUE = CacheBuilder.newBuilder()
@@ -116,8 +111,7 @@ public class LaunchImpl extends Launch {
 
 	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
 			@Nonnull final StartLaunchRQ rq, @Nonnull final ExecutorService executorService) {
-		super(parameters);
-		rpClient = requireNonNull(reportPortalClient, "RestEndpoint shouldn't be NULL");
+		super(reportPortalClient, parameters);
 		requireNonNull(parameters, "Parameters shouldn't be NULL");
 		executor = requireNonNull(executorService);
 		scheduler = createScheduler(executor);
@@ -128,7 +122,7 @@ public class LaunchImpl extends Launch {
 
 		launch = Maybe.create((MaybeOnSubscribe<String>) emitter -> {
 
-			Maybe<StartLaunchRS> launchPromise = Maybe.defer(() -> rpClient.startLaunch(rq)
+			Maybe<StartLaunchRS> launchPromise = Maybe.defer(() -> getClient().startLaunch(rq)
 					.retry(DEFAULT_REQUEST_RETRY)
 					.doOnSuccess(LAUNCH_SUCCESS_CONSUMER)
 					.doOnError(LOG_ERROR)).subscribeOn(getScheduler()).cache();
@@ -143,8 +137,7 @@ public class LaunchImpl extends Launch {
 
 	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
 			@Nonnull final Maybe<String> launchMaybe, @Nonnull final ExecutorService executorService) {
-		super(parameters);
-		rpClient = requireNonNull(reportPortalClient, "RestEndpoint shouldn't be NULL");
+		super(reportPortalClient, parameters);
 		requireNonNull(parameters, "Parameters shouldn't be NULL");
 		executor = requireNonNull(executorService);
 		scheduler = createScheduler(executor);
@@ -195,7 +188,7 @@ public class LaunchImpl extends Launch {
 	public Maybe<String> start() {
 		launch.subscribe(logMaybeResults("Launch start"));
 		LaunchLoggingContext.init(this.launch,
-				this.rpClient,
+				getClient(),
 				getScheduler(),
 				getParameters()
 		);
@@ -211,7 +204,7 @@ public class LaunchImpl extends Launch {
 	public void finish(final FinishExecutionRQ rq) {
 		QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
 		final Completable finish = Completable.concat(QUEUE.getUnchecked(launch).getChildren())
-				.andThen(launch.map(id -> rpClient.finishLaunch(id, rq)
+				.andThen(launch.map(id -> getClient().finishLaunch(id, rq)
 						.retry(DEFAULT_REQUEST_RETRY)
 						.doOnSuccess(LOG_SUCCESS)
 						.doOnError(LOG_ERROR)
@@ -263,12 +256,12 @@ public class LaunchImpl extends Launch {
 
 		Maybe<String> item = launch.flatMap((Function<String, Maybe<String>>) launchId -> {
 			rq.setLaunchUuid(launchId);
-			return rpClient.startTestItem(rq).retry(DEFAULT_REQUEST_RETRY).doOnSuccess(logCreated("item")).map(TO_ID);
+			return getClient().startTestItem(rq).retry(DEFAULT_REQUEST_RETRY).doOnSuccess(logCreated("item")).map(TO_ID);
 		}).cache();
 
 		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(item).addToQueue(item.ignoreElement().onErrorComplete());
-		LoggingContext.init(launch, item, rpClient, getScheduler(), getParameters());
+		LoggingContext.init(launch, item, getClient(), getScheduler(), getParameters());
 
 		getStepReporter().setParent(item);
 		StepAspect.setParentId(item);
@@ -302,14 +295,14 @@ public class LaunchImpl extends Launch {
 		final Maybe<String> item = launch.flatMap((Function<String, Maybe<String>>) lId -> parentId.flatMap((Function<String, MaybeSource<String>>) pId -> {
 			rq.setLaunchUuid(lId);
 			LOGGER.debug("Starting test item..." + Thread.currentThread().getName());
-			Maybe<ItemCreatedRS> result = rpClient.startTestItem(pId, rq);
+			Maybe<ItemCreatedRS> result = getClient().startTestItem(pId, rq);
 			result = result.retry(DEFAULT_REQUEST_RETRY);
 			result = result.doOnSuccess(logCreated("item"));
 			return result.map(TO_ID);
 		})).cache();
 		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start test item"));
 		QUEUE.getUnchecked(item).withParent(parentId).addToQueue(item.ignoreElement().onErrorComplete());
-		LoggingContext.init(launch, item, rpClient, getScheduler(), getParameters());
+		LoggingContext.init(launch, item, getClient(), getScheduler(), getParameters());
 
 		getStepReporter().setParent(item);
 		StepAspect.setParentId(item);
@@ -356,7 +349,7 @@ public class LaunchImpl extends Launch {
 		Maybe<OperationCompletionRS> finishResponse = this.launch.flatMap((Function<String, Maybe<OperationCompletionRS>>) launchId -> item.flatMap(
 				(Function<String, Maybe<OperationCompletionRS>>) itemId -> {
 					rq.setLaunchUuid(launchId);
-					return rpClient.finishTestItem(itemId, rq)
+					return getClient().finishTestItem(itemId, rq)
 							.retry(TEST_ITEM_FINISH_REQUEST_RETRY)
 							.doOnSuccess(LOG_SUCCESS)
 							.doOnError(LOG_ERROR);
@@ -395,9 +388,8 @@ public class LaunchImpl extends Launch {
 			return this;
 		}
 
-		public LaunchImpl.TreeItem addToQueue(Completable completable) {
+		public void addToQueue(Completable completable) {
 			this.children.add(completable);
-			return this;
 		}
 
 		public List<Completable> getChildren() {

@@ -22,8 +22,8 @@ public class InternalReportPortalClientException extends RuntimeException {
 
 	private static final long serialVersionUID = -4231070395029601011L;
 
-	public InternalReportPortalClientException(String message, Exception e) {
-		super(message, e);
+	public InternalReportPortalClientException(String message, Throwable cause) {
+		super(message, cause);
 	}
 
 	public InternalReportPortalClientException(String message) {

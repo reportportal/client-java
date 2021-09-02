@@ -20,7 +20,9 @@ import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.aspect.StepAspectCommon;
 import com.epam.reportportal.exception.ReportPortalException;
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.service.statistics.StatisticsService;
+import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.ta.reportportal.ws.model.*;
@@ -162,7 +164,7 @@ public class LaunchTest {
 				STANDARD_PARAMETERS,
 				standardLaunchRequest(STANDARD_PARAMETERS),
 				executor
-		){
+		) {
 			@Override
 			StatisticsService getStatisticsService() {
 				return statisticsService;
@@ -341,5 +343,31 @@ public class LaunchTest {
 
 		launch.start();
 		launch.finish(standardLaunchFinishRequest());
+	}
+
+	@Test
+	public void test_noop_launch_not_null() {
+		assertThat(Launch.NOOP_LAUNCH, notNullValue());
+	}
+
+	@Test
+	public void test_noop_launch_returns_valid_step_reporter() {
+		StepReporter reporter = Launch.NOOP_LAUNCH.getStepReporter();
+
+		assertThat(reporter, notNullValue());
+		reporter.sendStep(ItemStatus.PASSED, "Dummy step name");
+		reporter.sendStep(ItemStatus.FAILED, "Dummy failure step name", new IllegalStateException());
+	}
+
+	@Test
+	public void test_noop_launch_returns_valid_rp_client() {
+		ReportPortalClient client = Launch.NOOP_LAUNCH.getClient();
+
+		assertThat(client, notNullValue());
+		assertThat(client.toString(), notNullValue());
+		assertThat(client.hashCode(), not(0));
+		assertThat(client.equals(mock(ReportPortalClient.class)), equalTo(Boolean.FALSE));
+		assertThat(client.startLaunch(new StartLaunchRQ()), notNullValue());
+		assertThat(client.getItemByUuid("test"), notNullValue());
 	}
 }

@@ -27,8 +27,12 @@ import io.reactivex.Maybe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.lang.reflect.Proxy;
 import java.util.Set;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * @author Andrei Varabyeu
@@ -42,16 +46,20 @@ public abstract class Launch {
 
 	private final StepReporter stepReporter;
 
-	Launch(ListenerParameters parameters, StepReporter reporter) {
-		this.parameters = parameters;
-		stepReporter = reporter;
+	protected final ReportPortalClient client;
+
+	Launch(@Nonnull ReportPortalClient reportPortalClient, @Nonnull ListenerParameters listenerParameters, @Nonnull StepReporter reporter) {
+		parameters = requireNonNull(listenerParameters, "ListenerParameters shouldn't be NULL");
+		stepReporter = requireNonNull(reporter, "StepReporter shouldn't be NULL");
 		CURRENT_LAUNCH.set(this);
+		client = reportPortalClient;
 	}
 
-	Launch(ListenerParameters parameters) {
-		this.parameters = parameters;
+	Launch(@Nonnull ReportPortalClient reportPortalClient, @Nonnull ListenerParameters listenerParameters) {
+		parameters = requireNonNull(listenerParameters, "ListenerParameters shouldn't be NULL");
 		stepReporter = new DefaultStepReporter(this);
 		CURRENT_LAUNCH.set(this);
+		client = requireNonNull(reportPortalClient, "ReportPortalClient shouldn't be NULL");
 	}
 
 	abstract public Maybe<String> start();
@@ -102,7 +110,7 @@ public abstract class Launch {
 	public ListenerParameters getParameters() {
 		// Sticking any thread which makes this call to the current Launch to be able to use Step Reporter and other methods
 		CURRENT_LAUNCH.set(this);
-		return this.parameters;
+		return parameters;
 	}
 
 	/**
@@ -110,6 +118,7 @@ public abstract class Launch {
 	 *
 	 * @return launch instance
 	 */
+	@Nullable
 	public static Launch currentLaunch() {
 		return CURRENT_LAUNCH.get();
 	}
@@ -119,15 +128,32 @@ public abstract class Launch {
 	 *
 	 * @return a {@link StepReporter} instance
 	 */
+	@Nonnull
 	public StepReporter getStepReporter() {
 		return stepReporter;
 	}
 
 	/**
+	 * Returns Report Portal client for the launch.
+	 *
+	 * @return a {@link ReportPortalClient} instance
+	 */
+	@Nonnull
+	public ReportPortalClient getClient() {
+		return client;
+	}
+
+	/**
 	 * Implementation for disabled Reporting
 	 */
-	public static final Launch NOOP_LAUNCH = new Launch(new ListenerParameters(), StepReporter.NOOP_STEP_REPORTER) {
-
+	public static final Launch NOOP_LAUNCH = new Launch(
+			(ReportPortalClient) Proxy.newProxyInstance(Launch.class.getClassLoader(),
+					new Class[] { ReportPortalClient.class },
+					new DummyReportPortalClientHandler()
+			),
+			new ListenerParameters(),
+			StepReporter.NOOP_STEP_REPORTER
+	) {
 		@Override
 		public Maybe<String> start() {
 			return Maybe.empty();
