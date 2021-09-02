@@ -26,7 +26,7 @@ public class DummyClient implements Statistics {
 
 	@Override
 	public Maybe<Response<ResponseBody>> send(StatisticsItem item) {
-		return Maybe.create(e-> e.onSuccess(Response.success(ResponseBody.create(MediaType.get("text/plain"), ""))));
+		return Maybe.create(e -> e.onSuccess(Response.success(ResponseBody.create(MediaType.get("text/plain"), ""))));
 	}
 
 	@Override

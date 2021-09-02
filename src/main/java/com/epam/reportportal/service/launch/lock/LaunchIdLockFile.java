@@ -250,7 +250,7 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 	 * Returns a Launch UUID for many Clients launched on one machine.
 	 *
 	 * @param instanceUuid a Client instance UUID, which will be written to lock and sync files and, if it the first thread which managed to
-	 *             obtain lock on '.lock' file, returned to every client instance.
+	 *                     obtain lock on '.lock' file, returned to every client instance.
 	 * @return either a Client instance UUID, either the first UUID which thread managed to place a lock on a '.lock' file.
 	 */
 	@Override

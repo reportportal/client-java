@@ -27,8 +27,11 @@ import io.reactivex.Maybe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Set;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * @author Andrei Varabyeu
@@ -42,16 +45,20 @@ public abstract class Launch {
 
 	private final StepReporter stepReporter;
 
-	Launch(ListenerParameters parameters, StepReporter reporter) {
-		this.parameters = parameters;
+	protected final ReportPortalClient client;
+
+	Launch(@Nullable ReportPortalClient reportPortalClient, ListenerParameters listenerParameters, StepReporter reporter) {
+		parameters = listenerParameters;
 		stepReporter = reporter;
 		CURRENT_LAUNCH.set(this);
+		client = reportPortalClient;
 	}
 
-	Launch(ListenerParameters parameters) {
-		this.parameters = parameters;
+	Launch(@Nonnull ReportPortalClient reportPortalClient, ListenerParameters listenerParameters) {
+		parameters = listenerParameters;
 		stepReporter = new DefaultStepReporter(this);
 		CURRENT_LAUNCH.set(this);
+		client = requireNonNull(reportPortalClient, "RestEndpoint shouldn't be NULL");
 	}
 
 	abstract public Maybe<String> start();
@@ -124,9 +131,18 @@ public abstract class Launch {
 	}
 
 	/**
+	 * Returns Report Portal client for the launch.
+	 *
+	 * @return a {@link ReportPortalClient} instance
+	 */
+	public ReportPortalClient getClient() {
+		return client;
+	}
+
+	/**
 	 * Implementation for disabled Reporting
 	 */
-	public static final Launch NOOP_LAUNCH = new Launch(new ListenerParameters(), StepReporter.NOOP_STEP_REPORTER) {
+	public static final Launch NOOP_LAUNCH = new Launch(null, new ListenerParameters(), StepReporter.NOOP_STEP_REPORTER) {
 
 		@Override
 		public Maybe<String> start() {

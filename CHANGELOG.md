@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Added
 - Error message on incompatible OkHttp dependency version
+- It's now possible to obtain Report Portal client by `Launch.currentLaunch().getClient()`
 
 ## [5.1.0-RC-6]
 
