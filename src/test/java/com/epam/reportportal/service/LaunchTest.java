@@ -365,6 +365,8 @@ public class LaunchTest {
 
 		assertThat(client, notNullValue());
 		assertThat(client.toString(), notNullValue());
+		assertThat(client.hashCode(), not(0));
+		assertThat(client.equals(mock(ReportPortalClient.class)), equalTo(Boolean.FALSE));
 		assertThat(client.startLaunch(new StartLaunchRQ()), notNullValue());
 		assertThat(client.getItemByUuid("test"), notNullValue());
 	}
