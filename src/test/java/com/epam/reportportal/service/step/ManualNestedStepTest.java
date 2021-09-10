@@ -111,15 +111,17 @@ public class ManualNestedStepTest {
 
 	@Test
 	public void test_sent_step_creates_nested_step() {
+		mockFinishNestedStep();
 		String stepName = UUID.randomUUID().toString();
 		sr.sendStep(stepName);
 
 		ArgumentCaptor<StartTestItemRQ> stepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, timeout(1000).times(1)).startTestItem(eq(testMethodUuid), stepCaptor.capture());
-		verify(client, after(1000).times(0)).finishTestItem(anyString(), any());
+		verify(client).startTestItem(eq(testMethodUuid), stepCaptor.capture());
+		verify(client, after(1000).times(0)).finishTestItem(eq(testMethodUuid), any());
 
 		StartTestItemRQ nestedStep = stepCaptor.getValue();
 		assertThat(nestedStep.getName(), equalTo(stepName));
+		sr.finishPreviousStep();
 	}
 
 	@Test
@@ -200,7 +202,9 @@ public class ManualNestedStepTest {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
 	public void verify_nested_step_with_a_batch_of_logs() {
+		mockFinishNestedStep();
 		when(client.log(any(List.class))).thenReturn(createConstantMaybe(new BatchSaveOperatingRS()));
 
 		int logNumber = 3;
@@ -227,5 +231,6 @@ public class ManualNestedStepTest {
 			assertThat(logRequests.get(i).getKey(), equalTo("INFO"));
 			assertThat(logRequests.get(i).getValue(), equalTo(logs[i]));
 		});
+		sr.finishNestedStep();
 	}
 }
