@@ -26,6 +26,7 @@ import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
+import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import io.reactivex.Maybe;
 import okhttp3.MultipartBody;
 import org.apache.commons.lang3.tuple.Pair;
@@ -59,7 +60,6 @@ public class ManualNestedStepTest {
 	private final String testLaunchUuid = "launch" + UUID.randomUUID().toString().substring(6);
 	private final String testClassUuid = "class" + UUID.randomUUID().toString().substring(5);
 	private final String testMethodUuid = "test" + UUID.randomUUID().toString().substring(4);
-	private final Maybe<String> launchUuid = createConstantMaybe(testLaunchUuid);
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
 	@Mock
@@ -81,6 +81,7 @@ public class ManualNestedStepTest {
 	@BeforeEach
 	public void initMocks() {
 		Maybe<ItemCreatedRS> classCreatedMaybe = createConstantMaybe(new ItemCreatedRS(testClassUuid, testClassUuid));
+		when(client.startLaunch(any())).thenReturn(createConstantMaybe(new StartLaunchRS(testLaunchUuid, 1L)));
 		when(client.startTestItem(same(testLaunchUuid), any())).thenReturn(classCreatedMaybe);
 		Maybe<ItemCreatedRS> testMethodCreatedMaybe = createConstantMaybe(new ItemCreatedRS(testMethodUuid, testMethodUuid));
 		when(client.startTestItem(same(testClassUuid), any())).thenReturn(testMethodCreatedMaybe);
@@ -91,7 +92,7 @@ public class ManualNestedStepTest {
 		)).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> maybeSupplier.get());
 
 		ReportPortal rp = ReportPortal.create(client, TestUtils.STANDARD_PARAMETERS, executor);
-		launch = rp.withLaunch(launchUuid);
+		launch = rp.newLaunch(TestUtils.standardLaunchRequest(TestUtils.standardParameters()));
 		testClassUuidMaybe = launch.startTestItem(createConstantMaybe(testLaunchUuid), TestUtils.standardStartTestRequest());
 		testMethodUuidMaybe = launch.startTestItem(testClassUuidMaybe, TestUtils.standardStartStepRequest());
 		testMethodUuidMaybe.blockingGet();
