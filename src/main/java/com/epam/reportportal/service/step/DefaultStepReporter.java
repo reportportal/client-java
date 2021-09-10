@@ -30,10 +30,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 import static com.google.common.base.Throwables.getStackTraceAsString;
 import static java.util.Optional.ofNullable;
@@ -45,13 +47,19 @@ public class DefaultStepReporter implements StepReporter {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DefaultStepReporter.class);
 
-	// Do not use InheritableThreadLocal here, or it will be the same issue as here:
-	// https://github.com/reportportal/agent-java-testNG/issues/76
-	private final ThreadLocal<Deque<Maybe<String>>> parents = ThreadLocal.withInitial(ArrayDeque::new);
+	private static final ThreadLocal<Deque<Maybe<String>>> stepStack = new InheritableThreadLocal<Deque<Maybe<String>>>() {
+		@Override
+		protected Deque<Maybe<String>> initialValue() {
+			return new ConcurrentLinkedDeque<>();
+		}
+	};
 
-	// Do not use InheritableThreadLocal here, or it will be the same issue as here:
-	// https://github.com/reportportal/agent-java-testNG/issues/76
-	private final ThreadLocal<Deque<StepEntry>> steps = ThreadLocal.withInitial(ArrayDeque::new);
+	private static final ThreadLocal<Deque<StepEntry>> steps = new InheritableThreadLocal<Deque<StepEntry>>() {
+		@Override
+		protected Deque<StepEntry> initialValue() {
+			return new ConcurrentLinkedDeque<>();
+		}
+	};
 
 	private final Set<Maybe<String>> parentFailures = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -64,19 +72,19 @@ public class DefaultStepReporter implements StepReporter {
 	@Override
 	public void setParent(final Maybe<String> parentUuid) {
 		if (parentUuid != null) {
-			parents.get().add(parentUuid);
+			stepStack.get().add(parentUuid);
 		}
 	}
 
 	@Override
 	public Maybe<String> getParent() {
-		return parents.get().peekLast();
+		return stepStack.get().peekLast();
 	}
 
 	@Override
 	public void removeParent(final Maybe<String> parentUuid) {
 		if (parentUuid != null) {
-			parents.get().removeLastOccurrence(parentUuid);
+			stepStack.get().removeLastOccurrence(parentUuid);
 			parentFailures.remove(parentUuid);
 		}
 	}
@@ -165,9 +173,41 @@ public class DefaultStepReporter implements StepReporter {
 	public void finishPreviousStep() {
 		finishPreviousStepInternal().ifPresent(e -> {
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
-				parentFailures.addAll(parents.get());
+				parentFailures.addAll(stepStack.get());
 			}
 		});
+	}
+
+	@Override
+	@Nonnull
+	public Maybe<String> startTestItem(@Nonnull StartTestItemRQ startStepRequest) {
+		Maybe<String> parent = getParent();
+		if (parent == null) {
+			return Maybe.empty();
+		}
+		return launch.startTestItem(parent, startStepRequest);
+	}
+
+	@Override
+	public void finishTestItem(@Nonnull FinishTestItemRQ finishStepRequest) {
+		Maybe<String> stepId = getParent();
+		if (stepId == null) {
+			return;
+		}
+		launch.finishTestItem(stepId, finishStepRequest);
+	}
+
+	@Override
+	public void finishNestedStep() {
+		FinishTestItemRQ finishStepRequest = buildFinishTestItemRequest(ItemStatus.PASSED, Calendar.getInstance().getTime());
+		finishTestItem(finishStepRequest);
+	}
+
+	@Override
+	public void finishNestedStep(@Nullable Throwable throwable) {
+		ReportPortal.emitLog(itemUuid -> buildSaveLogRequest(itemUuid, throwable));
+		FinishTestItemRQ finishStepRequest = buildFinishTestItemRequest(ItemStatus.FAILED, Calendar.getInstance().getTime());
+		finishTestItem(finishStepRequest);
 	}
 
 	private Maybe<String> startStepRequest(final StartTestItemRQ startTestItemRQ) {
@@ -178,10 +218,10 @@ public class DefaultStepReporter implements StepReporter {
 				startTestItemRQ.setStartTime(new Date(previousDate.getTime() + 1));
 			}
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
-				parentFailures.addAll(parents.get());
+				parentFailures.addAll(stepStack.get());
 			}
 		});
-		return launch.startTestItem(parents.get().getLast(), startTestItemRQ);
+		return startTestItem(startTestItemRQ);
 	}
 
 	private StartTestItemRQ buildStartStepRequest(String name) {

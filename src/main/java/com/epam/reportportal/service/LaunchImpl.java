@@ -264,8 +264,6 @@ public class LaunchImpl extends Launch {
 		LoggingContext.init(launch, item, getClient(), getScheduler(), getParameters());
 
 		getStepReporter().setParent(item);
-		StepAspect.setParentId(item);
-
 		return item;
 	}
 
@@ -305,8 +303,6 @@ public class LaunchImpl extends Launch {
 		LoggingContext.init(launch, item, getClient(), getScheduler(), getParameters());
 
 		getStepReporter().setParent(item);
-		StepAspect.setParentId(item);
-
 		return item;
 	}
 
@@ -371,8 +367,6 @@ public class LaunchImpl extends Launch {
 		}
 
 		getStepReporter().removeParent(item);
-		StepAspect.removeParentId(item);
-
 		return finishResponse;
 	}
 

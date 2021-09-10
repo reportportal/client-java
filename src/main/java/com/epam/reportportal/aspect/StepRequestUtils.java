@@ -18,16 +18,13 @@ package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.attribute.Attributes;
-import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.utils.AttributeParser;
-import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Set;
 
 /**
@@ -53,13 +50,6 @@ class StepRequestUtils {
 		request.setHasStats(false);
 
 		return request;
-	}
-
-	static FinishTestItemRQ buildFinishStepRequest(ItemStatus status, Date endTime) {
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setEndTime(endTime);
-		rq.setStatus(status.name());
-		return rq;
 	}
 
 	private static Set<ItemAttributesRQ> createStepAttributes(MethodSignature methodSignature) {
