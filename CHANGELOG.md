@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [5.1.0-RC-8]
+
 ## [5.1.0-RC-7]
 ### Added
 - Error message on incompatible OkHttp dependency version
