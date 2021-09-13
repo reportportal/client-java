@@ -49,7 +49,6 @@ import java.util.stream.IntStream;
 import static com.epam.reportportal.test.TestUtils.shutdownExecutorService;
 import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -82,7 +81,7 @@ public class ManualNestedStepTest {
 	public void initMocks() {
 		Maybe<ItemCreatedRS> classCreatedMaybe = createConstantMaybe(new ItemCreatedRS(testClassUuid, testClassUuid));
 		when(client.startLaunch(any())).thenReturn(createConstantMaybe(new StartLaunchRS(testLaunchUuid, 1L)));
-		when(client.startTestItem(same(testLaunchUuid), any())).thenReturn(classCreatedMaybe);
+		when(client.startTestItem(any())).thenReturn(classCreatedMaybe);
 		Maybe<ItemCreatedRS> testMethodCreatedMaybe = createConstantMaybe(new ItemCreatedRS(testMethodUuid, testMethodUuid));
 		when(client.startTestItem(same(testClassUuid), any())).thenReturn(testMethodCreatedMaybe);
 
@@ -93,7 +92,7 @@ public class ManualNestedStepTest {
 
 		ReportPortal rp = ReportPortal.create(client, TestUtils.STANDARD_PARAMETERS, executor);
 		launch = rp.newLaunch(TestUtils.standardLaunchRequest(TestUtils.standardParameters()));
-		testClassUuidMaybe = launch.startTestItem(createConstantMaybe(testLaunchUuid), TestUtils.standardStartTestRequest());
+		testClassUuidMaybe = launch.startTestItem(TestUtils.standardStartTestRequest());
 		testMethodUuidMaybe = launch.startTestItem(testClassUuidMaybe, TestUtils.standardStartStepRequest());
 		testMethodUuidMaybe.blockingGet();
 		sr = launch.getStepReporter();
@@ -137,22 +136,15 @@ public class ManualNestedStepTest {
 
 		ArgumentCaptor<String> stepParentUuidCaptor = ArgumentCaptor.forClass(String.class);
 		ArgumentCaptor<StartTestItemRQ> stepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, after(1000).times(4)).startTestItem(stepParentUuidCaptor.capture(), stepCaptor.capture());
+		verify(client, after(1000).times(2)).startTestItem(eq(testMethodUuid), stepCaptor.capture());
 
 		ArgumentCaptor<String> finishStepUuidCaptor = ArgumentCaptor.forClass(String.class);
 		ArgumentCaptor<FinishTestItemRQ> finishStepCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
 		verify(client, after(1000).times(1)).finishTestItem(finishStepUuidCaptor.capture(), finishStepCaptor.capture());
 
-		List<String> parentUuids = stepParentUuidCaptor.getAllValues()
-				.subList(0, 4); // I believe due to mockito bug there are over 9000 items in this list
-		assertThat(parentUuids,
-				contains(equalTo(testLaunchUuid), equalTo(testClassUuid), equalTo(testMethodUuid), equalTo(testMethodUuid))
-		);
-
-		List<StartTestItemRQ> nestedSteps = stepCaptor.getAllValues()
-				.subList(0, 4); // I believe due to mockito bug there are over 9000 items in this list
-		assertThat(nestedSteps.get(2).getName(), equalTo(stepName));
-		assertThat(nestedSteps.get(3).getName(), equalTo(stepName2));
+		List<StartTestItemRQ> nestedSteps = stepCaptor.getAllValues().subList(0, 2);
+		assertThat(nestedSteps.get(0).getName(), equalTo(stepName));
+		assertThat(nestedSteps.get(1).getName(), equalTo(stepName2));
 
 		String nestedStepFinishedUuid = finishStepUuidCaptor.getValue();
 		assertThat(nestedStepFinishedUuid, equalTo(createdStepsList.get(0).blockingGet().getUniqueId()));
