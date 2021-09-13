@@ -146,11 +146,10 @@ public abstract class Launch {
 	/**
 	 * Implementation for disabled Reporting
 	 */
-	public static final Launch NOOP_LAUNCH = new Launch(
-			(ReportPortalClient) Proxy.newProxyInstance(Launch.class.getClassLoader(),
-					new Class[] { ReportPortalClient.class },
-					new DummyReportPortalClientHandler()
-			),
+	public static final Launch NOOP_LAUNCH = new Launch((ReportPortalClient) Proxy.newProxyInstance(Launch.class.getClassLoader(),
+			new Class[] { ReportPortalClient.class },
+			new DummyReportPortalClientHandler()
+	),
 			new ListenerParameters(),
 			StepReporter.NOOP_STEP_REPORTER
 	) {

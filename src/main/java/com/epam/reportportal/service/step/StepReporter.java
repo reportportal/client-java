@@ -18,9 +18,11 @@ package com.epam.reportportal.service.step;
 
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
+import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.File;
 import java.util.Date;
 
@@ -61,6 +63,15 @@ public interface StepReporter {
 	void sendStep(@Nonnull ItemStatus status, String name, Throwable throwable, File... files);
 
 	void finishPreviousStep();
+
+	@Nonnull
+	Maybe<String> startTestItem(@Nonnull StartTestItemRQ startStepRequest);
+
+	void finishTestItem(@Nonnull FinishTestItemRQ finishStepRequest);
+
+	void finishNestedStep();
+
+	void finishNestedStep(@Nullable Throwable throwable);
 
 	class StepEntry {
 		private final Maybe<String> itemId;
@@ -117,6 +128,15 @@ public interface StepReporter {
 		public void sendStep(@Nonnull ItemStatus status, String name, Throwable throwable, File... files) {}
 		@Override
 		public void finishPreviousStep() {}
+		@Override
+		@Nonnull
+		public Maybe<String> startTestItem(@Nonnull StartTestItemRQ startStepRequest) {return Maybe.empty();}
+		@Override
+		public void finishTestItem(@Nonnull FinishTestItemRQ finishStepRequest) {}
+		@Override
+		public void finishNestedStep() {}
+		@Override
+		public void finishNestedStep(@Nullable Throwable throwable) {}
 	};
 	// @formatter:on
 }

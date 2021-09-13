@@ -18,17 +18,18 @@ package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.attribute.Attributes;
-import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.utils.AttributeParser;
-import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Set;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -39,14 +40,11 @@ class StepRequestUtils {
 		//static only
 	}
 
-	static StartTestItemRQ buildStartStepRequest(MethodSignature signature, Step step, JoinPoint joinPoint) {
-		String name = StepNameUtils.getStepName(step, signature, joinPoint);
-
+	public static StartTestItemRQ buildStartStepRequest(@Nonnull String name, @Nullable String description,
+			@Nonnull MethodSignature signature) {
 		StartTestItemRQ request = new StartTestItemRQ();
 		request.setAttributes(createStepAttributes(signature));
-		if (!step.description().isEmpty()) {
-			request.setDescription(step.description());
-		}
+		ofNullable(description).filter(d -> !d.isEmpty()).ifPresent(request::setDescription);
 		request.setName(name);
 		request.setStartTime(Calendar.getInstance().getTime());
 		request.setType("STEP");
@@ -55,11 +53,9 @@ class StepRequestUtils {
 		return request;
 	}
 
-	static FinishTestItemRQ buildFinishStepRequest(ItemStatus status, Date endTime) {
-		FinishTestItemRQ rq = new FinishTestItemRQ();
-		rq.setEndTime(endTime);
-		rq.setStatus(status.name());
-		return rq;
+	public static StartTestItemRQ buildStartStepRequest(MethodSignature signature, Step step, JoinPoint joinPoint) {
+		String name = StepNameUtils.getStepName(step, signature, joinPoint);
+		return buildStartStepRequest(name, step.description(), signature);
 	}
 
 	private static Set<ItemAttributesRQ> createStepAttributes(MethodSignature methodSignature) {
