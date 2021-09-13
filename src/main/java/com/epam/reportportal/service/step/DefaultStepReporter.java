@@ -47,14 +47,14 @@ public class DefaultStepReporter implements StepReporter {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DefaultStepReporter.class);
 
-	private static final ThreadLocal<Deque<Maybe<String>>> stepStack = new InheritableThreadLocal<Deque<Maybe<String>>>() {
+	private final ThreadLocal<Deque<Maybe<String>>> stepStack = new InheritableThreadLocal<Deque<Maybe<String>>>() {
 		@Override
 		protected Deque<Maybe<String>> initialValue() {
 			return new ConcurrentLinkedDeque<>();
 		}
 	};
 
-	private static final ThreadLocal<Deque<StepEntry>> steps = new InheritableThreadLocal<Deque<StepEntry>>() {
+	private final ThreadLocal<Deque<StepEntry>> steps = new InheritableThreadLocal<Deque<StepEntry>>() {
 		@Override
 		protected Deque<StepEntry> initialValue() {
 			return new ConcurrentLinkedDeque<>();
@@ -183,6 +183,7 @@ public class DefaultStepReporter implements StepReporter {
 	public Maybe<String> startTestItem(@Nonnull StartTestItemRQ startStepRequest) {
 		Maybe<String> parent = getParent();
 		if (parent == null) {
+			LOGGER.warn("Unable to find parent ID, skipping step: " + startStepRequest.getName());
 			return Maybe.empty();
 		}
 		return launch.startTestItem(parent, startStepRequest);
@@ -192,6 +193,7 @@ public class DefaultStepReporter implements StepReporter {
 	public void finishTestItem(@Nonnull FinishTestItemRQ finishStepRequest) {
 		Maybe<String> stepId = getParent();
 		if (stepId == null) {
+			LOGGER.warn("Unable to find item ID, skipping step a finish step");
 			return;
 		}
 		launch.finishTestItem(stepId, finishStepRequest);

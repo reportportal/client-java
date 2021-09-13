@@ -30,6 +30,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.reactivex.Maybe;
 import okhttp3.MultipartBody;
 import okio.Buffer;
+import org.apache.commons.lang3.tuple.Pair;
 import org.mockito.stubbing.Answer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,9 +42,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static com.epam.reportportal.util.test.CommonUtils.createMaybe;
 import static java.util.Optional.ofNullable;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 public class TestUtils {
@@ -233,5 +234,54 @@ public class TestUtils {
 		rq.setEndTime(Calendar.getInstance().getTime());
 		rq.setStatus("PASSED");
 		return rq;
+	}
+
+	public static void mockLaunch(ReportPortalClient client, String launchUuid, String testClassUuid, String testMethodUuid) {
+		mockLaunch(client, launchUuid, testClassUuid, Collections.singleton(testMethodUuid));
+	}
+
+	@SuppressWarnings("unchecked")
+	public static void mockLaunch(ReportPortalClient client, String launchUuid, String testClassUuid,
+			Collection<String> testMethodUuidList) {
+		when(client.startLaunch(any())).thenReturn(createMaybe(new StartLaunchRS(launchUuid, 1L)));
+
+		Maybe<ItemCreatedRS> testClassMaybe = createMaybe(new ItemCreatedRS(testClassUuid, testClassUuid));
+		when(client.startTestItem(any())).thenReturn(testClassMaybe);
+
+		List<Maybe<ItemCreatedRS>> responses = testMethodUuidList.stream()
+				.map(uuid -> createMaybe(new ItemCreatedRS(uuid, uuid)))
+				.collect(Collectors.toList());
+		Maybe<ItemCreatedRS> first = responses.get(0);
+		Maybe<ItemCreatedRS>[] other = responses.subList(1, responses.size()).toArray(new Maybe[0]);
+		when(client.startTestItem(eq(testClassUuid), any())).thenReturn(first, other);
+		new HashSet<>(testMethodUuidList).forEach(testMethodUuid -> when(client.finishTestItem(eq(testMethodUuid), any())).thenReturn(
+				createMaybe(new OperationCompletionRS())));
+
+		Maybe<OperationCompletionRS> testClassFinishMaybe = createMaybe(new OperationCompletionRS());
+		when(client.finishTestItem(eq(testClassUuid), any())).thenReturn(testClassFinishMaybe);
+
+		when(client.finishLaunch(eq(launchUuid), any())).thenReturn(createMaybe(new OperationCompletionRS()));
+	}
+
+	public static void mockNestedSteps(ReportPortalClient client, Pair<String, String> parentNestedPair) {
+		mockNestedSteps(client, Collections.singletonList(parentNestedPair));
+	}
+
+	@SuppressWarnings("unchecked")
+	public static void mockNestedSteps(final ReportPortalClient client, final List<Pair<String, String>> parentNestedPairs) {
+		Map<String, List<String>> responseOrders = parentNestedPairs.stream()
+				.collect(Collectors.groupingBy(Pair::getKey, Collectors.mapping(Pair::getValue, Collectors.toList())));
+		responseOrders.forEach((k, v) -> {
+			List<Maybe<ItemCreatedRS>> responses = v.stream()
+					.map(uuid -> CommonUtils.createMaybe(new ItemCreatedRS(uuid, uuid)))
+					.collect(Collectors.toList());
+
+			Maybe<ItemCreatedRS> first = responses.get(0);
+			Maybe<ItemCreatedRS>[] other = responses.subList(1, responses.size()).toArray(new Maybe[0]);
+			when(client.startTestItem(eq(k), any())).thenReturn(first, other);
+		});
+		parentNestedPairs.forEach(p -> when(client.finishTestItem(same(p.getValue()),
+				any()
+		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> CommonUtils.createMaybe(new OperationCompletionRS())));
 	}
 }

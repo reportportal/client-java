@@ -15,7 +15,6 @@
  */
 package com.epam.reportportal.service;
 
-import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ItemStatus;
@@ -187,11 +186,7 @@ public class LaunchImpl extends Launch {
 	 */
 	public Maybe<String> start() {
 		launch.subscribe(logMaybeResults("Launch start"));
-		LaunchLoggingContext.init(this.launch,
-				getClient(),
-				getScheduler(),
-				getParameters()
-		);
+		LaunchLoggingContext.init(this.launch, getClient(), getScheduler(), getParameters());
 		getStatisticsService().sendEvent(launch, startRq);
 		return this.launch;
 	}
@@ -212,10 +207,10 @@ public class LaunchImpl extends Launch {
 				.ignoreElement()
 				.cache();
 		try {
-				Throwable error = finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
-				if (error != null) {
-					LOGGER.error("Unable to finish launch in ReportPortal", error);
-				}
+			Throwable error = finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
+			if (error != null) {
+				LOGGER.error("Unable to finish launch in ReportPortal", error);
+			}
 		} finally {
 			getStatisticsService().close();
 			statisticsService = new StatisticsService(getParameters());
@@ -228,10 +223,10 @@ public class LaunchImpl extends Launch {
 	}
 
 	private void truncateName(@Nonnull final StartTestItemRQ rq) {
-		if(getParameters().isTruncateItemNames()) {
+		if (getParameters().isTruncateItemNames()) {
 			String name = rq.getName();
 			int limit = getParameters().getTruncateItemNamesLimit();
-			if(name.length() > limit) {
+			if (name.length() > limit) {
 				String replacement = getParameters().getTruncateItemNamesReplacement();
 				rq.setName(name.substring(0, limit - replacement.length()) + replacement);
 			}
