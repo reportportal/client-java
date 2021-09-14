@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.epam.reportportal.test.TestUtils.*;
+import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;

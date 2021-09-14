@@ -17,6 +17,7 @@
 package com.epam.reportportal.service.step;
 
 import com.epam.reportportal.listeners.ItemStatus;
+import com.epam.reportportal.listeners.LogLevel;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
@@ -29,10 +30,13 @@ import io.reactivex.Maybe;
 import okhttp3.MultipartBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.opentest4j.AssertionFailedError;
 
+import java.util.Calendar;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -42,9 +46,10 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.epam.reportportal.test.TestUtils.*;
+import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
 import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -86,12 +91,12 @@ public class ManualNestedStepTest {
 	@Test
 	public void test_sent_step_creates_nested_step() {
 		mockNestedSteps(client, nestedStepPairs.get(0));
-		String stepName = UUID.randomUUID().toString();
+		String stepName = "test_sent_step_creates_nested_step";
 		sr.sendStep(stepName);
 
 		ArgumentCaptor<StartTestItemRQ> stepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, timeout(1000)).startTestItem(eq(testMethodUuid), stepCaptor.capture());
-		verify(client, after(1000).times(0)).finishTestItem(eq(testMethodUuid), any());
+		verify(client, after(1000).times(0)).finishTestItem(eq(nestedSteps.get(0)), any());
 
 		StartTestItemRQ nestedStep = stepCaptor.getValue();
 		assertThat(nestedStep.getName(), equalTo(stepName));
@@ -105,10 +110,10 @@ public class ManualNestedStepTest {
 	@Test
 	public void verify_two_nested_steps_report_on_the_same_level() {
 		mockNestedSteps(client, nestedStepPairs);
-		String stepName = UUID.randomUUID().toString();
+		String stepName = "verify_two_nested_steps_report_on_the_same_level1";
 		sr.sendStep(stepName);
 
-		String stepName2 = UUID.randomUUID().toString();
+		String stepName2 = "verify_two_nested_steps_report_on_the_same_level2";
 		sr.sendStep(stepName2);
 
 		ArgumentCaptor<StartTestItemRQ> stepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
@@ -136,7 +141,7 @@ public class ManualNestedStepTest {
 	@Test
 	public void verify_failed_nested_step_marks_parent_test_as_failed_parent_finish() {
 		mockNestedSteps(client, nestedStepPairs.get(0));
-		String stepName = UUID.randomUUID().toString();
+		String stepName = "verify_failed_nested_step_marks_parent_test_as_failed_parent_finish";
 		sr.sendStep(ItemStatus.FAILED, stepName);
 		sr.finishPreviousStep();
 
@@ -159,14 +164,14 @@ public class ManualNestedStepTest {
 	@Test
 	public void verify_failed_nested_step_marks_parent_test_as_failed_nested_finish() {
 		mockNestedSteps(client, nestedStepPairs.get(0));
-		String stepName = UUID.randomUUID().toString();
+		String stepName = "verify_failed_nested_step_marks_parent_test_as_failed_nested_finish";
 		sr.sendStep(ItemStatus.FAILED, stepName);
 
-		verify(client, timeout(1000).times(1)).startTestItem(eq(testMethodUuid), any());
+		verify(client, timeout(1000)).startTestItem(eq(testMethodUuid), any());
 		sr.finishPreviousStep();
 
 		ArgumentCaptor<FinishTestItemRQ> finishStepCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(client, timeout(1000).times(1)).finishTestItem(eq(nestedSteps.get(0)), finishStepCaptor.capture());
+		verify(client, timeout(1000)).finishTestItem(eq(nestedSteps.get(0)), finishStepCaptor.capture());
 
 		assertThat(finishStepCaptor.getValue().getStatus(), equalTo(ItemStatus.FAILED.name()));
 		assertThat("StepReporter should save parent failures", sr.isFailed(testClassUuidMaybe), equalTo(Boolean.TRUE));
@@ -184,7 +189,7 @@ public class ManualNestedStepTest {
 
 		int logNumber = 3;
 
-		String stepName = UUID.randomUUID().toString();
+		String stepName = "verify_nested_step_with_a_batch_of_logs";
 		String[] logs = IntStream.range(0, logNumber).mapToObj(i -> UUID.randomUUID().toString()).toArray(String[]::new);
 		sr.sendStep(stepName, logs);
 
@@ -207,6 +212,141 @@ public class ManualNestedStepTest {
 			assertThat(logRequests.get(i).getValue(), equalTo(logs[i]));
 		});
 		sr.finishNestedStep();
+		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest());
+		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest());
+		launch.finish(standardLaunchFinishRequest());
+	}
+
+	@Test
+	public void verify_single_name_nested_step() {
+		mockNestedSteps(client, nestedStepPairs.get(0));
+		String stepName = "verify_single_name_nested_step";
+		sr.step(stepName);
+
+		ArgumentCaptor<StartTestItemRQ> startStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, timeout(1000)).startTestItem(eq(testMethodUuid), startStepCaptor.capture());
+		ArgumentCaptor<FinishTestItemRQ> finishStepCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(client, timeout(1000)).finishTestItem(eq(nestedSteps.get(0)), finishStepCaptor.capture());
+
+		StartTestItemRQ nestedStepStart = startStepCaptor.getValue();
+		assertThat(nestedStepStart.getName(), equalTo(stepName));
+		assertThat(nestedStepStart.isHasStats(), equalTo(Boolean.FALSE));
+
+		FinishTestItemRQ nestedStepFinish = finishStepCaptor.getValue();
+		assertThat(nestedStepFinish.getStatus(), equalTo(ItemStatus.PASSED.name()));
+		assertThat(nestedStepFinish.getEndTime(), notNullValue());
+
+		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest());
+		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest());
+		launch.finish(standardLaunchFinishRequest());
+	}
+
+	@Test
+	public void verify_name_and_status_nested_step() {
+		mockNestedSteps(client, nestedStepPairs.get(0));
+		String stepName = "verify_name_and_status_nested_step";
+		sr.step(ItemStatus.SKIPPED, stepName);
+
+		ArgumentCaptor<StartTestItemRQ> startStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, timeout(1000)).startTestItem(eq(testMethodUuid), startStepCaptor.capture());
+		ArgumentCaptor<FinishTestItemRQ> finishStepCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(client, timeout(1000)).finishTestItem(eq(nestedSteps.get(0)), finishStepCaptor.capture());
+
+		StartTestItemRQ nestedStepStart = startStepCaptor.getValue();
+		assertThat(nestedStepStart.getName(), equalTo(stepName));
+		assertThat(nestedStepStart.isHasStats(), equalTo(Boolean.FALSE));
+
+		FinishTestItemRQ nestedStepFinish = finishStepCaptor.getValue();
+		assertThat(nestedStepFinish.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
+		assertThat(nestedStepFinish.getEndTime(), notNullValue());
+
+		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest());
+		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest());
+		launch.finish(standardLaunchFinishRequest());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void verify_passed_actions_nested_step() {
+		mockNestedSteps(client, nestedStepPairs.get(0));
+		String stepName = "verify_passed_actions_nested_step";
+		String returnValue = "return value";
+		String logMessage = "Test message";
+		String result = sr.step(stepName, () -> {
+			ReportPortal.emitLog(logMessage, LogLevel.DEBUG.name(), Calendar.getInstance().getTime());
+			return returnValue;
+		});
+		assertThat(result, equalTo(returnValue));
+
+		ArgumentCaptor<StartTestItemRQ> startStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, timeout(1000)).startTestItem(eq(testMethodUuid), startStepCaptor.capture());
+		ArgumentCaptor<FinishTestItemRQ> finishStepCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(client, timeout(1000)).finishTestItem(eq(nestedSteps.get(0)), finishStepCaptor.capture());
+
+		StartTestItemRQ nestedStepStart = startStepCaptor.getValue();
+		assertThat(nestedStepStart.getName(), equalTo(stepName));
+		assertThat(nestedStepStart.isHasStats(), equalTo(Boolean.FALSE));
+
+		FinishTestItemRQ nestedStepFinish = finishStepCaptor.getValue();
+		assertThat(nestedStepFinish.getStatus(), equalTo(ItemStatus.PASSED.name()));
+		assertThat(nestedStepFinish.getEndTime(), notNullValue());
+
+		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
+		verify(client, timeout(1000)).log(logCaptor.capture());
+		List<Pair<String, String>> logRequests = logCaptor.getAllValues()
+				.stream()
+				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())
+				.map(e -> Pair.of(e.getLevel(), e.getMessage()))
+				.collect(Collectors.toList());
+		assertThat(logRequests, hasSize(1));
+		Pair<String, String> log = logRequests.get(0);
+		assertThat(log.getKey(), equalTo(LogLevel.DEBUG.name()));
+		assertThat(log.getValue(), equalTo(logMessage));
+
+		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest());
+		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest());
+		launch.finish(standardLaunchFinishRequest());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void verify_passed_actions_nested_step_failure() {
+		mockNestedSteps(client, nestedStepPairs.get(0));
+		when(client.log(any(List.class))).thenReturn(createConstantMaybe(new BatchSaveOperatingRS()));
+		String stepName = "verify_passed_actions_nested_step_failure";
+		String returnValue = "return value";
+		String logMessage = "Test message";
+		AssertionFailedError result = Assertions.assertThrows(AssertionFailedError.class, () -> sr.step(stepName, () -> {
+			Assertions.fail(logMessage);
+			return returnValue;
+		}));
+		assertThat(result.getMessage(), equalTo(logMessage));
+
+		ArgumentCaptor<StartTestItemRQ> startStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(client, timeout(1000)).startTestItem(eq(testMethodUuid), startStepCaptor.capture());
+		ArgumentCaptor<FinishTestItemRQ> finishStepCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(client, timeout(1000)).finishTestItem(eq(nestedSteps.get(0)), finishStepCaptor.capture());
+
+		StartTestItemRQ nestedStepStart = startStepCaptor.getValue();
+		assertThat(nestedStepStart.getName(), equalTo(stepName));
+		assertThat(nestedStepStart.isHasStats(), equalTo(Boolean.FALSE));
+
+		FinishTestItemRQ nestedStepFinish = finishStepCaptor.getValue();
+		assertThat(nestedStepFinish.getStatus(), equalTo(ItemStatus.FAILED.name()));
+		assertThat(nestedStepFinish.getEndTime(), notNullValue());
+
+		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
+		verify(client, timeout(1000)).log(logCaptor.capture());
+		List<Pair<String, String>> logRequests = logCaptor.getAllValues()
+				.stream()
+				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())
+				.map(e -> Pair.of(e.getLevel(), e.getMessage()))
+				.collect(Collectors.toList());
+		assertThat(logRequests, hasSize(1));
+		Pair<String, String> log = logRequests.get(0);
+		assertThat(log.getKey(), equalTo(LogLevel.ERROR.name()));
+		assertThat(log.getValue(), containsString(logMessage));
+
 		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest());
 		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest());
 		launch.finish(standardLaunchFinishRequest());

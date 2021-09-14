@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.epam.reportportal.test.TestUtils.*;
+import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
 
 public class LaunchNullCheckTest {
 
@@ -63,6 +64,7 @@ public class LaunchNullCheckTest {
 		launch.start();
 		Maybe<String> result = launch.startTestItem(null);
 
+		//noinspection ResultOfMethodCallIgnored
 		Assertions.assertThrows(NullPointerException.class, result::blockingGet);
 	}
 
@@ -80,6 +82,7 @@ public class LaunchNullCheckTest {
 		launch.startTestItem(standardStartSuiteRequest());
 		Maybe<String> result = launch.startTestItem(null, null);
 
+		//noinspection ResultOfMethodCallIgnored
 		Assertions.assertThrows(NullPointerException.class, result::blockingGet);
 	}
 
@@ -97,6 +100,7 @@ public class LaunchNullCheckTest {
 		launch.startTestItem(standardStartSuiteRequest());
 		Maybe<OperationCompletionRS> result = launch.finishTestItem(null, positiveFinishRequest());
 
+		//noinspection ResultOfMethodCallIgnored
 		Assertions.assertThrows(NullPointerException.class, result::blockingGet);
 	}
 
@@ -114,6 +118,7 @@ public class LaunchNullCheckTest {
 		launch.startTestItem(standardStartSuiteRequest());
 		Maybe<OperationCompletionRS> result = launch.finishTestItem(launch.startTestItem(standardStartSuiteRequest()), null);
 
+		//noinspection ResultOfMethodCallIgnored
 		Assertions.assertThrows(NullPointerException.class, result::blockingGet);
 	}
 }
