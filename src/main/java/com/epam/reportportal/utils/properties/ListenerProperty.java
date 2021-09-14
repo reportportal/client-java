@@ -42,6 +42,8 @@ public enum ListenerProperty {
     ENABLE("rp.enable", false),
     RERUN("rp.rerun", false),
     RERUN_OF("rp.rerun.of", false),
+    APPEND("rp.append", false),
+    APPEND_OF("rp.append.to", false),
     ASYNC_REPORTING("rp.reporting.async", false),
     CALLBACK_REPORTING_ENABLED("rp.reporting.callback", false),
     SKIPPED_AS_ISSUE("rp.skipped.issue", false),

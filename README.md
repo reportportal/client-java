@@ -36,6 +36,8 @@ rp.description=My awesome launch
 rp.attributes=key:value;value
 rp.rerun=true
 rp.rerun.of=ae586912-841c-48de-9391-50720c35dd5a
+rp.append=true
+rp.append.of=ae586912-841c-48de-9391-50720c35dd5a
 rp.convertimage=true
 rp.mode=DEFAULT
 rp.skipped.issue=true
@@ -61,6 +63,8 @@ User should provide next parameters to agent.
 |rp.reporting.callback   | Boolean  |Enables [callback reporting](https://github.com/reportportal/client-java/wiki/Callback-reporting-usefulness). Available values - `true` or `false`(by default). Supported only in 5+ vesion |No |
 |rp.rerun                | Boolean  |Enables [rerun mode](https://github.com/reportportal/documentation/blob/master/src/md/src/DevGuides/rerun.md). Available values - `true` or `false`(by default). Supported only in 5+ version | No |
 |rp.rerun.of             | String   |Specifies UUID of launch that has to be reruned |No |
+|rp.append                | Boolean  |Enables [append mode](https://github.com/reportportal/documentation/blob/master/src/md/src/DevGuides/append.md). Available values - `true` or `false`(by default). Supported only in 5+ version | No |
+|rp.append.of             | String   |Specifies UUID of launch that has to be appended |No |
 |rp.convertimage         | Boolean  |Colored log images can be converted to grayscale for reducing image size. Values: ‘true’ – will be converted. Any other value means ‘false’. |No |
 |rp.mode                 | Enum     |ReportPortal provides possibility to specify visibility of executing launch. Currently two modes are supported: DEFAULT - all users from project can see this launch; DEBUG - all users except of Customer role can see this launch (in debug sub tab). Note: for all java based clients (TestNG, Junit) mode will be set automatically to "DEFAULT" if it is not specified. |No |
 |rp.skipped.issue        | Boolean  |ReportPortal provides feature to mark skipped tests as not 'To Investigate' items on WS side. Parameter could be equal boolean values: <li>`true` - skipped tests considered as issues and will be marked as 'To Investigate' on Report Portal. <li>`false` - skipped tests will not be marked as 'To Investigate' on application. |No |

@@ -74,6 +74,31 @@ public class ReportPortalTest {
 	}
 
 	@Test
+	public void append_enabled_without_provided_append_to() {
+		ListenerParameters listenerParameters = new ListenerParameters();
+		listenerParameters.setBaseUrl("http://localhost");
+		listenerParameters.setEnable(true);
+		listenerParameters.setAppend(true);
+
+		ReportPortal rp = ReportPortal.builder().withParameters(listenerParameters).build();
+		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(listenerParameters));
+		assertThat(launch, sameInstance(Launch.NOOP_LAUNCH));
+	}
+
+	@Test
+	public void append_enabled_with_provided_append_to() {
+		ListenerParameters listenerParameters = new ListenerParameters();
+		listenerParameters.setBaseUrl("http://localhost");
+		listenerParameters.setEnable(true);
+		listenerParameters.setAppend(true);
+		listenerParameters.setAppendTo(UUID.randomUUID().toString());
+
+		ReportPortal rp = ReportPortal.builder().withParameters(listenerParameters).build();
+		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(listenerParameters));
+		assertThat(launch, not(sameInstance(Launch.NOOP_LAUNCH)));
+	}
+
+	@Test
 	public void proxyParamBypass() throws Exception {
 		String baseUrl = "http://example.com:8080";
 		ServerSocket server = SocketUtils.getServerSocketOnFreePort();

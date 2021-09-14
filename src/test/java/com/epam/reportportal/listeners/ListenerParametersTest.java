@@ -61,6 +61,15 @@ public class ListenerParametersTest {
 	}
 
 	@Test
+	public void testAppendKey() {
+		PropertiesLoader properties = PropertiesLoader.load("property-test/reportportal-append.properties");
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		assertTrue(listenerParameters.isAppend());
+		assertEquals("launch_id", listenerParameters.getAppendTo());
+	}
+
+	@Test
 	public void parametersCloneTest() {
 		ListenerParameters params = TestUtils.STANDARD_PARAMETERS;
 		ListenerParameters paramsClone = params.clone();

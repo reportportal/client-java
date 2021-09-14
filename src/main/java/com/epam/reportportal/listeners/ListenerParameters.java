@@ -87,6 +87,8 @@ public class ListenerParameters implements Cloneable {
 	private String keystorePassword;
 	private boolean rerun;
 	private String rerunOf;
+	private boolean append;
+	private String appendTo;
 	private boolean asyncReporting;
 	private boolean callbackReportingEnabled;
 	private Integer ioPoolSize;
@@ -117,6 +119,8 @@ public class ListenerParameters implements Cloneable {
 		this.attributes = Collections.emptySet();
 
 		this.rerun = DEFAULT_RETURN;
+
+		this.append = DEFAULT_RETURN;
 
 		this.asyncReporting = DEFAULT_ASYNC_REPORTING;
 		this.callbackReportingEnabled = DEFAULT_CALLBACK_REPORTING_ENABLED;
@@ -158,6 +162,9 @@ public class ListenerParameters implements Cloneable {
 		this.keystorePassword = properties.getProperty(KEYSTORE_PASSWORD);
 		this.rerun = properties.getPropertyAsBoolean(RERUN, DEFAULT_RETURN);
 		this.rerunOf = properties.getProperty(RERUN_OF);
+
+		this.append = properties.getPropertyAsBoolean(APPEND, DEFAULT_RETURN);
+		this.appendTo = properties.getProperty(APPEND_OF);
 
 		this.asyncReporting = properties.getPropertyAsBoolean(ASYNC_REPORTING, DEFAULT_ASYNC_REPORTING);
 		this.callbackReportingEnabled = properties.getPropertyAsBoolean(CALLBACK_REPORTING_ENABLED, DEFAULT_CALLBACK_REPORTING_ENABLED);
@@ -339,6 +346,10 @@ public class ListenerParameters implements Cloneable {
 		return rerun;
 	}
 
+	public boolean isAppend() {
+		return append;
+	}
+
 	public boolean isAsyncReporting() {
 		return asyncReporting;
 	}
@@ -365,6 +376,18 @@ public class ListenerParameters implements Cloneable {
 
 	public void setRerunOf(String rerunOf) {
 		this.rerunOf = rerunOf;
+	}
+
+	public void setAppend(boolean append) {
+		this.append = append;
+	}
+
+	public String getAppendTo() {
+		return appendTo;
+	}
+
+	public void setAppendTo(String appendTo) {
+		this.appendTo = appendTo;
 	}
 
 	public Integer getIoPoolSize() {
@@ -521,6 +544,8 @@ public class ListenerParameters implements Cloneable {
 		sb.append(", keystorePassword='").append(keystorePassword).append('\'');
 		sb.append(", rerun=").append(rerun);
 		sb.append(", rerunOf='").append(rerunOf).append('\'');
+		sb.append(", append=").append(append);
+		sb.append(", appendTo='").append(appendTo).append('\'');
 		sb.append(", asyncReporting=").append(asyncReporting);
 		sb.append(", ioPoolSize=").append(ioPoolSize);
 		sb.append(", callbackReportingEnabled=").append(callbackReportingEnabled);

@@ -106,6 +106,15 @@ public class ReportPortal {
 			return Launch.NOOP_LAUNCH;
 		}
 
+		if (parameters.isAppend()) {
+			if (isNotBlank(parameters.getAppendTo())) {
+				return withLaunch(Maybe.just(parameters.getAppendTo()));
+			} else {
+				LOGGER.warn("Append to existing launch is enabled, but no append.to launch uuid is provided");
+				return Launch.NOOP_LAUNCH;
+			}
+		}
+
 		if (launchIdLock == null) {
 			// do not use multi-client mode
 			return new LaunchImpl(rpClient, parameters, rq, executor);

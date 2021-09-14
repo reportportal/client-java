@@ -21,6 +21,7 @@ import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.aspect.StepAspectCommon;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ItemStatus;
+import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.util.test.CommonUtils;
@@ -38,6 +39,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
 import java.lang.reflect.Method;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -151,6 +153,43 @@ public class LaunchTest {
 		verify(rpClient).finishTestItem(eq(testRs.blockingGet()), any());
 		verify(rpClient).finishTestItem(eq(suiteRs.blockingGet()), any());
 		verify(rpClient).finishLaunch(eq(launchUuid.blockingGet()), any());
+	}
+
+	@Test
+	public void launch_should_not_finish_when_append_is_enabled() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateStartChildTestItemResponse(rpClient);
+
+		final ListenerParameters standardParameters = STANDARD_PARAMETERS;
+		standardParameters.setAppend(true);
+		standardParameters.setAppendTo(UUID.randomUUID().toString());
+
+		Launch launch = new LaunchImpl(rpClient, standardParameters, standardLaunchRequest(standardParameters), executor) {
+			@Override
+			StatisticsService getStatisticsService() {
+				return statisticsService;
+			}
+		};
+
+		Maybe<String> launchUuid = launch.start();
+		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
+		Maybe<String> testRs = launch.startTestItem(suiteRs, standardStartTestRequest());
+		Maybe<String> stepRs = launch.startTestItem(testRs, standardStartStepRequest());
+
+		when(rpClient.finishTestItem(eq(stepRs.blockingGet()), any())).thenThrow(FINISH_CLIENT_EXCEPTION);
+		when(rpClient.finishTestItem(eq(testRs.blockingGet()), any())).thenReturn(createConstantMaybe(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(eq(suiteRs.blockingGet()), any())).thenReturn(createConstantMaybe(new OperationCompletionRS()));
+
+		launch.finishTestItem(stepRs, positiveFinishRequest());
+		launch.finishTestItem(testRs, positiveFinishRequest());
+		launch.finishTestItem(suiteRs, positiveFinishRequest());
+		launch.finish(new FinishExecutionRQ());
+
+		verify(rpClient).finishTestItem(eq(stepRs.blockingGet()), any());
+		verify(rpClient).finishTestItem(eq(testRs.blockingGet()), any());
+		verify(rpClient).finishTestItem(eq(suiteRs.blockingGet()), any());
+		verify(rpClient, never()).finishLaunch(eq(launchUuid.blockingGet()), any());
 	}
 
 	@Test

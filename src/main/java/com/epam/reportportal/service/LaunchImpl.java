@@ -198,24 +198,32 @@ public class LaunchImpl extends Launch {
 	 * @param rq Finish RQ
 	 */
 	public void finish(final FinishExecutionRQ rq) {
-		QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
-		final Completable finish = Completable.concat(QUEUE.getUnchecked(launch).getChildren())
-				.andThen(launch.map(id -> getClient().finishLaunch(id, rq)
-						.retry(DEFAULT_REQUEST_RETRY)
-						.doOnSuccess(LOG_SUCCESS)
-						.doOnError(LOG_ERROR)
-						.blockingGet()))
-				.ignoreElement()
-				.cache();
-		try {
-			Throwable error = finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
-			if (error != null) {
-				LOGGER.error("Unable to finish launch in ReportPortal", error);
+			QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
+			Completable finish;
+			if (!getParameters().isAppend()) {
+					finish = Completable.concat(QUEUE.getUnchecked(launch).getChildren())
+					.andThen(launch.map(id -> getClient().finishLaunch(id, rq)
+							.retry(DEFAULT_REQUEST_RETRY)
+							.doOnSuccess(LOG_SUCCESS)
+							.doOnError(LOG_ERROR)
+							.blockingGet()))
+					.ignoreElement()
+					.cache();
+
+			} else {
+				LOGGER.warn("Append to existing launch is enabled, launch won't be finished");
+				finish = Completable.concat(QUEUE.getUnchecked(launch).getChildren())
+						.cache();
 			}
-		} finally {
-			getStatisticsService().close();
-			statisticsService = new StatisticsService(getParameters());
-		}
+			try {
+				Throwable error = finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
+				if (error != null) {
+					LOGGER.error("Unable to finish launch in ReportPortal", error);
+				}
+			} finally {
+				getStatisticsService().close();
+				statisticsService = new StatisticsService(getParameters());
+			}
 	}
 
 	private static <T> Maybe<T> createErrorResponse(Throwable cause) {
