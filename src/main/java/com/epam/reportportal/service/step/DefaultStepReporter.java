@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.function.Supplier;
 
 import static com.google.common.base.Throwables.getStackTraceAsString;
 import static java.util.Optional.ofNullable;
@@ -70,19 +71,20 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	@Override
-	public void setParent(final Maybe<String> parentUuid) {
+	public void setParent(@Nullable final Maybe<String> parentUuid) {
 		if (parentUuid != null) {
 			stepStack.get().add(parentUuid);
 		}
 	}
 
 	@Override
+	@Nullable
 	public Maybe<String> getParent() {
 		return stepStack.get().peekLast();
 	}
 
 	@Override
-	public void removeParent(final Maybe<String> parentUuid) {
+	public void removeParent(@Nullable final Maybe<String> parentUuid) {
 		if (parentUuid != null) {
 			stepStack.get().removeLastOccurrence(parentUuid);
 			parentFailures.remove(parentUuid);
@@ -90,14 +92,14 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	@Override
-	public boolean isFailed(final Maybe<String> parentId) {
+	public boolean isFailed(@Nullable final Maybe<String> parentId) {
 		if (parentId != null) {
 			return parentFailures.contains(parentId);
 		}
 		return false;
 	}
 
-	protected void sendStep(final ItemStatus status, final String name, final Runnable actions) {
+	protected void sendStep(@Nonnull final ItemStatus status, @Nonnull final String name, @Nullable final Runnable actions) {
 		StartTestItemRQ rq = buildStartStepRequest(name);
 		Maybe<String> stepId = startStepRequest(rq);
 		if (actions != null) {
@@ -111,24 +113,24 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	@Override
-	public void sendStep(final String name) {
+	public void sendStep(@Nonnull final String name) {
 		sendStep(ItemStatus.PASSED, name, () -> {
 		});
 	}
 
 	@Override
-	public void sendStep(final String name, final String... logs) {
+	public void sendStep(@Nonnull final String name, final String... logs) {
 		sendStep(ItemStatus.PASSED, name, logs);
 	}
 
 	@Override
-	public void sendStep(@Nonnull final ItemStatus status, final String name) {
+	public void sendStep(@Nonnull final ItemStatus status, @Nonnull final String name) {
 		sendStep(status, name, () -> {
 		});
 	}
 
 	@Override
-	public void sendStep(@Nonnull final ItemStatus status, final String name, final String... logs) {
+	public void sendStep(@Nonnull final ItemStatus status, @Nonnull final String name, final String... logs) {
 		Runnable actions = ofNullable(logs).map(l -> (Runnable) () -> Arrays.stream(l)
 				.forEach(log -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, log, LogLevel.INFO)))).orElse(null);
 
@@ -136,17 +138,17 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	@Override
-	public void sendStep(final @Nonnull ItemStatus status, final String name, final Throwable throwable) {
+	public void sendStep(final @Nonnull ItemStatus status, @Nonnull final String name, final Throwable throwable) {
 		sendStep(status, name, () -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, throwable)));
 	}
 
 	@Override
-	public void sendStep(final String name, final File... files) {
+	public void sendStep(@Nonnull final String name, final File... files) {
 		sendStep(ItemStatus.PASSED, name, files);
 	}
 
 	@Override
-	public void sendStep(final @Nonnull ItemStatus status, final String name, final File... files) {
+	public void sendStep(final @Nonnull ItemStatus status, @Nonnull final String name, final File... files) {
 		Runnable actions = ofNullable(files).map(f -> (Runnable) () -> Arrays.stream(f)
 				.forEach(file -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, "", LogLevel.INFO, file)))).orElse(null);
 
@@ -154,7 +156,7 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	@Override
-	public void sendStep(final @Nonnull ItemStatus status, final String name, final Throwable throwable, final File... files) {
+	public void sendStep(final @Nonnull ItemStatus status, @Nonnull final String name, final Throwable throwable, final File... files) {
 		sendStep(status, name, () -> {
 			for (final File file : files) {
 				ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, throwable, file));
@@ -212,6 +214,33 @@ public class DefaultStepReporter implements StepReporter {
 		finishTestItem(finishStepRequest);
 	}
 
+	@Override
+	public void step(@Nonnull String name) {
+		startTestItem(buildStartStepRequest(name));
+		finishTestItem(buildFinishTestItemRequest(ItemStatus.PASSED, Calendar.getInstance().getTime()));
+	}
+
+	@Override
+	public void step(@Nonnull ItemStatus status, @Nonnull String name) {
+		startTestItem(buildStartStepRequest(name));
+		finishTestItem(buildFinishTestItemRequest(status, Calendar.getInstance().getTime()));
+	}
+
+	@Nullable
+	@Override
+	public <T> T step(@Nonnull String name, @Nonnull Supplier<T> actions) {
+		startTestItem(buildStartStepRequest(name));
+		try {
+			T result = actions.get();
+			finishTestItem(buildFinishTestItemRequest(ItemStatus.PASSED, Calendar.getInstance().getTime()));
+			return result;
+		} catch (RuntimeException | Error e) {
+			ReportPortal.emitLog(itemUuid -> buildSaveLogRequest(itemUuid, e));
+			finishTestItem(buildFinishTestItemRequest(ItemStatus.FAILED, Calendar.getInstance().getTime()));
+			throw e;
+		}
+	}
+
 	private Maybe<String> startStepRequest(final StartTestItemRQ startTestItemRQ) {
 		finishPreviousStepInternal().ifPresent(e -> {
 			Date previousDate = e.getTimestamp();
@@ -226,7 +255,7 @@ public class DefaultStepReporter implements StepReporter {
 		return startTestItem(startTestItemRQ);
 	}
 
-	private StartTestItemRQ buildStartStepRequest(String name) {
+	private StartTestItemRQ buildStartStepRequest(@Nonnull String name) {
 		StartTestItemRQ startTestItemRQ = new StartTestItemRQ();
 		startTestItemRQ.setName(name);
 		startTestItemRQ.setType("STEP");
@@ -240,7 +269,7 @@ public class DefaultStepReporter implements StepReporter {
 		steps.get().add(new StepEntry(stepId, timestamp, finishTestItemRQ));
 	}
 
-	private FinishTestItemRQ buildFinishTestItemRequest(ItemStatus status, Date endTime) {
+	private FinishTestItemRQ buildFinishTestItemRequest(@Nonnull ItemStatus status, @Nonnull Date endTime) {
 		FinishTestItemRQ finishTestItemRQ = new FinishTestItemRQ();
 		finishTestItemRQ.setStatus(status.name());
 		finishTestItemRQ.setEndTime(endTime);

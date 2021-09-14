@@ -25,6 +25,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.util.Date;
+import java.util.function.Supplier;
 
 /**
  * A class for manual nested step reporting.
@@ -38,29 +39,31 @@ import java.util.Date;
  * </code>
  */
 public interface StepReporter {
-	void setParent(Maybe<String> parentUuid);
 
+	void setParent(@Nullable Maybe<String> parentUuid);
+
+	@Nullable
 	Maybe<String> getParent();
 
-	void removeParent(Maybe<String> parentUuid);
+	void removeParent(@Nullable Maybe<String> parentUuid);
 
-	boolean isFailed(Maybe<String> parentId);
+	boolean isFailed(@Nullable Maybe<String> parentId);
 
-	void sendStep(String name);
+	void sendStep(@Nonnull String name);
 
-	void sendStep(String name, String... logs);
+	void sendStep(@Nonnull String name, @Nullable String... logs);
 
-	void sendStep(@Nonnull ItemStatus status, String name);
+	void sendStep(@Nonnull ItemStatus status, @Nonnull String name);
 
-	void sendStep(@Nonnull ItemStatus status, String name, String... logs);
+	void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable String... logs);
 
-	void sendStep(@Nonnull ItemStatus status, String name, Throwable throwable);
+	void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable Throwable throwable);
 
-	void sendStep(String name, File... files);
+	void sendStep(@Nonnull String name, @Nullable File... files);
 
-	void sendStep(@Nonnull ItemStatus status, String name, File... files);
+	void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable File... files);
 
-	void sendStep(@Nonnull ItemStatus status, String name, Throwable throwable, File... files);
+	void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable Throwable throwable, @Nullable File... files);
 
 	void finishPreviousStep();
 
@@ -72,6 +75,32 @@ public interface StepReporter {
 	void finishNestedStep();
 
 	void finishNestedStep(@Nullable Throwable throwable);
+
+	/**
+	 * Report a step with specified name.
+	 *
+	 * @param name step name
+	 */
+	void step(@Nonnull String name);
+
+	/**
+	 * Report a step with specified status and name.
+	 *
+	 * @param status step status
+	 * @param name   step name
+	 */
+	void step(@Nonnull ItemStatus status, @Nonnull String name);
+
+	/**
+	 * Wrap passed actions as a separate step and report it.
+	 *
+	 * @param name    step name
+	 * @param actions action function to execute
+	 * @param <T>     return type
+	 * @return actions result
+	 */
+	@Nullable
+	<T> T step(@Nonnull String name, @Nonnull Supplier<T> actions);
 
 	class StepEntry {
 		private final Maybe<String> itemId;
@@ -103,29 +132,30 @@ public interface StepReporter {
 	// @formatter:off
 	StepReporter NOOP_STEP_REPORTER = new StepReporter() {
 		@Override
-		public void setParent(Maybe<String> parentUuid) {}
+		public void setParent(@Nullable Maybe<String> parentUuid) {}
 		@Override
+		@Nullable
 		public Maybe<String> getParent() {return Maybe.empty();}
 		@Override
-		public void removeParent(Maybe<String> parentUuid) {}
+		public void removeParent(@Nullable Maybe<String> parentUuid) {}
 		@Override
-		public boolean isFailed(Maybe<String> parentId) {return false;}
+		public boolean isFailed(@Nullable Maybe<String> parentId) {return false;}
 		@Override
-		public void sendStep(String name) {}
+		public void sendStep(@Nonnull String name) {}
 		@Override
-		public void sendStep(String name, String... logs) {}
+		public void sendStep(@Nonnull String name, @Nullable String... logs) {}
 		@Override
-		public void sendStep(@Nonnull ItemStatus status, String name) {}
+		public void sendStep(@Nonnull ItemStatus status, @Nonnull String name) {}
 		@Override
-		public void sendStep(@Nonnull ItemStatus status, String name, String... logs) {}
+		public void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable String... logs) {}
 		@Override
-		public void sendStep(@Nonnull ItemStatus status, String name, Throwable throwable) {}
+		public void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable Throwable throwable) {}
 		@Override
-		public void sendStep(String name, File... files) {}
+		public void sendStep(@Nonnull String name, @Nullable File... files) {}
 		@Override
-		public void sendStep(@Nonnull ItemStatus status, String name, File... files) {}
+		public void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable File... files) {}
 		@Override
-		public void sendStep(@Nonnull ItemStatus status, String name, Throwable throwable, File... files) {}
+		public void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable Throwable throwable, @Nullable File... files) {}
 		@Override
 		public void finishPreviousStep() {}
 		@Override
@@ -137,6 +167,13 @@ public interface StepReporter {
 		public void finishNestedStep() {}
 		@Override
 		public void finishNestedStep(@Nullable Throwable throwable) {}
+		@Override
+		public void step(@Nonnull String name) {}
+		@Override
+		public void step(@Nonnull ItemStatus status, @Nonnull String name) {}
+		@Override
+		@Nullable
+		public <T> T step(@Nonnull String name, @Nonnull Supplier<T> actions) {return null;}
 	};
 	// @formatter:on
 }

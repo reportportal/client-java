@@ -37,9 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.util.test.CommonUtils.createMaybe;
@@ -64,16 +62,6 @@ public class TestUtils {
 		result.setProjectName("unit-test");
 		result.setEnable(true);
 		return result;
-	}
-
-	public static void shutdownExecutorService(ExecutorService executor) {
-		executor.shutdown();
-		try {
-			if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
-				executor.shutdownNow();
-			}
-		} catch (InterruptedException ignore) {
-		}
 	}
 
 	public static Maybe<StartLaunchRS> startLaunchResponse(String id) {
@@ -278,10 +266,10 @@ public class TestUtils {
 
 			Maybe<ItemCreatedRS> first = responses.get(0);
 			Maybe<ItemCreatedRS>[] other = responses.subList(1, responses.size()).toArray(new Maybe[0]);
-			when(client.startTestItem(eq(k), any())).thenReturn(first, other);
+			when(client.startTestItem(eq(k), any(StartTestItemRQ.class))).thenReturn(first, other);
 		});
 		parentNestedPairs.forEach(p -> when(client.finishTestItem(same(p.getValue()),
-				any()
+				any(FinishTestItemRQ.class)
 		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> CommonUtils.createMaybe(new OperationCompletionRS())));
 	}
 }

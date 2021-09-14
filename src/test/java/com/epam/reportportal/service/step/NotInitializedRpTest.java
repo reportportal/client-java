@@ -16,16 +16,15 @@
 
 package com.epam.reportportal.service.step;
 
-import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.ProcessUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -35,7 +34,7 @@ public class NotInitializedRpTest {
 
 	@AfterEach
 	public void cleanup() {
-		TestUtils.shutdownExecutorService(executor);
+		shutdownExecutorService(executor);
 	}
 
 	@Test

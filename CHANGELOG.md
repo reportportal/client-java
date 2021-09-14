@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `StepReporter#step` methods, issue [#127](https://github.com/reportportal/client-java/issues/127) 
 
 ## [5.1.0-RC-9]
 ### Changed

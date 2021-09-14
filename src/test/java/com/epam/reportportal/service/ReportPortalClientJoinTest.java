@@ -51,6 +51,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static com.epam.reportportal.test.TestUtils.*;
+import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
 import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
