@@ -34,7 +34,7 @@ import static java.util.Optional.ofNullable;
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
-class StepRequestUtils {
+public class StepRequestUtils {
 
 	private StepRequestUtils() {
 		//static only

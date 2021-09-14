@@ -1,8 +1,9 @@
 # Changelog
 
 ## [Unreleased]
-
-## [5.1.0-RC-8]
+### Changed
+- Refactoring of StepAspect class
+- StepRequestUtils class now public
 
 ## [5.1.0-RC-7]
 ### Added
