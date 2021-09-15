@@ -142,10 +142,9 @@ public class ManualNestedStepTest {
 		String stepName = "verify_failed_nested_step_marks_parent_test_as_failed_parent_finish";
 		sr.sendStep(ItemStatus.FAILED, stepName);
 
-		assertThat("StepReporter should save parent failures", sr.isFailed(testClassUuidMaybe), equalTo(Boolean.TRUE));
-		assertThat("StepReporter should save parent failures", sr.isFailed(testMethodUuidMaybe), equalTo(Boolean.TRUE));
-
 		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest());
+		assertThat("StepReporter should save parent failures", sr.isFailed(testClassUuidMaybe), equalTo(Boolean.TRUE));
+
 		ArgumentCaptor<FinishTestItemRQ> finishStepCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
 		verify(client, timeout(1000).times(1)).finishTestItem(eq(testMethodUuid), finishStepCaptor.capture());
 
