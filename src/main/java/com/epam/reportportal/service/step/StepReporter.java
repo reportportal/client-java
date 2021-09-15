@@ -65,12 +65,12 @@ public interface StepReporter {
 
 	void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable Throwable throwable, @Nullable File... files);
 
+	void finishPreviousStep(@Nullable ItemStatus status);
+
 	void finishPreviousStep();
 
 	@Nonnull
-	Maybe<String> startTestItem(@Nonnull StartTestItemRQ startStepRequest);
-
-	void finishTestItem(@Nonnull FinishTestItemRQ finishStepRequest);
+	Maybe<String> startNestedStep(@Nonnull StartTestItemRQ startStepRequest);
 
 	void finishNestedStep();
 
@@ -157,12 +157,12 @@ public interface StepReporter {
 		@Override
 		public void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable Throwable throwable, @Nullable File... files) {}
 		@Override
+		public void finishPreviousStep(@Nullable ItemStatus status) {}
+		@Override
 		public void finishPreviousStep() {}
 		@Override
 		@Nonnull
-		public Maybe<String> startTestItem(@Nonnull StartTestItemRQ startStepRequest) {return Maybe.empty();}
-		@Override
-		public void finishTestItem(@Nonnull FinishTestItemRQ finishStepRequest) {}
+		public Maybe<String> startNestedStep(@Nonnull StartTestItemRQ startStepRequest) {return Maybe.empty();}
 		@Override
 		public void finishNestedStep() {}
 		@Override

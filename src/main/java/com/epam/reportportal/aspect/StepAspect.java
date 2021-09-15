@@ -47,7 +47,7 @@ public class StepAspect {
 		}
 		MethodSignature signature = (MethodSignature) joinPoint.getSignature();
 		StartTestItemRQ startStepRequest = StepRequestUtils.buildStartStepRequest(signature, step, joinPoint);
-		ofNullable(Launch.currentLaunch()).ifPresent(l -> l.getStepReporter().startTestItem(startStepRequest));
+		ofNullable(Launch.currentLaunch()).ifPresent(l -> l.getStepReporter().startNestedStep(startStepRequest));
 	}
 
 	@AfterReturning(value = "anyMethod() && withStepAnnotation(step)", argNames = "step")

@@ -49,6 +49,7 @@ import static com.epam.reportportal.service.LoggingCallback.*;
 import static com.epam.reportportal.utils.SubscriptionUtils.*;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Objects.requireNonNull;
+import static java.util.Optional.ofNullable;
 
 /**
  * @author Andrei Varabyeu
@@ -319,6 +320,7 @@ public class LaunchImpl extends Launch {
 		if (rq == null) {
 			return createErrorResponse(new NullPointerException("FinishTestItemRQ should not be null"));
 		}
+		getStepReporter().finishPreviousStep(ofNullable(rq.getStatus()).map(ItemStatus::valueOf).orElse(null));
 
 		if (ItemStatus.SKIPPED.name().equals(rq.getStatus()) && !getParameters().getSkippedAnIssue()) {
 			rq.setIssue(Launch.NOT_ISSUE);

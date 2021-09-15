@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- StepRequestUtils refactoring
+### Added
+- `StepReporter#finishPreviousStep(@Nullable ItemStatus status);` method
 
 ## [5.1.0-RC-10]
 ### Added
