@@ -21,6 +21,7 @@ import com.epam.reportportal.listeners.LogLevel;
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.utils.StatusEvaluation;
 import com.epam.reportportal.utils.files.Utils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -164,25 +165,41 @@ public class DefaultStepReporter implements StepReporter {
 		});
 	}
 
-	private Optional<StepEntry> finishPreviousStepInternal() {
-		return ofNullable(steps.get().poll()).map(stepEntry -> {
-			launch.finishTestItem(stepEntry.getItemId(), stepEntry.getFinishTestItemRQ());
+	private Optional<StepEntry> finishPreviousStepInternal(@Nullable ItemStatus finishStatus) {
+		return ofNullable(steps.get().pollLast()).map(stepEntry -> {
+			FinishTestItemRQ finishRq = stepEntry.getFinishTestItemRQ();
+			ItemStatus status = StatusEvaluation.evaluateStatus(ItemStatus.valueOf(finishRq.getStatus()), finishStatus);
+			ofNullable(status).ifPresent(s -> finishRq.setStatus(s.name()));
+			launch.finishTestItem(stepEntry.getItemId(), finishRq);
 			return stepEntry;
 		});
 	}
 
+	/**
+	 * Finish current step started by any of <code>#sendStep</code> methods. Overrides original status if provided.
+	 *
+	 * @param status finish status
+	 */
 	@Override
-	public void finishPreviousStep() {
-		finishPreviousStepInternal().ifPresent(e -> {
+	public void finishPreviousStep(@Nullable ItemStatus status) {
+		finishPreviousStepInternal(status).ifPresent(e -> {
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
 				parentFailures.addAll(stepStack.get());
 			}
 		});
 	}
 
+	/**
+	 * Finish current step started by any of <code>#sendStep</code> methods.
+	 */
+	@Override
+	public void finishPreviousStep() {
+		finishPreviousStep(ItemStatus.PASSED);
+	}
+
 	@Override
 	@Nonnull
-	public Maybe<String> startTestItem(@Nonnull StartTestItemRQ startStepRequest) {
+	public Maybe<String> startNestedStep(@Nonnull StartTestItemRQ startStepRequest) {
 		Maybe<String> parent = getParent();
 		if (parent == null) {
 			LOGGER.warn("Unable to find parent ID, skipping step: " + startStepRequest.getName());
@@ -191,8 +208,7 @@ public class DefaultStepReporter implements StepReporter {
 		return launch.startTestItem(parent, startStepRequest);
 	}
 
-	@Override
-	public void finishTestItem(@Nonnull FinishTestItemRQ finishStepRequest) {
+	private void finishTestItem(@Nonnull FinishTestItemRQ finishStepRequest) {
 		Maybe<String> stepId = getParent();
 		if (stepId == null) {
 			LOGGER.warn("Unable to find item ID, skipping step a finish step");
@@ -216,20 +232,20 @@ public class DefaultStepReporter implements StepReporter {
 
 	@Override
 	public void step(@Nonnull String name) {
-		startTestItem(buildStartStepRequest(name));
+		startNestedStep(buildStartStepRequest(name));
 		finishTestItem(buildFinishTestItemRequest(ItemStatus.PASSED, Calendar.getInstance().getTime()));
 	}
 
 	@Override
 	public void step(@Nonnull ItemStatus status, @Nonnull String name) {
-		startTestItem(buildStartStepRequest(name));
+		startNestedStep(buildStartStepRequest(name));
 		finishTestItem(buildFinishTestItemRequest(status, Calendar.getInstance().getTime()));
 	}
 
 	@Nullable
 	@Override
 	public <T> T step(@Nonnull String name, @Nonnull Supplier<T> actions) {
-		startTestItem(buildStartStepRequest(name));
+		startNestedStep(buildStartStepRequest(name));
 		try {
 			T result = actions.get();
 			finishTestItem(buildFinishTestItemRequest(ItemStatus.PASSED, Calendar.getInstance().getTime()));
@@ -242,7 +258,7 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	private Maybe<String> startStepRequest(final StartTestItemRQ startTestItemRQ) {
-		finishPreviousStepInternal().ifPresent(e -> {
+		finishPreviousStepInternal(ItemStatus.PASSED).ifPresent(e -> {
 			Date previousDate = e.getTimestamp();
 			Date currentDate = startTestItemRQ.getStartTime();
 			if (!previousDate.before(currentDate)) {
@@ -252,7 +268,7 @@ public class DefaultStepReporter implements StepReporter {
 				parentFailures.addAll(stepStack.get());
 			}
 		});
-		return startTestItem(startTestItemRQ);
+		return startNestedStep(startTestItemRQ);
 	}
 
 	private StartTestItemRQ buildStartStepRequest(@Nonnull String name) {

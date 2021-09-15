@@ -42,14 +42,8 @@ public class StepRequestUtils {
 
 	public static StartTestItemRQ buildStartStepRequest(@Nonnull String name, @Nullable String description,
 			@Nonnull MethodSignature signature) {
-		StartTestItemRQ request = new StartTestItemRQ();
+		StartTestItemRQ request = com.epam.reportportal.service.step.StepRequestUtils.buildStartStepRequest(name, description);
 		request.setAttributes(createStepAttributes(signature));
-		ofNullable(description).filter(d -> !d.isEmpty()).ifPresent(request::setDescription);
-		request.setName(name);
-		request.setStartTime(Calendar.getInstance().getTime());
-		request.setType("STEP");
-		request.setHasStats(false);
-
 		return request;
 	}
 
