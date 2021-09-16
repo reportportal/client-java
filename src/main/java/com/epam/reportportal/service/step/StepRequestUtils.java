@@ -33,6 +33,7 @@ public class StepRequestUtils {
 		//static only
 	}
 
+	@Nonnull
 	public static StartTestItemRQ buildStartStepRequest(@Nonnull String name, @Nullable String description) {
 		StartTestItemRQ request = new StartTestItemRQ();
 		ofNullable(description).filter(d -> !d.isEmpty()).ifPresent(request::setDescription);
@@ -43,6 +44,7 @@ public class StepRequestUtils {
 		return request;
 	}
 
+	@Nonnull
 	public static FinishTestItemRQ buildFinishTestItemRequest(@Nonnull ItemStatus status, @Nonnull Date endTime) {
 		FinishTestItemRQ finishTestItemRQ = new FinishTestItemRQ();
 		finishTestItemRQ.setStatus(status.name());
@@ -50,6 +52,7 @@ public class StepRequestUtils {
 		return finishTestItemRQ;
 	}
 
+	@Nonnull
 	public static FinishTestItemRQ buildFinishTestItemRequest(@Nonnull ItemStatus status) {
 		return buildFinishTestItemRequest(status, Calendar.getInstance().getTime());
 	}
