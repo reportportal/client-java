@@ -16,11 +16,14 @@
 
 package com.epam.reportportal.service.step;
 
+import com.epam.reportportal.listeners.ItemStatus;
+import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Calendar;
+import java.util.Date;
 
 import static java.util.Optional.ofNullable;
 
@@ -38,5 +41,16 @@ public class StepRequestUtils {
 		request.setType("STEP");
 		request.setHasStats(false);
 		return request;
+	}
+
+	public static FinishTestItemRQ buildFinishTestItemRequest(@Nonnull ItemStatus status, @Nonnull Date endTime) {
+		FinishTestItemRQ finishTestItemRQ = new FinishTestItemRQ();
+		finishTestItemRQ.setStatus(status.name());
+		finishTestItemRQ.setEndTime(endTime);
+		return finishTestItemRQ;
+	}
+
+	public static FinishTestItemRQ buildFinishTestItemRequest(@Nonnull ItemStatus status) {
+		return buildFinishTestItemRequest(status, Calendar.getInstance().getTime());
 	}
 }

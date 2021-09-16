@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Nested Step finish refactoring
 
 ## [5.1.0-RC-11]
 ### Changed

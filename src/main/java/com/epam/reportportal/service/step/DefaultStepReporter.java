@@ -39,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Supplier;
 
+import static com.epam.reportportal.service.step.StepRequestUtils.buildFinishTestItemRequest;
 import static com.google.common.base.Throwables.getStackTraceAsString;
 import static java.util.Optional.ofNullable;
 
@@ -208,7 +209,8 @@ public class DefaultStepReporter implements StepReporter {
 		return launch.startTestItem(parent, startStepRequest);
 	}
 
-	private void finishTestItem(@Nonnull FinishTestItemRQ finishStepRequest) {
+	@Override
+	public void finishNestedStep(@Nonnull FinishTestItemRQ finishStepRequest) {
 		Maybe<String> stepId = getParent();
 		if (stepId == null) {
 			LOGGER.warn("Unable to find item ID, skipping step a finish step");
@@ -219,27 +221,27 @@ public class DefaultStepReporter implements StepReporter {
 
 	@Override
 	public void finishNestedStep() {
-		FinishTestItemRQ finishStepRequest = buildFinishTestItemRequest(ItemStatus.PASSED, Calendar.getInstance().getTime());
-		finishTestItem(finishStepRequest);
+		FinishTestItemRQ finishStepRequest = buildFinishTestItemRequest(ItemStatus.PASSED);
+		finishNestedStep(finishStepRequest);
 	}
 
 	@Override
 	public void finishNestedStep(@Nullable Throwable throwable) {
 		ReportPortal.emitLog(itemUuid -> buildSaveLogRequest(itemUuid, throwable));
-		FinishTestItemRQ finishStepRequest = buildFinishTestItemRequest(ItemStatus.FAILED, Calendar.getInstance().getTime());
-		finishTestItem(finishStepRequest);
+		FinishTestItemRQ finishStepRequest = buildFinishTestItemRequest(ItemStatus.FAILED);
+		finishNestedStep(finishStepRequest);
 	}
 
 	@Override
 	public void step(@Nonnull String name) {
 		startNestedStep(buildStartStepRequest(name));
-		finishTestItem(buildFinishTestItemRequest(ItemStatus.PASSED, Calendar.getInstance().getTime()));
+		finishNestedStep(buildFinishTestItemRequest(ItemStatus.PASSED));
 	}
 
 	@Override
 	public void step(@Nonnull ItemStatus status, @Nonnull String name) {
 		startNestedStep(buildStartStepRequest(name));
-		finishTestItem(buildFinishTestItemRequest(status, Calendar.getInstance().getTime()));
+		finishNestedStep(buildFinishTestItemRequest(status));
 	}
 
 	@Nullable
@@ -248,11 +250,11 @@ public class DefaultStepReporter implements StepReporter {
 		startNestedStep(buildStartStepRequest(name));
 		try {
 			T result = actions.get();
-			finishTestItem(buildFinishTestItemRequest(ItemStatus.PASSED, Calendar.getInstance().getTime()));
+			finishNestedStep(buildFinishTestItemRequest(ItemStatus.PASSED));
 			return result;
 		} catch (RuntimeException | Error e) {
 			ReportPortal.emitLog(itemUuid -> buildSaveLogRequest(itemUuid, e));
-			finishTestItem(buildFinishTestItemRequest(ItemStatus.FAILED, Calendar.getInstance().getTime()));
+			finishNestedStep(buildFinishTestItemRequest(ItemStatus.FAILED));
 			throw e;
 		}
 	}
@@ -281,15 +283,8 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	private void finishStepRequest(Maybe<String> stepId, ItemStatus status, Date timestamp) {
-		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status, Calendar.getInstance().getTime());
+		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status);
 		steps.get().add(new StepEntry(stepId, timestamp, finishTestItemRQ));
-	}
-
-	private FinishTestItemRQ buildFinishTestItemRequest(@Nonnull ItemStatus status, @Nonnull Date endTime) {
-		FinishTestItemRQ finishTestItemRQ = new FinishTestItemRQ();
-		finishTestItemRQ.setStatus(status.name());
-		finishTestItemRQ.setEndTime(endTime);
-		return finishTestItemRQ;
 	}
 
 	private SaveLogRQ buildSaveLogRequest(String itemId, String message, LogLevel level) {
