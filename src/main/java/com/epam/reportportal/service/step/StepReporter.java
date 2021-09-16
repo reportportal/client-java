@@ -137,7 +137,7 @@ public interface StepReporter {
 		public void setParent(@Nullable Maybe<String> parentUuid) {}
 		@Override
 		@Nullable
-		public Maybe<String> getParent() {return Maybe.empty();}
+		public Maybe<String> getParent() {return null;}
 		@Override
 		public void removeParent(@Nullable Maybe<String> parentUuid) {}
 		@Override
