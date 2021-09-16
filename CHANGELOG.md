@@ -3,6 +3,8 @@
 ## [Unreleased]
 ### Changed
 - Nested Step finish refactoring
+### Added
+- More JSR-305 annotations
 
 ## [5.1.0-RC-11]
 ### Changed

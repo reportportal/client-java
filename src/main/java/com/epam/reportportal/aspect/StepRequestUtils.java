@@ -26,10 +26,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.Calendar;
 import java.util.Set;
-
-import static java.util.Optional.ofNullable;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -40,6 +37,7 @@ public class StepRequestUtils {
 		//static only
 	}
 
+	@Nonnull
 	public static StartTestItemRQ buildStartStepRequest(@Nonnull String name, @Nullable String description,
 			@Nonnull MethodSignature signature) {
 		StartTestItemRQ request = com.epam.reportportal.service.step.StepRequestUtils.buildStartStepRequest(name, description);
@@ -47,12 +45,15 @@ public class StepRequestUtils {
 		return request;
 	}
 
-	public static StartTestItemRQ buildStartStepRequest(MethodSignature signature, Step step, JoinPoint joinPoint) {
+	@Nonnull
+	public static StartTestItemRQ buildStartStepRequest(@Nonnull MethodSignature signature, @Nonnull Step step,
+			@Nonnull JoinPoint joinPoint) {
 		String name = StepNameUtils.getStepName(step, signature, joinPoint);
 		return buildStartStepRequest(name, step.description(), signature);
 	}
 
-	private static Set<ItemAttributesRQ> createStepAttributes(MethodSignature methodSignature) {
+	@Nullable
+	private static Set<ItemAttributesRQ> createStepAttributes(@Nonnull MethodSignature methodSignature) {
 		Attributes attributesAnnotation = methodSignature.getMethod().getAnnotation(Attributes.class);
 		if (attributesAnnotation != null) {
 			return AttributeParser.retrieveAttributes(attributesAnnotation);
