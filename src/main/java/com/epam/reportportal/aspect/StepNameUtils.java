@@ -19,16 +19,19 @@ package com.epam.reportportal.aspect;
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.StepTemplateConfig;
 import com.epam.reportportal.utils.StepTemplateUtils;
-import io.reactivex.annotations.Nullable;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -43,7 +46,8 @@ class StepNameUtils {
 		//static only
 	}
 
-	static String getStepName(Step step, MethodSignature signature, JoinPoint joinPoint) {
+	@Nonnull
+	static String getStepName(@Nonnull Step step, @Nonnull MethodSignature signature, @Nonnull JoinPoint joinPoint) {
 		String nameTemplate = step.value();
 		if (nameTemplate.trim().isEmpty()) {
 			return signature.getMethod().getName();
@@ -61,8 +65,10 @@ class StepNameUtils {
 		return stringBuffer.toString();
 	}
 
-	static Map<String, Object> createParamsMapping(StepTemplateConfig templateConfig, MethodSignature signature, final Object... args) {
-		int paramsCount = Math.min(signature.getParameterNames().length, args.length);
+	@Nonnull
+	static Map<String, Object> createParamsMapping(@Nonnull StepTemplateConfig templateConfig, @Nonnull MethodSignature signature,
+			@Nullable final Object... args) {
+		int paramsCount = Math.min(signature.getParameterNames().length, ofNullable(args).map(a -> a.length).orElse(0));
 		Map<String, Object> paramsMapping = new HashMap<>();
 		paramsMapping.put(templateConfig.methodNameTemplate(), signature.getMethod().getName());
 		for (int i = 0; i < paramsCount; i++) {
@@ -73,7 +79,8 @@ class StepNameUtils {
 	}
 
 	@Nullable
-	private static String getReplacement(String templatePart, Map<String, Object> parametersMap, StepTemplateConfig templateConfig) {
+	private static String getReplacement(@Nonnull String templatePart, @Nonnull Map<String, Object> parametersMap,
+			@Nonnull StepTemplateConfig templateConfig) {
 		String[] fields = templatePart.split("\\.");
 		String variableName = fields[0];
 		if (!parametersMap.containsKey(variableName)) {

@@ -307,7 +307,7 @@ public class ManualNestedStepTest {
 		assertThat(nestedStepFinish.getEndTime(), notNullValue());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(client, timeout(1000)).log(logCaptor.capture());
+		verify(client, timeout(1000).atLeastOnce()).log(logCaptor.capture());
 		List<Pair<String, String>> logRequests = logCaptor.getAllValues()
 				.stream()
 				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())
@@ -351,7 +351,7 @@ public class ManualNestedStepTest {
 		assertThat(nestedStepFinish.getEndTime(), notNullValue());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(client, timeout(1000)).log(logCaptor.capture());
+		verify(client, timeout(1000).atLeastOnce()).log(logCaptor.capture());
 		List<Pair<String, String>> logRequests = logCaptor.getAllValues()
 				.stream()
 				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())

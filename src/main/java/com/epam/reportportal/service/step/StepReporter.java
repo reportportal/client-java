@@ -76,6 +76,8 @@ public interface StepReporter {
 
 	void finishNestedStep(@Nullable Throwable throwable);
 
+	void finishNestedStep(@Nonnull FinishTestItemRQ finishStepRequest);
+
 	/**
 	 * Report a step with specified name.
 	 *
@@ -135,7 +137,7 @@ public interface StepReporter {
 		public void setParent(@Nullable Maybe<String> parentUuid) {}
 		@Override
 		@Nullable
-		public Maybe<String> getParent() {return Maybe.empty();}
+		public Maybe<String> getParent() {return null;}
 		@Override
 		public void removeParent(@Nullable Maybe<String> parentUuid) {}
 		@Override
@@ -167,6 +169,8 @@ public interface StepReporter {
 		public void finishNestedStep() {}
 		@Override
 		public void finishNestedStep(@Nullable Throwable throwable) {}
+		@Override
+		public void finishNestedStep(@Nonnull FinishTestItemRQ finishStepRequest) {}
 		@Override
 		public void step(@Nonnull String name) {}
 		@Override
