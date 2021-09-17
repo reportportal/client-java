@@ -253,7 +253,6 @@ public class DefaultStepReporter implements StepReporter {
 			finishNestedStep(buildFinishTestItemRequest(ItemStatus.PASSED));
 			return result;
 		} catch (RuntimeException | Error e) {
-			ReportPortal.emitLog(itemUuid -> buildSaveLogRequest(itemUuid, e));
 			finishNestedStep(buildFinishTestItemRequest(ItemStatus.FAILED));
 			throw e;
 		}
