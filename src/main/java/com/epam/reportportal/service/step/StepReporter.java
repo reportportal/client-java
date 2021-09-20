@@ -72,6 +72,8 @@ public interface StepReporter {
 	@Nonnull
 	Maybe<String> startNestedStep(@Nonnull StartTestItemRQ startStepRequest);
 
+	void finishNestedStep(@Nonnull ItemStatus status);
+
 	void finishNestedStep();
 
 	void finishNestedStep(@Nullable Throwable throwable);
@@ -165,6 +167,8 @@ public interface StepReporter {
 		@Override
 		@Nonnull
 		public Maybe<String> startNestedStep(@Nonnull StartTestItemRQ startStepRequest) {return Maybe.empty();}
+		@Override
+		public void finishNestedStep(@Nonnull ItemStatus status) {}
 		@Override
 		public void finishNestedStep() {}
 		@Override

@@ -220,9 +220,14 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	@Override
-	public void finishNestedStep() {
-		FinishTestItemRQ finishStepRequest = buildFinishTestItemRequest(ItemStatus.PASSED);
+	public void finishNestedStep(@Nonnull ItemStatus status) {
+		FinishTestItemRQ finishStepRequest = buildFinishTestItemRequest(status);
 		finishNestedStep(finishStepRequest);
+	}
+
+	@Override
+	public void finishNestedStep() {
+		finishNestedStep(ItemStatus.PASSED);
 	}
 
 	@Override
