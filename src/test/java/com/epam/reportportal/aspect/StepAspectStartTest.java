@@ -28,6 +28,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
@@ -43,6 +44,7 @@ import static org.mockito.Mockito.verify;
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class StepAspectStartTest {
 	private final StepAspect aspect = new StepAspect();
 	private final ListenerParameters params = TestUtils.standardParameters();
