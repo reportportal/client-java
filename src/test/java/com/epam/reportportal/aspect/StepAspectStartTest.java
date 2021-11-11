@@ -22,6 +22,7 @@ import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,7 +60,7 @@ public class StepAspectStartTest {
 		StepAspectCommon.simulateStartItemResponse(client, parentId);
 		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
 		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
-		myLaunch = ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params));
+		myLaunch = ReportPortal.create(client, params, CommonUtils.testExecutor()).newLaunch(TestUtils.standardLaunchRequest(params));
 		myLaunch.start();
 		myLaunch.startTestItem(TestUtils.standardStartSuiteRequest());
 	}
