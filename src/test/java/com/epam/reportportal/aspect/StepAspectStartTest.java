@@ -28,23 +28,23 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
 import java.lang.reflect.Method;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
-@TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class StepAspectStartTest {
 	private final StepAspect aspect = new StepAspect();
 	private final ListenerParameters params = TestUtils.standardParameters();
@@ -82,7 +82,7 @@ public class StepAspectStartTest {
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client).startTestItem(same(parentId), captor.capture());
+		verify(client, timeout(TimeUnit.SECONDS.toMillis(5))).startTestItem(same(parentId), captor.capture());
 		StartTestItemRQ result = captor.getValue();
 
 		assertThat(result.getName(), equalTo(StepAspectCommon.TEST_STEP_NAME));
@@ -99,7 +99,7 @@ public class StepAspectStartTest {
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client).startTestItem(same(parentId), captor.capture());
+		verify(client, timeout(TimeUnit.SECONDS.toMillis(5))).startTestItem(same(parentId), captor.capture());
 		StartTestItemRQ result = captor.getValue();
 
 		assertThat(result.getAttributes(), hasSize(1));
