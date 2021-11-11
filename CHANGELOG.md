@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.0]
 ### Added
 - Method `StepReporter.finishNestedStep(ItemStatus)`
 ### Changed
