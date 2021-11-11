@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Method `StepReporter.finishNestedStep(ItemStatus)`
+### Changed
+- Exception logging on lambda-style nested step was removed to avoid double-logging, since it should be logged on test level.
 
 ## [5.1.0-RC-12]
 ### Changed

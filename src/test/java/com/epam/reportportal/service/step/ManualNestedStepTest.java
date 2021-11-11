@@ -327,7 +327,6 @@ public class ManualNestedStepTest {
 	@SuppressWarnings("unchecked")
 	public void verify_passed_actions_nested_step_failure() {
 		mockNestedSteps(client, nestedStepPairs.get(0));
-		when(client.log(any(List.class))).thenReturn(createConstantMaybe(new BatchSaveOperatingRS()));
 		String stepName = "verify_passed_actions_nested_step_failure";
 		String returnValue = "return value";
 		String logMessage = "Test message";
@@ -350,17 +349,7 @@ public class ManualNestedStepTest {
 		assertThat(nestedStepFinish.getStatus(), equalTo(ItemStatus.FAILED.name()));
 		assertThat(nestedStepFinish.getEndTime(), notNullValue());
 
-		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(client, timeout(1000).atLeastOnce()).log(logCaptor.capture());
-		List<Pair<String, String>> logRequests = logCaptor.getAllValues()
-				.stream()
-				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())
-				.map(e -> Pair.of(e.getLevel(), e.getMessage()))
-				.collect(Collectors.toList());
-		assertThat(logRequests, hasSize(1));
-		Pair<String, String> log = logRequests.get(0);
-		assertThat(log.getKey(), equalTo(LogLevel.ERROR.name()));
-		assertThat(log.getValue(), containsString(logMessage));
+		verify(client, times(0)).log(any(List.class)); // All exceptions should be logged on step level
 
 		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest());
 		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest());
