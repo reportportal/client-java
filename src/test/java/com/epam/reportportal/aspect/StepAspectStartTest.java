@@ -25,6 +25,7 @@ import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -32,6 +33,7 @@ import org.mockito.Mock;
 
 import java.lang.reflect.Method;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -48,6 +50,8 @@ public class StepAspectStartTest {
 	private final String parentId = UUID.randomUUID().toString();
 	private final String itemUuid = UUID.randomUUID().toString();
 
+	private final ExecutorService executor = CommonUtils.testExecutor();
+
 	@Mock
 	public ReportPortalClient client;
 	@Mock
@@ -60,9 +64,14 @@ public class StepAspectStartTest {
 		StepAspectCommon.simulateStartItemResponse(client, parentId);
 		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
 		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
-		myLaunch = ReportPortal.create(client, params, CommonUtils.testExecutor()).newLaunch(TestUtils.standardLaunchRequest(params));
+		myLaunch = ReportPortal.create(client, params, executor).newLaunch(TestUtils.standardLaunchRequest(params));
 		myLaunch.start();
 		myLaunch.startTestItem(TestUtils.standardStartSuiteRequest());
+	}
+
+	@AfterEach
+	public void shutdown() {
+		CommonUtils.shutdownExecutorService(executor);
 	}
 
 	@Test
