@@ -24,6 +24,7 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
+import io.reactivex.Maybe;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,11 +42,13 @@ import static org.mockito.Mockito.verify;
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
+@SuppressWarnings("ReactiveStreamsUnusedPublisher")
 public class StepAspectFinishTest {
 	private final StepAspect aspect = new StepAspect();
 	private final ListenerParameters params = TestUtils.standardParameters();
 
 	private final String parentId = UUID.randomUUID().toString();
+	private final String testUuid = UUID.randomUUID().toString();
 	private final String itemUuid = UUID.randomUUID().toString();
 
 	@Mock(name = "StepAspectFinishTest.class")
@@ -58,11 +61,13 @@ public class StepAspectFinishTest {
 	public void launchSetup() {
 		StepAspectCommon.simulateLaunch(client, "launch1");
 		StepAspectCommon.simulateStartItemResponse(client, parentId);
-		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
+		StepAspectCommon.simulateStartItemResponse(client, parentId, testUuid);
+		StepAspectCommon.simulateStartItemResponse(client, testUuid, itemUuid);
 		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
 		myLaunch = ReportPortal.create(client, params).newLaunch(TestUtils.standardLaunchRequest(params));
 		myLaunch.start();
-		myLaunch.startTestItem(TestUtils.standardStartSuiteRequest());
+		Maybe<String> id = myLaunch.startTestItem(TestUtils.standardStartSuiteRequest());
+		myLaunch.startTestItem(id, TestUtils.standardStartTestRequest());
 	}
 
 	/*
@@ -77,7 +82,7 @@ public class StepAspectFinishTest {
 
 		ArgumentCaptor<String> finishIds = ArgumentCaptor.forClass(String.class);
 		ArgumentCaptor<FinishTestItemRQ> finishRQs = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(client, timeout(1000).times(1)).finishTestItem(finishIds.capture(), finishRQs.capture());
+		verify(client, timeout(1000)).finishTestItem(finishIds.capture(), finishRQs.capture());
 
 		String finishUuid = finishIds.getValue();
 		assertThat(finishUuid, sameInstance(itemUuid));
@@ -99,7 +104,7 @@ public class StepAspectFinishTest {
 
 		ArgumentCaptor<String> finishIds = ArgumentCaptor.forClass(String.class);
 		ArgumentCaptor<FinishTestItemRQ> finishRQs = ArgumentCaptor.forClass(FinishTestItemRQ.class);
-		verify(client, timeout(1000).times(1)).finishTestItem(finishIds.capture(), finishRQs.capture());
+		verify(client, timeout(1000)).finishTestItem(finishIds.capture(), finishRQs.capture());
 
 		String finishUuid = finishIds.getValue();
 		assertThat(finishUuid, sameInstance(itemUuid));

@@ -50,19 +50,9 @@ public class DefaultStepReporter implements StepReporter {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DefaultStepReporter.class);
 
-	private final ThreadLocal<Deque<Maybe<String>>> stepStack = new InheritableThreadLocal<Deque<Maybe<String>>>() {
-		@Override
-		protected Deque<Maybe<String>> initialValue() {
-			return new ConcurrentLinkedDeque<>();
-		}
-	};
+	private final ThreadLocal<Deque<Maybe<String>>> stepStack = ThreadLocal.withInitial(ConcurrentLinkedDeque::new);
 
-	private final ThreadLocal<Deque<StepEntry>> steps = new InheritableThreadLocal<Deque<StepEntry>>() {
-		@Override
-		protected Deque<StepEntry> initialValue() {
-			return new ConcurrentLinkedDeque<>();
-		}
-	};
+	private final ThreadLocal<Deque<StepEntry>> steps = ThreadLocal.withInitial(ConcurrentLinkedDeque::new);
 
 	private final Set<Maybe<String>> parentFailures = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
