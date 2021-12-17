@@ -46,6 +46,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("ReactiveStreamsUnusedPublisher")
 public class ItemLoggingContextMultiThreadTest {
 
 	private static final ListenerParameters PARAMS = standardParameters();
@@ -56,23 +57,32 @@ public class ItemLoggingContextMultiThreadTest {
 
 	@Mock
 	private ReportPortalClient rpClient;
-	private ExecutorService clientExecutorService;
+	private final ExecutorService clientExecutorService = Executors.newFixedThreadPool(2);
+	// Copy-paste from TestNG executor configuration to reproduce the issue
+	private final ExecutorService testExecutorService = new ThreadPoolExecutor(2,
+			2,
+			10,
+			TimeUnit.SECONDS,
+			new LinkedBlockingQueue<>(),
+			new TestNGThreadFactory("test_logging_context")
+	);
 
 	private ReportPortal rp;
 
 	@BeforeEach
 	public void prepare() {
-		clientExecutorService = Executors.newFixedThreadPool(2);
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
 		simulateBatchLogResponse(rpClient);
-		rp = new ReportPortal(rpClient, clientExecutorService, PARAMS, null);
+		simulateFinishTestItemResponse(rpClient);
+		rp = ReportPortal.create(rpClient, PARAMS, clientExecutorService);
 	}
 
 	@AfterEach
 	public void tearDown() {
 		shutdownExecutorService(clientExecutorService);
+		shutdownExecutorService(testExecutorService);
 	}
 
 	private static class TestNgTest implements Callable<String> {
@@ -89,7 +99,7 @@ public class ItemLoggingContextMultiThreadTest {
 			final String itemId = UUID.randomUUID().toString();
 			StartTestItemRQ rq = standardStartTestRequest();
 			rq.setUuid(itemId);
-			launch.startTestItem(suiteRs, rq);
+			Maybe<String> id = launch.startTestItem(suiteRs, rq);
 			IntStream.rangeClosed(1, 10).forEach(i -> {
 				ReportPortal.emitLog("[" + i + "] log " + itemId, "INFO", new Date());
 				try {
@@ -97,6 +107,7 @@ public class ItemLoggingContextMultiThreadTest {
 				} catch (InterruptedException ignore) {
 				}
 			});
+			launch.finishTestItem(id, positiveFinishRequest());
 			return itemId;
 		}
 	}
@@ -130,19 +141,10 @@ public class ItemLoggingContextMultiThreadTest {
 		launch.start();
 		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
 
-		// Copy-paste from TestNG to reproduce the issue
-		ExecutorService pooledExecutor = new ThreadPoolExecutor(2,
-				2,
-				10,
-				TimeUnit.SECONDS,
-				new LinkedBlockingQueue<>(),
-				new TestNGThreadFactory("test_logging_context")
-		);
-
 		// First and second threads start their items and log data
 		TestNgTest t1 = new TestNgTest(launch, suiteRs);
 		TestNgTest t2 = new TestNgTest(launch, suiteRs);
-		final List<Future<String>> results = pooledExecutor.invokeAll(Arrays.asList(t1, t2));
+		final List<Future<String>> results = testExecutorService.invokeAll(Arrays.asList(t1, t2));
 
 		Awaitility.await("Wait until test finish")
 				.until(() -> results.stream().filter(Future::isDone).collect(Collectors.toList()), hasSize(2));
