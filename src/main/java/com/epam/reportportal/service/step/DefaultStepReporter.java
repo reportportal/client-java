@@ -62,23 +62,27 @@ public class DefaultStepReporter implements StepReporter {
 		launch = currentLaunch;
 	}
 
+	private Deque<Maybe<String>> getParentStack() {
+		return stepStack.get();
+	}
+
 	@Override
 	public void setParent(@Nullable final Maybe<String> parentUuid) {
 		if (parentUuid != null) {
-			stepStack.get().add(parentUuid);
+			getParentStack().add(parentUuid);
 		}
 	}
 
 	@Override
 	@Nullable
 	public Maybe<String> getParent() {
-		return stepStack.get().peekLast();
+		return getParentStack().peekLast();
 	}
 
 	@Override
 	public void removeParent(@Nullable final Maybe<String> parentUuid) {
 		if (parentUuid != null) {
-			stepStack.get().removeLastOccurrence(parentUuid);
+			getParentStack().removeLastOccurrence(parentUuid);
 			parentFailures.remove(parentUuid);
 		}
 	}
@@ -156,8 +160,12 @@ public class DefaultStepReporter implements StepReporter {
 		});
 	}
 
+	private Deque<StepEntry> getSteps() {
+		return steps.get();
+	}
+
 	private Optional<StepEntry> finishPreviousStepInternal(@Nullable ItemStatus finishStatus) {
-		return ofNullable(steps.get().pollLast()).map(stepEntry -> {
+		return ofNullable(getSteps().pollLast()).map(stepEntry -> {
 			FinishTestItemRQ finishRq = stepEntry.getFinishTestItemRQ();
 			ItemStatus status = StatusEvaluation.evaluateStatus(ItemStatus.valueOf(finishRq.getStatus()), finishStatus);
 			ofNullable(status).ifPresent(s -> finishRq.setStatus(s.name()));
@@ -175,7 +183,7 @@ public class DefaultStepReporter implements StepReporter {
 	public void finishPreviousStep(@Nullable ItemStatus status) {
 		finishPreviousStepInternal(status).ifPresent(e -> {
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
-				parentFailures.addAll(stepStack.get());
+				parentFailures.addAll(getParentStack());
 			}
 		});
 	}
@@ -261,7 +269,7 @@ public class DefaultStepReporter implements StepReporter {
 				startTestItemRQ.setStartTime(new Date(previousDate.getTime() + 1));
 			}
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
-				parentFailures.addAll(stepStack.get());
+				parentFailures.addAll(getParentStack());
 			}
 		});
 		return startNestedStep(startTestItemRQ);
@@ -278,7 +286,7 @@ public class DefaultStepReporter implements StepReporter {
 
 	private void finishStepRequest(Maybe<String> stepId, ItemStatus status, Date timestamp) {
 		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status);
-		steps.get().add(new StepEntry(stepId, timestamp, finishTestItemRQ));
+		getSteps().add(new StepEntry(stepId, timestamp, finishTestItemRQ));
 	}
 
 	private SaveLogRQ buildSaveLogRequest(String itemId, String message, LogLevel level) {
