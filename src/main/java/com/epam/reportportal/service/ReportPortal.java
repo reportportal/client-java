@@ -404,7 +404,7 @@ public class ReportPortal {
 			Class<? extends ReportPortalClient> clientType = params.isAsyncReporting() ?
 					ReportPortalClientV2.class :
 					ReportPortalClient.class;
-			return new ReportPortal(buildClient(clientType, params, executorService), executorService, params, buildLockFile(params));
+			return new ReportPortal(buildClient(clientType, params, executorService), executorService, params, buildLaunchLock(params));
 		}
 
 		/**

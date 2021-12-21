@@ -24,6 +24,7 @@ import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import io.reactivex.Maybe;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,11 +46,13 @@ import static org.mockito.Mockito.verify;
 /**
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
+@SuppressWarnings("ReactiveStreamsUnusedPublisher")
 public class StepAspectStartTest {
 	private final StepAspect aspect = new StepAspect();
 	private final ListenerParameters params = TestUtils.standardParameters();
 
 	private final String parentId = UUID.randomUUID().toString();
+	private final String testUuid = UUID.randomUUID().toString();
 	private final String itemUuid = UUID.randomUUID().toString();
 
 	private final ExecutorService executor = CommonUtils.testExecutor();
@@ -64,11 +67,13 @@ public class StepAspectStartTest {
 	public void launchSetup() {
 		StepAspectCommon.simulateLaunch(client, "launch3");
 		StepAspectCommon.simulateStartItemResponse(client, parentId);
-		StepAspectCommon.simulateStartItemResponse(client, parentId, itemUuid);
+		StepAspectCommon.simulateStartItemResponse(client, parentId, testUuid);
+		StepAspectCommon.simulateStartItemResponse(client, testUuid, itemUuid);
 		StepAspectCommon.simulateFinishItemResponse(client, itemUuid);
 		myLaunch = ReportPortal.create(client, params, executor).newLaunch(TestUtils.standardLaunchRequest(params));
 		myLaunch.start();
-		myLaunch.startTestItem(TestUtils.standardStartSuiteRequest());
+		Maybe<String> id = myLaunch.startTestItem(TestUtils.standardStartSuiteRequest());
+		myLaunch.startTestItem(id, TestUtils.standardStartTestRequest());
 	}
 
 	@AfterEach
@@ -82,7 +87,7 @@ public class StepAspectStartTest {
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, timeout(TimeUnit.SECONDS.toMillis(5))).startTestItem(same(parentId), captor.capture());
+		verify(client, timeout(TimeUnit.SECONDS.toMillis(5))).startTestItem(same(testUuid), captor.capture());
 		StartTestItemRQ result = captor.getValue();
 
 		assertThat(result.getName(), equalTo(StepAspectCommon.TEST_STEP_NAME));
@@ -99,7 +104,7 @@ public class StepAspectStartTest {
 		aspect.startNestedStep(StepAspectCommon.getJoinPoint(methodSignature, method), method.getAnnotation(Step.class));
 
 		ArgumentCaptor<StartTestItemRQ> captor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-		verify(client, timeout(TimeUnit.SECONDS.toMillis(5))).startTestItem(same(parentId), captor.capture());
+		verify(client, timeout(TimeUnit.SECONDS.toMillis(5))).startTestItem(same(testUuid), captor.capture());
 		StartTestItemRQ result = captor.getValue();
 
 		assertThat(result.getAttributes(), hasSize(1));
