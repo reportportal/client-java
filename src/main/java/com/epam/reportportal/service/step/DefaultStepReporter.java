@@ -46,6 +46,7 @@ import static java.util.Optional.ofNullable;
 /**
  * {@inheritDoc}
  */
+@SuppressWarnings("ReactiveStreamsUnusedPublisher")
 public class DefaultStepReporter implements StepReporter {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(DefaultStepReporter.class);
