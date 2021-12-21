@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.1]
 ### Fixed
 - TestNG NestedStep mixing issue
 
