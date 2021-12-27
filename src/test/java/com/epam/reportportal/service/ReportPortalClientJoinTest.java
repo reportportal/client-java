@@ -21,7 +21,6 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.launch.PrimaryLaunch;
 import com.epam.reportportal.service.launch.SecondaryLaunch;
 import com.epam.reportportal.test.TestUtils;
-import com.epam.reportportal.utils.SubscriptionUtils;
 import com.epam.ta.reportportal.ws.model.ErrorRS;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
@@ -50,9 +49,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import static com.epam.reportportal.test.TestUtils.*;
+import static com.epam.reportportal.test.TestUtils.simulateStartLaunchResponse;
+import static com.epam.reportportal.test.TestUtils.standardLaunchRequest;
 import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
-import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -104,7 +103,7 @@ public class ReportPortalClientJoinTest {
 	private static Maybe<LaunchResource> getLaunchResponse(String id) {
 		final LaunchResource rs = new LaunchResource();
 		rs.setUuid(id);
-		return createConstantMaybe(rs);
+		return Maybe.just(rs);
 	}
 
 	private static void simulateGetLaunchResponse(final ReportPortalClient client) {
@@ -218,7 +217,7 @@ public class ReportPortalClientJoinTest {
 		launches.get(0).start();
 		launches.get(1).start();
 
-		when(rpClient.finishLaunch(any(), any(FinishExecutionRQ.class))).thenReturn(createConstantMaybe(new OperationCompletionRS()));
+		when(rpClient.finishLaunch(any(), any(FinishExecutionRQ.class))).thenReturn(Maybe.just(new OperationCompletionRS()));
 
 		launches.get(0).finish(standardLaunchFinish());
 		launches.get(1).finish(standardLaunchFinish());
@@ -272,7 +271,7 @@ public class ReportPortalClientJoinTest {
 	private static Maybe<ItemCreatedRS> standardItemResponse(String id) {
 		ItemCreatedRS rs = new ItemCreatedRS();
 		rs.setId(id);
-		return createConstantMaybe(rs);
+		return Maybe.just(rs);
 	}
 
 	@Test
@@ -305,7 +304,7 @@ public class ReportPortalClientJoinTest {
 	}
 
 	private static Maybe<LaunchResource> getLaunchErrorResponse() {
-		return SubscriptionUtils.createConstantMaybe(new ReportPortalException(404, "Launch not found", new ErrorRS()));
+		return Maybe.error(new ReportPortalException(404, "Launch not found", new ErrorRS()));
 	}
 
 	private static void simulateGetLaunchByUuidResponse(ReportPortalClient client) {
@@ -406,7 +405,7 @@ public class ReportPortalClientJoinTest {
 		Launch primaryLaunch = createLaunchesNoGetLaunch(1, rpClient, paramSupplier.get(), launchIdLock, executor).iterator().next();
 		assertThat(primaryLaunch, notNullValue());
 		when(launchIdLock.getLiveInstanceUuids()).thenReturn(Collections.singletonList(secondaryLaunchUuid));
-		when(rpClient.finishLaunch(any(), any(FinishExecutionRQ.class))).thenReturn(createConstantMaybe(new OperationCompletionRS()));
+		when(rpClient.finishLaunch(any(), any(FinishExecutionRQ.class))).thenReturn(Maybe.just(new OperationCompletionRS()));
 		primaryLaunch.start();
 
 		Thread finishThread = new Thread(() -> primaryLaunch.finish(standardLaunchFinish()));

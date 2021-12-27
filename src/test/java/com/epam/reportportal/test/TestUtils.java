@@ -19,7 +19,6 @@ package com.epam.reportportal.test;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.util.test.CommonUtils;
-import com.epam.reportportal.utils.SubscriptionUtils;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
@@ -40,7 +39,6 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
-import static com.epam.reportportal.util.test.CommonUtils.createMaybe;
 import static java.util.Optional.ofNullable;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
@@ -67,7 +65,7 @@ public class TestUtils {
 	public static Maybe<StartLaunchRS> startLaunchResponse(String id) {
 		final StartLaunchRS rs = new StartLaunchRS();
 		rs.setId(id);
-		return SubscriptionUtils.createConstantMaybe(rs);
+		return Maybe.just(rs);
 	}
 
 	public static void simulateStartLaunchResponse(final ReportPortalClient client) {
@@ -91,7 +89,7 @@ public class TestUtils {
 	public static void simulateFinishLaunchResponse(final ReportPortalClient client) {
 		when(client.finishLaunch(anyString(),
 				any(FinishExecutionRQ.class)
-		)).thenReturn(CommonUtils.createMaybe(new OperationCompletionRS()));
+		)).thenReturn(Maybe.just(new OperationCompletionRS()));
 	}
 
 	public static FinishExecutionRQ standardLaunchFinishRequest() {
@@ -103,12 +101,12 @@ public class TestUtils {
 	public static Maybe<ItemCreatedRS> startTestItemResponse(String id) {
 		final ItemCreatedRS rs = new ItemCreatedRS();
 		rs.setId(id);
-		return SubscriptionUtils.createConstantMaybe(rs);
+		return Maybe.just(rs);
 	}
 
 	public static Maybe<OperationCompletionRS> finishTestItemResponse() {
 		final OperationCompletionRS rs = new OperationCompletionRS();
-		return SubscriptionUtils.createConstantMaybe(rs);
+		return Maybe.just(rs);
 	}
 
 	public static void simulateStartTestItemResponse(final ReportPortalClient client) {
@@ -176,7 +174,7 @@ public class TestUtils {
 	public static Maybe<BatchSaveOperatingRS> batchLogResponse(List<String> ids) {
 		final BatchSaveOperatingRS rs = new BatchSaveOperatingRS();
 		ids.forEach(i -> rs.addResponse(new BatchElementCreatedRS(i)));
-		return SubscriptionUtils.createConstantMaybe(rs);
+		return Maybe.just(rs);
 	}
 
 	public static List<SaveLogRQ> extractJsonParts(List<MultipartBody.Part> parts) {
@@ -231,24 +229,24 @@ public class TestUtils {
 	@SuppressWarnings("unchecked")
 	public static void mockLaunch(ReportPortalClient client, String launchUuid, String testClassUuid,
 			Collection<String> testMethodUuidList) {
-		when(client.startLaunch(any())).thenReturn(createMaybe(new StartLaunchRS(launchUuid, 1L)));
+		when(client.startLaunch(any())).thenReturn(Maybe.just(new StartLaunchRS(launchUuid, 1L)));
 
-		Maybe<ItemCreatedRS> testClassMaybe = createMaybe(new ItemCreatedRS(testClassUuid, testClassUuid));
+		Maybe<ItemCreatedRS> testClassMaybe = Maybe.just(new ItemCreatedRS(testClassUuid, testClassUuid));
 		when(client.startTestItem(any())).thenReturn(testClassMaybe);
 
 		List<Maybe<ItemCreatedRS>> responses = testMethodUuidList.stream()
-				.map(uuid -> createMaybe(new ItemCreatedRS(uuid, uuid)))
+				.map(uuid -> Maybe.just(new ItemCreatedRS(uuid, uuid)))
 				.collect(Collectors.toList());
 		Maybe<ItemCreatedRS> first = responses.get(0);
 		Maybe<ItemCreatedRS>[] other = responses.subList(1, responses.size()).toArray(new Maybe[0]);
 		when(client.startTestItem(eq(testClassUuid), any())).thenReturn(first, other);
 		new HashSet<>(testMethodUuidList).forEach(testMethodUuid -> when(client.finishTestItem(eq(testMethodUuid), any())).thenReturn(
-				createMaybe(new OperationCompletionRS())));
+				Maybe.just(new OperationCompletionRS())));
 
-		Maybe<OperationCompletionRS> testClassFinishMaybe = createMaybe(new OperationCompletionRS());
+		Maybe<OperationCompletionRS> testClassFinishMaybe = Maybe.just(new OperationCompletionRS());
 		when(client.finishTestItem(eq(testClassUuid), any())).thenReturn(testClassFinishMaybe);
 
-		when(client.finishLaunch(eq(launchUuid), any())).thenReturn(createMaybe(new OperationCompletionRS()));
+		when(client.finishLaunch(eq(launchUuid), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
 	}
 
 	public static void mockNestedSteps(ReportPortalClient client, Pair<String, String> parentNestedPair) {
@@ -261,7 +259,7 @@ public class TestUtils {
 				.collect(Collectors.groupingBy(Pair::getKey, Collectors.mapping(Pair::getValue, Collectors.toList())));
 		responseOrders.forEach((k, v) -> {
 			List<Maybe<ItemCreatedRS>> responses = v.stream()
-					.map(uuid -> CommonUtils.createMaybe(new ItemCreatedRS(uuid, uuid)))
+					.map(uuid -> Maybe.just(new ItemCreatedRS(uuid, uuid)))
 					.collect(Collectors.toList());
 
 			Maybe<ItemCreatedRS> first = responses.get(0);
@@ -270,11 +268,11 @@ public class TestUtils {
 		});
 		parentNestedPairs.forEach(p -> when(client.finishTestItem(same(p.getValue()),
 				any(FinishTestItemRQ.class)
-		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> CommonUtils.createMaybe(new OperationCompletionRS())));
+		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> Maybe.just(new OperationCompletionRS())));
 	}
 
 	@SuppressWarnings("unchecked")
 	public static void mockBatchLogging(ReportPortalClient client) {
-		when(client.log(any(List.class))).thenReturn(createMaybe(new BatchSaveOperatingRS()));
+		when(client.log(any(List.class))).thenReturn(Maybe.just(new BatchSaveOperatingRS()));
 	}
 }

@@ -37,7 +37,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
-import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.any;
@@ -48,7 +47,7 @@ public class StepOrderTest {
 	private final String testLaunchUuid = "launch" + UUID.randomUUID().toString().substring(6);
 	private final String testClassUuid = "class" + UUID.randomUUID().toString().substring(5);
 	private final String testMethodUuid = "test" + UUID.randomUUID().toString().substring(4);
-	private final Maybe<String> launchUuid = createConstantMaybe(testLaunchUuid);
+	private final Maybe<String> launchUuid = Maybe.just(testLaunchUuid);
 	private final AtomicInteger counter = new AtomicInteger();
 
 	@Mock
@@ -59,14 +58,14 @@ public class StepOrderTest {
 	private final List<Maybe<ItemCreatedRS>> createdStepsList = new ArrayList<>();
 	private final Supplier<Maybe<ItemCreatedRS>> maybeSupplier = () -> {
 		String uuid = UUID.randomUUID().toString();
-		Maybe<ItemCreatedRS> maybe = createConstantMaybe(new ItemCreatedRS(uuid, uuid));
+		Maybe<ItemCreatedRS> maybe = Maybe.just(new ItemCreatedRS(uuid, uuid));
 		createdStepsList.add(maybe);
 		return maybe;
 	};
 
 	@BeforeEach
 	public void initMocks() {
-		Maybe<ItemCreatedRS> testMethodCreatedMaybe = createConstantMaybe(new ItemCreatedRS(testMethodUuid, testMethodUuid));
+		Maybe<ItemCreatedRS> testMethodCreatedMaybe = Maybe.just(new ItemCreatedRS(testMethodUuid, testMethodUuid));
 		when(client.startTestItem(eq(testClassUuid), any())).thenReturn(testMethodCreatedMaybe);
 
 		// mock start nested steps
@@ -78,11 +77,11 @@ public class StepOrderTest {
 		when(client.finishTestItem(
 				any(String.class),
 				any(FinishTestItemRQ.class)
-		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> createConstantMaybe(new OperationCompletionRS()));
+		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> Maybe.just(new OperationCompletionRS()));
 
 		ReportPortal rp = ReportPortal.create(client, TestUtils.STANDARD_PARAMETERS);
 		Launch launch = rp.withLaunch(launchUuid);
-		launch.startTestItem(createConstantMaybe(testClassUuid), TestUtils.standardStartStepRequest());
+		launch.startTestItem(Maybe.just(testClassUuid), TestUtils.standardStartStepRequest());
 		sr = launch.getStepReporter();
 	}
 

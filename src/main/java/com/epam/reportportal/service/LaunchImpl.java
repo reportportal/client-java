@@ -220,7 +220,7 @@ public class LaunchImpl extends Launch {
 
 	private static <T> Maybe<T> createErrorResponse(Throwable cause) {
 		LOGGER.error(cause.getMessage(), cause);
-		return createConstantMaybe(cause);
+		return Maybe.error(cause);
 	}
 
 	private void truncateName(@Nonnull final StartTestItemRQ rq) {

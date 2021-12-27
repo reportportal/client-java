@@ -23,7 +23,6 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
-import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
@@ -47,7 +46,6 @@ import java.util.stream.Stream;
 
 import static com.epam.reportportal.test.TestUtils.*;
 import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
-import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -201,7 +199,7 @@ public class ManualNestedStepTest {
 	@SuppressWarnings("unchecked")
 	public void verify_nested_step_with_a_batch_of_logs() {
 		mockNestedSteps(client, nestedStepPairs.get(0));
-		when(client.log(any(List.class))).thenReturn(createConstantMaybe(new BatchSaveOperatingRS()));
+		mockBatchLogging(client);
 
 		int logNumber = 3;
 

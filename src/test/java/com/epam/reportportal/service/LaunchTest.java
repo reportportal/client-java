@@ -23,7 +23,6 @@ import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.service.step.StepReporter;
-import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
@@ -44,7 +43,6 @@ import java.util.concurrent.Executors;
 
 import static com.epam.reportportal.test.TestUtils.*;
 import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
-import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.*;
@@ -104,9 +102,9 @@ public class LaunchTest {
 		Maybe<String> stepRs = launch.startTestItem(testRs, standardStartStepRequest());
 
 		when(rpClient.finishTestItem(eq(stepRs.blockingGet()), any())).thenThrow(FINISH_CLIENT_EXCEPTION);
-		when(rpClient.finishTestItem(eq(testRs.blockingGet()), any())).thenReturn(createConstantMaybe(new OperationCompletionRS()));
-		when(rpClient.finishTestItem(eq(suiteRs.blockingGet()), any())).thenReturn(createConstantMaybe(new OperationCompletionRS()));
-		when(rpClient.finishLaunch(eq(launchUuid.blockingGet()), any())).thenReturn(createConstantMaybe(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(eq(testRs.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(eq(suiteRs.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishLaunch(eq(launchUuid.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
 
 		launch.finishTestItem(stepRs, positiveFinishRequest());
 		launch.finishTestItem(testRs, positiveFinishRequest());
@@ -139,9 +137,9 @@ public class LaunchTest {
 		when(rpClient.startTestItem(eq(testRs.blockingGet()), any())).thenThrow(START_CLIENT_EXCEPTION);
 		Maybe<String> stepRs = launch.startTestItem(testRs, standardStartStepRequest());
 
-		when(rpClient.finishTestItem(eq(testRs.blockingGet()), any())).thenReturn(createConstantMaybe(new OperationCompletionRS()));
-		when(rpClient.finishTestItem(eq(suiteRs.blockingGet()), any())).thenReturn(createConstantMaybe(new OperationCompletionRS()));
-		when(rpClient.finishLaunch(eq(launchUuid.blockingGet()), any())).thenReturn(createConstantMaybe(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(eq(testRs.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(eq(suiteRs.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishLaunch(eq(launchUuid.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
 
 		launch.finishTestItem(stepRs, positiveFinishRequest());
 		launch.finishTestItem(testRs, positiveFinishRequest());
@@ -222,7 +220,7 @@ public class LaunchTest {
 	public void launch_should_send_analytics_events_if_created_with_launch_maybe() {
 		simulateFinishLaunchResponse(rpClient);
 
-		Maybe<String> launchUuid = CommonUtils.createMaybe("launchUuid");
+		Maybe<String> launchUuid = Maybe.just("launchUuid");
 		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, launchUuid, executor) {
 			@Override
 			StatisticsService getStatisticsService() {

@@ -21,9 +21,9 @@ import com.epam.reportportal.annotations.attribute.Attribute;
 import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
-import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
+import io.reactivex.Maybe;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.Signature;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -41,26 +41,27 @@ import static org.mockito.Mockito.when;
  */
 public class StepAspectCommon {
 
+	@SuppressWarnings("unchecked")
 	static void simulateLaunch(ReportPortalClient client, String launchId) {
 		when(client.startLaunch(any())).thenReturn(TestUtils.startLaunchResponse(launchId));
-		lenient().when(client.log(any(List.class))).thenReturn(CommonUtils.createMaybe(new BatchSaveOperatingRS()));
+		lenient().when(client.log(any(List.class))).thenReturn(Maybe.just(new BatchSaveOperatingRS()));
 		when(client.finishLaunch(anyString(),
 				any(FinishExecutionRQ.class)
-		)).thenReturn(CommonUtils.createMaybe(new OperationCompletionRS()));
+		)).thenReturn(Maybe.just(new OperationCompletionRS()));
 	}
 
 	static void simulateStartItemResponse(ReportPortalClient client, String itemUuid) {
-		when(client.startTestItem(any(StartTestItemRQ.class))).thenReturn(CommonUtils.createMaybe(new ItemCreatedRS(itemUuid, itemUuid)));
+		when(client.startTestItem(any(StartTestItemRQ.class))).thenReturn(Maybe.just(new ItemCreatedRS(itemUuid, itemUuid)));
 	}
 
 	static void simulateStartItemResponse(ReportPortalClient client, String parentId, final String itemUuid) {
 		when(client.startTestItem(same(parentId),
 				any(StartTestItemRQ.class)
-		)).thenReturn(CommonUtils.createMaybe(new ItemCreatedRS(itemUuid, itemUuid)));
+		)).thenReturn(Maybe.just(new ItemCreatedRS(itemUuid, itemUuid)));
 	}
 
 	static void simulateFinishItemResponse(ReportPortalClient client, String id) {
-		when(client.finishTestItem(same(id), any(FinishTestItemRQ.class))).thenReturn(CommonUtils.createMaybe(new OperationCompletionRS()));
+		when(client.finishTestItem(same(id), any(FinishTestItemRQ.class))).thenReturn(Maybe.just(new OperationCompletionRS()));
 	}
 
 	static final String TEST_STEP_NAME = "Test step name";
