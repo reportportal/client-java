@@ -21,12 +21,30 @@ package com.epam.reportportal.utils.properties;
 public enum ListenerProperty {
 
 	//@formatter:off
+    /**
+     * Report Portal instance URL
+     */
     BASE_URL("rp.endpoint", true),
     /**
-     * An URL of a http proxy to connect to the endpoint
+     * A URL of a http proxy to connect to the endpoint
      */
     HTTP_PROXY_URL("rp.http.proxy", false),
+    /**
+     * Enable / Disable raw HTTP requests logging
+     */
     HTTP_LOGGING("rp.http.logging", false),
+    /**
+     * Different HTTP timeouts
+     */
+    HTTP_CALL_TIMEOUT_VALUE("rp.http.timeout.call.value", false),
+    HTTP_CALL_TIMEOUT_UNIT("rp.http.timeout.call.unit", false),
+    HTTP_CONNECT_TIMEOUT_VALUE("rp.http.timeout.connect.value", false),
+    HTTP_CONNECT_TIMEOUT_UNIT("rp.http.timeout.connect.unit", false),
+    HTTP_READ_TIMEOUT_VALUE("rp.http.timeout.read.value", false),
+    HTTP_READ_TIMEOUT_UNIT("rp.http.timeout.read.unit", false),
+    HTTP_WRITE_TIMEOUT_VALUE("rp.http.timeout.write.value", false),
+    HTTP_WRITE_TIMEOUT_UNIT("rp.http.timeout.write.unit", false),
+
     PROJECT_NAME("rp.project", true),
     LAUNCH_NAME("rp.launch", true),
     UUID("rp.uuid", false),

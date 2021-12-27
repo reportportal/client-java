@@ -20,6 +20,8 @@ import com.epam.reportportal.utils.properties.PropertiesLoader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
+import java.time.Duration;
+
 import static com.epam.ta.reportportal.ws.model.launch.Mode.DEBUG;
 import static com.epam.ta.reportportal.ws.model.launch.Mode.DEFAULT;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -77,7 +79,7 @@ public class ListenerParametersTest {
 	 * parameters. Eg. a clone test above.
 	 */
 	@Test
-	public void parametersShouldHaveEmptyPublicConstructor() throws NoSuchMethodException {
+	public void verify_parameters_have_empty_public_constructor() throws NoSuchMethodException {
 		//noinspection ResultOfMethodCallIgnored
 		ListenerParameters.class.getConstructor();
 	}
@@ -167,5 +169,30 @@ public class ListenerParametersTest {
 		ListenerParameters listenerParameters = new ListenerParameters(properties);
 
 		assertEquals(21, listenerParameters.getLockWaitTimeout());
+	}
+
+
+	@Test
+	public void verify_http_timeout_values_bypass() {
+		PropertiesLoader properties = PropertiesLoader.load("property-test/http-timeout.properties");
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		Duration expected = Duration.ofSeconds(100);
+		assertEquals(expected, listenerParameters.getHttpCallTimeout());
+		assertEquals(expected, listenerParameters.getHttpConnectTimeout());
+		assertEquals(expected, listenerParameters.getHttpReadTimeout());
+		assertEquals(expected, listenerParameters.getHttpWriteTimeout());
+	}
+
+	@Test
+	public void verify_call_timeout_unit_bypass() {
+		PropertiesLoader properties = PropertiesLoader.load("property-test/http-timeout-unit.properties");
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		Duration expected = Duration.ofMillis(1);
+		assertEquals(expected, listenerParameters.getHttpCallTimeout());
+		assertEquals(expected, listenerParameters.getHttpConnectTimeout());
+		assertEquals(expected, listenerParameters.getHttpReadTimeout());
+		assertEquals(expected, listenerParameters.getHttpWriteTimeout());
 	}
 }

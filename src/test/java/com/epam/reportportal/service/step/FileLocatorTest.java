@@ -43,20 +43,20 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static com.epam.reportportal.utils.SubscriptionUtils.createConstantMaybe;
 import static java.util.Optional.ofNullable;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("unchecked")
 public class FileLocatorTest {
 	private static final InputStream EMPTY_STREAM = new ByteArrayInputStream(new byte[0]);
 
 	private final String testLaunchUuid = "launch" + UUID.randomUUID().toString().substring(6);
 	private final String testClassUuid = "class" + UUID.randomUUID().toString().substring(5);
 	private final String testMethodUuid = "test" + UUID.randomUUID().toString().substring(4);
-	private final Maybe<String> launchUuid = createConstantMaybe(testLaunchUuid);
+	private final Maybe<String> launchUuid = Maybe.just(testLaunchUuid);
 
 	@Mock
 	private ReportPortalClient rpClient;
@@ -65,14 +65,15 @@ public class FileLocatorTest {
 
 	private final Supplier<Maybe<ItemCreatedRS>> maybeSupplier = () -> {
 		String uuid = UUID.randomUUID().toString();
-		return createConstantMaybe(new ItemCreatedRS(uuid, uuid));
+		return Maybe.just(new ItemCreatedRS(uuid, uuid));
 	};
 
+	@SuppressWarnings("unchecked")
 	@BeforeEach
 	public void initMocks() {
-		Maybe<ItemCreatedRS> testMethodCreatedMaybe = createConstantMaybe(new ItemCreatedRS(testMethodUuid, testMethodUuid));
+		Maybe<ItemCreatedRS> testMethodCreatedMaybe = Maybe.just(new ItemCreatedRS(testMethodUuid, testMethodUuid));
 		when(rpClient.startTestItem(eq(testClassUuid), any())).thenReturn(testMethodCreatedMaybe);
-		when(rpClient.log(any(List.class))).thenReturn(createConstantMaybe(new BatchSaveOperatingRS()));
+		when(rpClient.log(any(List.class))).thenReturn(Maybe.just(new BatchSaveOperatingRS()));
 
 		// mock start nested steps
 		when(rpClient.startTestItem(eq(testMethodUuid),
@@ -81,7 +82,7 @@ public class FileLocatorTest {
 
 		ReportPortal rp = ReportPortal.create(rpClient, TestUtils.STANDARD_PARAMETERS);
 		Launch launch = rp.withLaunch(launchUuid);
-		launch.startTestItem(createConstantMaybe(testClassUuid), TestUtils.standardStartStepRequest());
+		launch.startTestItem(Maybe.just(testClassUuid), TestUtils.standardStartStepRequest());
 		sr = launch.getStepReporter();
 	}
 

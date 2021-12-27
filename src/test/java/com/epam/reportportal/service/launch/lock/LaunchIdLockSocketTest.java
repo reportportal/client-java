@@ -24,7 +24,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +57,7 @@ public class LaunchIdLockSocketTest {
 	private final LaunchIdLockSocket launchIdLockSocket = new LaunchIdLockSocket(getParameters());
 
 	private ListenerParameters getParameters() {
-		try (ServerSocket ss = new ServerSocket(0,20,InetAddress.getLocalHost())) {
+		try (ServerSocket ss = new ServerSocket(0, 20, InetAddress.getLoopbackAddress())) {
 			int port = ss.getLocalPort();
 			ListenerParameters params = new ListenerParameters();
 			params.setEnable(Boolean.TRUE);

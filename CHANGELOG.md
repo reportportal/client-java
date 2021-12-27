@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- HTTP timeout parameters
 
 ## [5.1.1]
 ### Fixed
