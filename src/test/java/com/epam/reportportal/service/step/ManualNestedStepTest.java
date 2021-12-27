@@ -284,6 +284,7 @@ public class ManualNestedStepTest {
 	@SuppressWarnings("unchecked")
 	public void verify_passed_actions_nested_step() {
 		mockNestedSteps(client, nestedStepPairs.get(0));
+		mockBatchLogging(client);
 		String stepName = "verify_passed_actions_nested_step";
 		String returnValue = "return value";
 		String logMessage = "Test message";

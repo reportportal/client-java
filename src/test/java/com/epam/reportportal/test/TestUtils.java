@@ -272,4 +272,9 @@ public class TestUtils {
 				any(FinishTestItemRQ.class)
 		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> CommonUtils.createMaybe(new OperationCompletionRS())));
 	}
+
+	@SuppressWarnings("unchecked")
+	public static void mockBatchLogging(ReportPortalClient client) {
+		when(client.log(any(List.class))).thenReturn(createMaybe(new BatchSaveOperatingRS()));
+	}
 }
