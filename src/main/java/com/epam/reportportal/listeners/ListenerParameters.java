@@ -18,6 +18,7 @@ package com.epam.reportportal.listeners;
 import com.epam.reportportal.service.LoggingContext;
 import com.epam.reportportal.service.launch.lock.LaunchIdLockMode;
 import com.epam.reportportal.utils.AttributeParser;
+import com.epam.reportportal.utils.properties.ListenerProperty;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.Mode;
@@ -25,7 +26,11 @@ import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.lang.reflect.Modifier;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -74,6 +79,10 @@ public class ListenerParameters implements Cloneable {
 	private String baseUrl;
 	private String proxyUrl;
 	private boolean httpLogging;
+	private Duration httpCallTimeout;
+	private Duration httpConnectTimeout;
+	private Duration httpReadTimeout;
+	private Duration httpWriteTimeout;
 	private String projectName;
 	private String launchName;
 	private Mode launchRunningMode;
@@ -104,6 +113,38 @@ public class ListenerParameters implements Cloneable {
 	private boolean truncateItemNames;
 	private int truncateItemNamesLimit;
 	private String truncateItemNamesReplacement;
+
+	@Nonnull
+	private static ChronoUnit toChronoUnit(@Nonnull TimeUnit t) {
+		switch (t) {
+			case NANOSECONDS:
+				return ChronoUnit.NANOS;
+			case MICROSECONDS:
+				return ChronoUnit.MICROS;
+			case MILLISECONDS:
+				return ChronoUnit.MILLIS;
+			case SECONDS:
+				return ChronoUnit.SECONDS;
+			case MINUTES:
+				return ChronoUnit.MINUTES;
+			case HOURS:
+				return ChronoUnit.HOURS;
+			case DAYS:
+				return ChronoUnit.DAYS;
+			default:
+				throw new AssertionError();
+		}
+	}
+
+	@Nullable
+	private static Duration getDurationProperty(@Nonnull PropertiesLoader properties, @Nonnull ListenerProperty value,
+			@Nonnull ListenerProperty unit) {
+		return ofNullable(properties.getProperty(value)).map(Long::parseLong)
+				.map(t -> Duration.of(t,
+						ofNullable(properties.getProperty(unit)).map(u -> toChronoUnit(TimeUnit.valueOf(u))).orElse(ChronoUnit.MILLIS)
+				))
+				.orElse(null);
+	}
 
 	public ListenerParameters() {
 
@@ -142,6 +183,13 @@ public class ListenerParameters implements Cloneable {
 		this.apiKey = ofNullable(properties.getProperty(API_KEY, properties.getProperty(UUID))).map(String::trim).orElse(null);
 		this.baseUrl = properties.getProperty(BASE_URL) != null ? properties.getProperty(BASE_URL).trim() : null;
 		this.proxyUrl = properties.getProperty(HTTP_PROXY_URL);
+		this.httpLogging = properties.getPropertyAsBoolean(HTTP_LOGGING, DEFAULT_HTTP_LOGGING);
+
+		this.httpCallTimeout = getDurationProperty(properties, HTTP_CALL_TIMEOUT_VALUE, HTTP_CALL_TIMEOUT_UNIT);
+		this.httpConnectTimeout = getDurationProperty(properties, HTTP_CONNECT_TIMEOUT_VALUE, HTTP_CONNECT_TIMEOUT_UNIT);
+		this.httpReadTimeout = getDurationProperty(properties, HTTP_READ_TIMEOUT_VALUE, HTTP_READ_TIMEOUT_UNIT);
+		this.httpWriteTimeout = getDurationProperty(properties, HTTP_WRITE_TIMEOUT_VALUE, HTTP_WRITE_TIMEOUT_UNIT);
+
 		this.projectName = properties.getProperty(PROJECT_NAME) != null ? properties.getProperty(PROJECT_NAME).trim() : null;
 		this.launchName = properties.getProperty(LAUNCH_NAME);
 		this.attributes = Collections.unmodifiableSet(AttributeParser.parseAsSet(properties.getProperty(LAUNCH_ATTRIBUTES)));
@@ -152,7 +200,6 @@ public class ListenerParameters implements Cloneable {
 		this.batchLogsSize = properties.getPropertyAsInt(BATCH_SIZE_LOGS, LoggingContext.DEFAULT_LOG_BATCH_SIZE);
 		this.convertImage = properties.getPropertyAsBoolean(IS_CONVERT_IMAGE, DEFAULT_CONVERT_IMAGE);
 		this.reportingTimeout = properties.getPropertyAsInt(REPORTING_TIMEOUT, DEFAULT_REPORTING_TIMEOUT);
-		this.httpLogging = properties.getPropertyAsBoolean(HTTP_LOGGING, DEFAULT_HTTP_LOGGING);
 
 		this.keystore = properties.getProperty(KEYSTORE_RESOURCE);
 		this.keystorePassword = properties.getProperty(KEYSTORE_PASSWORD);
@@ -471,12 +518,49 @@ public class ListenerParameters implements Cloneable {
 		this.truncateItemNamesReplacement = replacement;
 	}
 
+	public void setHttpCallTimeout(@Nullable Duration httpCallTimeout) {
+		this.httpCallTimeout = httpCallTimeout;
+	}
+
+	@Nullable
+	public Duration getHttpCallTimeout() {
+		return httpCallTimeout;
+	}
+
+	public void setHttpConnectTimeout(@Nullable Duration httpConnectTimeout) {
+		this.httpConnectTimeout = httpConnectTimeout;
+	}
+
+	@Nullable
+	public Duration getHttpConnectTimeout() {
+		return httpConnectTimeout;
+	}
+
+	public void setHttpReadTimeout(@Nullable Duration httpReadTimeout) {
+		this.httpReadTimeout = httpReadTimeout;
+	}
+
+	@Nullable
+	public Duration getHttpReadTimeout() {
+		return httpReadTimeout;
+	}
+
+	public void setHttpWriteTimeout(@Nullable Duration httpWriteTimeout) {
+		this.httpWriteTimeout = httpWriteTimeout;
+	}
+
+	@Nullable
+	public Duration getHttpWriteTimeout() {
+		return httpWriteTimeout;
+	}
+
 	@VisibleForTesting
 	Mode parseLaunchMode(String mode) {
 		return Mode.isExists(mode) ? Mode.valueOf(mode.toUpperCase()) : Mode.DEFAULT;
 	}
 
 	@Override
+	@Nonnull
 	public ListenerParameters clone() {
 		ListenerParameters clonedParent;
 		try {
@@ -500,6 +584,7 @@ public class ListenerParameters implements Cloneable {
 	}
 
 	@Override
+	@Nonnull
 	public String toString() {
 		@SuppressWarnings("StringBufferReplaceableByString")
 		final StringBuilder sb = new StringBuilder("ListenerParameters{");
@@ -508,6 +593,10 @@ public class ListenerParameters implements Cloneable {
 		sb.append(", baseUrl='").append(baseUrl).append('\'');
 		sb.append(", proxyUrl='").append(proxyUrl).append('\'');
 		sb.append(", httpLogging='").append(httpLogging).append('\'');
+		sb.append(", httpCallTimeout='").append(httpCallTimeout).append('\'');
+		sb.append(", httpConnectTimeout='").append(httpConnectTimeout).append('\'');
+		sb.append(", httpReadTimeout='").append(httpReadTimeout).append('\'');
+		sb.append(", httpWriteTimeout='").append(httpWriteTimeout).append('\'');
 		sb.append(", projectName='").append(projectName).append('\'');
 		sb.append(", launchName='").append(launchName).append('\'');
 		sb.append(", launchRunningMode=").append(launchRunningMode);

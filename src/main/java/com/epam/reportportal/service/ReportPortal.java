@@ -533,12 +533,17 @@ public class ReportPortal {
 
 			builder.addInterceptor(new BearerAuthInterceptor(parameters.getApiKey()));
 			builder.addInterceptor(new PathParamInterceptor("projectName", parameters.getProjectName()));
-
 			if (parameters.isHttpLogging()) {
 				HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
 				logging.setLevel(HttpLoggingInterceptor.Level.BODY);
 				builder.addInterceptor(logging);
 			}
+
+			ofNullable(parameters.getHttpCallTimeout()).ifPresent(builder::callTimeout);
+			ofNullable(parameters.getHttpConnectTimeout()).ifPresent(builder::connectTimeout);
+			ofNullable(parameters.getHttpReadTimeout()).ifPresent(builder::readTimeout);
+			ofNullable(parameters.getHttpWriteTimeout()).ifPresent(builder::writeTimeout);
+
 			builder.retryOnConnectionFailure(true).cookieJar(new CookieJar() {
 				private final Map<String, CopyOnWriteArrayList<Cookie>> STORAGE = new ConcurrentHashMap<>();
 

@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import java.net.ServerSocket;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -43,20 +44,20 @@ public class ReportPortalTest {
 	private static final String COOKIE = "AWSALB=P7cqG8g/K70xHAKOUPrWrG0XgmhG8GJNinj8lDnKVyITyubAen2lBr+fSa/e2JAoGksQphtImp49rZxc41qdqUGvAc67SdZHY1BMFIHKzc8kyWc1oQjq6oI+s39U";
 
 	@Test
-	public void no_url_results_in_null_client() {
+	public void verify_no_url_results_in_null_client() {
 		ListenerParameters listenerParameters = new ListenerParameters();
 		assertThat(ReportPortal.builder().defaultClient(listenerParameters), nullValue());
 	}
 
 	@Test
-	public void correct_url_results_in_not_null_client() {
+	public void verify_correct_url_results_in_not_null_client() {
 		ListenerParameters listenerParameters = new ListenerParameters();
 		listenerParameters.setBaseUrl("http://localhost");
 		assertThat(ReportPortal.builder().defaultClient(listenerParameters), notNullValue());
 	}
 
 	@Test
-	public void no_url_results_in_noop_launch() {
+	public void verify_no_url_results_in_noop_launch() {
 		ListenerParameters listenerParameters = new ListenerParameters();
 		ReportPortal rp = ReportPortal.builder().withParameters(listenerParameters).build();
 		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(listenerParameters));
@@ -64,7 +65,7 @@ public class ReportPortalTest {
 	}
 
 	@Test
-	public void correct_url_results_in_correct_launch() {
+	public void verify_correct_url_results_in_correct_launch() {
 		ListenerParameters listenerParameters = new ListenerParameters();
 		listenerParameters.setBaseUrl("http://localhost");
 		listenerParameters.setEnable(true);
@@ -74,7 +75,7 @@ public class ReportPortalTest {
 	}
 
 	@Test
-	public void proxyParamBypass() throws Exception {
+	public void verify_proxy_parameter_works() throws Exception {
 		String baseUrl = "http://example.com:8080";
 		ServerSocket server = SocketUtils.getServerSocketOnFreePort();
 		ListenerParameters params = standardParameters();
@@ -97,7 +98,7 @@ public class ReportPortalTest {
 	}
 
 	@Test
-	public void test_rp_client_saves_and_bypasses_cookies() throws Exception {
+	public void verify_rp_client_saves_and_bypasses_cookies() throws Exception {
 		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
 		ListenerParameters parameters = standardParameters();
 		parameters.setBaseUrl("http://localhost:" + ss.getLocalPort());
@@ -130,5 +131,24 @@ public class ReportPortalTest {
 			ss.close();
 			shutdownExecutorService(clientExecutor);
 		}
+	}
+
+	@Test
+	public void verify_timeout_properties_bypass() {
+		ListenerParameters listenerParameters = new ListenerParameters();
+		listenerParameters.setBaseUrl("http://localhost");
+		Duration defaultTimeout = Duration.ofSeconds(1);
+		listenerParameters.setHttpCallTimeout(defaultTimeout);
+		listenerParameters.setHttpConnectTimeout(defaultTimeout);
+		listenerParameters.setHttpReadTimeout(defaultTimeout);
+		listenerParameters.setHttpWriteTimeout(defaultTimeout);
+
+		long defaultTimeoutMs = 1000;
+		OkHttpClient client = ReportPortal.builder().defaultClient(listenerParameters);
+		assertThat(client, notNullValue());
+		assertThat(client.callTimeoutMillis(), equalTo(defaultTimeoutMs));
+		assertThat(client.connectTimeoutMillis(), equalTo(defaultTimeoutMs));
+		assertThat(client.readTimeoutMillis(), equalTo(defaultTimeoutMs));
+		assertThat(client.writeTimeoutMillis(), equalTo(defaultTimeoutMs));
 	}
 }
