@@ -143,7 +143,7 @@ public class ReportPortalTest {
 		listenerParameters.setHttpReadTimeout(defaultTimeout);
 		listenerParameters.setHttpWriteTimeout(defaultTimeout);
 
-		long defaultTimeoutMs = 1000;
+		int defaultTimeoutMs = 1000;
 		OkHttpClient client = ReportPortal.builder().defaultClient(listenerParameters);
 		assertThat(client, notNullValue());
 		assertThat(client.callTimeoutMillis(), equalTo(defaultTimeoutMs));
