@@ -25,13 +25,19 @@ overridden by JVM variables
 | 2     | Environment variables |
 | 3     | Properties file       |
 
+### JVM arguments
+Report Portal client does not necessarily need properties file to be configured. One of the option is to use JVM arguments which have the
+highest priority among configuration ways. To use them you need to specify them in command line after Java executable using `-D` flag.
+Example:
+```shell
+$ java -Drp.endpoint=https://rp.epam.com/ -jar my-tests.jar
+```
+
 ### Environment variables
 In case of bypassing parameters through environment variables they should be specified in UPPERCASE separated by underscores (`_`).
 E.G.: 
 * `rp.endpoint` --> `RP_ENDPOINT`
 * `rp.skipped.issue` --> `RP_SKIPPED_ISSUE`
-
-### JVM arguments
 
 ### Property file
 
@@ -92,7 +98,7 @@ Launch name sets once before first execution, because in common launch parts are
 will know a fixed list of suites behind it. That will allow us to have a history trend. On Report Portal UI different launch iterations will
 be saved with postfix "\#number", like "Test Launch \#1", "Test Launch \#2" etc.
 
-> If mandatory properties are missed client will log a warning and will be initialized in inactive state.
+> If mandatory parameters are missed client will log a warning and will be initialized in inactive state.
 
 ### Multi-process join parameters
 
