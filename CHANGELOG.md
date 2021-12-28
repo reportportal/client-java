@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.3]
 ### Changed
 - JVM arg parameters have more priority than Environment variables now.
 - Property loader doesn't throw any errors now, just logs warnings.
