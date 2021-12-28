@@ -15,19 +15,22 @@
  */
 package com.epam.reportportal.utils.properties;
 
-import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.utils.MemoizingSupplier;
 import com.google.common.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.values;
 
@@ -35,27 +38,32 @@ import static com.epam.reportportal.utils.properties.ListenerProperty.values;
  * Load report portal launch start properties
  */
 public class PropertiesLoader {
+	private static final Logger LOGGER = LoggerFactory.getLogger(PropertiesLoader.class);
 
 	public static final String INNER_PATH = "reportportal.properties";
-	public static final String PATH = "./reportportal.properties";
 	public static final Charset STANDARD_CHARSET = StandardCharsets.UTF_8;
 
 	private final Supplier<Properties> propertiesSupplier;
 
 	/**
-	 * Loads properties from default location
+	 * Try to load properties from file situated in the class path, and then
+	 * reload existing parameters from environment variables
 	 *
-	 * @return PropertiesLoader instance
-	 * @see #INNER_PATH
+	 * @return loaded properties
+	 * @throws IOException In case of IO error
 	 */
-	public static PropertiesLoader load() {
-		return new PropertiesLoader(() -> {
-			try {
-				return loadProperties(INNER_PATH);
-			} catch (IOException e) {
-				throw new InternalReportPortalClientException("Unable to load properties", e);
+	private static Properties loadProperties(String resource) throws IOException {
+		Properties props = new Properties();
+		Optional<URL> propertyFile = getResource(resource);
+		if (propertyFile.isPresent()) {
+			try (InputStream is = propertyFile.get().openStream()) {
+				props.load(new InputStreamReader(is, STANDARD_CHARSET));
 			}
-		});
+		}
+		overrideWith(props, System.getenv());
+		overrideWith(props, System.getProperties());
+
+		return props;
 	}
 
 	/**
@@ -69,9 +77,20 @@ public class PropertiesLoader {
 			try {
 				return loadProperties(resource);
 			} catch (IOException e) {
-				throw new InternalReportPortalClientException("Unable to load properties", e);
+				LOGGER.warn("Unable to load Report Portal property file: " + e.getMessage(), e);
+				return new Properties();
 			}
 		});
+	}
+
+	/**
+	 * Loads properties from default location
+	 *
+	 * @return PropertiesLoader instance
+	 * @see #INNER_PATH
+	 */
+	public static PropertiesLoader load() {
+		return load(INNER_PATH);
 	}
 
 	private PropertiesLoader(final Supplier<Properties> propertiesSupplier) {
@@ -146,53 +165,16 @@ public class PropertiesLoader {
 	}
 
 	/**
-	 * Overrides properties with provided values
+	 * replace underscores with dots (dots are normally not allowed in spring boot variables, so like in spring boot,
+	 * underscores can be used.
 	 *
-	 * @param overrides Values to overrides
+	 * @param overrides a property set to normalize
+	 * @return the overrides without underscores and with dots.
 	 */
-	public void overrideWith(Properties overrides) {
-		overrideWith(propertiesSupplier.get(), overrides);
-	}
-
-	/**
-	 * Try to load properties from file situated in the class path, and then
-	 * reload existing parameters from environment variables
-	 *
-	 * @return loaded properties
-	 * @throws IOException In case of IO error
-	 */
-	private static Properties loadProperties(String resource) throws IOException {
-		Properties props = new Properties();
-		Optional<URL> propertyFile = getResource(resource);
-		if (propertyFile.isPresent()) {
-			try (InputStream is = propertyFile.get().openStream()) {
-				props.load(new InputStreamReader(is, STANDARD_CHARSET));
-			}
-		}
-		overrideWith(props, System.getProperties());
-		overrideWith(props, System.getenv());
-
-		return props;
-	}
-
-	/**
-	 * Validates properties
-	 */
-	public void validate() {
-		validateProperties(this.getProperties());
-	}
-
-	/**
-	 * Validate required properties presence
-	 *
-	 * @param properties Properties to be validated
-	 */
-	private static void validateProperties(Properties properties) {
-		for (ListenerProperty listenerProperty : values()) {
-			if (listenerProperty.isRequired() && properties.getProperty(listenerProperty.getPropertyName()) == null) {
-				throw new IllegalArgumentException("Property '" + listenerProperty.getPropertyName() + "' should not be null.");
-			}
-		}
+	private static Map<String, String> normalizeOverrides(Map<?, ?> overrides) {
+		return overrides.entrySet()
+				.stream()
+				.collect(Collectors.toMap(e -> e.getKey().toString().toLowerCase().replace('_', '.'), e -> e.getValue().toString()));
 	}
 
 	/**
@@ -202,7 +184,7 @@ public class PropertiesLoader {
 	 * @param overrides Overrides
 	 */
 	@VisibleForTesting
-	static void overrideWith(Properties source, Map<String, String> overrides) {
+	static void overrideWith(Properties source, Map<?, ?> overrides) {
 		Map<String, String> overridesNormalized = normalizeOverrides(overrides);
 		for (ListenerProperty listenerProperty : values()) {
 			if (overridesNormalized.get(listenerProperty.getPropertyName()) != null) {
@@ -212,33 +194,14 @@ public class PropertiesLoader {
 	}
 
 	/**
-	 * replace underscores with dots (dots are normally not allowed in spring boot variables, so like in spring boot,
-	 * underscores can be used.
-	 *
-	 * @param overrides a property set to normalize
-	 * @return the overrides without underscores and with dots.
-	 */
-	private static Map<String, String> normalizeOverrides(Map<String, String> overrides) {
-		Map<String, String> normalizedSet = new HashMap<>();
-		for (Map.Entry<String, String> entry : overrides.entrySet()) {
-			if (entry.getKey() != null) {
-				String key = entry.getKey().toLowerCase().replace("_", ".");
-				normalizedSet.put(key, entry.getValue());
-			}
-		}
-		return normalizedSet;
-	}
-
-	/**
 	 * Overrides properties from another source
 	 *
 	 * @param source    Properties to be overridden
 	 * @param overrides Overrides
 	 */
-	@SuppressWarnings({"unchecked", "rawtypes"})
 	@VisibleForTesting
 	static void overrideWith(Properties source, Properties overrides) {
-		overrideWith(source, ((Map) overrides));
+		overrideWith(source, (Map<Object, Object>) overrides);
 	}
 
 	private static Optional<URL> getResource(String resourceName) {
