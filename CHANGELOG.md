@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- JVM arg parameters have more priority than Environment variables now.
 
 ## [5.1.2]
 ### Added

@@ -14,14 +14,29 @@
 
 ## JVM-based clients configuration
 
-Copy your configuration from UI of ReportPortal at User Profile section
+### How to provide parameters
 
-or
+There are several ways to load parameters. Be aware that higher order overrides previous. For example, properties from file can be
+overridden by JVM variables
 
-In order to start using an agent, user should configure property file
-"reportportal.properties" in such format:
+| Order | Source                |
+|-------|-----------------------|
+| 1     | JVM arguments         |
+| 2     | Environment variables |
+| 3     | Properties file       |
 
-**reportportal.properties**
+### Environment variables
+In case of bypassing parameters through environment variables they should be specified in UPPERCASE separated by underscores (`_`).
+E.G.: 
+* `rp.endpoint` --> `RP_ENDPOINT`
+* `rp.skipped.issue` --> `RP_SKIPPED_ISSUE`
+
+### JVM arguments
+
+### Property file
+
+The most common way to start using an agent is to copy your configuration from UI of ReportPortal at User Profile section or configure 
+property file `reportportal.properties` in the following format:
 
 ```properties
 rp.endpoint=https://rp.epam.com/
@@ -43,10 +58,14 @@ rp.batch.size.logs=20
 rp.keystore.resource=<PATH_TO_YOUR_KEYSTORE>
 rp.keystore.password=<PASSWORD_OF_YOUR_KEYSTORE>
 ```
+For detailed parameter description see below sections.
 
-**Parameters**
+Properties file should have `reportportal.properties` name. It can be situated on the class path (in the project directory). 
+If listener can’t find properties file it throws `InternalReportPortalClientException`.
 
-User should provide next parameters to agent.
+## Parameters
+
+### Common parameters
 
 | **Property name**                 | **Type** | **Description**                                                                                                                                                                                                                                                                                                                                                              | **Required** |
 |-----------------------------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
@@ -77,14 +96,21 @@ User should provide next parameters to agent.
 | rp.client.join.file.sync.name     | String   | Default: `reportportal.sync`<br>A name of a launch ID synchronization file, can be an absolute path. Each client waits for a lock on that file to get a launch ID (first line) and write its own ID to the end of the file.                                                                                                                                                  | No           |
 | rp.client.join.lock.timeout.value | Integer  | Default: 1 minute<br> Files lock / connection timeout for launches.                                                                                                                                                                                                                                                                                                          | No           |
 | rp.client.join.lock.timeout.unit  | Enum     | Default: `MILLISECONDS`<br> Timeout value time unit. Should be one of values from `java.util.concurrent.TimeUnit` class                                                                                                                                                                                                                                                      | No           |
-| rp.http.timeout.call.value        | Integer  | Default: Infinitive<br> Timeout value for the entire call: resolving DNS, connecting, writing the request body, server processing, and reading the response body. If the call requires redirects or retries all must complete within one timeout period.                                                                                                                     | No           |
-| rp.http.timeout.call.unit         | Enum     | Default: `MILLISECONDS`<br> Timeout value time unit. Should be one of values from `java.util.concurrent.TimeUnit` class                                                                                                                                                                                                                                                      | No           |
-| rp.http.timeout.connect.value     | Integer  | Default: 10 seconds<br> Connect timeout for new HTTP connections.                                                                                                                                                                                                                                                                                                            | No           |
-| rp.http.timeout.connect.unit      | Enum     | Default: `MILLISECONDS`<br> Timeout value time unit. Should be one of values from `java.util.concurrent.TimeUnit` class                                                                                                                                                                                                                                                      | No           |
-| rp.http.timeout.read.value        | Integer  | Default: 10 seconds<br> Data read timeout for new HTTP connections.                                                                                                                                                                                                                                                                                                          | No           |
-| rp.http.timeout.read.unit         | Enum     | Default: `MILLISECONDS`<br> Timeout value time unit. Should be one of values from `java.util.concurrent.TimeUnit` class                                                                                                                                                                                                                                                      | No           |
-| rp.http.timeout.write.value       | Integer  | Default: 10 seconds<br> Data write timeout for new HTTP connections.                                                                                                                                                                                                                                                                                                         | No           |
-| rp.http.timeout.write.unit        | Enum     | Default: `MILLISECONDS`<br> Timeout value time unit. Should be one of values from `java.util.concurrent.TimeUnit` class                                                                                                                                                                                                                                                      | No           |
+
+# HTTP parameters
+
+| **Property name**             | **Type** | **Description**                                                                                                                                                                                                                                          | 
+|-------------------------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| rp.http.proxy                 | String   | A URL of a HTTP proxy to connect to the endpoint.                                                                                                                                                                                                        |
+| rp.http.logging               | Boolean  | Default: `false`<br> Enable / Disable HTTP logging.                                                                                                                                                                                                      |
+| rp.http.timeout.call.value    | Integer  | Default: Infinitive<br> Timeout value for the entire call: resolving DNS, connecting, writing the request body, server processing, and reading the response body. If the call requires redirects or retries all must complete within one timeout period. |
+| rp.http.timeout.call.unit     | Enum     | Default: `MILLISECONDS`<br> Timeout value time unit. Should be one of values from `java.util.concurrent.TimeUnit` class                                                                                                                                  |
+| rp.http.timeout.connect.value | Integer  | Default: 10 seconds<br> Connect timeout for new HTTP connections.                                                                                                                                                                                        |
+| rp.http.timeout.connect.unit  | Enum     | Default: `MILLISECONDS`<br> Timeout value time unit. Should be one of values from `java.util.concurrent.TimeUnit` class                                                                                                                                  |
+| rp.http.timeout.read.value    | Integer  | Default: 10 seconds<br> Data read timeout for new HTTP connections.                                                                                                                                                                                      |
+| rp.http.timeout.read.unit     | Enum     | Default: `MILLISECONDS`<br> Timeout value time unit. Should be one of values from `java.util.concurrent.TimeUnit` class                                                                                                                                  |
+| rp.http.timeout.write.value   | Integer  | Default: 10 seconds<br> Data write timeout for new HTTP connections.                                                                                                                                                                                     |
+| rp.http.timeout.write.unit    | Enum     | Default: `MILLISECONDS`<br> Timeout value time unit. Should be one of values from `java.util.concurrent.TimeUnit` class                                                                                                                                  |
 
 Launch name can be edited once, and should be edited once, before first execution. As usual, parts of launches are fixed for a long time.
 Keeping the same name for launch, here we will understand a fixed list of suites under launch, will help to have a history trend, and on UI
@@ -103,24 +129,3 @@ Ways to set up properties:
 a. reportportal.properties file
 
 b. command line properties (-Dhttps.proxyHost=localhost)
-
-**How to provide parameters**
-
-There are several ways to load parameters. Be aware that higher order overrides previous. For example, properties from file can be
-overridden by JVM variables
-
-| Order | Source
-|-------| ----------------------|
-| 1     | Environment variables |
-| 2     | JVM variables         |
-| 3     | Properties file       |
-
-Properties file should have name
-
-> reportportal.properties
->
-
-It can be situated on the class path (in the project directory). If listener can’t find properties file it throws FileNotFoundException. By
-default “reportportal.properties” exists in the reportportall-client.jar, but user can create his own “reportportal.properties” file and put
-in class path.
-

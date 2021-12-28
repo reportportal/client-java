@@ -19,15 +19,17 @@ import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.utils.MemoizingSupplier;
 import com.google.common.annotations.VisibleForTesting;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.values;
 
@@ -37,7 +39,6 @@ import static com.epam.reportportal.utils.properties.ListenerProperty.values;
 public class PropertiesLoader {
 
 	public static final String INNER_PATH = "reportportal.properties";
-	public static final String PATH = "./reportportal.properties";
 	public static final Charset STANDARD_CHARSET = StandardCharsets.UTF_8;
 
 	private final Supplier<Properties> propertiesSupplier;
@@ -146,15 +147,6 @@ public class PropertiesLoader {
 	}
 
 	/**
-	 * Overrides properties with provided values
-	 *
-	 * @param overrides Values to overrides
-	 */
-	public void overrideWith(Properties overrides) {
-		overrideWith(propertiesSupplier.get(), overrides);
-	}
-
-	/**
 	 * Try to load properties from file situated in the class path, and then
 	 * reload existing parameters from environment variables
 	 *
@@ -169,46 +161,10 @@ public class PropertiesLoader {
 				props.load(new InputStreamReader(is, STANDARD_CHARSET));
 			}
 		}
-		overrideWith(props, System.getProperties());
 		overrideWith(props, System.getenv());
+		overrideWith(props, System.getProperties());
 
 		return props;
-	}
-
-	/**
-	 * Validates properties
-	 */
-	public void validate() {
-		validateProperties(this.getProperties());
-	}
-
-	/**
-	 * Validate required properties presence
-	 *
-	 * @param properties Properties to be validated
-	 */
-	private static void validateProperties(Properties properties) {
-		for (ListenerProperty listenerProperty : values()) {
-			if (listenerProperty.isRequired() && properties.getProperty(listenerProperty.getPropertyName()) == null) {
-				throw new IllegalArgumentException("Property '" + listenerProperty.getPropertyName() + "' should not be null.");
-			}
-		}
-	}
-
-	/**
-	 * Overrides properties from another source
-	 *
-	 * @param source    Properties to be overridden
-	 * @param overrides Overrides
-	 */
-	@VisibleForTesting
-	static void overrideWith(Properties source, Map<String, String> overrides) {
-		Map<String, String> overridesNormalized = normalizeOverrides(overrides);
-		for (ListenerProperty listenerProperty : values()) {
-			if (overridesNormalized.get(listenerProperty.getPropertyName()) != null) {
-				source.setProperty(listenerProperty.getPropertyName(), overridesNormalized.get(listenerProperty.getPropertyName()));
-			}
-		}
 	}
 
 	/**
@@ -218,15 +174,10 @@ public class PropertiesLoader {
 	 * @param overrides a property set to normalize
 	 * @return the overrides without underscores and with dots.
 	 */
-	private static Map<String, String> normalizeOverrides(Map<String, String> overrides) {
-		Map<String, String> normalizedSet = new HashMap<>();
-		for (Map.Entry<String, String> entry : overrides.entrySet()) {
-			if (entry.getKey() != null) {
-				String key = entry.getKey().toLowerCase().replace("_", ".");
-				normalizedSet.put(key, entry.getValue());
-			}
-		}
-		return normalizedSet;
+	private static Map<String, String> normalizeOverrides(Map<?, ?> overrides) {
+		return overrides.entrySet()
+				.stream()
+				.collect(Collectors.toMap(e -> e.getKey().toString().toLowerCase().replace('_', '.'), e -> e.getValue().toString()));
 	}
 
 	/**
@@ -235,10 +186,25 @@ public class PropertiesLoader {
 	 * @param source    Properties to be overridden
 	 * @param overrides Overrides
 	 */
-	@SuppressWarnings({"unchecked", "rawtypes"})
+	@VisibleForTesting
+	static void overrideWith(Properties source, Map<?, ?> overrides) {
+		Map<String, String> overridesNormalized = normalizeOverrides(overrides);
+		for (ListenerProperty listenerProperty : values()) {
+			if (overridesNormalized.get(listenerProperty.getPropertyName()) != null) {
+				source.setProperty(listenerProperty.getPropertyName(), overridesNormalized.get(listenerProperty.getPropertyName()));
+			}
+		}
+	}
+
+	/**
+	 * Overrides properties from another source
+	 *
+	 * @param source    Properties to be overridden
+	 * @param overrides Overrides
+	 */
 	@VisibleForTesting
 	static void overrideWith(Properties source, Properties overrides) {
-		overrideWith(source, ((Map) overrides));
+		overrideWith(source, (Map<Object, Object>) overrides);
 	}
 
 	private static Optional<URL> getResource(String resourceName) {
