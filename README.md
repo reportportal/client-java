@@ -16,7 +16,7 @@
 
 ### How to provide parameters
 
-There are several ways to load parameters. Be aware that higher sources override lower once. For example, properties from file can be
+There are several ways to load parameters. Be aware that higher sources override lower ones. For example, properties from file can be
 overridden by JVM variables
 
 | Order | Source                |
