@@ -97,7 +97,7 @@ If listener can’t find properties file it throws `InternalReportPortalClientEx
 | rp.client.join.lock.timeout.value | Integer  | Default: 1 minute<br> Files lock / connection timeout for launches.                                                                                                                                                                                                                                                                                                          | No           |
 | rp.client.join.lock.timeout.unit  | Enum     | Default: `MILLISECONDS`<br> Timeout value time unit. Should be one of values from `java.util.concurrent.TimeUnit` class                                                                                                                                                                                                                                                      | No           |
 
-# HTTP parameters
+### HTTP parameters
 
 | **Property name**             | **Type** | **Description**                                                                                                                                                                                                                                          | 
 |-------------------------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
