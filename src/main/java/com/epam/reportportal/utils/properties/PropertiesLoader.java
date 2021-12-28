@@ -15,9 +15,10 @@
  */
 package com.epam.reportportal.utils.properties;
 
-import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.utils.MemoizingSupplier;
 import com.google.common.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,6 +38,7 @@ import static com.epam.reportportal.utils.properties.ListenerProperty.values;
  * Load report portal launch start properties
  */
 public class PropertiesLoader {
+	private static final Logger LOGGER = LoggerFactory.getLogger(PropertiesLoader.class);
 
 	public static final String INNER_PATH = "reportportal.properties";
 	public static final Charset STANDARD_CHARSET = StandardCharsets.UTF_8;
@@ -44,19 +46,24 @@ public class PropertiesLoader {
 	private final Supplier<Properties> propertiesSupplier;
 
 	/**
-	 * Loads properties from default location
+	 * Try to load properties from file situated in the class path, and then
+	 * reload existing parameters from environment variables
 	 *
-	 * @return PropertiesLoader instance
-	 * @see #INNER_PATH
+	 * @return loaded properties
+	 * @throws IOException In case of IO error
 	 */
-	public static PropertiesLoader load() {
-		return new PropertiesLoader(() -> {
-			try {
-				return loadProperties(INNER_PATH);
-			} catch (IOException e) {
-				throw new InternalReportPortalClientException("Unable to load properties", e);
+	private static Properties loadProperties(String resource) throws IOException {
+		Properties props = new Properties();
+		Optional<URL> propertyFile = getResource(resource);
+		if (propertyFile.isPresent()) {
+			try (InputStream is = propertyFile.get().openStream()) {
+				props.load(new InputStreamReader(is, STANDARD_CHARSET));
 			}
-		});
+		}
+		overrideWith(props, System.getenv());
+		overrideWith(props, System.getProperties());
+
+		return props;
 	}
 
 	/**
@@ -70,9 +77,20 @@ public class PropertiesLoader {
 			try {
 				return loadProperties(resource);
 			} catch (IOException e) {
-				throw new InternalReportPortalClientException("Unable to load properties", e);
+				LOGGER.warn("Unable to load Report Portal property file: " + e.getMessage(), e);
+				return new Properties();
 			}
 		});
+	}
+
+	/**
+	 * Loads properties from default location
+	 *
+	 * @return PropertiesLoader instance
+	 * @see #INNER_PATH
+	 */
+	public static PropertiesLoader load() {
+		return load(INNER_PATH);
 	}
 
 	private PropertiesLoader(final Supplier<Properties> propertiesSupplier) {
@@ -144,27 +162,6 @@ public class PropertiesLoader {
 	 */
 	public Properties getProperties() {
 		return propertiesSupplier.get();
-	}
-
-	/**
-	 * Try to load properties from file situated in the class path, and then
-	 * reload existing parameters from environment variables
-	 *
-	 * @return loaded properties
-	 * @throws IOException In case of IO error
-	 */
-	private static Properties loadProperties(String resource) throws IOException {
-		Properties props = new Properties();
-		Optional<URL> propertyFile = getResource(resource);
-		if (propertyFile.isPresent()) {
-			try (InputStream is = propertyFile.get().openStream()) {
-				props.load(new InputStreamReader(is, STANDARD_CHARSET));
-			}
-		}
-		overrideWith(props, System.getenv());
-		overrideWith(props, System.getProperties());
-
-		return props;
 	}
 
 	/**
