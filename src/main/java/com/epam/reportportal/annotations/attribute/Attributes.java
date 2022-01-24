@@ -16,10 +16,7 @@
 
 package com.epam.reportportal.annotations.attribute;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
  * Annotation for test methods and classes to attach {@link com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ} to the test items
@@ -32,6 +29,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.TYPE})
+@Inherited
 public @interface Attributes {
 
 	Attribute[] attributes() default {};

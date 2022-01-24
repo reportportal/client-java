@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `@Attributes` annotation inheritance
 
 ## [5.1.4]
 ### Changed
