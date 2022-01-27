@@ -144,6 +144,12 @@ public abstract class Launch {
 	}
 
 	/**
+	 * Returns current launch UUID {@link Maybe}, empty if the launch is not started.
+	 */
+	@Nonnull
+	public abstract Maybe<String> getLaunch();
+
+	/**
 	 * Implementation for disabled Reporting
 	 */
 	public static final Launch NOOP_LAUNCH = new Launch((ReportPortalClient) Proxy.newProxyInstance(Launch.class.getClassLoader(),
@@ -180,6 +186,12 @@ public abstract class Launch {
 
 		@Override
 		public Maybe<OperationCompletionRS> finishTestItem(Maybe<String> itemId, FinishTestItemRQ rq) {
+			return Maybe.empty();
+		}
+
+		@Nonnull
+		@Override
+		public Maybe<String> getLaunch() {
 			return Maybe.empty();
 		}
 	};
