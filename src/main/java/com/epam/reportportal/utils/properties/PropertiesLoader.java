@@ -174,7 +174,13 @@ public class PropertiesLoader {
 	private static Map<String, String> normalizeOverrides(Map<?, ?> overrides) {
 		return overrides.entrySet()
 				.stream()
-				.collect(Collectors.toMap(e -> e.getKey().toString().toLowerCase().replace('_', '.'), e -> e.getValue().toString()));
+				.collect(Collectors.toMap(e -> e.getKey().toString().toLowerCase().replace('_', '.'),
+						e -> e.getValue().toString(),
+						(original, duplicate) -> {
+							LOGGER.warn("Duplicate key found in property overrides.");
+							return original;
+						}
+				));
 	}
 
 	/**

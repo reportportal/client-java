@@ -64,8 +64,7 @@ public class PropertiesLoaderTest {
 		properties.setProperty("rp.description", "testvalue");
 
 		PropertiesLoader.overrideWith(properties, ImmutableMap.<String, String>builder().put("rp_description", "anothervalue").build());
-		assertThat(
-				"Incorrect override behaviour",
+		assertThat("Incorrect override behaviour",
 				properties.getProperty(ListenerProperty.DESCRIPTION.getPropertyName()),
 				equalTo("anothervalue")
 		);
@@ -77,16 +76,33 @@ public class PropertiesLoaderTest {
 		properties.setProperty("rp.description", "testvalue");
 
 		PropertiesLoader.overrideWith(properties, ImmutableMap.<String, String>builder().put("RP_DESCRIPTION", "anothervalue").build());
-		assertThat(
-				"Incorrect override behaviour",
+		assertThat("Incorrect override behaviour",
 				properties.getProperty(ListenerProperty.DESCRIPTION.getPropertyName()),
 				equalTo("anothervalue")
 		);
 	}
 
-
 	@Test
 	public void testUtf() {
-		assertThat("Incorrect encoding!", PropertiesLoader.load("property-test/utf-demo.properties").getProperty("utf8"), is("привет мир!"));
+		assertThat(
+				"Incorrect encoding!",
+				PropertiesLoader.load("property-test/utf-demo.properties").getProperty("utf8"),
+				is("привет мир!")
+		);
+	}
+
+	@Test
+	public void verify_override_duplicate_key() {
+		Properties properties = new Properties();
+		properties.setProperty("rp.description", "testvalue");
+
+		PropertiesLoader.overrideWith(
+				properties,
+				ImmutableMap.<String, String>builder().put("rp_description", "anothervalue").put("rp.description", "thirdvalue").build()
+		);
+		assertThat("Incorrect override behaviour",
+				properties.getProperty(ListenerProperty.DESCRIPTION.getPropertyName()),
+				equalTo("anothervalue")
+		);
 	}
 }

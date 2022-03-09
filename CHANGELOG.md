@@ -4,6 +4,8 @@
 ### Added
 - `@Attributes` annotation inheritance
 - `Launch.getLaunch` method, which returns current Launch UUID or empty `Maybe`
+### Fixed
+- Issue [#182](https://github.com/reportportal/client-java/issues/182): Duplicate key error
 
 ## [5.1.4]
 ### Changed
