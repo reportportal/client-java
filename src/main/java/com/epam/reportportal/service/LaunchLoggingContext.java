@@ -30,6 +30,7 @@ import io.reactivex.internal.operators.flowable.FlowableFromObservable;
 import io.reactivex.subjects.PublishSubject;
 import org.reactivestreams.Publisher;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -54,7 +55,7 @@ import static com.google.common.io.ByteSource.wrap;
 public class LaunchLoggingContext {
 	static final String DEFAULT_LAUNCH_KEY = "default";
 
-	static final ConcurrentHashMap<String, LaunchLoggingContext> loggingContextMap = new ConcurrentHashMap<>();
+	private static final ConcurrentHashMap<String, LaunchLoggingContext> loggingContextMap = new ConcurrentHashMap<>();
 	/* Log emitter */
 	private final PublishSubject<Maybe<SaveLogRQ>> emitter;
 	/* a UUID of Launch in ReportPortal */
@@ -67,8 +68,7 @@ public class LaunchLoggingContext {
 		this.launchUuid = launchUuid;
 		this.emitter = PublishSubject.create();
 		this.convertImages = parameters.isConvertImage();
-		new FlowableFromObservable<>(emitter)
-				.flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable)
+		new FlowableFromObservable<>(emitter).flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable)
 				.buffer(parameters.getBatchLogsSize())
 				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
 						rqs)).toFlowable())
@@ -76,6 +76,11 @@ public class LaunchLoggingContext {
 				.observeOn(scheduler)
 				.onBackpressureBuffer(parameters.getRxBufferSize(), false, true)
 				.subscribe(logFlowableResults("Launch logging context"));
+	}
+
+	@Nullable
+	public static LaunchLoggingContext context(String key) {
+		return loggingContextMap.get(key);
 	}
 
 	/**
