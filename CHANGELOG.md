@@ -6,6 +6,7 @@
 - `Launch.getLaunch` method, which returns current Launch UUID or empty `Maybe`
 ### Fixed
 - Issue [#182](https://github.com/reportportal/client-java/issues/182): Duplicate key error
+- Issue [#147](https://github.com/reportportal/client-java/issues/147): Logging context loose in child thread
 
 ## [5.1.4]
 ### Changed
@@ -113,7 +114,8 @@
 ## [5.0.15]
 ### Added
 - A method to emit a log entry for a certain item: 
-  com.epam.reportportal.service.ReportPortal.emitLog(io.reactivex.Maybe<java.lang.String>, java.util.function.Function<java.lang.String,com.epam.ta.reportportal.ws.model.log.SaveLogRQ>)
+  com.epam.reportportal.service.ReportPortal.emitLog(io.reactivex.Maybe<java.lang.String>, 
+java.util.function.Function<java.lang.String,com.epam.ta.reportportal.ws.model.log.SaveLogRQ>)
 ### Changed
 - Apache Tika was updated on version 1.20
 
