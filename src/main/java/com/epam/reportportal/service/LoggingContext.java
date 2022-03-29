@@ -28,17 +28,20 @@ import io.reactivex.Scheduler;
 import io.reactivex.functions.Function;
 import io.reactivex.internal.operators.flowable.FlowableFromObservable;
 import io.reactivex.subjects.PublishSubject;
+import org.apache.commons.lang3.tuple.Pair;
 import org.reactivestreams.Publisher;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.epam.reportportal.service.LoggingCallback.LOG_ERROR;
 import static com.epam.reportportal.utils.SubscriptionUtils.logFlowableResults;
 import static com.epam.reportportal.utils.files.ImageConverter.convert;
 import static com.epam.reportportal.utils.files.ImageConverter.isImage;
+import static java.util.Optional.ofNullable;
 
 /**
  * Logging context holds thread-local context for logging and converts
@@ -60,7 +63,36 @@ public class LoggingContext {
 	@Deprecated
 	public static final int DEFAULT_BUFFER_SIZE = DEFAULT_LOG_BATCH_SIZE;
 
-	static final ThreadLocal<Deque<LoggingContext>> CONTEXT_THREAD_LOCAL = ThreadLocal.withInitial(ArrayDeque::new);
+	private static final ThreadLocal<Pair<Long, Deque<LoggingContext>>> CONTEXT_THREAD_LOCAL = new InheritableThreadLocal<>();
+
+	private static final Set<Long> THREAD_IDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+	@Nonnull
+	private static Deque<LoggingContext> createContext() {
+		Long threadKey = Thread.currentThread().getId();
+		if (!THREAD_IDS.contains(threadKey)) {
+			Deque<LoggingContext> context = new ArrayDeque<>();
+			CONTEXT_THREAD_LOCAL.set(Pair.of(threadKey, context));
+			THREAD_IDS.add(threadKey);
+			return context;
+		}
+		return CONTEXT_THREAD_LOCAL.get().getValue();
+	}
+
+	@Nullable
+	private static Deque<LoggingContext> getContext() {
+		Pair<Long, Deque<LoggingContext>> result = CONTEXT_THREAD_LOCAL.get();
+		Long threadKey = Thread.currentThread().getId();
+		if(result.getKey().equals(threadKey)) {
+			return result.getValue();
+		}
+		return null;
+	}
+
+	@Nullable
+	public static Deque<LoggingContext> context() {
+		return CONTEXT_THREAD_LOCAL.get().getValue();
+	}
 
 	/**
 	 * Initializes new logging context and attaches it to current thread
@@ -75,7 +107,7 @@ public class LoggingContext {
 	public static LoggingContext init(Maybe<String> launchUuid, Maybe<String> itemUuid, final ReportPortalClient client,
 			Scheduler scheduler, ListenerParameters parameters) {
 		LoggingContext context = new LoggingContext(launchUuid, itemUuid, client, scheduler, parameters);
-		CONTEXT_THREAD_LOCAL.get().push(context);
+		createContext().push(context);
 		return context;
 	}
 
@@ -110,7 +142,7 @@ public class LoggingContext {
 		params.setBatchLogsSize(batchLogsSize);
 		params.setConvertImage(convertImages);
 		LoggingContext context = new LoggingContext(launchUuid, itemUuid, client, scheduler, params);
-		CONTEXT_THREAD_LOCAL.get().push(context);
+		createContext().push(context);
 		return context;
 	}
 
@@ -120,7 +152,7 @@ public class LoggingContext {
 	 * @return Waiting queue to be able to track request sending completion
 	 */
 	public static Completable complete() {
-		final LoggingContext loggingContext = CONTEXT_THREAD_LOCAL.get().poll();
+		final LoggingContext loggingContext = ofNullable(getContext()).map(Deque::poll).orElse(null);
 		if (null != loggingContext) {
 			return loggingContext.completed();
 		} else {
@@ -145,8 +177,7 @@ public class LoggingContext {
 		this.emitter = PublishSubject.create();
 		this.convertImages = parameters.isConvertImage();
 
-		new FlowableFromObservable<>(emitter)
-				.flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable)
+		new FlowableFromObservable<>(emitter).flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable)
 				.buffer(parameters.getBatchLogsSize())
 				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
 						rqs)).toFlowable())

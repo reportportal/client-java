@@ -18,6 +18,7 @@ package com.epam.reportportal.service;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.test.TestUtils;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import okhttp3.MultipartBody;
@@ -86,6 +87,7 @@ public class ItemLoggingContextMultiThreadTest {
 	}
 
 	private static class TestNgTest implements Callable<String> {
+
 		private final Launch launch;
 		private final Maybe<String> suiteRs;
 
@@ -100,6 +102,12 @@ public class ItemLoggingContextMultiThreadTest {
 			StartTestItemRQ rq = standardStartTestRequest();
 			rq.setUuid(itemId);
 			Maybe<String> id = launch.startTestItem(suiteRs, rq);
+			work(itemId);
+			launch.finishTestItem(id, positiveFinishRequest());
+			return itemId;
+		}
+
+		public void work(String itemId) {
 			IntStream.rangeClosed(1, 10).forEach(i -> {
 				ReportPortal.emitLog("[" + i + "] log " + itemId, "INFO", new Date());
 				try {
@@ -107,8 +115,25 @@ public class ItemLoggingContextMultiThreadTest {
 				} catch (InterruptedException ignore) {
 				}
 			});
-			launch.finishTestItem(id, positiveFinishRequest());
-			return itemId;
+		}
+	}
+
+	private static class TestNgTimeoutTest extends TestNgTest {
+
+		public TestNgTimeoutTest(Launch l, Maybe<String> s) {
+			super(l, s);
+		}
+
+		@Override
+		public void work(String itemId) {
+			ExecutorService timeoutThread = Executors.newSingleThreadExecutor();
+			Future<?> timeoutFuture = timeoutThread.submit(() -> super.work(itemId));
+			try {
+				timeoutFuture.get();
+			} catch (InterruptedException | ExecutionException e) {
+				throw new RuntimeException(e);
+			}
+			CommonUtils.shutdownExecutorService(timeoutThread);
 		}
 	}
 
@@ -127,24 +152,9 @@ public class ItemLoggingContextMultiThreadTest {
 		}
 	}
 
-	/**
-	 * TestNG and other frameworks executes the very first startTestItem call from main thread (start root suite).
-	 * Since all other threads are children of the main thread it leads to a situation when all threads share one LoggingContext.
-	 * This test is here to ensure that will never happen again: https://github.com/reportportal/agent-java-testNG/issues/76
-	 * The test is failing if there is a {@link InheritableThreadLocal} is used in {@link LoggingContext} class.
-	 */
-	@Test
 	@SuppressWarnings("unchecked")
-	public void test_main_and_other_threads_have_different_logging_contexts() throws InterruptedException {
-		// Main thread starts launch and suite
-		final Launch launch = rp.newLaunch(standardLaunchRequest(PARAMS));
-		launch.start();
-		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
-
-		// First and second threads start their items and log data
-		TestNgTest t1 = new TestNgTest(launch, suiteRs);
-		TestNgTest t2 = new TestNgTest(launch, suiteRs);
-		final List<Future<String>> results = testExecutorService.invokeAll(Arrays.asList(t1, t2));
+	public void performTest(List<TestNgTest> tests) throws InterruptedException {
+		final List<Future<String>> results = testExecutorService.invokeAll(tests);
 
 		Awaitility.await("Wait until test finish")
 				.until(() -> results.stream().filter(Future::isDone).collect(Collectors.toList()), hasSize(2));
@@ -162,5 +172,37 @@ public class ItemLoggingContextMultiThreadTest {
 			String logMessage = log.getMessage();
 			assertThat("First logItemUUID equals to first test UUID", logMessage, Matchers.endsWith(logItemId));
 		});
+	}
+
+	/**
+	 * TestNG and other frameworks executes the very first startTestItem call from main thread (start root suite).
+	 * Since all other threads are children of the main thread it leads to a situation when all threads share one LoggingContext.
+	 * This test is here to ensure that will never happen again: https://github.com/reportportal/agent-java-testNG/issues/76
+	 * The test is failing if there is a {@link InheritableThreadLocal} is used in {@link LoggingContext} class.
+	 */
+	@Test
+	public void test_main_and_other_threads_have_different_logging_contexts() throws InterruptedException {
+		// Main thread starts launch and suite
+		final Launch launch = rp.newLaunch(standardLaunchRequest(PARAMS));
+		launch.start();
+		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
+
+		// First and second threads start their items and log data
+		TestNgTest t1 = new TestNgTest(launch, suiteRs);
+		TestNgTest t2 = new TestNgTest(launch, suiteRs);
+		performTest(Arrays.asList(t1, t2));
+	}
+
+	@Test
+	public void test_a_test_with_timeout_has_the_same_logging_context_as_parent() throws InterruptedException {
+		// Main thread starts launch and suite
+		final Launch launch = rp.newLaunch(standardLaunchRequest(PARAMS));
+		launch.start();
+		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
+
+		// First and second threads start their items and log data
+		TestNgTest t1 = new TestNgTest(launch, suiteRs);
+		TestNgTest t2 = new TestNgTimeoutTest(launch, suiteRs);
+		performTest(Arrays.asList(t1, t2));
 	}
 }
