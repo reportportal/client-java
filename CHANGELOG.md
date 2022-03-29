@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.5]
 ### Added
 - `@Attributes` annotation inheritance
 - `Launch.getLaunch` method, which returns current Launch UUID or empty `Maybe`
