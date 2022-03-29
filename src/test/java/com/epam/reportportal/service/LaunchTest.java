@@ -347,6 +347,7 @@ public class LaunchTest {
 	@Test
 	public void test_noop_launch_not_null() {
 		assertThat(Launch.NOOP_LAUNCH, notNullValue());
+		assertThat(Launch.NOOP_LAUNCH.getLaunch(), allOf(notNullValue(), equalTo(Maybe.empty())));
 	}
 
 	@Test
@@ -368,5 +369,24 @@ public class LaunchTest {
 		assertThat(client.equals(mock(ReportPortalClient.class)), equalTo(Boolean.FALSE));
 		assertThat(client.startLaunch(new StartLaunchRQ()), notNullValue());
 		assertThat(client.getItemByUuid("test"), notNullValue());
+	}
+
+	@Test
+	public void verify_launch_get_response() {
+		simulateStartLaunchResponse(rpClient);
+
+		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
+			@Override
+			StatisticsService getStatisticsService() {
+				return statisticsService;
+			}
+		};
+
+		Maybe<String> launchUuid = launch.start();
+		assertThat(launchUuid, notNullValue());
+		assertThat(launchUuid.blockingGet(), not(blankOrNullString()));
+
+		Maybe<String> getLaunch = launch.getLaunch();
+		assertThat(getLaunch, sameInstance(launchUuid));
 	}
 }

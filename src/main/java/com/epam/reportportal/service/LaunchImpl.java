@@ -176,6 +176,12 @@ public class LaunchImpl extends Launch {
 		return scheduler;
 	}
 
+	@Override
+	@Nonnull
+	public Maybe<String> getLaunch() {
+		return launch;
+	}
+
 	StatisticsService getStatisticsService() {
 		return statisticsService;
 	}
@@ -189,7 +195,7 @@ public class LaunchImpl extends Launch {
 		launch.subscribe(logMaybeResults("Launch start"));
 		LaunchLoggingContext.init(this.launch, getClient(), getScheduler(), getParameters());
 		getStatisticsService().sendEvent(launch, startRq);
-		return this.launch;
+		return launch;
 	}
 
 	/**

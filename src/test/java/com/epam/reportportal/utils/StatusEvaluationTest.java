@@ -32,7 +32,12 @@ public class StatusEvaluationTest {
 				{ItemStatus.PASSED, ItemStatus.FAILED, ItemStatus.FAILED},
 				{ItemStatus.SKIPPED, ItemStatus.FAILED, ItemStatus.FAILED},
 				{ItemStatus.PASSED, ItemStatus.INTERRUPTED, ItemStatus.INTERRUPTED},
-				{null, ItemStatus.SKIPPED, ItemStatus.SKIPPED}};
+				{ItemStatus.PASSED, ItemStatus.CANCELLED, ItemStatus.CANCELLED},
+				{ItemStatus.FAILED, ItemStatus.INTERRUPTED, ItemStatus.FAILED},
+				{ItemStatus.FAILED, ItemStatus.CANCELLED, ItemStatus.FAILED},
+				{null, ItemStatus.SKIPPED, ItemStatus.SKIPPED},
+				{ItemStatus.PASSED, null, ItemStatus.PASSED}
+		};
 		//@formatter:on
 	}
 
