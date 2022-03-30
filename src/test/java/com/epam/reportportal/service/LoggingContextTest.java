@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import java.util.Deque;
 import java.util.concurrent.Executors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -49,19 +48,13 @@ public class LoggingContextTest {
 				Schedulers.from(Executors.newSingleThreadExecutor())
 		);
 
-		Deque<LoggingContext> ctxDeque = LoggingContext.context();
-		assertThat(ctxDeque, allOf(notNullValue(), hasSize(1)));
-		assertThat(ctxDeque.poll(), sameInstance(context));
+		assertThat(LoggingContext.context(), sameInstance(context));
 	}
 
 	@Test
 	public void test_second_logging_context_init_appends_instance_to_deque() {
 		Scheduler scheduler = Schedulers.from(Executors.newSingleThreadExecutor());
-		LoggingContext context1 = LoggingContext.init(Maybe.just("launch_id"),
-				Maybe.just("item_id"),
-				mock(ReportPortalClient.class),
-				scheduler
-		);
+		LoggingContext.init(Maybe.just("launch_id"), Maybe.just("item_id"), mock(ReportPortalClient.class), scheduler);
 
 		LoggingContext context2 = LoggingContext.init(Maybe.just("launch_id"),
 				Maybe.just("item_id2"),
@@ -69,21 +62,18 @@ public class LoggingContextTest {
 				scheduler
 		);
 
-		Deque<LoggingContext> ctxDeque = LoggingContext.context();
-		assertThat(ctxDeque, allOf(notNullValue(), hasSize(2)));
-		assertThat(ctxDeque.poll(), sameInstance(context2));
-		assertThat(ctxDeque.poll(), sameInstance(context1));
+		assertThat(LoggingContext.context(), sameInstance(context2));
 	}
 
 	@Test
 	public void test_complete_method_removes_context() {
-		LoggingContext.init(Maybe.just("launch_id"),
+		LoggingContext context = LoggingContext.init(Maybe.just("launch_id"),
 				Maybe.just("item_id"),
 				mock(ReportPortalClient.class),
 				Schedulers.from(Executors.newSingleThreadExecutor())
 		);
 
 		LoggingContext.complete();
-		assertThat(LoggingContext.context(), allOf(notNullValue(), hasSize(0)));
+		assertThat(LoggingContext.context(), anyOf(nullValue(), not(sameInstance(context))));
 	}
 }

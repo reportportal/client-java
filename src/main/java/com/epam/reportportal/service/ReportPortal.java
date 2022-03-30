@@ -206,7 +206,7 @@ public class ReportPortal {
 	 * @return true if log has been emitted
 	 */
 	public static boolean emitLog(final Function<String, SaveLogRQ> logSupplier) {
-		final LoggingContext loggingContext = ofNullable(LoggingContext.context()).map(Deque::peek).orElse(null);
+		final LoggingContext loggingContext = LoggingContext.context();
 		if (null != loggingContext) {
 			loggingContext.emit(logSupplier);
 			return true;
@@ -237,7 +237,7 @@ public class ReportPortal {
 	 * @return true if log has been emitted
 	 */
 	public static boolean emitLog(Maybe<String> itemUuid, final Function<String, SaveLogRQ> logSupplier) {
-		final LoggingContext loggingContext = ofNullable(LoggingContext.context()).map(Deque::peek).orElse(null);
+		final LoggingContext loggingContext = LoggingContext.context();
 		if (null != loggingContext) {
 			loggingContext.emit(itemUuid, logSupplier);
 			return true;
