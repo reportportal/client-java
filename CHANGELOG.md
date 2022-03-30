@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Null-pointer cases in LoggingContext class
 
 ## [5.1.5]
 ### Added
