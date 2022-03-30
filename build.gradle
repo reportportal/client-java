@@ -52,7 +52,7 @@ dependencies {
     api "org.aspectj:aspectjrt:${project.aspectj_version}"
     implementation "org.aspectj:aspectjweaver:${project.aspectj_version}"
 
-    implementation 'org.slf4j:slf4j-api:1.7.32'
+    implementation 'org.slf4j:slf4j-api:1.7.36'
 
     testImplementation("org.junit.platform:junit-platform-runner:${project.junit_runner_version}") {
         exclude module: 'junit'

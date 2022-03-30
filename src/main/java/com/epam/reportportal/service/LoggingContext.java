@@ -70,7 +70,7 @@ public class LoggingContext {
 	@Nonnull
 	private static Deque<LoggingContext> createContext() {
 		Long threadKey = Thread.currentThread().getId();
-		if (!THREAD_IDS.contains(threadKey)) {
+		if (!THREAD_IDS.contains(threadKey) || CONTEXT_THREAD_LOCAL.get() == null) {
 			Deque<LoggingContext> context = new ArrayDeque<>();
 			CONTEXT_THREAD_LOCAL.set(Pair.of(threadKey, context));
 			THREAD_IDS.add(threadKey);
@@ -81,17 +81,13 @@ public class LoggingContext {
 
 	@Nullable
 	private static Deque<LoggingContext> getContext() {
-		Pair<Long, Deque<LoggingContext>> result = CONTEXT_THREAD_LOCAL.get();
 		Long threadKey = Thread.currentThread().getId();
-		if(result.getKey().equals(threadKey)) {
-			return result.getValue();
-		}
-		return null;
+		return ofNullable(CONTEXT_THREAD_LOCAL.get()).filter(ctx -> threadKey.equals(ctx.getKey())).map(Pair::getValue).orElse(null);
 	}
 
 	@Nullable
 	public static Deque<LoggingContext> context() {
-		return CONTEXT_THREAD_LOCAL.get().getValue();
+		return ofNullable(CONTEXT_THREAD_LOCAL.get()).map(Pair::getValue).orElse(null);
 	}
 
 	/**
@@ -104,25 +100,12 @@ public class LoggingContext {
 	 * @param parameters Report Portal client configuration parameters
 	 * @return New Logging Context
 	 */
+	@Nonnull
 	public static LoggingContext init(Maybe<String> launchUuid, Maybe<String> itemUuid, final ReportPortalClient client,
 			Scheduler scheduler, ListenerParameters parameters) {
 		LoggingContext context = new LoggingContext(launchUuid, itemUuid, client, scheduler, parameters);
 		createContext().push(context);
 		return context;
-	}
-
-	/**
-	 * Initializes new logging context and attaches it to current thread
-	 *
-	 * @param launchUuid a UUID of a Launch
-	 * @param itemUuid   a Test Item UUID
-	 * @param client     Client of ReportPortal
-	 * @param scheduler  a {@link Scheduler} to use with this LoggingContext
-	 * @return New Logging Context
-	 */
-	public static LoggingContext init(Maybe<String> launchUuid, Maybe<String> itemUuid, final ReportPortalClient client,
-			Scheduler scheduler) {
-		return init(launchUuid, itemUuid, client, scheduler, DEFAULT_LOG_BATCH_SIZE, false);
 	}
 
 	/**
@@ -136,14 +119,28 @@ public class LoggingContext {
 	 * @param convertImages Whether Image should be converted to BlackAndWhite
 	 * @return New Logging Context
 	 */
+	@Nonnull
 	public static LoggingContext init(Maybe<String> launchUuid, Maybe<String> itemUuid, final ReportPortalClient client,
 			Scheduler scheduler, int batchLogsSize, boolean convertImages) {
 		ListenerParameters params = new ListenerParameters();
 		params.setBatchLogsSize(batchLogsSize);
 		params.setConvertImage(convertImages);
-		LoggingContext context = new LoggingContext(launchUuid, itemUuid, client, scheduler, params);
-		createContext().push(context);
-		return context;
+		return init(launchUuid, itemUuid, client, scheduler, params);
+	}
+
+	/**
+	 * Initializes new logging context and attaches it to current thread
+	 *
+	 * @param launchUuid a UUID of a Launch
+	 * @param itemUuid   a Test Item UUID
+	 * @param client     Client of ReportPortal
+	 * @param scheduler  a {@link Scheduler} to use with this LoggingContext
+	 * @return New Logging Context
+	 */
+	@Nonnull
+	public static LoggingContext init(Maybe<String> launchUuid, Maybe<String> itemUuid, final ReportPortalClient client,
+			Scheduler scheduler) {
+		return init(launchUuid, itemUuid, client, scheduler, DEFAULT_LOG_BATCH_SIZE, false);
 	}
 
 	/**
@@ -151,6 +148,7 @@ public class LoggingContext {
 	 *
 	 * @return Waiting queue to be able to track request sending completion
 	 */
+	@Nonnull
 	public static Completable complete() {
 		final LoggingContext loggingContext = ofNullable(getContext()).map(Deque::poll).orElse(null);
 		if (null != loggingContext) {
@@ -224,6 +222,7 @@ public class LoggingContext {
 	 *
 	 * @return {@link Completable}
 	 */
+	@Nonnull
 	public Completable completed() {
 		emitter.onComplete();
 		return emitter.ignoreElements();
