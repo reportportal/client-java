@@ -1,18 +1,14 @@
 # Changelog
 
 ## [Unreleased]
-
-## [5.1.6]
-### Fixed
-- Null-pointer cases in LoggingContext class
-
-## [5.1.5]
 ### Added
 - `@Attributes` annotation inheritance
 - `Launch.getLaunch` method, which returns current Launch UUID or empty `Maybe`
+- `LoggingContext.context()` public static method which allows get current logging context
 ### Fixed
 - Issue [#182](https://github.com/reportportal/client-java/issues/182): Duplicate key error
 - Issue [#147](https://github.com/reportportal/client-java/issues/147): Logging context loose in child thread
+- Null-pointer cases in LoggingContext class
 
 ## [5.1.4]
 ### Changed

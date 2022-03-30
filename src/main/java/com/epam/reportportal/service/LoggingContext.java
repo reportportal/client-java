@@ -85,9 +85,15 @@ public class LoggingContext {
 		return ofNullable(CONTEXT_THREAD_LOCAL.get()).filter(ctx -> threadKey.equals(ctx.getKey())).map(Pair::getValue).orElse(null);
 	}
 
+	/**
+	 * Return current logging context attached to the current thread. Return parent thread context if self context not found. And return
+	 * 'null' if nothing was found at all.
+	 *
+	 * @return current or parent logging context or 'null'
+	 */
 	@Nullable
-	public static Deque<LoggingContext> context() {
-		return ofNullable(CONTEXT_THREAD_LOCAL.get()).map(Pair::getValue).orElse(null);
+	public static LoggingContext context() {
+		return ofNullable(CONTEXT_THREAD_LOCAL.get()).map(Pair::getValue).map(Deque::peek).orElse(null);
 	}
 
 	/**
