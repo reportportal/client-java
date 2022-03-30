@@ -100,6 +100,7 @@ public class LoggingContext {
 	 * @param parameters Report Portal client configuration parameters
 	 * @return New Logging Context
 	 */
+	@Nonnull
 	public static LoggingContext init(Maybe<String> launchUuid, Maybe<String> itemUuid, final ReportPortalClient client,
 			Scheduler scheduler, ListenerParameters parameters) {
 		LoggingContext context = new LoggingContext(launchUuid, itemUuid, client, scheduler, parameters);
@@ -118,6 +119,7 @@ public class LoggingContext {
 	 * @param convertImages Whether Image should be converted to BlackAndWhite
 	 * @return New Logging Context
 	 */
+	@Nonnull
 	public static LoggingContext init(Maybe<String> launchUuid, Maybe<String> itemUuid, final ReportPortalClient client,
 			Scheduler scheduler, int batchLogsSize, boolean convertImages) {
 		ListenerParameters params = new ListenerParameters();
@@ -135,6 +137,7 @@ public class LoggingContext {
 	 * @param scheduler  a {@link Scheduler} to use with this LoggingContext
 	 * @return New Logging Context
 	 */
+	@Nonnull
 	public static LoggingContext init(Maybe<String> launchUuid, Maybe<String> itemUuid, final ReportPortalClient client,
 			Scheduler scheduler) {
 		return init(launchUuid, itemUuid, client, scheduler, DEFAULT_LOG_BATCH_SIZE, false);
@@ -145,6 +148,7 @@ public class LoggingContext {
 	 *
 	 * @return Waiting queue to be able to track request sending completion
 	 */
+	@Nonnull
 	public static Completable complete() {
 		final LoggingContext loggingContext = ofNullable(getContext()).map(Deque::poll).orElse(null);
 		if (null != loggingContext) {
@@ -218,6 +222,7 @@ public class LoggingContext {
 	 *
 	 * @return {@link Completable}
 	 */
+	@Nonnull
 	public Completable completed() {
 		emitter.onComplete();
 		return emitter.ignoreElements();
