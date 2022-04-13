@@ -18,18 +18,15 @@ package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.StepTemplateConfig;
-import com.epam.reportportal.utils.StepTemplateUtils;
+import com.epam.reportportal.utils.templating.TemplateConfiguration;
+import com.epam.reportportal.utils.templating.TemplateProcessing;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 import static java.util.Optional.ofNullable;
 
@@ -37,10 +34,6 @@ import static java.util.Optional.ofNullable;
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
 class StepNameUtils {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(StepNameUtils.class);
-
-	private static final String STEP_GROUP = "\\{([\\w$]+(\\.[\\w$]+)*)}";
 
 	private StepNameUtils() {
 		//static only
@@ -52,47 +45,23 @@ class StepNameUtils {
 		if (nameTemplate.trim().isEmpty()) {
 			return signature.getMethod().getName();
 		}
-		Matcher matcher = Pattern.compile(STEP_GROUP).matcher(nameTemplate);
-		Map<String, Object> parametersMap = createParamsMapping(step.templateConfig(), signature, joinPoint.getArgs());
-
-		StringBuffer stringBuffer = new StringBuffer();
-		while (matcher.find()) {
-			String templatePart = matcher.group(1);
-			String replacement = getReplacement(templatePart, parametersMap, step.templateConfig());
-			matcher.appendReplacement(stringBuffer, Matcher.quoteReplacement(replacement != null ? replacement : matcher.group(0)));
-		}
-		matcher.appendTail(stringBuffer);
-		return stringBuffer.toString();
+		Map<String, Object> parametersMap = createParamsMapping(step.templateConfig(), signature, joinPoint);
+		return TemplateProcessing.processTemplate(nameTemplate, parametersMap, new TemplateConfiguration(step.templateConfig()));
 	}
 
 	@Nonnull
 	static Map<String, Object> createParamsMapping(@Nonnull StepTemplateConfig templateConfig, @Nonnull MethodSignature signature,
-			@Nullable final Object... args) {
-		int paramsCount = Math.min(signature.getParameterNames().length, ofNullable(args).map(a -> a.length).orElse(0));
+			@Nonnull JoinPoint joinPoint) {
+		Object[] args = joinPoint.getArgs();
+		String[] parameterNames = signature.getParameterNames();
+		int paramsCount = Math.min(parameterNames.length, ofNullable(args).map(a -> a.length).orElse(0));
 		Map<String, Object> paramsMapping = new HashMap<>();
 		paramsMapping.put(templateConfig.methodNameTemplate(), signature.getMethod().getName());
+		paramsMapping.put(templateConfig.selfNameTemplate(), joinPoint.getThis());
 		for (int i = 0; i < paramsCount; i++) {
-			paramsMapping.put(signature.getParameterNames()[i], args[i]);
+			paramsMapping.put(parameterNames[i], args[i]);
 			paramsMapping.put(Integer.toString(i), args[i]);
 		}
 		return paramsMapping;
-	}
-
-	@Nullable
-	private static String getReplacement(@Nonnull String templatePart, @Nonnull Map<String, Object> parametersMap,
-			@Nonnull StepTemplateConfig templateConfig) {
-		String[] fields = templatePart.split("\\.");
-		String variableName = fields[0];
-		if (!parametersMap.containsKey(variableName)) {
-			LOGGER.error("Param - " + variableName + " was not found");
-			return null;
-		}
-		Object param = parametersMap.get(variableName);
-		try {
-			return StepTemplateUtils.retrieveValue(templateConfig, 1, fields, param);
-		} catch (NoSuchFieldException e) {
-			LOGGER.error("Unable to parse: " + templatePart);
-			return null;
-		}
 	}
 }

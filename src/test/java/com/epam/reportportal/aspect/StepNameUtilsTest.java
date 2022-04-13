@@ -25,13 +25,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -43,7 +44,7 @@ public class StepNameUtilsTest {
 	@Mock
 	private MethodSignature methodSignature;
 
-	@Mock
+	@Mock(lenient = true)
 	private JoinPoint joinPoint;
 
 	/**
@@ -55,16 +56,17 @@ public class StepNameUtilsTest {
 		String[] namesArray = { "firstName", "secondName", "thirdName" };
 		when(methodSignature.getMethod()).thenReturn(this.getClass().getDeclaredMethod("templateConfigMethod"));
 		when(methodSignature.getParameterNames()).thenReturn(namesArray);
+		when(joinPoint.getArgs()).thenReturn(new String[] { "first", "second", null });
 
 		StepTemplateConfig templateConfig = this.getClass()
 				.getDeclaredMethod("templateConfigMethod")
 				.getDeclaredAnnotation(Step.class)
 				.templateConfig();
 
-		Map<String, Object> paramsMapping = StepNameUtils.createParamsMapping(templateConfig, methodSignature, "first", "second", null);
+		Map<String, Object> paramsMapping = StepNameUtils.createParamsMapping(templateConfig, methodSignature, joinPoint);
 
 		//3 for name key + 3 for index key + method name key
-		assertThat(paramsMapping.size(), equalTo(namesArray.length * 2 + 1));
+		assertThat(paramsMapping.size(), equalTo(namesArray.length * 2 + 2));
 		Arrays.stream(namesArray).forEach(name -> assertThat(paramsMapping, hasKey(name)));
 
 		assertThat(paramsMapping, hasEntry("firstName", "first"));
@@ -112,5 +114,51 @@ public class StepNameUtilsTest {
 
 		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class), methodSignature, joinPoint);
 		assertThat(result, equalTo(STEP_NAME_PATTERN));
+	}
+
+	private static Stream<String[]> formatData() {
+		return Stream.of(
+				new String[] { "Method name: {method}", "Method name: stepMethod" },
+				new String[] { "Inner value: {this.value}", "Inner value: stepValue" },
+				new String[] { "Inner value: {this.object.value}", "Inner value: pojoValue" }
+		);
+	}
+
+	private static class PojoObject {
+		@SuppressWarnings("unused")
+		private final String value = "pojoValue";
+	}
+
+	@Step("Step name")
+	public void stepMethod() {
+
+	}
+
+	@SuppressWarnings("unused")
+	private final String value = "stepValue";
+	@SuppressWarnings("unused")
+	private final PojoObject object = new PojoObject();
+
+	@ParameterizedTest
+	@MethodSource("formatData")
+	public void test_step_format_defaults(String stepName, String expectedResult) throws NoSuchMethodException {
+		Method method = this.getClass().getDeclaredMethod("stepMethod");
+		Step realStep = method.getAnnotation(Step.class);
+		Step step = mock(Step.class, withSettings().defaultAnswer(invocation -> {
+			Method invocationMethod = invocation.getMethod();
+			if ("value".equals(invocationMethod.getName())) {
+				return stepName;
+			}
+			return invocationMethod.invoke(realStep, invocation.getArguments());
+		}));
+
+		when(methodSignature.getMethod()).thenReturn(method);
+		when(methodSignature.getParameterNames()).thenReturn(new String[0]);
+		when(joinPoint.getThis()).thenReturn(this);
+		when(joinPoint.getArgs()).thenReturn(new String[0]);
+
+		String result = StepNameUtils.getStepName(step, methodSignature, joinPoint);
+
+		assertThat(result, equalTo(expectedResult));
 	}
 }
