@@ -25,6 +25,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -217,10 +218,14 @@ public class TestCaseIdUtilsTest {
 		assertThat(testCaseIdEntry.getId(), equalTo(expectedTestCaseId));
 	}
 
-	private static Stream<String[]> formatData() {
-		return Stream.of(new String[] { "Test Case ID {method}", "Test Case ID verifyTestCaseId" },
-				new String[] { "Test Case ID {this.value}", "Test Case ID stepValue" },
-				new String[] { "Test Case ID {this.object.value}", "Test Case ID pojoValue" }
+	private static Stream<Object[]> formatData() {
+		return Stream.of(
+				new Object[] { PARAMS, "Test Case ID {method}", "Test Case ID verifyTestCaseId" },
+				new Object[] { null, "Test Case ID {this.value}", "Test Case ID stepValue" },
+				new Object[] { PARAMS, "Test Case ID {this.object.value}", "Test Case ID pojoValue" },
+				new Object[] { PARAMS, "Test Case ID {0}", "Test Case ID one" },
+				new Object[] { PARAMS, "Test Case ID {1}", "Test Case ID two" },
+				new Object[] { null, "Test Case ID {1}", "Test Case ID {1}" }
 		);
 	}
 
@@ -234,6 +239,7 @@ public class TestCaseIdUtilsTest {
 
 	}
 
+	private static final List<String> PARAMS = Arrays.asList("one", "two");
 	@SuppressWarnings("unused")
 	private final String value = "stepValue";
 	@SuppressWarnings("unused")
@@ -241,7 +247,7 @@ public class TestCaseIdUtilsTest {
 
 	@ParameterizedTest
 	@MethodSource("formatData")
-	public void test_case_id_format_defaults(String id, String expectedResult) throws NoSuchMethodException {
+	public void test_case_id_format_defaults(List<Object> params, String id, String expectedResult) throws NoSuchMethodException {
 		Method method = this.getClass().getDeclaredMethod("verifyTestCaseId");
 		TestCaseId realId = method.getAnnotation(TestCaseId.class);
 		TestCaseId testCaseId = mock(TestCaseId.class, withSettings().defaultAnswer(invocation -> {
@@ -252,7 +258,7 @@ public class TestCaseIdUtilsTest {
 			return invocationMethod.invoke(realId, invocation.getArguments());
 		}));
 
-		TestCaseIdEntry result = TestCaseIdUtils.getTestCaseId(testCaseId, method, null, null, this);
+		TestCaseIdEntry result = TestCaseIdUtils.getTestCaseId(testCaseId, method, null, params, this);
 
 		assertThat(result, notNullValue());
 		assertThat(result.getId(), equalTo(expectedResult));
