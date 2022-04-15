@@ -35,7 +35,7 @@ import static java.util.Optional.ofNullable;
 class StepNameUtils {
 
 	private StepNameUtils() {
-		//static only
+		throw new IllegalStateException("Static only class");
 	}
 
 	@Nonnull
