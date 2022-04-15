@@ -17,16 +17,15 @@
 package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
-import com.epam.reportportal.annotations.StepTemplateConfig;
 import com.epam.reportportal.utils.templating.TemplateConfiguration;
 import com.epam.reportportal.utils.templating.TemplateProcessing;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 
 import javax.annotation.Nonnull;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.IntStream;
 
 import static java.util.Optional.ofNullable;
 
@@ -45,19 +44,29 @@ class StepNameUtils {
 		if (nameTemplate.trim().isEmpty()) {
 			return signature.getMethod().getName();
 		}
-		Map<String, Object> parametersMap = createParamsMapping(step.templateConfig(), signature, joinPoint);
-		return TemplateProcessing.processTemplate(nameTemplate, parametersMap, new TemplateConfiguration(step.templateConfig()));
+
+		TemplateConfiguration defaultConfig = new TemplateConfiguration();
+		TemplateConfiguration deprecatedConfig = new TemplateConfiguration(step.templateConfig());
+		TemplateConfiguration config = new TemplateConfiguration(step.config());
+		if (!deprecatedConfig.equals(defaultConfig)) {
+			if (config.equals(defaultConfig)) {
+				config = deprecatedConfig;
+			}
+		}
+
+		Map<String, Object> parametersMap = createParamsMapping(config, signature, joinPoint);
+		return TemplateProcessing.processTemplate(nameTemplate, parametersMap, config);
 	}
 
 	@Nonnull
-	static Map<String, Object> createParamsMapping(@Nonnull StepTemplateConfig templateConfig, @Nonnull MethodSignature signature,
+	static Map<String, Object> createParamsMapping(@Nonnull TemplateConfiguration templateConfig, @Nonnull MethodSignature signature,
 			@Nonnull JoinPoint joinPoint) {
 		Object[] args = joinPoint.getArgs();
 		String[] parameterNames = signature.getParameterNames();
-		int paramsCount = Math.min(parameterNames.length, ofNullable(args).map(a -> a.length).orElse(0));
+		int paramsCount = Math.min(ofNullable(parameterNames).map(p -> p.length).orElse(0), ofNullable(args).map(a -> a.length).orElse(0));
 		Map<String, Object> paramsMapping = new HashMap<>();
-		paramsMapping.put(templateConfig.methodNameTemplate(), signature.getMethod().getName());
-		paramsMapping.put(templateConfig.selfNameTemplate(), joinPoint.getThis());
+		ofNullable(signature.getMethod()).map(Method::getName).ifPresent(name -> paramsMapping.put(templateConfig.getMethodName(), name));
+		ofNullable(joinPoint.getThis()).ifPresent(current -> paramsMapping.put(templateConfig.getSelfName(), current));
 		for (int i = 0; i < paramsCount; i++) {
 			paramsMapping.put(parameterNames[i], args[i]);
 			paramsMapping.put(Integer.toString(i), args[i]);

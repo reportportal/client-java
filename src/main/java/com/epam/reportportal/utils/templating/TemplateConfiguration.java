@@ -17,6 +17,9 @@
 package com.epam.reportportal.utils.templating;
 
 import com.epam.reportportal.annotations.StepTemplateConfig;
+import com.epam.reportportal.annotations.TemplateConfig;
+
+import java.util.Objects;
 
 public class TemplateConfiguration {
 	public static final String METHOD_NAME_TEMPLATE = "method";
@@ -51,7 +54,47 @@ public class TemplateConfiguration {
 		arrayDelimiter = ARRAY_ELEMENT_DELIMITER;
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof TemplateConfiguration)) {
+			return false;
+		}
+		TemplateConfiguration that = (TemplateConfiguration) o;
+		return methodName.equals(that.methodName) && selfName.equals(that.selfName) && fieldDelimiter.equals(that.fieldDelimiter)
+				&& iterableStart.equals(that.iterableStart) && iterableEnd.equals(that.iterableEnd)
+				&& iterableDelimiter.equals(that.iterableDelimiter) && arrayStart.equals(that.arrayStart) && arrayEnd.equals(that.arrayEnd)
+				&& arrayDelimiter.equals(that.arrayDelimiter);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(methodName,
+				selfName,
+				fieldDelimiter,
+				iterableStart,
+				iterableEnd,
+				iterableDelimiter,
+				arrayStart,
+				arrayEnd,
+				arrayDelimiter
+		);
+	}
+
 	public TemplateConfiguration(StepTemplateConfig config) {
+		this();
+		methodName = config.methodNameTemplate();
+		iterableStart = config.iterableStartSymbol();
+		iterableEnd = config.iterableEndSymbol();
+		iterableDelimiter = config.iterableElementDelimiter();
+		arrayStart = config.arrayStartSymbol();
+		arrayEnd = config.arrayEndSymbol();
+		arrayDelimiter = config.arrayElementDelimiter();
+	}
+
+	public TemplateConfiguration(TemplateConfig config) {
 		methodName = config.methodNameTemplate();
 		selfName = config.selfNameTemplate();
 		fieldDelimiter = config.fieldDelimiter();

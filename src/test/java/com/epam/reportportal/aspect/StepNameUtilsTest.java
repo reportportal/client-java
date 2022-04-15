@@ -18,6 +18,7 @@ package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.StepTemplateConfig;
+import com.epam.reportportal.utils.templating.TemplateConfiguration;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.Test;
@@ -63,10 +64,13 @@ public class StepNameUtilsTest {
 				.getDeclaredAnnotation(Step.class)
 				.templateConfig();
 
-		Map<String, Object> paramsMapping = StepNameUtils.createParamsMapping(templateConfig, methodSignature, joinPoint);
+		Map<String, Object> paramsMapping = StepNameUtils.createParamsMapping(new TemplateConfiguration(templateConfig),
+				methodSignature,
+				joinPoint
+		);
 
 		//3 for name key + 3 for index key + method name key
-		assertThat(paramsMapping.size(), equalTo(namesArray.length * 2 + 2));
+		assertThat(paramsMapping.size(), equalTo(namesArray.length * 2 + 1));
 		Arrays.stream(namesArray).forEach(name -> assertThat(paramsMapping, hasKey(name)));
 
 		assertThat(paramsMapping, hasEntry("firstName", "first"));
@@ -117,8 +121,7 @@ public class StepNameUtilsTest {
 	}
 
 	private static Stream<String[]> formatData() {
-		return Stream.of(
-				new String[] { "Method name: {method}", "Method name: stepMethod" },
+		return Stream.of(new String[] { "Method name: {method}", "Method name: stepMethod" },
 				new String[] { "Inner value: {this.value}", "Inner value: stepValue" },
 				new String[] { "Inner value: {this.object.value}", "Inner value: pojoValue" }
 		);
@@ -161,4 +164,42 @@ public class StepNameUtilsTest {
 
 		assertThat(result, equalTo(expectedResult));
 	}
+
+	@Step("{method} {this} {0}")
+	public void verifyNulls() {
+
+	}
+
+	@Test
+	public void test_step_format_null_method() throws NoSuchMethodException {
+		when(methodSignature.getMethod()).thenReturn(null);
+		when(methodSignature.getParameterNames()).thenReturn(null);
+		when(joinPoint.getThis()).thenReturn(null);
+		when(joinPoint.getArgs()).thenReturn(null);
+
+		String result = StepNameUtils.getStepName(this.getClass().getDeclaredMethod("verifyNulls").getAnnotation(Step.class),
+				methodSignature,
+				joinPoint
+		);
+
+		assertThat(result, equalTo("{method} {this} {0}"));
+	}
+
+	@Step("{this.test}")
+	public void verifyNullReference() {
+
+	}
+
+	@Test
+	public void test_null_reference() throws NoSuchMethodException {
+		when(joinPoint.getThis()).thenReturn(null);
+
+		String result = StepNameUtils.getStepName(this.getClass().getDeclaredMethod("verifyNullReference").getAnnotation(Step.class),
+				methodSignature,
+				joinPoint
+		);
+
+		assertThat(result, equalTo("{this.test}"));
+	}
+
 }

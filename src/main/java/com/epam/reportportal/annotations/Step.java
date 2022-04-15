@@ -41,5 +41,8 @@ public @interface Step {
 
 	boolean isIgnored() default false;
 
+	@Deprecated
 	StepTemplateConfig templateConfig() default @StepTemplateConfig;
+
+	TemplateConfig config() default @TemplateConfig;
 }

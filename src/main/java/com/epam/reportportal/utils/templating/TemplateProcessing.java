@@ -35,6 +35,10 @@ public class TemplateProcessing {
 
 	private static final Pattern TEMPLATE_GROUP = Pattern.compile("\\{([\\w$]+(\\.[\\w$]+)*)}");
 
+	private TemplateProcessing() {
+		throw new IllegalStateException("Static only class");
+	}
+
 	public static String processTemplate(String pattern, Map<String, Object> parameters, TemplateConfiguration config) {
 		Matcher matcher = TEMPLATE_GROUP.matcher(pattern);
 		StringBuffer stringBuffer = new StringBuffer();
@@ -107,7 +111,6 @@ public class TemplateProcessing {
 
 		return parseDescendant(templateConfig, object);
 	}
-
 
 	/**
 	 * @param templateConfig {@link TemplateConfiguration}
