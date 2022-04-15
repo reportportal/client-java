@@ -18,6 +18,7 @@ package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.StepTemplateConfig;
+import com.epam.reportportal.annotations.TemplateConfig;
 import com.epam.reportportal.utils.templating.TemplateConfiguration;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -48,6 +49,11 @@ public class StepNameUtilsTest {
 	@Mock(lenient = true)
 	private JoinPoint joinPoint;
 
+	@Step(templateConfig = @StepTemplateConfig)
+	private void templateConfigMethod() {
+
+	}
+
 	/**
 	 * @see <a href="https://github.com/reportportal/client-java/issues/73">Covers NPE issue fix</a>
 	 */
@@ -76,11 +82,6 @@ public class StepNameUtilsTest {
 		assertThat(paramsMapping, hasEntry("firstName", "first"));
 		assertThat(paramsMapping, hasEntry("secondName", "second"));
 		assertThat(paramsMapping, hasEntry("thirdName", null));
-	}
-
-	@Step(templateConfig = @StepTemplateConfig)
-	private void templateConfigMethod() {
-
 	}
 
 	@Step(STEP_NAME_PATTERN)
@@ -202,4 +203,43 @@ public class StepNameUtilsTest {
 		assertThat(result, equalTo("{this.test}"));
 	}
 
+	@Step(value = "A {mmmethod}", templateConfig = @StepTemplateConfig(methodNameTemplate = "mmmethod"))
+	public void verifyStepConfigurationUsage() {}
+
+	@Test
+	public void test_step_template_config() throws NoSuchMethodException {
+		when(methodSignature.getMethod()).thenReturn(this.getClass().getDeclaredMethod("verifyStepConfigurationUsage"));
+		when(methodSignature.getParameterNames()).thenReturn(new String[0]);
+		when(joinPoint.getArgs()).thenReturn(new String[0]);
+
+		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class), methodSignature, joinPoint);
+		assertThat(result, equalTo("A verifyStepConfigurationUsage"));
+	}
+
+	@Step(value = "A {mmmethod}", config = @TemplateConfig(methodNameTemplate = "mmmethod"))
+	public void verifyConfigurationUsage() {}
+
+	@Test
+	public void test_template_config() throws NoSuchMethodException {
+		when(methodSignature.getMethod()).thenReturn(this.getClass().getDeclaredMethod("verifyConfigurationUsage"));
+		when(methodSignature.getParameterNames()).thenReturn(new String[0]);
+		when(joinPoint.getArgs()).thenReturn(new String[0]);
+
+		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class), methodSignature, joinPoint);
+		assertThat(result, equalTo("A verifyConfigurationUsage"));
+	}
+
+	@Step(value = "A {mmmethod}", templateConfig = @StepTemplateConfig(methodNameTemplate = "mmethod"),
+			config = @TemplateConfig(methodNameTemplate = "mmmethod"))
+	public void verifyConfigurationOverride() {}
+
+	@Test
+	public void test_template_config_override() throws NoSuchMethodException {
+		when(methodSignature.getMethod()).thenReturn(this.getClass().getDeclaredMethod("verifyConfigurationOverride"));
+		when(methodSignature.getParameterNames()).thenReturn(new String[0]);
+		when(joinPoint.getArgs()).thenReturn(new String[0]);
+
+		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class), methodSignature, joinPoint);
+		assertThat(result, equalTo("A verifyConfigurationOverride"));
+	}
 }
