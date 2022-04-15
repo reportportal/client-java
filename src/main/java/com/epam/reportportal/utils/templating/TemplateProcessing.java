@@ -39,6 +39,14 @@ public class TemplateProcessing {
 		throw new IllegalStateException("Static only class");
 	}
 
+	/**
+	 * Format given pattern with given parameters and configuration.
+	 *
+	 * @param pattern text patter to format
+	 * @param parameters a map which will be used to locate reference replacements in pattern
+	 * @param config templating mechanism configuration
+	 * @return formatted string
+	 */
 	public static String processTemplate(String pattern, Map<String, Object> parameters, TemplateConfiguration config) {
 		Matcher matcher = TEMPLATE_GROUP.matcher(pattern);
 		StringBuffer stringBuffer = new StringBuffer();
