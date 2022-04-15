@@ -20,12 +20,18 @@ import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.TestCaseIdKey;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.withSettings;
 
 /**
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
@@ -51,12 +57,14 @@ public class TestCaseIdUtilsTest {
 		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("testCaseAnnotationTest", String.class, String.class);
 		TestCaseId annotation = method.getAnnotation(TestCaseId.class);
 		String expectedTestCaseId = "5";
-		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(annotation, method, Arrays.asList("firstParam", expectedTestCaseId));
+		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(annotation,
+				method,
+				Arrays.asList("firstParam", expectedTestCaseId)
+		);
 
 		assertThat(testCaseIdEntry, notNullValue());
 		assertThat(testCaseIdEntry.getId(), equalTo(expectedTestCaseId));
 	}
-
 
 	@TestCaseId(parametrized = true)
 	public void testCaseIdAnnotationParametersNoKeyTest(String firstParam, int id) {
@@ -129,7 +137,10 @@ public class TestCaseIdUtilsTest {
 
 	@Test
 	public void test_case_id_should_use_annotation_value_and_parameters() throws NoSuchMethodException {
-		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("testCaseIdAnnotationParameterizedNoKeyParam", Integer.TYPE, String.class);
+		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("testCaseIdAnnotationParameterizedNoKeyParam",
+				Integer.TYPE,
+				String.class
+		);
 		TestCaseId annotation = method.getAnnotation(TestCaseId.class);
 		String expectedTestCaseId = "my test case id[5,firstParam]";
 		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(annotation, method, Arrays.asList(5, "firstParam"));
@@ -145,7 +156,11 @@ public class TestCaseIdUtilsTest {
 
 	@Test
 	public void test_case_id_should_use_annotation_value_and_two_marked_parameter() throws NoSuchMethodException {
-		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("testCaseIdAnnotationTwoParamTest", Integer.TYPE, String.class, Boolean.class);
+		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("testCaseIdAnnotationTwoParamTest",
+				Integer.TYPE,
+				String.class,
+				Boolean.class
+		);
 		TestCaseId annotation = method.getAnnotation(TestCaseId.class);
 		String expectedTestCaseId = "my test case id[5,true]";
 		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(annotation, method, Arrays.asList(5, "stringParam", Boolean.TRUE));
@@ -201,5 +216,51 @@ public class TestCaseIdUtilsTest {
 
 		assertThat(testCaseIdEntry, notNullValue());
 		assertThat(testCaseIdEntry.getId(), equalTo(expectedTestCaseId));
+	}
+
+	private static Stream<Object[]> formatData() {
+		return Stream.of(
+				new Object[] { PARAMS, "Test Case ID {method}", "Test Case ID verifyTestCaseId" },
+				new Object[] { null, "Test Case ID {this.value}", "Test Case ID stepValue" },
+				new Object[] { PARAMS, "Test Case ID {this.object.value}", "Test Case ID pojoValue" },
+				new Object[] { PARAMS, "Test Case ID {0}", "Test Case ID one" },
+				new Object[] { PARAMS, "Test Case ID {1}", "Test Case ID two" },
+				new Object[] { null, "Test Case ID {1}", "Test Case ID {1}" }
+		);
+	}
+
+	private static class PojoObject {
+		@SuppressWarnings("unused")
+		private final String value = "pojoValue";
+	}
+
+	@TestCaseId(value = "Test Case ID")
+	public void verifyTestCaseId() {
+
+	}
+
+	private static final List<String> PARAMS = Arrays.asList("one", "two");
+	@SuppressWarnings("unused")
+	private final String value = "stepValue";
+	@SuppressWarnings("unused")
+	private final PojoObject object = new PojoObject();
+
+	@ParameterizedTest
+	@MethodSource("formatData")
+	public void test_case_id_format_defaults(List<Object> params, String id, String expectedResult) throws NoSuchMethodException {
+		Method method = this.getClass().getDeclaredMethod("verifyTestCaseId");
+		TestCaseId realId = method.getAnnotation(TestCaseId.class);
+		TestCaseId testCaseId = mock(TestCaseId.class, withSettings().defaultAnswer(invocation -> {
+			Method invocationMethod = invocation.getMethod();
+			if ("value".equals(invocationMethod.getName())) {
+				return id;
+			}
+			return invocationMethod.invoke(realId, invocation.getArguments());
+		}));
+
+		TestCaseIdEntry result = TestCaseIdUtils.getTestCaseId(testCaseId, method, null, params, this);
+
+		assertThat(result, notNullValue());
+		assertThat(result.getId(), equalTo(expectedResult));
 	}
 }

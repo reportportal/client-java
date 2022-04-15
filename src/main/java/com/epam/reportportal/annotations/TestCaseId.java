@@ -24,7 +24,7 @@ import java.lang.annotation.Target;
 /**
  * Annotation used to declare the uniqueness of the test method/class.
  * If value is not provided it will be generated on the Report Portal
- * back-end side as hash of the generated {@link UniqueID}
+ * back-end side as hash of the generated id.
  *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
@@ -42,4 +42,6 @@ public @interface TestCaseId {
 	 * @return flag to define whether test is parameterized or not
 	 */
 	boolean parametrized() default false;
+
+	TemplateConfig config() default @TemplateConfig;
 }
