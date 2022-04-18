@@ -28,6 +28,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Class for processing simple string templates.
+ */
 public class TemplateProcessing {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TemplateProcessing.class);
 
