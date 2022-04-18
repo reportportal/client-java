@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.9]
 ### Changed
 - `jackson-databind` dependency was forcibly updated to address vulnerabilities, by @HardNorth 
 
