@@ -145,6 +145,8 @@ public abstract class Launch {
 
 	/**
 	 * Returns current launch UUID {@link Maybe}, empty if the launch is not started.
+	 *
+	 * @return Launch UUID promise
 	 */
 	@Nonnull
 	public abstract Maybe<String> getLaunch();
