@@ -19,6 +19,8 @@ package com.epam.reportportal.utils;
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.TestCaseIdKey;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
+import com.epam.reportportal.utils.templating.TemplateConfiguration;
+import com.epam.reportportal.utils.templating.TemplateProcessing;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -26,9 +28,12 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static java.util.Optional.ofNullable;
 
@@ -119,6 +124,23 @@ public class TestCaseIdUtils {
 	@Nullable
 	public static <T> TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Executable executable,
 			@Nullable String codRef, @Nullable List<T> parameters) {
+		return getTestCaseId(annotation, executable, codRef, parameters, null);
+	}
+
+	/**
+	 * Generates a {@link TestCaseIdEntry}
+	 *
+	 * @param annotation   a {@link TestCaseId} annotation instance
+	 * @param executable   a constructor or method for {@link TestCaseIdKey} scan
+	 * @param codRef       a code reference to use to generate the ID
+	 * @param parameters   a list of parameter values
+	 * @param testInstance an instance of the current test, used in template processing
+	 * @param <T>          a type of parameters
+	 * @return Test Case ID or null if not possible to generate (all parameters are nulls, empty, etc.)
+	 */
+	@Nullable
+	public static <T> TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Executable executable,
+			@Nullable String codRef, @Nullable List<T> parameters, @Nullable Object testInstance) {
 		if (annotation != null) {
 			if (annotation.value().isEmpty()) {
 				if (annotation.parametrized()) {
@@ -129,13 +151,22 @@ public class TestCaseIdUtils {
 					return ofNullable(codRef).map(c -> getTestCaseId(c, parameters)).orElse(getTestCaseId(executable, parameters));
 				}
 			} else {
+				String idTemplate = annotation.value();
+				TemplateConfiguration templateConfig = new TemplateConfiguration(annotation.config());
+				Map<String, Object> parametersMap = ofNullable(parameters).map(params -> IntStream.range(0, params.size())
+						.boxed()
+						.collect(Collectors.toMap(Object::toString, i -> (Object) params.get(i)))).orElse(new HashMap<>());
+				ofNullable(executable).map(Executable::getName).ifPresent(name -> parametersMap.put(templateConfig.getMethodName(), name));
+				ofNullable(testInstance).ifPresent(instance -> parametersMap.put(templateConfig.getSelfName(), instance));
+				String id = TemplateProcessing.processTemplate(idTemplate, parametersMap, templateConfig);
+
 				if (annotation.parametrized()) {
-					return ofNullable(getParametersForTestCaseId(executable, parameters)).map(p -> new TestCaseIdEntry(
-							annotation.value() + (p.startsWith("[") ? p : "[" + p + "]")))
+					String resultParameters = getParametersForTestCaseId(executable, parameters);
+					return ofNullable(resultParameters).map(p -> new TestCaseIdEntry(id + (p.startsWith("[") ? p : "[" + p + "]")))
 							.orElse(ofNullable(codRef).map(c -> getTestCaseId(c, parameters))
 									.orElse(getTestCaseId(executable, parameters)));
 				} else {
-					return new TestCaseIdEntry(annotation.value());
+					return new TestCaseIdEntry(id);
 				}
 			}
 		}
