@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.8]
 ### Added
 - Issue [#70](https://github.com/reportportal/client-java/issues/70) `@Step` templating now supports `this` object reference
 - Issue [130](https://github.com/reportportal/client-java/issues/130) `@TestCaseId` now supports templating
