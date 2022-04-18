@@ -334,14 +334,27 @@ public class LaunchTest {
 	public void launch_should_not_throw_exceptions_or_hang_if_finished_and_started_again() {
 		simulateStartLaunchResponse(rpClient);
 		simulateFinishLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateFinishTestItemResponse(rpClient);
 
 		StartLaunchRQ startRq = standardLaunchRequest(STANDARD_PARAMETERS);
 		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, startRq, executor);
 		launch.start();
+		Maybe<String> id = launch.startTestItem(standardStartSuiteRequest());
+		launch.finishTestItem(id, positiveFinishRequest());
+		launch.finish(standardLaunchFinishRequest());
 		launch.finish(standardLaunchFinishRequest());
 
+		verify(rpClient).startTestItem(any());
+		verify(rpClient).finishTestItem(same(id.blockingGet()), any());
+
 		launch.start();
+		id = launch.startTestItem(standardStartSuiteRequest());
+		launch.finishTestItem(id, positiveFinishRequest());
 		launch.finish(standardLaunchFinishRequest());
+
+		verify(rpClient, times(2)).startTestItem(any());
+		verify(rpClient, times(1)).finishTestItem(same(id.blockingGet()), any());
 	}
 
 	@Test
