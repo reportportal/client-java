@@ -35,14 +35,39 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Step {
 
+	/**
+	 * Step name template.
+	 *
+	 * @return name template
+	 */
 	String value() default "";
 
+	/**
+	 * Step description.
+	 *
+	 * @return description
+	 */
 	String description() default "";
 
+	/**
+	 * If set the step will be ignored (not visible).
+	 *
+	 * @return whether to ignore the step
+	 */
 	boolean isIgnored() default false;
 
-	@Deprecated
-	StepTemplateConfig templateConfig() default @StepTemplateConfig;
+	/**
+	 * Step template configuration.
+	 *
+	 * @return template configuration
+	 * @deprecated Use more generic {@link #config()} method
+	 */
+	@Deprecated StepTemplateConfig templateConfig() default @StepTemplateConfig;
 
+	/**
+	 * Step template configuration.
+	 *
+	 * @return template configuration
+	 */
 	TemplateConfig config() default @TemplateConfig;
 }
