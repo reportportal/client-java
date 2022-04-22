@@ -38,8 +38,16 @@ class StepNameUtils {
 		throw new IllegalStateException("Static only class");
 	}
 
+	/**
+	 * Generate step name based on a template bypassed in {@link Step} annotation.
+	 *
+	 * @param step      annotation
+	 * @param signature signature of the method annotated with {@link Step}
+	 * @param joinPoint intercepted step join point
+	 * @return step name
+	 */
 	@Nonnull
-	static String getStepName(@Nonnull Step step, @Nonnull MethodSignature signature, @Nonnull JoinPoint joinPoint) {
+	public static String getStepName(@Nonnull Step step, @Nonnull MethodSignature signature, @Nonnull JoinPoint joinPoint) {
 		String nameTemplate = step.value();
 		if (nameTemplate.trim().isEmpty()) {
 			return signature.getMethod().getName();
@@ -54,6 +62,21 @@ class StepNameUtils {
 			}
 		}
 
+		return getStepName(nameTemplate, config, signature, joinPoint);
+	}
+
+	/**
+	 * Generate step name based on a template and configuration bypassed.
+	 *
+	 * @param nameTemplate template string
+	 * @param config       template configuration to use
+	 * @param signature    signature of the method related to the step
+	 * @param joinPoint    intercepted step join point
+	 * @return step name
+	 */
+	@Nonnull
+	public static String getStepName(@Nonnull String nameTemplate, @Nonnull TemplateConfiguration config,
+			@Nonnull MethodSignature signature, @Nonnull JoinPoint joinPoint) {
 		Map<String, Object> parametersMap = createParamsMapping(config, signature, joinPoint);
 		return TemplateProcessing.processTemplate(nameTemplate, parametersMap, config);
 	}

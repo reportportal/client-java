@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- public `StepNameUtils.getStepName` methods to ease template processing customizations, by @HardNorth
 
 ## [5.1.9]
 ### Changed
