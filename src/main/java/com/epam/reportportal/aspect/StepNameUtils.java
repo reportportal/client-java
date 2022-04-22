@@ -30,9 +30,9 @@ import java.util.Map;
 import static java.util.Optional.ofNullable;
 
 /**
- * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
+ * Helper methods to generate step names.
  */
-class StepNameUtils {
+public class StepNameUtils {
 
 	private StepNameUtils() {
 		throw new IllegalStateException("Static only class");
