@@ -250,16 +250,22 @@ public class DefaultStepReporter implements StepReporter {
 
 	@Nullable
 	@Override
-	public <T> T step(@Nonnull String name, @Nonnull Supplier<T> actions) {
+	public <T> T step(@Nonnull ItemStatus stepSuccessStatus, @Nonnull String name, @Nonnull Supplier<T> actions) {
 		startNestedStep(buildStartStepRequest(name));
 		try {
 			T result = actions.get();
-			finishNestedStep(buildFinishTestItemRequest(ItemStatus.PASSED));
+			finishNestedStep(buildFinishTestItemRequest(stepSuccessStatus));
 			return result;
 		} catch (RuntimeException | Error e) {
 			finishNestedStep(buildFinishTestItemRequest(ItemStatus.FAILED));
 			throw e;
 		}
+	}
+
+	@Nullable
+	@Override
+	public <T> T step(@Nonnull String name, @Nonnull Supplier<T> actions) {
+		return step(ItemStatus.PASSED, name, actions);
 	}
 
 	private Maybe<String> startStepRequest(final StartTestItemRQ startTestItemRQ) {

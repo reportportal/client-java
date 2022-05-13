@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `StepReporter#step(ItemStatus, String, Supplier<T>)` method
 
 ## [5.1.10]
 ### Added
