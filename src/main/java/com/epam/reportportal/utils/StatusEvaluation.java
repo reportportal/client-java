@@ -22,6 +22,10 @@ import javax.annotation.Nullable;
 
 public class StatusEvaluation {
 
+	private StatusEvaluation() {
+		throw new IllegalStateException("Static only class");
+	}
+
 	/**
 	 * Calculate an Item status according to its child item status and current status. E.G.: SUITE-TEST or TEST-STEP.
 	 * <p>
