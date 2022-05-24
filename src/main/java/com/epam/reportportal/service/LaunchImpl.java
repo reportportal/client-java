@@ -46,7 +46,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.service.LoggingCallback.*;
-import static com.epam.reportportal.utils.SubscriptionUtils.*;
+import static com.epam.reportportal.utils.SubscriptionUtils.logCompletableResults;
+import static com.epam.reportportal.utils.SubscriptionUtils.logMaybeResults;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
@@ -213,15 +214,12 @@ public class LaunchImpl extends Launch {
 						.blockingGet()))
 				.ignoreElement()
 				.cache();
-		try {
-			Throwable error = finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
-			if (error != null) {
-				LOGGER.error("Unable to finish launch in ReportPortal", error);
-			}
-		} finally {
-			getStatisticsService().close();
-			statisticsService = new StatisticsService(getParameters());
+		Throwable error = finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
+		if (error != null) {
+			LOGGER.error("Unable to finish launch in ReportPortal", error);
 		}
+		getStatisticsService().close();
+		statisticsService = new StatisticsService(getParameters());
 	}
 
 	private static <T> Maybe<T> createErrorResponse(Throwable cause) {

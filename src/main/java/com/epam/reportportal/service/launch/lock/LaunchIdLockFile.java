@@ -190,11 +190,9 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 				.till(() -> {
 					Pair<RandomAccessFile, FileLock> fileIo = obtainLock(file);
 					if (fileIo != null) {
-						try {
-							return executeOperation(operation, fileIo);
-						} finally {
-							closeIo(fileIo);
-						}
+						T result = executeOperation(operation, fileIo);
+						closeIo(fileIo);
+						return result;
 					}
 					return null;
 				});
@@ -265,25 +263,23 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 		}
 		Pair<RandomAccessFile, FileLock> syncLock = obtainLock(syncFile);
 		if (syncLock != null) {
-			try {
-				if (mainLock == null) {
-					Pair<RandomAccessFile, FileLock> lock = obtainLock(lockFile);
-					if (lock != null) {
-						// we are the main thread / process
-						lockUuid = instanceUuid;
-						mainLock = lock;
-						writeLaunchUuid(syncLock);
-						return instanceUuid;
-					} else {
-						executeOperation(new LaunchRead(instanceUuid), syncLock);
-					}
+			if (mainLock == null) {
+				Pair<RandomAccessFile, FileLock> lock = obtainLock(lockFile);
+				if (lock != null) {
+					// we are the main thread / process
+					lockUuid = instanceUuid;
+					mainLock = lock;
+					writeLaunchUuid(syncLock);
+					closeIo(syncLock);
+					return instanceUuid;
 				} else {
-					// another thread obtained main lock while we wait for .sync file
-					executeOperation(new UuidAppend(instanceUuid), syncLock);
-					return lockUuid;
+					executeOperation(new LaunchRead(instanceUuid), syncLock);
 				}
-			} finally {
+			} else {
+				// another thread obtained main lock while we wait for .sync file
+				executeOperation(new UuidAppend(instanceUuid), syncLock);
 				closeIo(syncLock);
+				return lockUuid;
 			}
 			// main lock file already locked, just close sync lock and proceed with secondary launch logic
 		}

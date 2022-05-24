@@ -113,24 +113,21 @@ public class StatisticsService implements Closeable {
 
 	@Override
 	public void close() {
+		Throwable result = Completable.concat(dependencies).timeout(parameters.getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
+		if (result != null) {
+			LOGGER.warn("Unable to complete execution of all dependencies", result);
+		}
+		statisticsExecutor.shutdown();
 		try {
-			Throwable result = Completable.concat(dependencies).timeout(parameters.getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
-			if (result != null) {
-				LOGGER.warn("Unable to complete execution of all dependencies", result);
+			if (!statisticsExecutor.awaitTermination(parameters.getReportingTimeout(), TimeUnit.SECONDS)) {
+				statisticsExecutor.shutdownNow();
 			}
-		} finally {
-			statisticsExecutor.shutdown();
-			try {
-				if (!statisticsExecutor.awaitTermination(parameters.getReportingTimeout(), TimeUnit.SECONDS)) {
-					statisticsExecutor.shutdownNow();
-				}
-			} catch (InterruptedException exc) {
-				//do nothing
-			}
-			try {
-				getStatistics().close();
-			} catch (IOException ignore) {
-			}
+		} catch (InterruptedException exc) {
+			//do nothing
+		}
+		try {
+			getStatistics().close();
+		} catch (IOException ignore) {
 		}
 	}
 }

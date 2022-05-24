@@ -3,6 +3,8 @@
 ## [Unreleased]
 ### Added
 - `StepReporter#step(ItemStatus, String, Supplier<T>)` method
+### Removed
+- `finally` keyword, see [JEP 421](https://openjdk.java.net/jeps/421), by @HardNorth
 
 ## [5.1.10]
 ### Added
