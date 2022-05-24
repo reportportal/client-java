@@ -274,6 +274,7 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 					return instanceUuid;
 				} else {
 					executeOperation(new LaunchRead(instanceUuid), syncLock);
+					closeIo(syncLock);
 				}
 			} else {
 				// another thread obtained main lock while we wait for .sync file
