@@ -18,6 +18,7 @@ package com.epam.reportportal.service.launch.lock;
 
 import com.epam.reportportal.service.LaunchIdLock;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.awaitility.Awaitility;
@@ -35,8 +36,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static org.apache.commons.lang3.StringUtils.isEmpty;
-import static org.apache.commons.lang3.StringUtils.join;
 import static org.hamcrest.Matchers.notNullValue;
 
 public class LockTestUtil {
@@ -47,7 +46,7 @@ public class LockTestUtil {
 	public static final String WELCOME_MESSAGE = "Lock ready, press any key to continue...";
 
 	public static final Predicate<String> WELCOME_MESSAGE_PREDICATE = WELCOME_MESSAGE::equals;
-	public static final Predicate<String> ANY_STRING_PREDICATE = input -> !isEmpty(input);
+	public static final Predicate<String> ANY_STRING_PREDICATE = StringUtils::isNotBlank;
 
 	public static Triple<OutputStreamWriter, BufferedReader, BufferedReader> getProcessIos(Process process) {
 		return ImmutableTriple.of(
@@ -92,7 +91,7 @@ public class LockTestUtil {
 				errorLines = IOUtils.readLines(errorReader);
 			}
 			String lineSeparator = System.getProperty("line.separator");
-			throw new IllegalStateException("Unable to run test class: " + join(errorLines, lineSeparator));
+			throw new IllegalStateException("Unable to run test class: " + String.join(lineSeparator, errorLines));
 		}
 	}
 

@@ -27,7 +27,6 @@ import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import okhttp3.MultipartBody;
 import okio.Buffer;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -126,7 +125,7 @@ public class FileLocatorTest {
 	@Test
 	public void test_file_absolute_long_path() throws IOException {
 		String basedir = System.getProperty("user.dir");
-		File testFile = new File(StringUtils.joinWith(File.separator,
+		File testFile = new File(String.join(File.separator,
 				basedir,
 				"src",
 				"test",

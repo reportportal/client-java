@@ -21,7 +21,7 @@ import com.epam.reportportal.service.LaunchIdLock;
 
 public abstract class AbstractLaunchIdLock implements LaunchIdLock {
 
-	protected ListenerParameters parameters;
+	protected final ListenerParameters parameters;
 
 	public AbstractLaunchIdLock(ListenerParameters listenerParameters) {
 		parameters = listenerParameters;

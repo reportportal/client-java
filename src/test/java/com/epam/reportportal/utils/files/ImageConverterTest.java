@@ -18,11 +18,9 @@ package com.epam.reportportal.utils.files;
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.utils.MimeTypeDetector;
 import com.google.common.io.ByteSource;
-import com.google.common.io.Resources;
 import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
-import java.net.URL;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;

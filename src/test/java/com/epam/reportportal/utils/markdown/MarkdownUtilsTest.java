@@ -27,12 +27,12 @@ import static org.hamcrest.Matchers.equalTo;
 public class MarkdownUtilsTest {
 
 	@Test
-	public void asMarkdown() throws Exception {
+	public void asMarkdown() {
 		assertThat("Incorrect markdown prefix", MarkdownUtils.asMarkdown("hello"), equalTo("!!!MARKDOWN_MODE!!!hello"));
 	}
 
 	@Test
-	public void toMarkdownScript() throws Exception {
+	public void toMarkdownScript() {
 		assertThat("Incorrect markdown prefix", asCode("groovy", "hello"), equalTo("!!!MARKDOWN_MODE!!!```groovy\nhello\n```"));
 	}
 
