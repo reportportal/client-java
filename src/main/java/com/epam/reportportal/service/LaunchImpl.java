@@ -192,6 +192,7 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @return Launch ID promise
 	 */
+	@Nonnull
 	public Maybe<String> start() {
 		launch.subscribe(logMaybeResults("Launch start"));
 		LaunchLoggingContext.init(this.launch, getClient(), getScheduler(), getParameters());
@@ -244,6 +245,7 @@ public class LaunchImpl extends Launch {
 	 * @param rq Start RQ
 	 * @return Test Item ID promise
 	 */
+	@Nonnull
 	public Maybe<String> startTestItem(final StartTestItemRQ rq) {
 		if (rq == null) {
 			/*
@@ -267,6 +269,15 @@ public class LaunchImpl extends Launch {
 		return item;
 	}
 
+	/**
+	 * Starts new test item in ReportPortal in respect of provided retry item ID.
+	 *
+	 * @param parentId Parent item ID promise
+	 * @param retryOf previous item ID promise
+	 * @param rq Start RQ
+	 * @return Test Item ID promise
+	 */
+	@Nonnull
 	public Maybe<String> startTestItem(final Maybe<String> parentId, final Maybe<String> retryOf, final StartTestItemRQ rq) {
 		return retryOf.flatMap((Function<String, Maybe<String>>) s -> startTestItem(parentId, rq)).cache();
 	}
@@ -274,9 +285,11 @@ public class LaunchImpl extends Launch {
 	/**
 	 * Starts new test item in ReportPortal asynchronously (non-blocking)
 	 *
+	 * @param parentId Parent item ID promise
 	 * @param rq Start RQ
 	 * @return Test Item ID promise
 	 */
+	@Nonnull
 	public Maybe<String> startTestItem(final Maybe<String> parentId, final StartTestItemRQ rq) {
 		if (parentId == null) {
 			return startTestItem(rq);
@@ -313,6 +326,7 @@ public class LaunchImpl extends Launch {
 	 * @param rq   Finish request
 	 * @return a Finish Item response promise
 	 */
+	@Nonnull
 	public Maybe<OperationCompletionRS> finishTestItem(final Maybe<String> item, final FinishTestItemRQ rq) {
 		if (item == null) {
 			/*

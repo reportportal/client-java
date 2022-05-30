@@ -30,6 +30,7 @@ import io.reactivex.disposables.Disposable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -80,6 +81,7 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 		});
 	}
 
+	@Nonnull
 	@Override
 	public Maybe<String> start() {
 		waitForLaunchStart();

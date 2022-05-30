@@ -65,8 +65,8 @@ public class SystemAttributesExtractor {
 	/**
 	 * Loads properties from the specified location
 	 *
-	 * @param resource Path to the resource in classpath
-	 * @param loader   context class loader, which is used by a specific agent implementation
+	 * @param resource        Path to the resource in classpath
+	 * @param loader          context class loader, which is used by a specific agent implementation
 	 * @param propertyHolders an array of specific properties we want to extract
 	 * @return {@link Set} of {@link ItemAttributesRQ}
 	 */
@@ -104,7 +104,7 @@ public class SystemAttributesExtractor {
 	/**
 	 * Loads properties from the specified location
 	 *
-	 * @param path Path to the resource the file system
+	 * @param path            Path to the resource the file system
 	 * @param propertyHolders an array of specific properties we want to extract
 	 * @return {@link Set} of {@link ItemAttributesRQ}
 	 */
@@ -118,7 +118,10 @@ public class SystemAttributesExtractor {
 		if (path != null) {
 			File file = path.toFile();
 			if (file.exists()) {
-				try (InputStreamReader inputStreamReader = new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8)) {
+				try (InputStreamReader inputStreamReader = new InputStreamReader(
+						Files.newInputStream(file.toPath()),
+						StandardCharsets.UTF_8
+				)) {
 					properties.load(inputStreamReader);
 				} catch (IOException e) {
 					LOGGER.warn("Unable to load system properties file");

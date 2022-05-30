@@ -62,6 +62,7 @@ public abstract class Launch {
 		client = requireNonNull(reportPortalClient, "ReportPortalClient shouldn't be NULL");
 	}
 
+	@Nonnull
 	abstract public Maybe<String> start();
 
 	/**
@@ -77,6 +78,7 @@ public abstract class Launch {
 	 * @param rq Start RQ
 	 * @return Test Item ID promise
 	 */
+	@Nonnull
 	abstract public Maybe<String> startTestItem(final StartTestItemRQ rq);
 
 	/**
@@ -86,16 +88,18 @@ public abstract class Launch {
 	 * @param parentId Parent ID
 	 * @return Test Item ID promise
 	 */
+	@Nonnull
 	abstract public Maybe<String> startTestItem(final Maybe<String> parentId, final StartTestItemRQ rq);
 
 	/**
-	 * Starts new test item in ReportPortal in respect of provided retry
+	 * Starts new test item in ReportPortal in respect of provided retry item ID.
 	 *
 	 * @param parentId promise of ID of parent
-	 * @param retryOf  promise of ID of retried element
+	 * @param retryOf  previous item ID promise
 	 * @param rq       promise of ID of request
 	 * @return Promise of Test Item ID
 	 */
+	@Nonnull
 	abstract public Maybe<String> startTestItem(final Maybe<String> parentId, final Maybe<String> retryOf, final StartTestItemRQ rq);
 
 	/**
@@ -105,8 +109,10 @@ public abstract class Launch {
 	 * @param rq     Finish request
 	 * @return Promise of Test Item finish response
 	 */
+	@Nonnull
 	abstract public Maybe<OperationCompletionRS> finishTestItem(Maybe<String> itemId, final FinishTestItemRQ rq);
 
+	@Nonnull
 	public ListenerParameters getParameters() {
 		// Sticking any thread which makes this call to the current Launch to be able to use Step Reporter and other methods
 		CURRENT_LAUNCH.set(this);
@@ -162,6 +168,7 @@ public abstract class Launch {
 			StepReporter.NOOP_STEP_REPORTER
 	) {
 		@Override
+		@Nonnull
 		public Maybe<String> start() {
 			return Maybe.empty();
 		}
@@ -172,21 +179,25 @@ public abstract class Launch {
 		}
 
 		@Override
+		@Nonnull
 		public Maybe<String> startTestItem(StartTestItemRQ rq) {
 			return Maybe.empty();
 		}
 
 		@Override
+		@Nonnull
 		public Maybe<String> startTestItem(Maybe<String> parentId, StartTestItemRQ rq) {
 			return Maybe.empty();
 		}
 
 		@Override
+		@Nonnull
 		public Maybe<String> startTestItem(Maybe<String> parentId, Maybe<String> retryOf, StartTestItemRQ rq) {
 			return Maybe.empty();
 		}
 
 		@Override
+		@Nonnull
 		public Maybe<OperationCompletionRS> finishTestItem(Maybe<String> itemId, FinishTestItemRQ rq) {
 			return Maybe.empty();
 		}

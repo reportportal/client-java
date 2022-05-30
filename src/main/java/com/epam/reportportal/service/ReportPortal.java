@@ -101,7 +101,8 @@ public class ReportPortal {
 	 * @param rq Request Data
 	 * @return Launch
 	 */
-	public Launch newLaunch(StartLaunchRQ rq) {
+	@Nonnull
+	public Launch newLaunch(@Nonnull StartLaunchRQ rq) {
 		if (BooleanUtils.isNotTrue(parameters.getEnable()) || rpClient == null) {
 			return Launch.NOOP_LAUNCH;
 		}
@@ -144,7 +145,8 @@ public class ReportPortal {
 	 * @param launchUuid Launch to be used
 	 * @return This instance for chaining
 	 */
-	public Launch withLaunch(Maybe<String> launchUuid) {
+	@Nonnull
+	public Launch withLaunch(@Nonnull Maybe<String> launchUuid) {
 		return ofNullable(rpClient).map(c -> (Launch) new LaunchImpl(c, parameters, launchUuid, executor)).orElse(Launch.NOOP_LAUNCH);
 	}
 
