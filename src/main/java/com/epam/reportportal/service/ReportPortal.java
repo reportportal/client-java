@@ -91,7 +91,7 @@ public class ReportPortal {
 			@Nullable LaunchIdLock launchIdLock) {
 		this.rpClient = rpClient;
 		this.executor = executor;
-		this.parameters = parameters;
+		this.parameters = Objects.requireNonNull(parameters);
 		this.launchIdLock = launchIdLock;
 	}
 
@@ -153,6 +153,7 @@ public class ReportPortal {
 	/**
 	 * @return Configuration parameters
 	 */
+	@Nonnull
 	public ListenerParameters getParameters() {
 		return parameters;
 	}
@@ -160,6 +161,7 @@ public class ReportPortal {
 	/**
 	 * @return ReportPortal client
 	 */
+	@Nullable
 	public ReportPortalClient getClient() {
 		return this.rpClient;
 	}
@@ -169,6 +171,7 @@ public class ReportPortal {
 	 *
 	 * @return builder for {@link ReportPortal}
 	 */
+	@Nonnull
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -184,6 +187,7 @@ public class ReportPortal {
 	 * @param params {@link ListenerParameters}
 	 * @return builder for {@link ReportPortal}
 	 */
+	@Nonnull
 	public static ReportPortal create(ReportPortalClient client, ListenerParameters params) {
 		return create(client, params, buildExecutorService(params));
 	}
@@ -196,6 +200,7 @@ public class ReportPortal {
 	 * @param executor An executor service which will be used for internal request / response queue
 	 * @return builder for {@link ReportPortal}
 	 */
+	@Nonnull
 	public static ReportPortal create(@Nonnull final ReportPortalClient client, @Nonnull final ListenerParameters params,
 			@Nonnull final ExecutorService executor) {
 		return new ReportPortal(client, executor, params, getLaunchLock(params));
