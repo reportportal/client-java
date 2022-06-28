@@ -18,6 +18,7 @@ package com.epam.reportportal.service;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.message.TypeAwareByteSource;
+import com.epam.reportportal.service.logs.LogBatchingFlowable;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
@@ -27,6 +28,7 @@ import io.reactivex.Maybe;
 import io.reactivex.Scheduler;
 import io.reactivex.functions.Function;
 import io.reactivex.internal.operators.flowable.FlowableFromObservable;
+import io.reactivex.plugins.RxJavaPlugins;
 import io.reactivex.subjects.PublishSubject;
 import org.reactivestreams.Publisher;
 
@@ -68,8 +70,10 @@ public class LaunchLoggingContext {
 		this.launchUuid = launchUuid;
 		this.emitter = PublishSubject.create();
 		this.convertImages = parameters.isConvertImage();
-		new FlowableFromObservable<>(emitter).flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable)
-				.buffer(parameters.getBatchLogsSize())
+		RxJavaPlugins.onAssembly(new LogBatchingFlowable(
+						new FlowableFromObservable<>(emitter).flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable),
+						parameters
+				))
 				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
 						rqs)).toFlowable())
 				.doOnError(Throwable::printStackTrace)
