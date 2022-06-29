@@ -146,6 +146,7 @@ public class LogBatchingFlowable extends Flowable<List<SaveLogRQ>> implements Ha
 				}
 			}
 			toSend.forEach(downstream::onNext);
+			downstream.onComplete();
 		}
 
 		@Override

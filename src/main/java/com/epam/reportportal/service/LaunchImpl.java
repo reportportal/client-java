@@ -45,7 +45,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static com.epam.reportportal.service.LoggingCallback.*;
+import static com.epam.reportportal.service.logs.LaunchLoggingCallback.*;
 import static com.epam.reportportal.utils.SubscriptionUtils.logCompletableResults;
 import static com.epam.reportportal.utils.SubscriptionUtils.logMaybeResults;
 import static com.google.common.collect.Lists.newArrayList;
@@ -273,8 +273,8 @@ public class LaunchImpl extends Launch {
 	 * Starts new test item in ReportPortal in respect of provided retry item ID.
 	 *
 	 * @param parentId Parent item ID promise
-	 * @param retryOf previous item ID promise
-	 * @param rq Start RQ
+	 * @param retryOf  previous item ID promise
+	 * @param rq       Start RQ
 	 * @return Test Item ID promise
 	 */
 	@Nonnull
@@ -286,7 +286,7 @@ public class LaunchImpl extends Launch {
 	 * Starts new test item in ReportPortal asynchronously (non-blocking)
 	 *
 	 * @param parentId Parent item ID promise
-	 * @param rq Start RQ
+	 * @param rq       Start RQ
 	 * @return Test Item ID promise
 	 */
 	@Nonnull

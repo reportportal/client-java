@@ -19,7 +19,9 @@ package com.epam.reportportal.service;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.LogLevel;
 import com.epam.reportportal.test.TestUtils;
+import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
+import io.reactivex.FlowableSubscriber;
 import io.reactivex.Maybe;
 import io.reactivex.Scheduler;
 import io.reactivex.schedulers.Schedulers;
@@ -42,7 +44,6 @@ import static com.epam.reportportal.utils.http.HttpRequestUtils.TYPICAL_FILE_PAR
 import static com.epam.reportportal.utils.http.HttpRequestUtils.TYPICAL_MULTIPART_FOOTER_LENGTH;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
@@ -265,10 +266,33 @@ public class LoggingContextTest {
 			return request;
 		});
 
-
 		ArgumentCaptor<List<MultipartBody.Part>> captor = ArgumentCaptor.forClass(List.class);
 		verify(client, timeout(10000)).log(captor.capture());
 
 		assertThat(captor.getValue(), hasSize(1));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void test_log_batch_failure_logging() {
+		ReportPortalClient client = mock(ReportPortalClient.class);
+		RuntimeException exc = new IllegalStateException("test");
+		when(client.log(any(List.class))).thenThrow(exc);
+		FlowableSubscriber<BatchSaveOperatingRS> subscriber = mock(FlowableSubscriber.class);
+		LoggingContext context = LoggingContext.init(Maybe.just("launch_id"),
+				Maybe.just("item_id"),
+				client,
+				Schedulers.from(Executors.newSingleThreadExecutor()),
+				new ListenerParameters(),
+				subscriber
+		);
+
+		emitLogs(context, 10);
+		verify(client, timeout(10000)).log(any(List.class));
+
+		ArgumentCaptor<RuntimeException> exceptionCaptor = ArgumentCaptor.forClass(RuntimeException.class);
+		verify(subscriber, timeout(1000)).onError(exceptionCaptor.capture());
+
+		assertThat(exceptionCaptor.getValue(), sameInstance(exc));
 	}
 }
