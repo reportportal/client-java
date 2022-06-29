@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.11]
 ### Added
 - `StepReporter#step(ItemStatus, String, Supplier<T>)` method, by @HardNorth
 - Log batching payload size tracking, by @HardNorth
