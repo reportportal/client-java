@@ -30,6 +30,7 @@ import io.reactivex.disposables.Disposable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -80,6 +81,7 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 		});
 	}
 
+	@Nonnull
 	@Override
 	public Maybe<String> start() {
 		waitForLaunchStart();
@@ -89,17 +91,14 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 	@Override
 	public void finish(final FinishExecutionRQ rq) {
 		QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
-		try {
-			Throwable throwable = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren())
-					.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS)
-					.blockingGet();
-			if (throwable != null) {
-				LOGGER.error("Unable to finish secondary launch in ReportPortal", throwable);
-			}
-		} finally {
-			// ignore super call, since only primary launch should finish it
-			stopRunning();
-			lock.finishInstanceUuid(uuid);
+		Throwable throwable = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren())
+				.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS)
+				.blockingGet();
+		if (throwable != null) {
+			LOGGER.error("Unable to finish secondary launch in ReportPortal", throwable);
 		}
+		// ignore super call, since only primary launch should finish it
+		stopRunning();
+		lock.finishInstanceUuid(uuid);
 	}
 }

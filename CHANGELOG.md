@@ -1,6 +1,14 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `StepReporter#step(ItemStatus, String, Supplier<T>)` method, by @HardNorth
+- Log batching payload size tracking, by @HardNorth
+- `rp.batch.payload.limit` configuration parameter, by @HardNorth
+### Removed
+- `finally` keyword, see [JEP 421](https://openjdk.java.net/jeps/421), by @HardNorth
+### Changed
+- Logging RxJava flow refactoring, by @HardNorth
 
 ## [5.1.10]
 ### Added

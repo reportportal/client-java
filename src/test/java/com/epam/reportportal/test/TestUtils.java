@@ -18,7 +18,6 @@ package com.epam.reportportal.test;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.ReportPortalClient;
-import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
@@ -87,9 +86,7 @@ public class TestUtils {
 	}
 
 	public static void simulateFinishLaunchResponse(final ReportPortalClient client) {
-		when(client.finishLaunch(anyString(),
-				any(FinishExecutionRQ.class)
-		)).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(client.finishLaunch(anyString(), any(FinishExecutionRQ.class))).thenReturn(Maybe.just(new OperationCompletionRS()));
 	}
 
 	public static FinishExecutionRQ standardLaunchFinishRequest() {
@@ -240,8 +237,10 @@ public class TestUtils {
 		Maybe<ItemCreatedRS> first = responses.get(0);
 		Maybe<ItemCreatedRS>[] other = responses.subList(1, responses.size()).toArray(new Maybe[0]);
 		when(client.startTestItem(eq(testClassUuid), any())).thenReturn(first, other);
-		new HashSet<>(testMethodUuidList).forEach(testMethodUuid -> when(client.finishTestItem(eq(testMethodUuid), any())).thenReturn(
-				Maybe.just(new OperationCompletionRS())));
+		new HashSet<>(testMethodUuidList).forEach(testMethodUuid -> when(client.finishTestItem(
+				eq(testMethodUuid),
+				any()
+		)).thenReturn(Maybe.just(new OperationCompletionRS())));
 
 		Maybe<OperationCompletionRS> testClassFinishMaybe = Maybe.just(new OperationCompletionRS());
 		when(client.finishTestItem(eq(testClassUuid), any())).thenReturn(testClassFinishMaybe);

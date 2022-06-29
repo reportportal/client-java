@@ -17,16 +17,16 @@ package com.epam.reportportal.service;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.message.TypeAwareByteSource;
+import com.epam.reportportal.service.logs.LogBatchingFlowable;
+import com.epam.reportportal.service.logs.LoggingSubscriber;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.google.common.io.ByteSource;
-import io.reactivex.Completable;
-import io.reactivex.Flowable;
-import io.reactivex.Maybe;
-import io.reactivex.Scheduler;
+import io.reactivex.*;
 import io.reactivex.functions.Function;
 import io.reactivex.internal.operators.flowable.FlowableFromObservable;
+import io.reactivex.plugins.RxJavaPlugins;
 import io.reactivex.subjects.PublishSubject;
 import org.apache.commons.lang3.tuple.Pair;
 import org.reactivestreams.Publisher;
@@ -37,8 +37,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.epam.reportportal.service.LoggingCallback.LOG_ERROR;
-import static com.epam.reportportal.utils.SubscriptionUtils.logFlowableResults;
 import static com.epam.reportportal.utils.files.ImageConverter.convert;
 import static com.epam.reportportal.utils.files.ImageConverter.isImage;
 import static java.util.Optional.ofNullable;
@@ -99,6 +97,26 @@ public class LoggingContext {
 	/**
 	 * Initializes new logging context and attaches it to current thread
 	 *
+	 * @param launchUuid        a UUID of a Launch
+	 * @param itemUuid          a Test Item UUID
+	 * @param client            Client of ReportPortal
+	 * @param scheduler         a {@link Scheduler} to use with this LoggingContext
+	 * @param parameters        Report Portal client configuration parameters
+	 * @param loggingSubscriber RxJava subscriber on logging results
+	 * @return New Logging Context
+	 */
+	@Nonnull
+	public static LoggingContext init(@Nonnull final Maybe<String> launchUuid, @Nullable final Maybe<String> itemUuid,
+			@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler, @Nonnull final ListenerParameters parameters,
+			@Nonnull final FlowableSubscriber<BatchSaveOperatingRS> loggingSubscriber) {
+		LoggingContext context = new LoggingContext(launchUuid, itemUuid, client, scheduler, parameters, loggingSubscriber);
+		createContext().push(context);
+		return context;
+	}
+
+	/**
+	 * Initializes new logging context and attaches it to current thread
+	 *
 	 * @param launchUuid a UUID of a Launch
 	 * @param itemUuid   a Test Item UUID
 	 * @param client     Client of ReportPortal
@@ -107,11 +125,9 @@ public class LoggingContext {
 	 * @return New Logging Context
 	 */
 	@Nonnull
-	public static LoggingContext init(Maybe<String> launchUuid, Maybe<String> itemUuid, final ReportPortalClient client,
-			Scheduler scheduler, ListenerParameters parameters) {
-		LoggingContext context = new LoggingContext(launchUuid, itemUuid, client, scheduler, parameters);
-		createContext().push(context);
-		return context;
+	public static LoggingContext init(@Nonnull final Maybe<String> launchUuid, @Nullable final Maybe<String> itemUuid,
+			@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler, @Nonnull final ListenerParameters parameters) {
+		return init(launchUuid, itemUuid, client, scheduler, parameters, new LoggingSubscriber());
 	}
 
 	/**
@@ -126,8 +142,9 @@ public class LoggingContext {
 	 * @return New Logging Context
 	 */
 	@Nonnull
-	public static LoggingContext init(Maybe<String> launchUuid, Maybe<String> itemUuid, final ReportPortalClient client,
-			Scheduler scheduler, int batchLogsSize, boolean convertImages) {
+	public static LoggingContext init(@Nonnull final Maybe<String> launchUuid, @Nullable final Maybe<String> itemUuid,
+			@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler, final int batchLogsSize,
+			final boolean convertImages) {
 		ListenerParameters params = new ListenerParameters();
 		params.setBatchLogsSize(batchLogsSize);
 		params.setConvertImage(convertImages);
@@ -144,8 +161,8 @@ public class LoggingContext {
 	 * @return New Logging Context
 	 */
 	@Nonnull
-	public static LoggingContext init(Maybe<String> launchUuid, Maybe<String> itemUuid, final ReportPortalClient client,
-			Scheduler scheduler) {
+	public static LoggingContext init(@Nonnull final Maybe<String> launchUuid, @Nullable final Maybe<String> itemUuid,
+			@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler) {
 		return init(launchUuid, itemUuid, client, scheduler, DEFAULT_LOG_BATCH_SIZE, false);
 	}
 
@@ -174,25 +191,27 @@ public class LoggingContext {
 	/* Whether Image should be converted to BlackAndWhite */
 	private final boolean convertImages;
 
-	LoggingContext(Maybe<String> launchUuid, Maybe<String> itemUuid, final ReportPortalClient client, Scheduler scheduler,
-			ListenerParameters parameters) {
+	LoggingContext(@Nonnull final Maybe<String> launchUuid, @Nullable final Maybe<String> itemUuid,
+			@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler, @Nonnull final ListenerParameters parameters,
+			@Nonnull final FlowableSubscriber<BatchSaveOperatingRS> loggingSubscriber) {
 		this.launchUuid = launchUuid;
 		this.itemUuid = itemUuid;
 		this.emitter = PublishSubject.create();
 		this.convertImages = parameters.isConvertImage();
 
-		new FlowableFromObservable<>(emitter).flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable)
-				.buffer(parameters.getBatchLogsSize())
+		RxJavaPlugins.onAssembly(new LogBatchingFlowable(
+						new FlowableFromObservable<>(emitter).flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable),
+						parameters
+				))
 				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
 						rqs)).toFlowable())
-				.doOnError(LOG_ERROR)
 				.observeOn(scheduler)
 				.onBackpressureBuffer(parameters.getRxBufferSize(), false, true)
-				.subscribe(logFlowableResults("Logging context"));
+				.subscribe(loggingSubscriber);
 	}
 
-	private SaveLogRQ prepareRequest(String launchId, String itemId, final java.util.function.Function<String, SaveLogRQ> logSupplier)
-			throws IOException {
+	private SaveLogRQ prepareRequest(@Nonnull final String launchId, @Nullable final String itemId,
+			@Nonnull final java.util.function.Function<String, SaveLogRQ> logSupplier) throws IOException {
 		final SaveLogRQ rq = logSupplier.apply(itemId);
 		rq.setLaunchUuid(launchId);
 		SaveLogRQ.File file = rq.getFile();
@@ -209,7 +228,7 @@ public class LoggingContext {
 	 *
 	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
 	 */
-	public void emit(final java.util.function.Function<String, SaveLogRQ> logSupplier) {
+	public void emit(@Nonnull final java.util.function.Function<String, SaveLogRQ> logSupplier) {
 		emitter.onNext(launchUuid.zipWith(itemUuid, (launchId, itemId) -> prepareRequest(launchId, itemId, logSupplier)));
 	}
 
@@ -219,7 +238,7 @@ public class LoggingContext {
 	 * @param logItemUuid Test Item ID promise
 	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
 	 */
-	public void emit(final Maybe<String> logItemUuid, final java.util.function.Function<String, SaveLogRQ> logSupplier) {
+	public void emit(@Nonnull final Maybe<String> logItemUuid, @Nonnull final java.util.function.Function<String, SaveLogRQ> logSupplier) {
 		emitter.onNext(launchUuid.zipWith(logItemUuid, (launchId, itemId) -> prepareRequest(launchId, itemId, logSupplier)));
 	}
 

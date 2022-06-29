@@ -264,7 +264,7 @@ public class LaunchIdLockFileTest {
 		String launchUuid = UUID.randomUUID().toString();
 		File lockFile = new File(lockFileName);
 		try (FileLock ignored = getFileLock(lockFile)) {
-			assertThat(this.launchIdLockFile.obtainLaunchUuid(launchUuid), equalTo(launchUuid));
+			assertThat(launchIdLockFile.obtainLaunchUuid(launchUuid), equalTo(launchUuid));
 		}
 	}
 

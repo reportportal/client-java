@@ -50,6 +50,7 @@ public enum ListenerProperty {
     UUID("rp.uuid", false),
     API_KEY("rp.api.key", true),
     BATCH_SIZE_LOGS("rp.batch.size.logs", false),
+    BATCH_PAYLOAD_LIMIT("rp.batch.payload.limit", false),
     LAUNCH_ATTRIBUTES("rp.attributes", false),
     DESCRIPTION("rp.description", false),
     IS_CONVERT_IMAGE("rp.convertimage", false),

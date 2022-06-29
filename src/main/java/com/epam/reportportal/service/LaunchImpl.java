@@ -45,8 +45,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static com.epam.reportportal.service.LoggingCallback.*;
-import static com.epam.reportportal.utils.SubscriptionUtils.*;
+import static com.epam.reportportal.service.logs.LaunchLoggingCallback.*;
+import static com.epam.reportportal.utils.SubscriptionUtils.logCompletableResults;
+import static com.epam.reportportal.utils.SubscriptionUtils.logMaybeResults;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
@@ -191,6 +192,7 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @return Launch ID promise
 	 */
+	@Nonnull
 	public Maybe<String> start() {
 		launch.subscribe(logMaybeResults("Launch start"));
 		LaunchLoggingContext.init(this.launch, getClient(), getScheduler(), getParameters());
@@ -213,15 +215,12 @@ public class LaunchImpl extends Launch {
 						.blockingGet()))
 				.ignoreElement()
 				.cache();
-		try {
-			Throwable error = finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
-			if (error != null) {
-				LOGGER.error("Unable to finish launch in ReportPortal", error);
-			}
-		} finally {
-			getStatisticsService().close();
-			statisticsService = new StatisticsService(getParameters());
+		Throwable error = finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
+		if (error != null) {
+			LOGGER.error("Unable to finish launch in ReportPortal", error);
 		}
+		getStatisticsService().close();
+		statisticsService = new StatisticsService(getParameters());
 	}
 
 	private static <T> Maybe<T> createErrorResponse(Throwable cause) {
@@ -246,6 +245,7 @@ public class LaunchImpl extends Launch {
 	 * @param rq Start RQ
 	 * @return Test Item ID promise
 	 */
+	@Nonnull
 	public Maybe<String> startTestItem(final StartTestItemRQ rq) {
 		if (rq == null) {
 			/*
@@ -269,6 +269,15 @@ public class LaunchImpl extends Launch {
 		return item;
 	}
 
+	/**
+	 * Starts new test item in ReportPortal in respect of provided retry item ID.
+	 *
+	 * @param parentId Parent item ID promise
+	 * @param retryOf  previous item ID promise
+	 * @param rq       Start RQ
+	 * @return Test Item ID promise
+	 */
+	@Nonnull
 	public Maybe<String> startTestItem(final Maybe<String> parentId, final Maybe<String> retryOf, final StartTestItemRQ rq) {
 		return retryOf.flatMap((Function<String, Maybe<String>>) s -> startTestItem(parentId, rq)).cache();
 	}
@@ -276,9 +285,11 @@ public class LaunchImpl extends Launch {
 	/**
 	 * Starts new test item in ReportPortal asynchronously (non-blocking)
 	 *
-	 * @param rq Start RQ
+	 * @param parentId Parent item ID promise
+	 * @param rq       Start RQ
 	 * @return Test Item ID promise
 	 */
+	@Nonnull
 	public Maybe<String> startTestItem(final Maybe<String> parentId, final StartTestItemRQ rq) {
 		if (parentId == null) {
 			return startTestItem(rq);
@@ -315,6 +326,7 @@ public class LaunchImpl extends Launch {
 	 * @param rq   Finish request
 	 * @return a Finish Item response promise
 	 */
+	@Nonnull
 	public Maybe<OperationCompletionRS> finishTestItem(final Maybe<String> item, final FinishTestItemRQ rq) {
 		if (item == null) {
 			/*

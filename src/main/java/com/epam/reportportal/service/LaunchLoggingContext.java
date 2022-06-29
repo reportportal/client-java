@@ -18,23 +18,23 @@ package com.epam.reportportal.service;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.message.TypeAwareByteSource;
+import com.epam.reportportal.service.logs.LogBatchingFlowable;
+import com.epam.reportportal.service.logs.LoggingSubscriber;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import io.reactivex.Completable;
-import io.reactivex.Flowable;
-import io.reactivex.Maybe;
-import io.reactivex.Scheduler;
+import io.reactivex.*;
 import io.reactivex.functions.Function;
 import io.reactivex.internal.operators.flowable.FlowableFromObservable;
+import io.reactivex.plugins.RxJavaPlugins;
 import io.reactivex.subjects.PublishSubject;
 import org.reactivestreams.Publisher;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.epam.reportportal.utils.SubscriptionUtils.logFlowableResults;
 import static com.epam.reportportal.utils.files.ImageConverter.convert;
 import static com.epam.reportportal.utils.files.ImageConverter.isImage;
 import static com.google.common.io.ByteSource.wrap;
@@ -63,24 +63,44 @@ public class LaunchLoggingContext {
 	/* Whether Image should be converted to BlackAndWhite */
 	private final boolean convertImages;
 
-	private LaunchLoggingContext(Maybe<String> launchUuid, final ReportPortalClient client, Scheduler scheduler,
-			ListenerParameters parameters) {
+	private LaunchLoggingContext(@Nonnull final Maybe<String> launchUuid, @Nonnull final ReportPortalClient client,
+			@Nonnull final Scheduler scheduler, @Nonnull final ListenerParameters parameters,
+			@Nonnull final FlowableSubscriber<BatchSaveOperatingRS> loggingSubscriber) {
 		this.launchUuid = launchUuid;
 		this.emitter = PublishSubject.create();
 		this.convertImages = parameters.isConvertImage();
-		new FlowableFromObservable<>(emitter).flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable)
-				.buffer(parameters.getBatchLogsSize())
+		RxJavaPlugins.onAssembly(new LogBatchingFlowable(
+						new FlowableFromObservable<>(emitter).flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable),
+						parameters
+				))
 				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
 						rqs)).toFlowable())
-				.doOnError(Throwable::printStackTrace)
 				.observeOn(scheduler)
 				.onBackpressureBuffer(parameters.getRxBufferSize(), false, true)
-				.subscribe(logFlowableResults("Launch logging context"));
+				.subscribe(loggingSubscriber);
 	}
 
 	@Nullable
-	public static LaunchLoggingContext context(String key) {
+	public static LaunchLoggingContext context(@Nonnull final String key) {
 		return loggingContextMap.get(key);
+	}
+
+	/**
+	 * Initializes new logging context and attaches it to current thread
+	 *
+	 * @param launchUuid        a UUID of a Launch
+	 * @param client            Client of ReportPortal
+	 * @param scheduler         a {@link Scheduler} to use with this LoggingContext
+	 * @param parameters        Report Portal client configuration parameters
+	 * @param loggingSubscriber RxJava subscriber on logging results
+	 * @return New Logging Context
+	 */
+	public static LaunchLoggingContext init(@Nonnull final Maybe<String> launchUuid, @Nonnull final ReportPortalClient client,
+			@Nonnull final Scheduler scheduler, @Nonnull final ListenerParameters parameters,
+			@Nonnull final FlowableSubscriber<BatchSaveOperatingRS> loggingSubscriber) {
+		LaunchLoggingContext context = new LaunchLoggingContext(launchUuid, client, scheduler, parameters, loggingSubscriber);
+		loggingContextMap.put(DEFAULT_LAUNCH_KEY, context);
+		return context;
 	}
 
 	/**
@@ -92,11 +112,9 @@ public class LaunchLoggingContext {
 	 * @param parameters Report Portal client configuration parameters
 	 * @return New Logging Context
 	 */
-	public static LaunchLoggingContext init(Maybe<String> launchUuid, final ReportPortalClient client, Scheduler scheduler,
-			ListenerParameters parameters) {
-		LaunchLoggingContext context = new LaunchLoggingContext(launchUuid, client, scheduler, parameters);
-		loggingContextMap.put(DEFAULT_LAUNCH_KEY, context);
-		return context;
+	public static LaunchLoggingContext init(@Nonnull final Maybe<String> launchUuid, @Nonnull final ReportPortalClient client,
+			@Nonnull final Scheduler scheduler, @Nonnull final ListenerParameters parameters) {
+		return init(launchUuid, client, scheduler, parameters, new LoggingSubscriber());
 	}
 
 	/**
@@ -107,7 +125,8 @@ public class LaunchLoggingContext {
 	 * @param scheduler  a {@link Scheduler} to use with this LoggingContext
 	 * @return New Logging Context
 	 */
-	static LaunchLoggingContext init(Maybe<String> launchUuid, final ReportPortalClient client, Scheduler scheduler) {
+	static LaunchLoggingContext init(@Nonnull final Maybe<String> launchUuid, final ReportPortalClient client,
+			@Nonnull final Scheduler scheduler) {
 		return init(launchUuid, client, scheduler, LoggingContext.DEFAULT_LOG_BATCH_SIZE, false);
 	}
 
@@ -121,14 +140,12 @@ public class LaunchLoggingContext {
 	 * @param convertImages Whether Image should be converted to BlackAndWhite
 	 * @return New Logging Context
 	 */
-	static LaunchLoggingContext init(Maybe<String> launchUuid, final ReportPortalClient client, Scheduler scheduler, int batchLogsSize,
-			boolean convertImages) {
+	static LaunchLoggingContext init(@Nonnull final Maybe<String> launchUuid, @Nonnull final ReportPortalClient client,
+			@Nonnull final Scheduler scheduler, final int batchLogsSize, final boolean convertImages) {
 		ListenerParameters params = new ListenerParameters();
 		params.setBatchLogsSize(batchLogsSize);
 		params.setConvertImage(convertImages);
-		LaunchLoggingContext context = new LaunchLoggingContext(launchUuid, client, scheduler, params);
-		loggingContextMap.put(DEFAULT_LAUNCH_KEY, context);
-		return context;
+		return init(launchUuid, client, scheduler, params, new LoggingSubscriber());
 	}
 
 	/**
@@ -150,7 +167,7 @@ public class LaunchLoggingContext {
 	 *
 	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
 	 */
-	void emit(final java.util.function.Function<String, SaveLogRQ> logSupplier) {
+	void emit(@Nonnull final java.util.function.Function<String, SaveLogRQ> logSupplier) {
 		emitter.onNext(launchUuid.map(input -> {
 			final SaveLogRQ rq = logSupplier.apply(input);
 			SaveLogRQ.File file = rq.getFile();

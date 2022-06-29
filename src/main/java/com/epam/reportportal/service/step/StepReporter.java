@@ -98,6 +98,18 @@ public interface StepReporter {
 	/**
 	 * Wrap passed actions as a separate step and report it.
 	 *
+	 * @param stepSuccessStatus step status in case of graceful finish
+	 * @param name              step name
+	 * @param actions           action function to execute
+	 * @param <T>               return type
+	 * @return actions result
+	 */
+	@Nullable
+	<T> T step(@Nonnull ItemStatus stepSuccessStatus, @Nonnull String name, @Nonnull Supplier<T> actions);
+
+	/**
+	 * Wrap passed actions as a separate step and report it.
+	 *
 	 * @param name    step name
 	 * @param actions action function to execute
 	 * @param <T>     return type
@@ -179,6 +191,9 @@ public interface StepReporter {
 		public void step(@Nonnull String name) {}
 		@Override
 		public void step(@Nonnull ItemStatus status, @Nonnull String name) {}
+		@Override
+		@Nullable
+		public <T> T step(@Nonnull ItemStatus stepSuccessStatus, @Nonnull String name, @Nonnull Supplier<T> actions) {return null;}
 		@Override
 		@Nullable
 		public <T> T step(@Nonnull String name, @Nonnull Supplier<T> actions) {return null;}

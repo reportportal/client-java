@@ -17,15 +17,14 @@
 package com.epam.reportportal.utils.properties;
 
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
@@ -66,8 +65,8 @@ public class SystemAttributesExtractor {
 	/**
 	 * Loads properties from the specified location
 	 *
-	 * @param resource Path to the resource in classpath
-	 * @param loader   context class loader, which is used by a specific agent implementation
+	 * @param resource        Path to the resource in classpath
+	 * @param loader          context class loader, which is used by a specific agent implementation
 	 * @param propertyHolders an array of specific properties we want to extract
 	 * @return {@link Set} of {@link ItemAttributesRQ}
 	 */
@@ -105,7 +104,7 @@ public class SystemAttributesExtractor {
 	/**
 	 * Loads properties from the specified location
 	 *
-	 * @param path Path to the resource the file system
+	 * @param path            Path to the resource the file system
 	 * @param propertyHolders an array of specific properties we want to extract
 	 * @return {@link Set} of {@link ItemAttributesRQ}
 	 */
@@ -116,16 +115,19 @@ public class SystemAttributesExtractor {
 
 	private static Properties loadProperties(final Path path) {
 		Properties properties = new Properties();
-		ofNullable(path).ifPresent(p -> {
-			File file = p.toFile();
+		if (path != null) {
+			File file = path.toFile();
 			if (file.exists()) {
-				try (InputStreamReader inputStreamReader = new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8)) {
+				try (InputStreamReader inputStreamReader = new InputStreamReader(
+						Files.newInputStream(file.toPath()),
+						StandardCharsets.UTF_8
+				)) {
 					properties.load(inputStreamReader);
 				} catch (IOException e) {
 					LOGGER.warn("Unable to load system properties file");
 				}
 			}
-		});
+		}
 		return properties;
 	}
 
@@ -186,7 +188,7 @@ public class SystemAttributesExtractor {
 				.map(Optional::get)
 				.collect(Collectors.toList());
 		if (!values.isEmpty()) {
-			return Optional.of(new ItemAttributesRQ(attributeKey, StringUtils.join(values, ATTRIBUTE_VALUE_SEPARATOR), true));
+			return Optional.of(new ItemAttributesRQ(attributeKey, String.join(ATTRIBUTE_VALUE_SEPARATOR, values), true));
 		} else {
 			return Optional.empty();
 		}

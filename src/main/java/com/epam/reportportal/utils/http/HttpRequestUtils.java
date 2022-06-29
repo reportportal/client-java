@@ -54,14 +54,13 @@ public class HttpRequestUtils {
 	private static final String DEFAULT_TYPE = "application/octet-stream";
 
 	private HttpRequestUtils() {
-		//static only
+		throw new IllegalStateException("Static only class");
 	}
 
 	public static List<MultipartBody.Part> buildLogMultiPartRequest(List<SaveLogRQ> rqs) {
 		List<MultipartBody.Part> result = new ArrayList<>();
 		try {
-			result.add(MultipartBody.Part.createFormData(
-					Constants.LOG_REQUEST_JSON_PART,
+			result.add(MultipartBody.Part.createFormData(Constants.LOG_REQUEST_JSON_PART,
 					null,
 					RequestBody.create(okhttp3.MediaType.get("application/json; charset=utf-8"),
 							MAPPER.writerFor(new TypeReference<List<SaveLogRQ>>() {
@@ -91,5 +90,54 @@ public class HttpRequestUtils {
 			}
 		}
 		return result;
+	}
+
+	public static final String TYPICAL_MULTIPART_BOUNDARY = "--972dbca3abacfd01fb4aea0571532b52";
+	public static final String TYPICAL_JSON_PART_HEADER =
+			TYPICAL_MULTIPART_BOUNDARY + "\r\nContent-Disposition: form-data; name=\"json_request_part\"\r\n"
+					+ "Content-Type: application/json\r\n\r\n";
+	public static final String TYPICAL_FILE_PART_HEADER =
+			TYPICAL_MULTIPART_BOUNDARY + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"%s\"\r\n"
+					+ "Content-Type: %s\r\n\r\n";
+	public static final int TYPICAL_JSON_PART_HEADER_LENGTH = TYPICAL_JSON_PART_HEADER.length();
+	public static final String TYPICAL_MULTIPART_FOOTER = "\r\n" + TYPICAL_MULTIPART_BOUNDARY + "--";
+	public static final int TYPICAL_MULTIPART_FOOTER_LENGTH = TYPICAL_MULTIPART_FOOTER.length();
+	public static final String TYPICAL_JSON_ARRAY = "[]";
+	public static final int TYPICAL_JSON_ARRAY_LENGTH = TYPICAL_JSON_ARRAY.length();
+	public static final String TYPICAL_JSON_ARRAY_ELEMENT = ",";
+	public static final int TYPICAL_JSON_ARRAY_ELEMENT_LENGTH = TYPICAL_JSON_ARRAY_ELEMENT.length();
+
+	private static long calculateJsonPartSize(SaveLogRQ request) {
+		long size;
+		try {
+			size = MAPPER.writerFor(new TypeReference<SaveLogRQ>() {
+			}).writeValueAsString(request).length();
+		} catch (JsonProcessingException e) {
+			throw new InternalReportPortalClientException("Unable to process JSON", e);
+		}
+		size += TYPICAL_JSON_PART_HEADER_LENGTH;
+		size += TYPICAL_JSON_ARRAY_LENGTH;
+		size += TYPICAL_JSON_ARRAY_ELEMENT_LENGTH;
+		return size;
+	}
+
+	private static long calculateFilePartSize(SaveLogRQ request) {
+		if (request.getFile() == null || request.getFile().getContent() == null) {
+			return 0;
+		}
+		SaveLogRQ.File file = request.getFile();
+		long size = String.format(TYPICAL_FILE_PART_HEADER, file.getName(), file.getContentType()).length();
+		size += file.getContent().length;
+		return size;
+	}
+
+	/**
+	 * Estimate HTTP request size of a {@link SaveLogRQ}. Used to limit log batch size by payload.
+	 *
+	 * @param request log request
+	 * @return estimate size of the request
+	 */
+	public static long calculateRequestSize(SaveLogRQ request) {
+		return calculateJsonPartSize(request) + calculateFilePartSize(request);
 	}
 }

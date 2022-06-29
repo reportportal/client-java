@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 
 /**
  * File utilities.
@@ -105,7 +106,7 @@ public class Utils {
 	 * @throws IOException in case of a read error, or a file not found
 	 */
 	public static byte[] readFileToBytes(@Nonnull File file) throws IOException {
-		return readInputStreamToBytes(new FileInputStream(file));
+		return readInputStreamToBytes(Files.newInputStream(file.toPath()));
 	}
 
 	/**

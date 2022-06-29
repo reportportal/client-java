@@ -74,6 +74,9 @@ public class ListenerParameters implements Cloneable {
 	private static final int DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT = 1024;
 	private static final String DEFAULT_TRUNCATE_REPLACEMENT = "...";
 
+	// Due to shortcoming of payload calculation mechanism this value is set to 65 million of bytes rather than 65 megabytes
+	public static final long DEFAULT_BATCH_PAYLOAD_LIMIT = 65 * 1000 * 1000;
+
 	private String description;
 	private String apiKey;
 	private String baseUrl;
@@ -90,6 +93,7 @@ public class ListenerParameters implements Cloneable {
 	private Boolean enable;
 	private Boolean isSkippedAnIssue;
 	private Integer batchLogsSize;
+	private Long    batchPayloadLimit;
 	private boolean convertImage;
 	private Integer reportingTimeout;
 	private String keystore;
@@ -151,6 +155,7 @@ public class ListenerParameters implements Cloneable {
 		this.isSkippedAnIssue = DEFAULT_SKIP_ISSUE;
 
 		this.batchLogsSize = LoggingContext.DEFAULT_LOG_BATCH_SIZE;
+		this.batchPayloadLimit = DEFAULT_BATCH_PAYLOAD_LIMIT;
 		this.convertImage = DEFAULT_CONVERT_IMAGE;
 		this.reportingTimeout = DEFAULT_REPORTING_TIMEOUT;
 		this.httpLogging = DEFAULT_HTTP_LOGGING;
@@ -198,6 +203,7 @@ public class ListenerParameters implements Cloneable {
 		this.isSkippedAnIssue = properties.getPropertyAsBoolean(SKIPPED_AS_ISSUE, DEFAULT_SKIP_ISSUE);
 
 		this.batchLogsSize = properties.getPropertyAsInt(BATCH_SIZE_LOGS, LoggingContext.DEFAULT_LOG_BATCH_SIZE);
+		this.batchPayloadLimit = properties.getPropertyAsLong(BATCH_PAYLOAD_LIMIT, DEFAULT_BATCH_PAYLOAD_LIMIT);
 		this.convertImage = properties.getPropertyAsBoolean(IS_CONVERT_IMAGE, DEFAULT_CONVERT_IMAGE);
 		this.reportingTimeout = properties.getPropertyAsInt(REPORTING_TIMEOUT, DEFAULT_REPORTING_TIMEOUT);
 
@@ -348,6 +354,14 @@ public class ListenerParameters implements Cloneable {
 
 	public void setBatchLogsSize(Integer batchLogsSize) {
 		this.batchLogsSize = batchLogsSize;
+	}
+
+	public Long getBatchPayloadLimit() {
+		return batchPayloadLimit;
+	}
+
+	public void setBatchPayloadLimit(Long batchPayloadLimit) {
+		this.batchPayloadLimit = batchPayloadLimit;
 	}
 
 	public boolean isConvertImage() {

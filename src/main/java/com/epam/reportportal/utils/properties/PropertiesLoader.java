@@ -148,6 +148,18 @@ public class PropertiesLoader {
 	 * Get specified property
 	 *
 	 * @param propertyName Name of property
+	 * @param defaultValue Default value
+	 * @return property value if present, {@code defaultValue} otherwise
+	 */
+	public long getPropertyAsLong(ListenerProperty propertyName, long defaultValue) {
+		final String value = propertiesSupplier.get().getProperty(propertyName.getPropertyName());
+		return null != value ? Long.parseLong(value) : defaultValue;
+	}
+
+	/**
+	 * Get specified property
+	 *
+	 * @param propertyName Name of property
 	 * @return Property value or null
 	 */
 	public String getProperty(ListenerProperty propertyName) {
