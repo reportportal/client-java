@@ -1,8 +1,8 @@
 # Client java
 
-> **DISCLAIMER**: We use Google Analytics for sending anonymous usage information such as agent's and client's names, and their versions
-> after a successful launch start. This information might help us to improve both ReportPortal backend and client sides. It is used by the
-> ReportPortal team only and is not supposed for sharing with 3rd parties.
+> **DISCLAIMER**: We use Google Analytics for sending anonymous usage information such as agent's and client's names,
+> and their versions after a successful launch start. This information might help us to improve both ReportPortal
+> backend and client sides. It is used by the Report Portal team only and is not supposed for sharing with 3rd parties.
 
 [![Maven Central](https://img.shields.io/maven-central/v/com.epam.reportportal/client-java.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.epam.reportportal%22%20AND%20a:%22client-java%22)
 [![CI Build](https://github.com/reportportal/client-java/actions/workflows/ci.yml/badge.svg)](https://github.com/reportportal/client-java/actions/workflows/ci.yml)
@@ -16,8 +16,8 @@
 
 ### How to provide parameters
 
-There are several ways to load parameters. Be aware that higher sources override lower ones. For example, properties from file can be
-overridden by JVM variables.
+There are several ways to load parameters. Be aware that higher sources override lower ones. For example, properties
+from file can be overridden by JVM variables.
 
 | Order | Source                |
 |-------|-----------------------|
@@ -26,23 +26,29 @@ overridden by JVM variables.
 | 3     | Properties file       |
 
 ### JVM arguments
-Report Portal client does not necessarily need properties file to be configured. One of the option is to use JVM arguments which have the
-highest priority among configuration ways. To use them you need to specify them in command line after Java executable using `-D` flag.
+
+Report Portal client does not necessarily need properties file to be configured. One of the option is to use JVM
+arguments which have the highest priority among configuration ways. To use them you need to specify them in command line
+after Java executable using `-D` flag.
 Example:
+
 ```shell
 $ java -Drp.endpoint=https://rp.epam.com/ -jar my-tests.jar
 ```
 
 ### Environment variables
-In case of bypassing parameters through environment variables they should be specified in UPPERCASE separated by underscores (`_`).
-E.G.: 
+
+In case of bypassing parameters through environment variables they should be specified in UPPERCASE separated by
+underscores (`_`).
+E.G.:
+
 * `rp.endpoint` --> `RP_ENDPOINT`
 * `rp.skipped.issue` --> `RP_SKIPPED_ISSUE`
 
 ### Property file
 
-The most common way to start using an agent is to copy your configuration from UI of ReportPortal at User Profile section or configure 
-property file `reportportal.properties` in the following format:
+The most common way to start using an agent is to copy your configuration from UI of ReportPortal at User Profile
+section or configure property file `reportportal.properties` in the following format:
 
 ```properties
 rp.endpoint=https://rp.epam.com/
@@ -64,10 +70,11 @@ rp.batch.size.logs=20
 rp.keystore.resource=<PATH_TO_YOUR_KEYSTORE>
 rp.keystore.password=<PASSWORD_OF_YOUR_KEYSTORE>
 ```
+
 For detailed parameter description see below sections.
 
-Properties file should have `reportportal.properties` name. It can be situated on the class path (in the project directory). If client can’t
-find the properties file it logs a warning.
+Properties file should have `reportportal.properties` name. It can be situated on the class path (in the project
+directory). If client can’t find the properties file it logs a warning.
 
 ## Parameters
 
@@ -95,9 +102,10 @@ find the properties file it logs a warning.
 | rp.keystore.resource  | String   | Put your JKS file into resources and specify path to it                                                                                                                                                                                                                                                                                                                      | No           |
 | rp.keystore.password  | String   | Access password for JKS (certificate storage) package, mentioned above<br/>                                                                                                                                                                                                                                                                                                  | No           |
 
-Launch name sets once before first execution, because in common launch parts are fixed for a long time. By keeping the same launch name we 
-will know a fixed list of suites behind it. That will allow us to have a history trend. On Report Portal UI different launch iterations will
-be saved with postfix "\#number", like "Test Launch \#1", "Test Launch \#2" etc.
+Launch name sets once before first execution, because in common launch parts are fixed for a long time. By keeping the
+same launch name we will know a fixed list of suites behind it. That will allow us to have a history trend. On Report
+Portal UI different launch iterations will be saved with postfix "\#number", like "Test Launch \#1", "Test Launch \#2"
+etc.
 
 > If mandatory parameters are missed client will log a warning and will be initialized in inactive state.
 
@@ -131,15 +139,19 @@ be saved with postfix "\#number", like "Test Launch \#1", "Test Launch \#2" etc.
 | rp.http.timeout.write.unit    | Enum     | Default: `MILLISECONDS`<br> Timeout value time unit. Should be one of values from `java.util.concurrent.TimeUnit` class                                                                                                                                  |
 
 ## Proxy configuration
+
 Report Portal supports 2 options for setting Proxy configuration:
+
 * JVM arguments (-Dhttps.proxyHost=localhost)
 * `reportportal.properties` file
 
 ### JVM arguments
-Report Portal uses OkHttp as HTTP client, which can pick up JVM proxy settings. This is the most flexible and preferable way to configure 
-proxies, since it supports different proxy types. You can find out more about JVM proxies on 
+
+Report Portal uses OkHttp as HTTP client, which can pick up JVM proxy settings. This is the most flexible and preferable
+way to configure proxies, since it supports different proxy types. You can find out more about JVM proxies on
 [Java networking and proxies](http://docs.oracle.com/javase/8/docs/technotes/guides/net/proxies.html) page.
 
 ### Properties file
-If you need to set up just a simple HTTP proxy you can use `reportportal.properties` file. `rp.http.proxy` parameter accepts HTTP proxy URL.
-This parameter can override JVM proxy arguments, so watch your back.
+
+If you need to set up just a simple HTTP proxy you can use `reportportal.properties` file. `rp.http.proxy` parameter
+accepts HTTP proxy URL. This parameter can override JVM proxy arguments, so watch your back.
