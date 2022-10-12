@@ -24,6 +24,7 @@ import com.epam.reportportal.utils.Waiter;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -69,6 +70,7 @@ public class PrimaryLaunch extends AbstractJoinedLaunch {
 			finished = waiter.till(finishCondition);
 		}
 		lock.finishInstanceUuid(uuid);
+		rq.setEndTime(Calendar.getInstance().getTime());
 		super.finish(rq);
 	}
 }
