@@ -35,6 +35,7 @@ import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
 import java.util.Collections;
@@ -207,14 +208,16 @@ public class LaunchImpl extends Launch {
 	 */
 	public void finish(final FinishExecutionRQ rq) {
 		QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
-		final Completable finish = Completable.concat(QUEUE.getUnchecked(launch).getChildren())
-				.andThen(launch.map(id -> getClient().finishLaunch(id, rq)
-						.retry(DEFAULT_REQUEST_RETRY)
-						.doOnSuccess(LOG_SUCCESS)
-						.doOnError(LOG_ERROR)
-						.blockingGet()))
-				.ignoreElement()
-				.cache();
+		Completable finish = Completable.concat(QUEUE.getUnchecked(launch).getChildren());
+		if(StringUtils.isBlank(getParameters().getLaunchUuid())) {
+			finish = finish.andThen(launch.map(id -> getClient().finishLaunch(id, rq)
+					.retry(DEFAULT_REQUEST_RETRY)
+					.doOnSuccess(LOG_SUCCESS)
+					.doOnError(LOG_ERROR)
+					.blockingGet())).ignoreElement();
+		}
+		finish = finish.cache();
+
 		Throwable error = finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
 		if (error != null) {
 			LOGGER.error("Unable to finish launch in ReportPortal", error);

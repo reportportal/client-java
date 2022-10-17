@@ -33,9 +33,8 @@ public enum ListenerProperty {
      * Enable / Disable raw HTTP requests logging
      */
     HTTP_LOGGING("rp.http.logging", false),
-    /**
-     * Different HTTP timeouts
-     */
+
+    // HTTP timeouts till the next blank line
     HTTP_CALL_TIMEOUT_VALUE("rp.http.timeout.call.value", false),
     HTTP_CALL_TIMEOUT_UNIT("rp.http.timeout.call.unit", false),
     HTTP_CONNECT_TIMEOUT_VALUE("rp.http.timeout.connect.value", false),
@@ -47,6 +46,10 @@ public enum ListenerProperty {
 
     PROJECT_NAME("rp.project", true),
     LAUNCH_NAME("rp.launch", true),
+    /**
+     * Do not create new launch and use predefined Launch UUID
+     */
+    LAUNCH_UUID("rp.launch.uuid", false),
     UUID("rp.uuid", false),
     API_KEY("rp.api.key", true),
     BATCH_SIZE_LOGS("rp.batch.size.logs", false),

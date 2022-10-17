@@ -3,6 +3,8 @@
 ## [Unreleased]
 ### Fixed
 - Launch finish time in case of fork-join launch, by @PavelSakharchuk
+### Added
+- `rp.launch.uuid` property, to append to and existing launch without start/finish launch calls, by @HardNorth
 
 ## [5.1.11]
 ### Added

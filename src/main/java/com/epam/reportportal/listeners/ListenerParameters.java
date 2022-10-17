@@ -88,6 +88,7 @@ public class ListenerParameters implements Cloneable {
 	private Duration httpWriteTimeout;
 	private String projectName;
 	private String launchName;
+	private String launchUuid;
 	private Mode launchRunningMode;
 	private Set<ItemAttributesRQ> attributes;
 	private Boolean enable;
@@ -197,6 +198,7 @@ public class ListenerParameters implements Cloneable {
 
 		this.projectName = properties.getProperty(PROJECT_NAME) != null ? properties.getProperty(PROJECT_NAME).trim() : null;
 		this.launchName = properties.getProperty(LAUNCH_NAME);
+		this.launchUuid = properties.getProperty(LAUNCH_UUID);
 		this.attributes = Collections.unmodifiableSet(AttributeParser.parseAsSet(properties.getProperty(LAUNCH_ATTRIBUTES)));
 		this.launchRunningMode = parseLaunchMode(properties.getProperty(MODE));
 		this.enable = properties.getPropertyAsBoolean(ENABLE, DEFAULT_ENABLE);
@@ -314,6 +316,14 @@ public class ListenerParameters implements Cloneable {
 
 	public void setLaunchName(String launchName) {
 		this.launchName = launchName;
+	}
+
+	public String getLaunchUuid() {
+		return launchUuid;
+	}
+
+	public void setLaunchUuid(String launchUuid) {
+		this.launchUuid = launchUuid;
 	}
 
 	public Mode getLaunchRunningMode() {
@@ -613,6 +623,7 @@ public class ListenerParameters implements Cloneable {
 		sb.append(", httpWriteTimeout='").append(httpWriteTimeout).append('\'');
 		sb.append(", projectName='").append(projectName).append('\'');
 		sb.append(", launchName='").append(launchName).append('\'');
+		sb.append(", launchUuid='").append(launchUuid).append('\'');
 		sb.append(", launchRunningMode=").append(launchRunningMode);
 		sb.append(", attributes=").append(attributes);
 		sb.append(", enable=").append(enable);

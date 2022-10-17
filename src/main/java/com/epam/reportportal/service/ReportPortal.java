@@ -37,6 +37,7 @@ import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit2.Retrofit;
@@ -87,8 +88,8 @@ public class ReportPortal {
 	 * @param rpClient   ReportPortal client
 	 * @param parameters Listener Parameters
 	 */
-	ReportPortal(@Nullable ReportPortalClient rpClient, @Nonnull ExecutorService executor, @Nonnull ListenerParameters parameters,
-			@Nullable LaunchIdLock launchIdLock) {
+	ReportPortal(@Nullable ReportPortalClient rpClient, @Nonnull ExecutorService executor,
+			@Nonnull ListenerParameters parameters, @Nullable LaunchIdLock launchIdLock) {
 		this.rpClient = rpClient;
 		this.executor = executor;
 		this.parameters = Objects.requireNonNull(parameters);
@@ -105,6 +106,11 @@ public class ReportPortal {
 	public Launch newLaunch(@Nonnull StartLaunchRQ rq) {
 		if (BooleanUtils.isNotTrue(parameters.getEnable()) || rpClient == null) {
 			return Launch.NOOP_LAUNCH;
+		}
+
+		if (StringUtils.isNotBlank(parameters.getLaunchUuid())) {
+			// a Launch UUID specified, use it and do not start a new Launch
+			return new LaunchImpl(rpClient, parameters, Maybe.just(parameters.getLaunchUuid()), executor);
 		}
 
 		if (launchIdLock == null) {
@@ -147,7 +153,8 @@ public class ReportPortal {
 	 */
 	@Nonnull
 	public Launch withLaunch(@Nonnull Maybe<String> launchUuid) {
-		return ofNullable(rpClient).map(c -> (Launch) new LaunchImpl(c, parameters, launchUuid, executor)).orElse(Launch.NOOP_LAUNCH);
+		return ofNullable(rpClient).map(c -> (Launch) new LaunchImpl(c, parameters, launchUuid, executor))
+				.orElse(Launch.NOOP_LAUNCH);
 	}
 
 	/**
@@ -201,8 +208,8 @@ public class ReportPortal {
 	 * @return builder for {@link ReportPortal}
 	 */
 	@Nonnull
-	public static ReportPortal create(@Nonnull final ReportPortalClient client, @Nonnull final ListenerParameters params,
-			@Nonnull final ExecutorService executor) {
+	public static ReportPortal create(@Nonnull final ReportPortalClient client,
+			@Nonnull final ListenerParameters params, @Nonnull final ExecutorService executor) {
 		return new ReportPortal(client, executor, params, getLaunchLock(params));
 	}
 
@@ -291,7 +298,8 @@ public class ReportPortal {
 		});
 	}
 
-	private static void fillSaveLogRQ(final SaveLogRQ rq, final String message, final String level, final Date time, final File file) {
+	private static void fillSaveLogRQ(final SaveLogRQ rq, final String message, final String level, final Date time,
+			final File file) {
 		rq.setMessage(message);
 		rq.setLevel(level);
 		rq.setLogTime(time);
@@ -345,7 +353,8 @@ public class ReportPortal {
 		});
 	}
 
-	private static void fillSaveLogRQ(final SaveLogRQ rq, final String level, final Date time, final ReportPortalMessage message) {
+	private static void fillSaveLogRQ(final SaveLogRQ rq, final String level, final Date time,
+			final ReportPortalMessage message) {
 		rq.setLevel(level);
 		rq.setLogTime(time);
 		rq.setMessage(message.getMessage());
@@ -406,12 +415,18 @@ public class ReportPortal {
 		}
 
 		public ReportPortal build() {
-			ListenerParameters params = ofNullable(this.parameters).orElse(new ListenerParameters(defaultPropertiesLoader()));
+			ListenerParameters params = ofNullable(this.parameters).orElse(new ListenerParameters(
+					defaultPropertiesLoader()));
 			ExecutorService executorService = executor == null ? buildExecutorService(params) : executor;
 			Class<? extends ReportPortalClient> clientType = params.isAsyncReporting() ?
 					ReportPortalClientV2.class :
 					ReportPortalClient.class;
-			return new ReportPortal(buildClient(clientType, params, executorService), executorService, params, buildLaunchLock(params));
+			return new ReportPortal(
+					buildClient(clientType, params, executorService),
+					executorService,
+					params,
+					buildLaunchLock(params)
+			);
 		}
 
 		/**
@@ -420,7 +435,8 @@ public class ReportPortal {
 		 * @param <T>        Report Portal Client interface class
 		 * @return a Report Portal Client instance
 		 */
-		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType, @Nonnull final ListenerParameters params) {
+		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType,
+				@Nonnull final ListenerParameters params) {
 			return buildClient(clientType, params, buildExecutorService(params));
 		}
 
@@ -431,8 +447,8 @@ public class ReportPortal {
 		 * @param executor   {@link ExecutorService} an Executor which will be used for internal request / response queue processing
 		 * @return a Report Portal Client instance
 		 */
-		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType, @Nonnull final ListenerParameters params,
-				@Nonnull final ExecutorService executor) {
+		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType,
+				@Nonnull final ListenerParameters params, @Nonnull final ExecutorService executor) {
 			OkHttpClient client = ofNullable(this.httpClient).map(c -> c.addInterceptor(new BearerAuthInterceptor(params.getApiKey()))
 					.build()).orElseGet(() -> defaultClient(params));
 
@@ -444,7 +460,8 @@ public class ReportPortal {
 		 * @param client     {@link OkHttpClient} an HTTP client instance
 		 * @return a ReportPortal endpoint description class
 		 */
-		protected Retrofit buildRestEndpoint(@Nonnull final ListenerParameters parameters, @Nonnull final OkHttpClient client) {
+		protected Retrofit buildRestEndpoint(@Nonnull final ListenerParameters parameters,
+				@Nonnull final OkHttpClient client) {
 			return buildRestEndpoint(parameters, client, buildExecutorService(parameters));
 		}
 
@@ -454,15 +471,16 @@ public class ReportPortal {
 		 * @param executor   {@link ExecutorService} an Executor which will be used for internal request / response queue processing
 		 * @return a ReportPortal endpoint description class
 		 */
-		protected Retrofit buildRestEndpoint(@Nonnull final ListenerParameters parameters, @Nonnull final OkHttpClient client,
-				@Nonnull final ExecutorService executor) {
-			String baseUrl = (parameters.getBaseUrl().endsWith("/") ? parameters.getBaseUrl() : parameters.getBaseUrl() + "/") + API_PATH;
+		protected Retrofit buildRestEndpoint(@Nonnull final ListenerParameters parameters,
+				@Nonnull final OkHttpClient client, @Nonnull final ExecutorService executor) {
+			String baseUrl =
+					(parameters.getBaseUrl().endsWith("/") ? parameters.getBaseUrl() : parameters.getBaseUrl() + "/")
+							+ API_PATH;
 			Retrofit.Builder builder = new Retrofit.Builder().client(client);
 			try {
 				builder.baseUrl(baseUrl);
 			} catch (NoSuchMethodError e) {
-				throw new InternalReportPortalClientException("Unable to initialize OkHttp client. "
-						+ "Report Portal client supports OkHttp version 3.11.0 as minimum.\n"
+				throw new InternalReportPortalClientException("Unable to initialize OkHttp client. " + "Report Portal client supports OkHttp version 3.11.0 as minimum.\n"
 								+ "Please update OkHttp dependency.\n"
 								+ "Besides this usually happens due to old selenium-java version (it overrides our dependency), "
 								+ "please use selenium-java 3.141.0 as minimum.",
@@ -497,8 +515,9 @@ public class ReportPortal {
 
 			if (HTTPS.equals(baseUrl.getProtocol()) && keyStore != null) {
 				if (null == keyStorePassword) {
-					String error = "You should provide keystore password parameter [" + ListenerProperty.KEYSTORE_PASSWORD
-							+ "] if you use HTTPS protocol";
+					String error =
+							"You should provide keystore password parameter [" + ListenerProperty.KEYSTORE_PASSWORD
+									+ "] if you use HTTPS protocol";
 					LOGGER.error(error);
 					throw new InternalReportPortalClientException(error);
 				}
@@ -507,9 +526,8 @@ public class ReportPortal {
 					TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 					trustManagerFactory.init(SslUtils.loadKeyStore(keyStore, keyStorePassword));
 					TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
-					X509TrustManager trustManager = (X509TrustManager) ofNullable(trustManagers).flatMap(managers -> Arrays.stream(managers)
-							.filter(m -> m instanceof X509TrustManager)
-							.findAny())
+					X509TrustManager trustManager = (X509TrustManager) ofNullable(trustManagers).flatMap(managers -> Arrays.stream(
+									managers).filter(m -> m instanceof X509TrustManager).findAny())
 							.orElseThrow(() -> new InternalReportPortalClientException(
 									"Unable to find X509 trust manager, managers:" + Arrays.toString(trustManagers)));
 
@@ -530,7 +548,10 @@ public class ReportPortal {
 					URL proxyUrl = new URL(proxyStr);
 					int port = proxyUrl.getPort();
 					builder.proxy(new Proxy(Proxy.Type.HTTP,
-							InetSocketAddress.createUnresolved(proxyUrl.getHost(), port >= 0 ? port : proxyUrl.getDefaultPort())
+							InetSocketAddress.createUnresolved(
+									proxyUrl.getHost(),
+									port >= 0 ? port : proxyUrl.getDefaultPort()
+							)
 					));
 				} catch (MalformedURLException e) {
 					LOGGER.warn("Unable to parse proxy URL", e);
