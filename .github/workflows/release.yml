@@ -36,19 +36,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '8'
 
       - name: Generate versions
-        uses: HardNorth/github-version-generate@v1.2.0
+        uses: HardNorth/github-version-generate@v1
         with:
           version-source: file
           version-file: ${{ env.VERSION_FILE }}
           version-file-extraction-pattern: ${{ env.VERSION_EXTRACT_PATTERN }}
-
-      - name: Set up JDK 1.8
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
