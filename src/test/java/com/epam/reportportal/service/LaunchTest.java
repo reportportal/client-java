@@ -21,6 +21,7 @@ import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.aspect.StepAspectCommon;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ItemStatus;
+import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.utils.properties.DefaultProperties;
@@ -37,6 +38,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
 import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -66,10 +69,18 @@ public class LaunchTest {
 				"Finish time 'Thu Jan 01 00:00:00 UTC 1970' is earlier than start time 'Tue Aug 13 13:21:31 UTC 2019' for resource with ID '5d52b9899bd1160001b8f454'");
 	}
 
-	private static final ReportPortalException START_CLIENT_EXCEPTION = new ReportPortalException(400, "Bad Request", START_ERROR_RS);
+	private static final ReportPortalException START_CLIENT_EXCEPTION = new ReportPortalException(
+			400,
+			"Bad Request",
+			START_ERROR_RS
+	);
 
 	// taken from: https://github.com/reportportal/client-java/issues/99
-	private static final ReportPortalException FINISH_CLIENT_EXCEPTION = new ReportPortalException(406, "Not Acceptable", FINISH_ERROR_RS);
+	private static final ReportPortalException FINISH_CLIENT_EXCEPTION = new ReportPortalException(
+			406,
+			"Not Acceptable",
+			FINISH_ERROR_RS
+	);
 
 	@Mock
 	private ReportPortalClient rpClient;
@@ -89,7 +100,12 @@ public class LaunchTest {
 		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
 
-		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
+		Launch launch = new LaunchImpl(
+				rpClient,
+				STANDARD_PARAMETERS,
+				standardLaunchRequest(STANDARD_PARAMETERS),
+				executor
+		) {
 			@Override
 			StatisticsService getStatisticsService() {
 				return statisticsService;
@@ -102,9 +118,18 @@ public class LaunchTest {
 		Maybe<String> stepRs = launch.startTestItem(testRs, standardStartStepRequest());
 
 		when(rpClient.finishTestItem(eq(stepRs.blockingGet()), any())).thenThrow(FINISH_CLIENT_EXCEPTION);
-		when(rpClient.finishTestItem(eq(testRs.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
-		when(rpClient.finishTestItem(eq(suiteRs.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
-		when(rpClient.finishLaunch(eq(launchUuid.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(
+				eq(testRs.blockingGet()),
+				any()
+		)).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(
+				eq(suiteRs.blockingGet()),
+				any()
+		)).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishLaunch(
+				eq(launchUuid.blockingGet()),
+				any()
+		)).thenReturn(Maybe.just(new OperationCompletionRS()));
 
 		launch.finishTestItem(stepRs, positiveFinishRequest());
 		launch.finishTestItem(testRs, positiveFinishRequest());
@@ -123,7 +148,12 @@ public class LaunchTest {
 		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
 
-		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
+		Launch launch = new LaunchImpl(
+				rpClient,
+				STANDARD_PARAMETERS,
+				standardLaunchRequest(STANDARD_PARAMETERS),
+				executor
+		) {
 			@Override
 			StatisticsService getStatisticsService() {
 				return statisticsService;
@@ -137,9 +167,18 @@ public class LaunchTest {
 		when(rpClient.startTestItem(eq(testRs.blockingGet()), any())).thenThrow(START_CLIENT_EXCEPTION);
 		Maybe<String> stepRs = launch.startTestItem(testRs, standardStartStepRequest());
 
-		when(rpClient.finishTestItem(eq(testRs.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
-		when(rpClient.finishTestItem(eq(suiteRs.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
-		when(rpClient.finishLaunch(eq(launchUuid.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(
+				eq(testRs.blockingGet()),
+				any()
+		)).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(
+				eq(suiteRs.blockingGet()),
+				any()
+		)).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishLaunch(
+				eq(launchUuid.blockingGet()),
+				any()
+		)).thenReturn(Maybe.just(new OperationCompletionRS()));
 
 		launch.finishTestItem(stepRs, positiveFinishRequest());
 		launch.finishTestItem(testRs, positiveFinishRequest());
@@ -182,7 +221,8 @@ public class LaunchTest {
 
 		// Verify Launch set on start root test item
 		ExecutorService launchSuiteStartExecutor = Executors.newSingleThreadExecutor();
-		Maybe<String> parent = launchSuiteStartExecutor.submit(() -> launchOnCreate.startTestItem(standardStartSuiteRequest())).get();
+		Maybe<String> parent = launchSuiteStartExecutor.submit(() -> launchOnCreate.startTestItem(
+				standardStartSuiteRequest())).get();
 		launchGet = launchSuiteStartExecutor.submit(Launch::currentLaunch).get();
 		assertThat(launchGet, sameInstance(launchOnCreate));
 		shutdownExecutorService(launchSuiteStartExecutor);
@@ -252,7 +292,8 @@ public class LaunchTest {
 	}
 
 	@Test
-	public void launch_should_correctly_track_parent_items_for_annotation_based_nested_steps() throws NoSuchMethodException {
+	public void launch_should_correctly_track_parent_items_for_annotation_based_nested_steps()
+			throws NoSuchMethodException {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateFinishTestItemResponse(rpClient);
@@ -260,7 +301,12 @@ public class LaunchTest {
 		simulateFinishLaunchResponse(rpClient);
 		simulateBatchLogResponse(rpClient);
 
-		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
+		Launch launch = new LaunchImpl(
+				rpClient,
+				STANDARD_PARAMETERS,
+				standardLaunchRequest(STANDARD_PARAMETERS),
+				executor
+		) {
 			@Override
 			StatisticsService getStatisticsService() {
 				return statisticsService;
@@ -301,7 +347,12 @@ public class LaunchTest {
 		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
 
-		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
+		Launch launch = new LaunchImpl(
+				rpClient,
+				STANDARD_PARAMETERS,
+				standardLaunchRequest(STANDARD_PARAMETERS),
+				executor
+		) {
 			@Override
 			StatisticsService getStatisticsService() {
 				return statisticsService;
@@ -327,6 +378,65 @@ public class LaunchTest {
 
 		String testName = testCaptor.getValue().getName();
 		assertThat(testName, allOf(hasLength(1024), endsWith("...")));
+	}
+
+	private static void verify_attribute_truncation(Set<ItemAttributesRQ> attributes) {
+		assertThat(attributes, hasSize(1));
+		ItemAttributesRQ suiteAttribute = attributes.iterator().next();
+		assertThat(suiteAttribute.getKey(), allOf(hasLength(128), endsWith("...")));
+		assertThat(suiteAttribute.getValue(), allOf(hasLength(128), endsWith("...")));
+	}
+
+	@Test
+	public void launch_should_truncate_long_attributes() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateFinishTestItemResponse(rpClient);
+		simulateFinishLaunchResponse(rpClient);
+
+		ListenerParameters parameters = standardParameters();
+		String longKey = RandomStringUtils.randomAlphanumeric(129);
+		String longValue = RandomStringUtils.randomAlphanumeric(129);
+		parameters.setAttributes(Collections.singleton(new ItemAttributesRQ(longKey, longValue)));
+
+		Launch launch = new LaunchImpl(rpClient, parameters, standardLaunchRequest(parameters), executor) {
+			@Override
+			StatisticsService getStatisticsService() {
+				return statisticsService;
+			}
+		};
+
+		StartTestItemRQ suiteStartRq = standardStartSuiteRequest();
+		suiteStartRq.setAttributes(Collections.singleton(new ItemAttributesRQ(longKey, longValue)));
+		FinishTestItemRQ suiteFinishRq = positiveFinishRequest();
+		suiteFinishRq.setAttributes(Collections.singleton(new ItemAttributesRQ(longKey, longValue)));
+		FinishExecutionRQ finishRq = standardLaunchFinishRequest();
+		finishRq.setAttributes(Collections.singleton(new ItemAttributesRQ(longKey, longValue)));
+
+		launch.start();
+		Maybe<String> suiteRs = launch.startTestItem(suiteStartRq);
+		launch.finishTestItem(suiteRs, suiteFinishRq);
+		launch.finish(finishRq);
+
+		ArgumentCaptor<StartLaunchRQ> launchStartCaptor = ArgumentCaptor.forClass(StartLaunchRQ.class);
+		verify(rpClient, timeout(1000)).startLaunch(launchStartCaptor.capture());
+
+		verify_attribute_truncation(launchStartCaptor.getValue().getAttributes());
+
+		ArgumentCaptor<StartTestItemRQ> suiteStartCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(rpClient, timeout(1000)).startTestItem(suiteStartCaptor.capture());
+
+		verify_attribute_truncation(suiteStartCaptor.getValue().getAttributes());
+
+		ArgumentCaptor<FinishTestItemRQ> suiteFinishCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(rpClient, timeout(1000)).finishTestItem(anyString(), suiteFinishCaptor.capture());
+
+		verify_attribute_truncation(suiteFinishCaptor.getValue().getAttributes());
+
+		ArgumentCaptor<FinishExecutionRQ> launchFinishCaptor = ArgumentCaptor.forClass(FinishExecutionRQ.class);
+		verify(rpClient, timeout(1000)).finishLaunch(anyString(), launchFinishCaptor.capture());
+
+		verify_attribute_truncation(launchFinishCaptor.getValue().getAttributes());
 	}
 
 	@Test
@@ -388,7 +498,12 @@ public class LaunchTest {
 	public void verify_launch_get_response() {
 		simulateStartLaunchResponse(rpClient);
 
-		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
+		Launch launch = new LaunchImpl(
+				rpClient,
+				STANDARD_PARAMETERS,
+				standardLaunchRequest(STANDARD_PARAMETERS),
+				executor
+		) {
 			@Override
 			StatisticsService getStatisticsService() {
 				return statisticsService;

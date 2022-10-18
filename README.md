@@ -139,6 +139,15 @@ etc.
 | rp.http.timeout.write.value   | Integer  | Default: 10 seconds<br> Data write timeout for new HTTP connections.                                                                                                                                                                                     |
 | rp.http.timeout.write.unit    | Enum     | Default: `MILLISECONDS`<br> Timeout value time unit. Should be one of values from `java.util.concurrent.TimeUnit` class                                                                                                                                  |
 
+### Truncation parameters
+
+| **Property name**              | **Type** | **Description**                                                                      | 
+|--------------------------------|----------|--------------------------------------------------------------------------------------|
+| rp.truncation.field            | Boolean  | Default: `true`<br> Enable / disable certain field truncation to avoid API failures. |
+| rp.truncation.replacement      | String   | Default: `...`<br> Replacement pattern for truncated fields                          |
+| rp.truncation.item.name.limit  | Integer  | Default: `1024`<br> Maximum item names length before truncation.                     |
+| rp.truncation.attribute.limit  | Integer  | Default: `128`<br> Maximum attribute key and value limit (counts separately)         |
+
 ## Proxy configuration
 
 Report Portal supports 2 options for setting Proxy configuration:

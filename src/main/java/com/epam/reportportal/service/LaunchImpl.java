@@ -38,13 +38,16 @@ import io.reactivex.schedulers.Schedulers;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static com.epam.reportportal.service.logs.LaunchLoggingCallback.*;
 import static com.epam.reportportal.utils.SubscriptionUtils.logCompletableResults;
@@ -73,15 +76,17 @@ public class LaunchImpl extends Launch {
 	private static final int ITEM_FINISH_RETRY_TIMEOUT = 10;
 
 	private static final Predicate<Throwable> INTERNAL_CLIENT_EXCEPTION_PREDICATE = throwable -> throwable instanceof InternalReportPortalClientException;
-	private static final Predicate<Throwable> TEST_ITEM_FINISH_RETRY_PREDICATE = throwable -> (throwable instanceof ReportPortalException
-			&& ErrorType.FINISH_ITEM_NOT_ALLOWED.equals(((ReportPortalException) throwable).getError().getErrorType()))
-			|| INTERNAL_CLIENT_EXCEPTION_PREDICATE.test(throwable);
+	private static final Predicate<Throwable> TEST_ITEM_FINISH_RETRY_PREDICATE = throwable ->
+			(throwable instanceof ReportPortalException
+					&& ErrorType.FINISH_ITEM_NOT_ALLOWED.equals(((ReportPortalException) throwable).getError()
+					.getErrorType())) || INTERNAL_CLIENT_EXCEPTION_PREDICATE.test(throwable);
 
 	private static final RetryWithDelay DEFAULT_REQUEST_RETRY = new RetryWithDelay(INTERNAL_CLIENT_EXCEPTION_PREDICATE,
 			DEFAULT_RETRY_COUNT,
 			TimeUnit.SECONDS.toMillis(DEFAULT_RETRY_TIMEOUT)
 	);
-	private static final RetryWithDelay TEST_ITEM_FINISH_REQUEST_RETRY = new RetryWithDelay(TEST_ITEM_FINISH_RETRY_PREDICATE,
+	private static final RetryWithDelay TEST_ITEM_FINISH_REQUEST_RETRY = new RetryWithDelay(
+			TEST_ITEM_FINISH_RETRY_PREDICATE,
 			ITEM_FINISH_MAX_RETRIES,
 			TimeUnit.SECONDS.toMillis(ITEM_FINISH_RETRY_TIMEOUT)
 	);
@@ -111,8 +116,9 @@ public class LaunchImpl extends Launch {
 	private StatisticsService statisticsService;
 	private final StartLaunchRQ startRq;
 
-	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
-			@Nonnull final StartLaunchRQ rq, @Nonnull final ExecutorService executorService) {
+	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient,
+			@Nonnull final ListenerParameters parameters, @Nonnull final StartLaunchRQ rq,
+			@Nonnull final ExecutorService executorService) {
 		super(reportPortalClient, parameters);
 		requireNonNull(parameters, "Parameters shouldn't be NULL");
 		executor = requireNonNull(executorService);
@@ -123,11 +129,13 @@ public class LaunchImpl extends Launch {
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 
 		launch = Maybe.create((MaybeOnSubscribe<String>) emitter -> {
-
-			Maybe<StartLaunchRS> launchPromise = Maybe.defer(() -> getClient().startLaunch(rq)
-					.retry(DEFAULT_REQUEST_RETRY)
-					.doOnSuccess(LAUNCH_SUCCESS_CONSUMER)
-					.doOnError(LOG_ERROR)).subscribeOn(getScheduler()).cache();
+			Maybe<StartLaunchRS> launchPromise = Maybe.defer(() -> {
+				truncateAttributes(startRq);
+				return getClient().startLaunch(startRq)
+						.retry(DEFAULT_REQUEST_RETRY)
+						.doOnSuccess(LAUNCH_SUCCESS_CONSUMER)
+						.doOnError(LOG_ERROR);
+			}).subscribeOn(getScheduler()).cache();
 
 			//noinspection ResultOfMethodCallIgnored
 			launchPromise.subscribe(rs -> emitter.onSuccess(rs.getId()), t -> {
@@ -137,8 +145,9 @@ public class LaunchImpl extends Launch {
 		}).cache();
 	}
 
-	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
-			@Nonnull final Maybe<String> launchMaybe, @Nonnull final ExecutorService executorService) {
+	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient,
+			@Nonnull final ListenerParameters parameters, @Nonnull final Maybe<String> launchMaybe,
+			@Nonnull final ExecutorService executorService) {
 		super(reportPortalClient, parameters);
 		requireNonNull(parameters, "Parameters shouldn't be NULL");
 		executor = requireNonNull(executorService);
@@ -152,7 +161,10 @@ public class LaunchImpl extends Launch {
 
 	private static StartLaunchRQ emptyStartLaunchForStatistics() {
 		StartLaunchRQ result = new StartLaunchRQ();
-		result.setAttributes(Collections.singleton(new ItemAttributesRQ(DefaultProperties.AGENT.getName(), CUSTOM_AGENT, true)));
+		result.setAttributes(Collections.singleton(new ItemAttributesRQ(DefaultProperties.AGENT.getName(),
+				CUSTOM_AGENT,
+				true
+		)));
 		return result;
 	}
 
@@ -188,8 +200,57 @@ public class LaunchImpl extends Launch {
 		return statisticsService;
 	}
 
+	private void truncateName(@Nonnull final StartTestItemRQ rq) {
+		if (!getParameters().isTruncateFields() || rq.getName() == null || rq.getName().isEmpty()) {
+			return;
+		}
+		String name = rq.getName();
+		int limit = getParameters().getTruncateItemNamesLimit();
+		String replacement = getParameters().getTruncateReplacement();
+		if (name.length() > limit && name.length() > replacement.length()) {
+			rq.setName(name.substring(0, limit - replacement.length()) + replacement);
+		}
+	}
+
+	@Nullable
+	private Set<ItemAttributesRQ> truncateAttributes(@Nullable final Set<ItemAttributesRQ> attributes) {
+		if (!getParameters().isTruncateFields() || attributes == null || attributes.isEmpty()) {
+			return attributes;
+		}
+
+		int limit = getParameters().getAttributeLengthLimit();
+		String replacement = getParameters().getTruncateReplacement();
+		return attributes.stream().map(attribute -> {
+			ItemAttributesRQ updated = attribute;
+			int keyLength = ofNullable(updated.getKey()).map(String::length).orElse(0);
+			if (keyLength > limit && keyLength > replacement.length()) {
+				updated = new ItemAttributesRQ(
+						updated.getKey().substring(0, limit - replacement.length()) + replacement,
+						updated.getValue(),
+						updated.isSystem()
+				);
+			}
+			int valueLength = ofNullable(updated.getValue()).map(String::length).orElse(0);
+			if (valueLength > limit && valueLength > replacement.length()) {
+				updated = new ItemAttributesRQ(updated.getKey(),
+						updated.getValue().substring(0, limit - replacement.length()) + replacement,
+						updated.isSystem()
+				);
+			}
+			return updated;
+		}).collect(Collectors.toSet());
+	}
+
+	private void truncateAttributes(@Nonnull final StartRQ rq) {
+		rq.setAttributes(truncateAttributes(rq.getAttributes()));
+	}
+
+	private void truncateAttributes(@Nonnull final FinishExecutionRQ rq) {
+		rq.setAttributes(truncateAttributes(rq.getAttributes()));
+	}
+
 	/**
-	 * Starts launch in ReportPortal. Does NOT starts the same launch twice
+	 * Starts launch in ReportPortal. Does NOT start the same launch twice
 	 *
 	 * @return Launch ID promise
 	 */
@@ -209,7 +270,8 @@ public class LaunchImpl extends Launch {
 	public void finish(final FinishExecutionRQ rq) {
 		QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
 		Completable finish = Completable.concat(QUEUE.getUnchecked(launch).getChildren());
-		if(StringUtils.isBlank(getParameters().getLaunchUuid())) {
+		if (StringUtils.isBlank(getParameters().getLaunchUuid())) {
+			truncateAttributes(rq);
 			finish = finish.andThen(launch.map(id -> getClient().finishLaunch(id, rq)
 					.retry(DEFAULT_REQUEST_RETRY)
 					.doOnSuccess(LOG_SUCCESS)
@@ -231,17 +293,6 @@ public class LaunchImpl extends Launch {
 		return Maybe.error(cause);
 	}
 
-	private void truncateName(@Nonnull final StartTestItemRQ rq) {
-		if (getParameters().isTruncateItemNames()) {
-			String name = rq.getName();
-			int limit = getParameters().getTruncateItemNamesLimit();
-			if (name.length() > limit) {
-				String replacement = getParameters().getTruncateItemNamesReplacement();
-				rq.setName(name.substring(0, limit - replacement.length()) + replacement);
-			}
-		}
-	}
-
 	/**
 	 * Starts new test item in ReportPortal asynchronously (non-blocking)
 	 *
@@ -258,10 +309,14 @@ public class LaunchImpl extends Launch {
 			return createErrorResponse(new NullPointerException("StartTestItemRQ should not be null"));
 		}
 		truncateName(rq);
+		truncateAttributes(rq);
 
 		Maybe<String> item = launch.flatMap((Function<String, Maybe<String>>) launchId -> {
 			rq.setLaunchUuid(launchId);
-			return getClient().startTestItem(rq).retry(DEFAULT_REQUEST_RETRY).doOnSuccess(logCreated("item")).map(TO_ID);
+			return getClient().startTestItem(rq)
+					.retry(DEFAULT_REQUEST_RETRY)
+					.doOnSuccess(logCreated("item"))
+					.map(TO_ID);
 		}).cache();
 
 		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start test item"));
@@ -281,7 +336,8 @@ public class LaunchImpl extends Launch {
 	 * @return Test Item ID promise
 	 */
 	@Nonnull
-	public Maybe<String> startTestItem(final Maybe<String> parentId, final Maybe<String> retryOf, final StartTestItemRQ rq) {
+	public Maybe<String> startTestItem(final Maybe<String> parentId, final Maybe<String> retryOf,
+			final StartTestItemRQ rq) {
 		return retryOf.flatMap((Function<String, Maybe<String>>) s -> startTestItem(parentId, rq)).cache();
 	}
 
@@ -305,6 +361,7 @@ public class LaunchImpl extends Launch {
 			return createErrorResponse(new NullPointerException("StartTestItemRQ should not be null"));
 		}
 		truncateName(rq);
+		truncateAttributes(rq);
 
 		final Maybe<String> item = launch.flatMap((Function<String, Maybe<String>>) lId -> parentId.flatMap((Function<String, MaybeSource<String>>) pId -> {
 			rq.setLaunchUuid(lId);
@@ -341,6 +398,8 @@ public class LaunchImpl extends Launch {
 		if (rq == null) {
 			return createErrorResponse(new NullPointerException("FinishTestItemRQ should not be null"));
 		}
+		truncateAttributes(rq);
+
 		getStepReporter().finishPreviousStep(ofNullable(rq.getStatus()).map(ItemStatus::valueOf).orElse(null));
 
 		if (ItemStatus.SKIPPED.name().equals(rq.getStatus()) && !getParameters().getSkippedAnIssue()) {

@@ -103,9 +103,17 @@ public enum ListenerProperty {
 
     RX_BUFFER_SIZE("rp.rx.buffer.size", false),
 
+    @Deprecated
     TRUNCATE_ITEM_NAMES("rp.item.name.truncate", false),
+    @Deprecated
     TRUNCATE_ITEM_LIMIT("rp.item.name.truncate.limit", false),
-    TRUNCATE_ITEM_REPLACEMENT("rp.item.name.truncate.replacement", false);
+    @Deprecated
+    TRUNCATE_ITEM_REPLACEMENT("rp.item.name.truncate.replacement", false),
+
+    TRUNCATE_FIELDS("rp.truncation.field", false),
+    TRUNCATE_REPLACEMENT("rp.truncation.replacement", false),
+    TRUNCATE_ITEM_NAME_LIMIT("rp.truncation.item.name.limit", false),
+    TRUNCATE_ATTRIBUTE_LIMIT("rp.truncation.attribute.limit", false);
     //formatter:on
 
     private final String propertyName;
