@@ -35,7 +35,8 @@ import java.util.Set;
 import static java.util.Objects.requireNonNull;
 
 /**
- * @author Andrei Varabyeu
+ * Launch object represents a lifecycle of a Launch on Report Portal. It is used to manipulate its state: starting,
+ * finishing, adding test results.
  */
 public abstract class Launch {
 	private static final ThreadLocal<Launch> CURRENT_LAUNCH = new InheritableThreadLocal<>();

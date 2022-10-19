@@ -50,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.service.logs.LaunchLoggingCallback.*;
+import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
 import static com.epam.reportportal.utils.SubscriptionUtils.logCompletableResults;
 import static com.epam.reportportal.utils.SubscriptionUtils.logMaybeResults;
 import static com.google.common.collect.Lists.newArrayList;
@@ -57,7 +58,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
 /**
- * @author Andrei Varabyeu
+ * A basic Launch object implementation which does straight requests to Report Portal.
  */
 public class LaunchImpl extends Launch {
 
@@ -124,7 +125,7 @@ public class LaunchImpl extends Launch {
 		executor = requireNonNull(executorService);
 		scheduler = createScheduler(executor);
 		statisticsService = new StatisticsService(parameters);
-		startRq = rq;
+		startRq = clonePojo(rq, StartLaunchRQ.class);
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 
@@ -265,12 +266,13 @@ public class LaunchImpl extends Launch {
 	/**
 	 * Finishes launch in ReportPortal. Blocks until all items are reported correctly
 	 *
-	 * @param rq Finish RQ
+	 * @param request Finish RQ
 	 */
-	public void finish(final FinishExecutionRQ rq) {
+	public void finish(final FinishExecutionRQ request) {
 		QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
 		Completable finish = Completable.concat(QUEUE.getUnchecked(launch).getChildren());
 		if (StringUtils.isBlank(getParameters().getLaunchUuid())) {
+			FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
 			truncateAttributes(rq);
 			finish = finish.andThen(launch.map(id -> getClient().finishLaunch(id, rq)
 					.retry(DEFAULT_REQUEST_RETRY)
@@ -296,18 +298,19 @@ public class LaunchImpl extends Launch {
 	/**
 	 * Starts new test item in ReportPortal asynchronously (non-blocking)
 	 *
-	 * @param rq Start RQ
+	 * @param request Start RQ
 	 * @return Test Item ID promise
 	 */
 	@Nonnull
-	public Maybe<String> startTestItem(final StartTestItemRQ rq) {
-		if (rq == null) {
+	public Maybe<String> startTestItem(final StartTestItemRQ request) {
+		if (request == null) {
 			/*
 			 * This usually happens when we have a bug inside an agent or supported framework. But in any case we shouldn't rise an exception,
 			 * since we are reporting tool and our problems	should not fail launches.
 			 */
 			return createErrorResponse(new NullPointerException("StartTestItemRQ should not be null"));
 		}
+		StartTestItemRQ rq = clonePojo(request, StartTestItemRQ.class);
 		truncateName(rq);
 		truncateAttributes(rq);
 
@@ -345,21 +348,22 @@ public class LaunchImpl extends Launch {
 	 * Starts new test item in ReportPortal asynchronously (non-blocking)
 	 *
 	 * @param parentId Parent item ID promise
-	 * @param rq       Start RQ
+	 * @param request  Start RQ
 	 * @return Test Item ID promise
 	 */
 	@Nonnull
-	public Maybe<String> startTestItem(final Maybe<String> parentId, final StartTestItemRQ rq) {
+	public Maybe<String> startTestItem(final Maybe<String> parentId, final StartTestItemRQ request) {
 		if (parentId == null) {
-			return startTestItem(rq);
+			return startTestItem(request);
 		}
-		if (rq == null) {
+		if (request == null) {
 			/*
 			 * This usually happens when we have a bug inside an agent or supported framework. But in any case we shouldn't rise an exception,
 			 * since we are reporting tool and our problems	should not fail launches.
 			 */
 			return createErrorResponse(new NullPointerException("StartTestItemRQ should not be null"));
 		}
+		StartTestItemRQ rq = clonePojo(request, StartTestItemRQ.class);
 		truncateName(rq);
 		truncateAttributes(rq);
 
@@ -382,12 +386,12 @@ public class LaunchImpl extends Launch {
 	/**
 	 * Finishes Test Item in ReportPortal. Non-blocking. Schedules finish after success of all child items
 	 *
-	 * @param item Item UUID promise
-	 * @param rq   Finish request
+	 * @param item    Item UUID promise
+	 * @param request Finish request
 	 * @return a Finish Item response promise
 	 */
 	@Nonnull
-	public Maybe<OperationCompletionRS> finishTestItem(final Maybe<String> item, final FinishTestItemRQ rq) {
+	public Maybe<OperationCompletionRS> finishTestItem(final Maybe<String> item, final FinishTestItemRQ request) {
 		if (item == null) {
 			/*
 			 * This usually happens when we have a bug inside an agent or supported framework. But in any case we shouldn't rise an exception,
@@ -395,9 +399,10 @@ public class LaunchImpl extends Launch {
 			 */
 			return createErrorResponse(new NullPointerException("ItemID should not be null"));
 		}
-		if (rq == null) {
+		if (request == null) {
 			return createErrorResponse(new NullPointerException("FinishTestItemRQ should not be null"));
 		}
+		FinishTestItemRQ rq = clonePojo(request, FinishTestItemRQ.class);
 		truncateAttributes(rq);
 
 		getStepReporter().finishPreviousStep(ofNullable(rq.getStatus()).map(ItemStatus::valueOf).orElse(null));

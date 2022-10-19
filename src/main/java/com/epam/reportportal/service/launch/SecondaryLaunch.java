@@ -38,7 +38,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The class represents a {@link Launch} which reports into existing one and never starts its own.
+ * An implementation of a {@link Launch} object which didn't manage to obtain main lock with {@link LaunchIdLock}
+ * object. Therefore, it does not create an actual launch Report Portal, but using provided Launch UUID. It also does
+ * not actually finish the launch on Report Portal, but just waits for graceful items upload.
  */
 public class SecondaryLaunch extends AbstractJoinedLaunch {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SecondaryLaunch.class);
@@ -89,7 +91,7 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 	}
 
 	@Override
-	public void finish(final FinishExecutionRQ rq) {
+	public void finish(final FinishExecutionRQ request) {
 		QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
 		Throwable throwable = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren())
 				.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS)

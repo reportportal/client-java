@@ -28,7 +28,7 @@ import java.util.Random;
 import java.util.concurrent.*;
 
 /**
- * The class for common logic for joined launches.
+ * The class for mandatory logic for launches which were joined by {@link LaunchIdLock} object.
  */
 public class AbstractJoinedLaunch extends LaunchImpl {
 	final LaunchIdLock lock;

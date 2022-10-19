@@ -27,7 +27,6 @@ import com.epam.reportportal.utils.properties.ListenerProperty;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
 import io.reactivex.schedulers.Schedulers;
@@ -65,6 +64,7 @@ import java.util.function.Function;
 
 import static com.epam.reportportal.service.LaunchLoggingContext.DEFAULT_LAUNCH_KEY;
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
+import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
 import static com.epam.reportportal.utils.files.Utils.readFileToBytes;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -128,14 +128,9 @@ public class ReportPortal {
 
 		if (instanceUuid.equals(uuid)) {
 			// We got our own UUID as launch UUID, that means we are primary launch.
-			ObjectMapper objectMapper = new ObjectMapper();
-			try {
-				StartLaunchRQ rqCopy = objectMapper.readValue(objectMapper.writeValueAsString(rq), StartLaunchRQ.class);
-				rqCopy.setUuid(uuid);
-				return new PrimaryLaunch(rpClient, parameters, rqCopy, executor, launchIdLock, instanceUuid);
-			} catch (IOException e) {
-				throw new InternalReportPortalClientException("Unable to clone start launch request:", e);
-			}
+			StartLaunchRQ rqCopy = clonePojo(rq, StartLaunchRQ.class);
+			rqCopy.setUuid(uuid);
+			return new PrimaryLaunch(rpClient, parameters, rqCopy, executor, launchIdLock, instanceUuid);
 		} else {
 			Maybe<String> launch = Maybe.create(emitter -> {
 				emitter.onSuccess(uuid);

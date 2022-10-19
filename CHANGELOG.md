@@ -6,6 +6,10 @@
 ### Added
 - `rp.launch.uuid` property, to append to and existing launch without start/finish launch calls, by @HardNorth
 - Attribute values truncation and its properties, by @HardNorth
+- Some javadocs, by @HardNorth 
+### Changed
+- `Launch` objects now do not modify request objects which were passed to them, cloning them instead, by @HardNorth
+- Some refactoring, by @HardNorth
 
 ## [5.1.11]
 ### Added
