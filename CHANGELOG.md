@@ -8,7 +8,7 @@
 - Attribute values truncation and its properties, by @HardNorth
 - Some javadocs, by @HardNorth 
 ### Changed
-- `Launch` objects now do not modify request objects which were passed to them, cloning them instead, by @HardNorth
+- `Launch` objects do not modify request objects which were passed to them now, cloning them instead, by @HardNorth
 - Some refactoring, by @HardNorth
 
 ## [5.1.11]
