@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.12]
 ### Fixed
 - Launch finish time in case of fork-join launch, by @PavelSakharchuk
 ### Added
