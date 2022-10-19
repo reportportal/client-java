@@ -24,6 +24,7 @@ import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.service.step.StepReporter;
+import com.epam.reportportal.utils.ObjectUtils;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
@@ -251,8 +252,11 @@ public class LaunchTest {
 		launch.start();
 		launch.finish(standardLaunchFinishRequest());
 
-		verify(statisticsService).sendEvent(any(Maybe.class), same(startRq));
+		ArgumentCaptor<StartLaunchRQ> startCaptor = ArgumentCaptor.forClass(StartLaunchRQ.class);
+		verify(statisticsService).sendEvent(any(Maybe.class), startCaptor.capture());
 		verify(statisticsService).close();
+
+		assertThat(ObjectUtils.toString(startCaptor.getValue()), equalTo(ObjectUtils.toString(startRq)));
 	}
 
 	@Test
