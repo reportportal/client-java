@@ -30,7 +30,23 @@ public class ObjectUtils {
 	}
 
 	/**
-	 * Clone POJO object through ObjectMapper to avoid implementation of clone method and model modification
+	 * Convert POJO object through ObjectMapper to a string.
+	 *
+	 * @param pojoObject an object to convert
+	 * @return representation of the object
+	 */
+	@Nonnull
+	public static String toString(@Nonnull Object pojoObject) {
+		try {
+			return MAPPER.writeValueAsString(pojoObject);
+		} catch (IOException e) {
+			throw new InternalReportPortalClientException(
+					"Unable to serialize " + pojoObject.getClass().getSimpleName() + " object to String", e);
+		}
+	}
+
+	/**
+	 * Clone POJO object through ObjectMapper to avoid implementation of clone method and model modification.
 	 *
 	 * @param pojoObject an object to clone
 	 * @param clazz      the clone object type
@@ -40,9 +56,10 @@ public class ObjectUtils {
 	@Nonnull
 	public static <T> T clonePojo(@Nonnull T pojoObject, Class<T> clazz) {
 		try {
-			return MAPPER.readValue(MAPPER.writeValueAsString(pojoObject), clazz);
+			return MAPPER.readValue(toString(pojoObject), clazz);
 		} catch (IOException e) {
-			throw new InternalReportPortalClientException("Unable to clone start launch request:", e);
+			throw new InternalReportPortalClientException(
+					"Unable to clone " + pojoObject.getClass().getSimpleName() + " object", e);
 		}
 	}
 }
