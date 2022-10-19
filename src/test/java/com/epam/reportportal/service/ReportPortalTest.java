@@ -17,14 +17,20 @@ package com.epam.reportportal.service;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.test.TestUtils;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.util.test.SocketUtils;
+import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
+import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
+import io.reactivex.Maybe;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 
 import java.net.ServerSocket;
 import java.text.SimpleDateFormat;
@@ -35,13 +41,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static com.epam.reportportal.test.TestUtils.standardParameters;
+import static com.epam.reportportal.test.TestUtils.*;
 import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.*;
 
 public class ReportPortalTest {
 	private static final String COOKIE = "AWSALB=P7cqG8g/K70xHAKOUPrWrG0XgmhG8GJNinj8lDnKVyITyubAen2lBr+fSa/e2JAoGksQphtImp49rZxc41qdqUGvAc67SdZHY1BMFIHKzc8kyWc1oQjq6oI+s39U";
+
+	@Mock
+	private ReportPortalClient rpClient;
 
 	@Test
 	public void verify_no_url_results_in_null_client() {
@@ -83,6 +94,7 @@ public class ReportPortalTest {
 		params.setProxyUrl("http://localhost:" + server.getLocalPort());
 		OkHttpClient client = ReportPortal.builder().defaultClient(params);
 		assertThat(client, notNullValue());
+		Exception error = null;
 		try {
 			SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(server,
 					Collections.emptyMap(),
@@ -92,8 +104,12 @@ public class ReportPortalTest {
 					() -> client.newCall(new Request.Builder().url(baseUrl).build()).execute()
 			);
 			assertThat(result.getValue().code(), equalTo(200));
-		} finally {
-			server.close();
+		} catch (Exception e) {
+			error = e;
+		}
+		server.close();
+		if (error != null) {
+			throw error;
 		}
 	}
 
@@ -103,7 +119,9 @@ public class ReportPortalTest {
 		ListenerParameters parameters = standardParameters();
 		parameters.setBaseUrl("http://localhost:" + ss.getLocalPort());
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
-		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
+		ReportPortalClient rpClient = ReportPortal.builder()
+				.buildClient(ReportPortalClient.class, parameters, clientExecutor);
+		Exception error = null;
 		try {
 			Map<String, Object> model = new HashMap<>();
 			model.put("cookie", COOKIE);
@@ -114,7 +132,10 @@ public class ReportPortalTest {
 			cal.add(Calendar.MINUTE, 2);
 			model.put("expire", sdf.format(cal.getTime()));
 
-			SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss, model, "files/socket_response.txt");
+			SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss,
+					model,
+					"files/socket_response.txt"
+			);
 			Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ())
 					.timeout(5, TimeUnit.SECONDS)
 					.blockingGet();
@@ -127,9 +148,13 @@ public class ReportPortalTest {
 
 			assertThat(result.getValue(), notNullValue());
 			assertThat("Second request should contain cookie value", result.getKey(), containsString(COOKIE));
-		} finally {
-			ss.close();
-			shutdownExecutorService(clientExecutor);
+		} catch (Exception e) {
+			error = e;
+		}
+		ss.close();
+		shutdownExecutorService(clientExecutor);
+		if (error != null) {
+			throw error;
 		}
 	}
 
@@ -150,5 +175,45 @@ public class ReportPortalTest {
 		assertThat(client.connectTimeoutMillis(), equalTo(defaultTimeoutMs));
 		assertThat(client.readTimeoutMillis(), equalTo(defaultTimeoutMs));
 		assertThat(client.writeTimeoutMillis(), equalTo(defaultTimeoutMs));
+	}
+
+	@Test
+	public void verify_launch_uuid_parameter_handling() {
+		simulateStartTestItemResponse(rpClient);
+
+		String launchUuid = "test-launch-uuid";
+		ListenerParameters listenerParameters = TestUtils.standardParameters();
+		listenerParameters.setLaunchUuid(launchUuid);
+
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		RuntimeException error = null;
+
+		try {
+			ReportPortal rp = ReportPortal.create(rpClient, listenerParameters, executor);
+
+			Launch launch = rp.newLaunch(standardLaunchRequest(listenerParameters));
+			Maybe<String> launchMaybe = launch.start();
+			assertThat(launchMaybe.blockingGet(), equalTo(launchUuid));
+
+			launch.startTestItem(TestUtils.standardStartSuiteRequest());
+
+			verify(rpClient, timeout(1000).times(0)).startLaunch(any(StartLaunchRQ.class));
+
+			ArgumentCaptor<StartTestItemRQ> startCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+			verify(rpClient, timeout(1000)).startTestItem(startCaptor.capture());
+
+			StartTestItemRQ startItem = startCaptor.getValue();
+			assertThat(startItem.getLaunchUuid(), equalTo(launchUuid));
+
+			launch.finish(TestUtils.standardLaunchFinishRequest());
+
+			verify(rpClient, timeout(1000).times(0)).finishLaunch(anyString(), any(FinishExecutionRQ.class));
+		} catch (RuntimeException e) {
+			error = e;
+		}
+		CommonUtils.shutdownExecutorService(executor);
+		if (error != null) {
+			throw error;
+		}
 	}
 }

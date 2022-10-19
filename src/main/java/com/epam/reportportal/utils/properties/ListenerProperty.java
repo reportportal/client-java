@@ -33,9 +33,8 @@ public enum ListenerProperty {
      * Enable / Disable raw HTTP requests logging
      */
     HTTP_LOGGING("rp.http.logging", false),
-    /**
-     * Different HTTP timeouts
-     */
+
+    // HTTP timeouts till the next blank line
     HTTP_CALL_TIMEOUT_VALUE("rp.http.timeout.call.value", false),
     HTTP_CALL_TIMEOUT_UNIT("rp.http.timeout.call.unit", false),
     HTTP_CONNECT_TIMEOUT_VALUE("rp.http.timeout.connect.value", false),
@@ -47,6 +46,10 @@ public enum ListenerProperty {
 
     PROJECT_NAME("rp.project", true),
     LAUNCH_NAME("rp.launch", true),
+    /**
+     * Do not create new launch and use predefined Launch UUID
+     */
+    LAUNCH_UUID("rp.launch.uuid", false),
     UUID("rp.uuid", false),
     API_KEY("rp.api.key", true),
     BATCH_SIZE_LOGS("rp.batch.size.logs", false),
@@ -100,9 +103,17 @@ public enum ListenerProperty {
 
     RX_BUFFER_SIZE("rp.rx.buffer.size", false),
 
+    @Deprecated
     TRUNCATE_ITEM_NAMES("rp.item.name.truncate", false),
+    @Deprecated
     TRUNCATE_ITEM_LIMIT("rp.item.name.truncate.limit", false),
-    TRUNCATE_ITEM_REPLACEMENT("rp.item.name.truncate.replacement", false);
+    @Deprecated
+    TRUNCATE_ITEM_REPLACEMENT("rp.item.name.truncate.replacement", false),
+
+    TRUNCATE_FIELDS("rp.truncation.field", false),
+    TRUNCATE_REPLACEMENT("rp.truncation.replacement", false),
+    TRUNCATE_ITEM_NAME_LIMIT("rp.truncation.item.name.limit", false),
+    TRUNCATE_ATTRIBUTE_LIMIT("rp.truncation.attribute.limit", false);
     //formatter:on
 
     private final String propertyName;

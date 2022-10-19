@@ -132,6 +132,17 @@ public class ListenerParametersTest {
 	}
 
 	@Test
+	public void test_generic_truncation_property_file_bypass() {
+		PropertiesLoader properties = PropertiesLoader.load("property-test/generic-truncation-properties.properties");
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		assertFalse(listenerParameters.isTruncateFields());
+		assertEquals(512, listenerParameters.getTruncateItemNamesLimit());
+		assertEquals(64, listenerParameters.getAttributeLengthLimit());
+		assertEquals("\\", listenerParameters.getTruncateReplacement());
+	}
+
+	@Test
 	public void verify_lock_wait_timeout_property_set_if_it_not_present_in_property_file() {
 		PropertiesLoader properties = PropertiesLoader.load("property-test/default-required.properties");
 		ListenerParameters listenerParameters = new ListenerParameters(properties);

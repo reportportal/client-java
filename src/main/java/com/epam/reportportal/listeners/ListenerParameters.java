@@ -23,6 +23,7 @@ import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.Mode;
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,8 +71,9 @@ public class ListenerParameters implements Cloneable {
 	private static final String DEFAULT_CLIENT_JOIN_LOCK_TIMEOUT_UNIT = DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT;
 	private static final int DEFAULT_CLIENT_JOIN_LOCK_PORT = 25464;
 
-	private static final boolean DEFAULT_TRUNCATE_ITEM_NAMES = true;
+	private static final boolean DEFAULT_TRUNCATE = true;
 	private static final int DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT = 1024;
+	private static final int DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT = 128;
 	private static final String DEFAULT_TRUNCATE_REPLACEMENT = "...";
 
 	// Due to shortcoming of payload calculation mechanism this value is set to 65 million of bytes rather than 65 megabytes
@@ -88,12 +90,13 @@ public class ListenerParameters implements Cloneable {
 	private Duration httpWriteTimeout;
 	private String projectName;
 	private String launchName;
+	private String launchUuid;
 	private Mode launchRunningMode;
 	private Set<ItemAttributesRQ> attributes;
 	private Boolean enable;
 	private Boolean isSkippedAnIssue;
 	private Integer batchLogsSize;
-	private Long    batchPayloadLimit;
+	private Long batchPayloadLimit;
 	private boolean convertImage;
 	private Integer reportingTimeout;
 	private String keystore;
@@ -114,9 +117,10 @@ public class ListenerParameters implements Cloneable {
 
 	private int rxBufferSize;
 
-	private boolean truncateItemNames;
+	private boolean truncateFields;
 	private int truncateItemNamesLimit;
-	private String truncateItemNamesReplacement;
+	private String truncateReplacement;
+	private int attributeLengthLimit;
 
 	@Nonnull
 	private static ChronoUnit toChronoUnit(@Nonnull TimeUnit t) {
@@ -143,11 +147,10 @@ public class ListenerParameters implements Cloneable {
 	@Nullable
 	private static Duration getDurationProperty(@Nonnull PropertiesLoader properties, @Nonnull ListenerProperty value,
 			@Nonnull ListenerProperty unit) {
-		return ofNullable(properties.getProperty(value)).map(Long::parseLong)
-				.map(t -> Duration.of(t,
-						ofNullable(properties.getProperty(unit)).map(u -> toChronoUnit(TimeUnit.valueOf(u))).orElse(ChronoUnit.MILLIS)
-				))
-				.orElse(null);
+		return ofNullable(properties.getProperty(value)).map(Long::parseLong).map(t -> Duration.of(t,
+				ofNullable(properties.getProperty(unit)).map(u -> toChronoUnit(TimeUnit.valueOf(u)))
+						.orElse(ChronoUnit.MILLIS)
+		)).orElse(null);
 	}
 
 	public ListenerParameters() {
@@ -175,29 +178,38 @@ public class ListenerParameters implements Cloneable {
 		this.lockFileName = DEFAULT_LOCK_FILE_NAME;
 		this.syncFileName = DEFAULT_SYNC_FILE_NAME;
 		this.lockWaitTimeout = DEFAULT_FILE_WAIT_TIMEOUT_MS;
+		this.lockPortNumber = DEFAULT_CLIENT_JOIN_LOCK_PORT;
+
 		this.rxBufferSize = DEFAULT_RX_BUFFER_SIZE;
 
-		this.truncateItemNames = DEFAULT_TRUNCATE_ITEM_NAMES;
+		this.truncateFields = DEFAULT_TRUNCATE;
 		this.truncateItemNamesLimit = DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT;
-		this.truncateItemNamesReplacement = DEFAULT_TRUNCATE_REPLACEMENT;
-		this.lockPortNumber = DEFAULT_CLIENT_JOIN_LOCK_PORT;
+		this.truncateReplacement = DEFAULT_TRUNCATE_REPLACEMENT;
+		this.attributeLengthLimit = DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT;
 	}
 
 	public ListenerParameters(PropertiesLoader properties) {
 		this.description = properties.getProperty(DESCRIPTION);
-		this.apiKey = ofNullable(properties.getProperty(API_KEY, properties.getProperty(UUID))).map(String::trim).orElse(null);
+		this.apiKey = ofNullable(properties.getProperty(API_KEY, properties.getProperty(UUID))).map(String::trim)
+				.orElse(null);
 		this.baseUrl = properties.getProperty(BASE_URL) != null ? properties.getProperty(BASE_URL).trim() : null;
 		this.proxyUrl = properties.getProperty(HTTP_PROXY_URL);
 		this.httpLogging = properties.getPropertyAsBoolean(HTTP_LOGGING, DEFAULT_HTTP_LOGGING);
 
 		this.httpCallTimeout = getDurationProperty(properties, HTTP_CALL_TIMEOUT_VALUE, HTTP_CALL_TIMEOUT_UNIT);
-		this.httpConnectTimeout = getDurationProperty(properties, HTTP_CONNECT_TIMEOUT_VALUE, HTTP_CONNECT_TIMEOUT_UNIT);
+		this.httpConnectTimeout = getDurationProperty(properties,
+				HTTP_CONNECT_TIMEOUT_VALUE,
+				HTTP_CONNECT_TIMEOUT_UNIT
+		);
 		this.httpReadTimeout = getDurationProperty(properties, HTTP_READ_TIMEOUT_VALUE, HTTP_READ_TIMEOUT_UNIT);
 		this.httpWriteTimeout = getDurationProperty(properties, HTTP_WRITE_TIMEOUT_VALUE, HTTP_WRITE_TIMEOUT_UNIT);
 
-		this.projectName = properties.getProperty(PROJECT_NAME) != null ? properties.getProperty(PROJECT_NAME).trim() : null;
+		this.projectName =
+				properties.getProperty(PROJECT_NAME) != null ? properties.getProperty(PROJECT_NAME).trim() : null;
 		this.launchName = properties.getProperty(LAUNCH_NAME);
-		this.attributes = Collections.unmodifiableSet(AttributeParser.parseAsSet(properties.getProperty(LAUNCH_ATTRIBUTES)));
+		this.launchUuid = properties.getProperty(LAUNCH_UUID);
+		this.attributes = Collections.unmodifiableSet(AttributeParser.parseAsSet(properties.getProperty(
+				LAUNCH_ATTRIBUTES)));
 		this.launchRunningMode = parseLaunchMode(properties.getProperty(MODE));
 		this.enable = properties.getPropertyAsBoolean(ENABLE, DEFAULT_ENABLE);
 		this.isSkippedAnIssue = properties.getPropertyAsBoolean(SKIPPED_AS_ISSUE, DEFAULT_SKIP_ISSUE);
@@ -213,17 +225,20 @@ public class ListenerParameters implements Cloneable {
 		this.rerunOf = properties.getProperty(RERUN_OF);
 
 		this.asyncReporting = properties.getPropertyAsBoolean(ASYNC_REPORTING, DEFAULT_ASYNC_REPORTING);
-		this.callbackReportingEnabled = properties.getPropertyAsBoolean(CALLBACK_REPORTING_ENABLED, DEFAULT_CALLBACK_REPORTING_ENABLED);
+		this.callbackReportingEnabled = properties.getPropertyAsBoolean(CALLBACK_REPORTING_ENABLED,
+				DEFAULT_CALLBACK_REPORTING_ENABLED
+		);
 
 		this.ioPoolSize = properties.getPropertyAsInt(IO_POOL_SIZE, DEFAULT_IO_POOL_SIZE);
 
 		clientJoin = properties.getPropertyAsBoolean(CLIENT_JOIN_MODE, DEFAULT_CLIENT_JOIN);
-		clientJoinMode = LaunchIdLockMode.valueOf(properties.getProperty(CLIENT_JOIN_MODE_VALUE, DEFAULT_CLIENT_JOIN_MODE));
+		clientJoinMode = LaunchIdLockMode.valueOf(properties.getProperty(CLIENT_JOIN_MODE_VALUE,
+				DEFAULT_CLIENT_JOIN_MODE
+		));
 
-		clientJoinTimeout = ofNullable(properties.getProperty(CLIENT_JOIN_TIMEOUT_VALUE)).map(t -> TimeUnit.valueOf(properties.getProperty(CLIENT_JOIN_TIMEOUT_UNIT,
-						DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT
-				)).toMillis(Long.parseLong(t)))
-				.orElse(DEFAULT_CLIENT_JOIN_TIMEOUT);
+		clientJoinTimeout = ofNullable(properties.getProperty(CLIENT_JOIN_TIMEOUT_VALUE)).map(t -> TimeUnit.valueOf(
+						properties.getProperty(CLIENT_JOIN_TIMEOUT_UNIT, DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT))
+				.toMillis(Long.parseLong(t))).orElse(DEFAULT_CLIENT_JOIN_TIMEOUT);
 
 		lockFileName = properties.getProperty(LOCK_FILE_NAME);
 		if (lockFileName != null) {
@@ -244,7 +259,8 @@ public class ListenerParameters implements Cloneable {
 		if (fileWaitTimeoutStr != null) {
 			LOGGER.warn(PROPERTY_WILL_BE_REMOVED,
 					FILE_WAIT_TIMEOUT_MS.getPropertyName(),
-					CLIENT_JOIN_LOCK_TIMEOUT_VALUE.getPropertyName() + "," + CLIENT_JOIN_LOCK_TIMEOUT_UNIT.getPropertyName()
+					CLIENT_JOIN_LOCK_TIMEOUT_VALUE.getPropertyName() + ","
+							+ CLIENT_JOIN_LOCK_TIMEOUT_UNIT.getPropertyName()
 			);
 			lockWaitTimeout = Long.parseLong(fileWaitTimeoutStr);
 		}
@@ -263,9 +279,49 @@ public class ListenerParameters implements Cloneable {
 
 		this.rxBufferSize = properties.getPropertyAsInt(RX_BUFFER_SIZE, DEFAULT_RX_BUFFER_SIZE);
 
-		this.truncateItemNames = properties.getPropertyAsBoolean(TRUNCATE_ITEM_NAMES, DEFAULT_TRUNCATE_ITEM_NAMES);
-		this.truncateItemNamesLimit = properties.getPropertyAsInt(TRUNCATE_ITEM_LIMIT, DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT);
-		this.truncateItemNamesReplacement = properties.getProperty(TRUNCATE_ITEM_REPLACEMENT, DEFAULT_TRUNCATE_REPLACEMENT);
+		String truncateLegacy = properties.getProperty(TRUNCATE_ITEM_NAMES);
+		if (StringUtils.isNotBlank(truncateLegacy)) {
+			LOGGER.warn(PROPERTY_WILL_BE_REMOVED,
+					TRUNCATE_ITEM_NAMES.getPropertyName(),
+					TRUNCATE_FIELDS.getPropertyName()
+			);
+			this.truncateFields = properties.getPropertyAsBoolean(TRUNCATE_FIELDS,
+					Boolean.parseBoolean(truncateLegacy)
+			);
+		} else {
+			this.truncateFields = properties.getPropertyAsBoolean(TRUNCATE_FIELDS, DEFAULT_TRUNCATE);
+		}
+
+		String legacyTruncateItemNamesLimit = properties.getProperty(TRUNCATE_ITEM_LIMIT);
+		if (StringUtils.isNotBlank(legacyTruncateItemNamesLimit)) {
+			LOGGER.warn(PROPERTY_WILL_BE_REMOVED,
+					TRUNCATE_ITEM_LIMIT.getPropertyName(),
+					TRUNCATE_ITEM_NAME_LIMIT.getPropertyName()
+			);
+			this.truncateItemNamesLimit = properties.getPropertyAsInt(TRUNCATE_ITEM_NAME_LIMIT,
+					Integer.parseInt(legacyTruncateItemNamesLimit)
+			);
+		} else {
+			this.truncateItemNamesLimit = properties.getPropertyAsInt(TRUNCATE_ITEM_NAME_LIMIT,
+					DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT
+			);
+		}
+
+		String legacyTruncateReplacement = properties.getProperty(TRUNCATE_ITEM_REPLACEMENT);
+		if (StringUtils.isNotBlank(legacyTruncateReplacement)) {
+			LOGGER.warn(PROPERTY_WILL_BE_REMOVED,
+					TRUNCATE_ITEM_REPLACEMENT.getPropertyName(),
+					TRUNCATE_REPLACEMENT.getPropertyName()
+			);
+			this.truncateReplacement = properties.getProperty(TRUNCATE_REPLACEMENT, legacyTruncateReplacement);
+		} else {
+			this.truncateReplacement = properties.getProperty(TRUNCATE_REPLACEMENT, DEFAULT_TRUNCATE_REPLACEMENT);
+		}
+
+		this.attributeLengthLimit = properties.getPropertyAsInt(
+				TRUNCATE_ATTRIBUTE_LIMIT,
+				DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT
+		);
 	}
 
 	public String getDescription() {
@@ -314,6 +370,15 @@ public class ListenerParameters implements Cloneable {
 
 	public void setLaunchName(String launchName) {
 		this.launchName = launchName;
+	}
+
+	@Nullable
+	public String getLaunchUuid() {
+		return launchUuid;
+	}
+
+	public void setLaunchUuid(@Nullable String launchUuid) {
+		this.launchUuid = launchUuid;
 	}
 
 	public Mode getLaunchRunningMode() {
@@ -501,19 +566,37 @@ public class ListenerParameters implements Cloneable {
 	}
 
 	public int getRxBufferSize() {
-		return ofNullable(System.getProperty("rx2.buffer-size")).map(Integer::valueOf).map(s -> Math.max(1, s)).orElse(rxBufferSize);
+		return ofNullable(System.getProperty("rx2.buffer-size")).map(Integer::valueOf)
+				.map(s -> Math.max(1, s))
+				.orElse(rxBufferSize);
 	}
 
 	public void setRxBufferSize(int size) {
 		rxBufferSize = size;
 	}
 
+	/**
+	 * @deprecated use {@link #isTruncateFields} instead
+	 */
+	@Deprecated
 	public boolean isTruncateItemNames() {
-		return truncateItemNames;
+		return truncateFields;
 	}
 
+	/**
+	 * @deprecated use {@link #setTruncateFields} instead
+	 */
+	@Deprecated
 	public void setTruncateItemNames(boolean truncate) {
-		this.truncateItemNames = truncate;
+		this.truncateFields = truncate;
+	}
+
+	public boolean isTruncateFields() {
+		return truncateFields;
+	}
+
+	public void setTruncateFields(boolean truncateFields) {
+		this.truncateFields = truncateFields;
 	}
 
 	public int getTruncateItemNamesLimit() {
@@ -524,12 +607,36 @@ public class ListenerParameters implements Cloneable {
 		this.truncateItemNamesLimit = limit;
 	}
 
+	/**
+	 * @deprecated Use {@link #getTruncateReplacement} instead
+	 */
+	@Deprecated
 	public String getTruncateItemNamesReplacement() {
-		return truncateItemNamesReplacement;
+		return truncateReplacement;
 	}
 
+	/**
+	 * @deprecated Use {@link #setTruncateReplacement} instead
+	 */
+	@Deprecated
 	public void setTruncateItemNamesReplacement(String replacement) {
-		this.truncateItemNamesReplacement = replacement;
+		this.truncateReplacement = replacement;
+	}
+
+	public String getTruncateReplacement() {
+		return truncateReplacement;
+	}
+
+	public void setTruncateReplacement(String replacement) {
+		this.truncateReplacement = replacement;
+	}
+
+	public int getAttributeLengthLimit() {
+		return attributeLengthLimit;
+	}
+
+	public void setAttributeLengthLimit(int attributeLengthLimit) {
+		this.attributeLengthLimit = attributeLengthLimit;
 	}
 
 	public void setHttpCallTimeout(@Nullable Duration httpCallTimeout) {
@@ -613,6 +720,7 @@ public class ListenerParameters implements Cloneable {
 		sb.append(", httpWriteTimeout='").append(httpWriteTimeout).append('\'');
 		sb.append(", projectName='").append(projectName).append('\'');
 		sb.append(", launchName='").append(launchName).append('\'');
+		sb.append(", launchUuid='").append(launchUuid).append('\'');
 		sb.append(", launchRunningMode=").append(launchRunningMode);
 		sb.append(", attributes=").append(attributes);
 		sb.append(", enable=").append(enable);
