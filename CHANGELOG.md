@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- `jackson-databind` dependency was forcibly updated to address vulnerabilities, by @HardNorth
 
 ## [5.1.12]
 ### Fixed
