@@ -35,25 +35,6 @@ import static org.hamcrest.Matchers.is;
 public class PropertiesLoaderTest {
 
 	@Test
-	public void testFullReloadProperties() {
-		Properties props = new Properties();
-		for (ListenerProperty listenerProperties : ListenerProperty.values()) {
-			props.setProperty(listenerProperties.getPropertyName(), listenerProperties.getPropertyName());
-		}
-
-		System.setProperties(props);
-
-		Properties loadedProps = PropertiesLoader.load().getProperties();
-
-		for (ListenerProperty listenerProperties : ListenerProperty.values()) {
-			assertThat(loadedProps.getProperty(listenerProperties.getPropertyName()),
-					equalTo(listenerProperties.getPropertyName())
-			);
-		}
-
-	}
-
-	@Test
 	public void testOverride() {
 		Properties properties = new Properties();
 		String propertyKey = ListenerProperty.DESCRIPTION.getPropertyName();
@@ -127,14 +108,25 @@ public class PropertiesLoaderTest {
 	}
 
 	@Test
-	public void verify_property_file_path_default() {
-		assertThat(PropertiesLoader.load().getProperty(ListenerProperty.BASE_URL), equalTo("http://localhost:8080"));
+	public void verify_property_file_path_default() throws IOException, InterruptedException {
+		Process process = ProcessUtils.buildProcess(PropertyFileOverrideExecutable.class);
+		assertThat("Exit code should be '0'", process.waitFor(), equalTo(0));
+		Triple<OutputStreamWriter, BufferedReader, BufferedReader> ios = ProcessUtils.getProcessIos(process);
+		String result = waitForLine(ios.getMiddle(), ios.getRight(), StringUtils::isNotBlank);
+		assertThat(result, equalTo("http://localhost:8080"));
 	}
 
 	@Test
-	public void verify_property_file_path_system_properties() {
-		System.setProperty(PropertiesLoader.PROPERTIES_PATH_PROPERTY, "property-test/utf-demo.properties");
-		assertThat(PropertiesLoader.load().getProperty(ListenerProperty.BASE_URL), equalTo("https://onliner.by"));
+	public void verify_property_file_path_system_properties() throws IOException, InterruptedException {
+		Process process = ProcessUtils.buildProcess(false,
+				PropertyFileOverrideExecutable.class,
+				null,
+				Collections.singletonMap(PropertiesLoader.PROPERTIES_PATH_PROPERTY, "property-test/utf-demo.properties")
+		);
+		assertThat("Exit code should be '0'", process.waitFor(), equalTo(0));
+		Triple<OutputStreamWriter, BufferedReader, BufferedReader> ios = ProcessUtils.getProcessIos(process);
+		String result = waitForLine(ios.getMiddle(), ios.getRight(), StringUtils::isNotBlank);
+		assertThat(result, equalTo("https://onliner.by"));
 	}
 
 	@Test
