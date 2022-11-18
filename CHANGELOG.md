@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Issue [#198](https://github.com/reportportal/client-java/issues/198) Property file customization, by @HardNorth
 ### Changed
 - `jackson-databind` dependency was forcibly updated to address vulnerabilities, by @HardNorth
 

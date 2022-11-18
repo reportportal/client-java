@@ -17,26 +17,18 @@
 package com.epam.reportportal.service.launch.lock;
 
 import com.epam.reportportal.service.LaunchIdLock;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.apache.commons.lang3.tuple.Triple;
-import org.awaitility.Awaitility;
-import org.awaitility.core.ConditionTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
-import static org.hamcrest.Matchers.notNullValue;
 
 public class LockTestUtil {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LockTestUtil.class);
@@ -48,54 +40,8 @@ public class LockTestUtil {
 	public static final Predicate<String> WELCOME_MESSAGE_PREDICATE = WELCOME_MESSAGE::equals;
 	public static final Predicate<String> ANY_STRING_PREDICATE = StringUtils::isNotBlank;
 
-	public static Triple<OutputStreamWriter, BufferedReader, BufferedReader> getProcessIos(Process process) {
-		return ImmutableTriple.of(
-				new OutputStreamWriter(process.getOutputStream()),
-				new BufferedReader(new InputStreamReader(process.getInputStream())),
-				new BufferedReader(new InputStreamReader(process.getErrorStream()))
-		);
-	}
-
-	public static void closeIos(Triple<OutputStreamWriter, BufferedReader, BufferedReader> io) {
-		try {
-			io.getLeft().close();
-			io.getMiddle().close();
-			io.getRight().close();
-		} catch (IOException ignore) {
-
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	public static String waitForLine(final BufferedReader reader, final BufferedReader errorReader, final Predicate<String> linePredicate)
-			throws IOException {
-		try {
-			return Awaitility.await("Waiting for a line")
-					.timeout(8, TimeUnit.SECONDS)
-					.pollInterval(100, TimeUnit.MILLISECONDS)
-					.until(() -> {
-						if (!reader.ready()) {
-							return null;
-						}
-						String line;
-						while ((line = reader.readLine()) != null) {
-							if (linePredicate.test(line)) {
-								return line;
-							}
-						}
-						return null;
-					}, notNullValue());
-		} catch (ConditionTimeoutException e) {
-			List<String> errorLines = Collections.EMPTY_LIST;
-			if (errorReader.ready()) {
-				errorLines = IOUtils.readLines(errorReader);
-			}
-			String lineSeparator = System.getProperty("line.separator");
-			throw new IllegalStateException("Unable to run test class: " + String.join(lineSeparator, errorLines));
-		}
-	}
-
-	public static Callable<String> getObtainLaunchUuidReadCallable(final String selfUuid, final LaunchIdLock launchIdLock) {
+	public static Callable<String> getObtainLaunchUuidReadCallable(final String selfUuid,
+			final LaunchIdLock launchIdLock) {
 		return () -> launchIdLock.obtainLaunchUuid(selfUuid);
 	}
 
@@ -113,7 +59,8 @@ public class LockTestUtil {
 		}
 	}
 
-	public static <T extends LaunchIdLock> Map<String, Callable<String>> getLaunchUuidReadCallables(int num, Supplier<T> serviceProvider) {
+	public static <T extends LaunchIdLock> Map<String, Callable<String>> getLaunchUuidReadCallables(int num,
+			Supplier<T> serviceProvider) {
 		Map<String, Callable<String>> results = new HashMap<>();
 		for (int i = 0; i < num; i++) {
 			String uuid = UUID.randomUUID().toString();

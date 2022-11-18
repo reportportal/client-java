@@ -24,7 +24,7 @@ import java.io.InputStreamReader;
 import static com.epam.reportportal.service.launch.lock.LockTestUtil.WELCOME_MESSAGE;
 
 /**
- * An utility class which runs LockFile from a new application context. Used for testing LockFile service in separate processes.
+ * A utility class which runs LockFile from a new application context. Used for testing LockFile service in separate processes.
  *
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */

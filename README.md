@@ -73,8 +73,11 @@ rp.keystore.password=<PASSWORD_OF_YOUR_KEYSTORE>
 
 For detailed parameter description see below sections.
 
-Properties file should have `reportportal.properties` name. It can be situated on the class path (in the project
-directory). If client can’t find the properties file it logs a warning.
+Default properties file should have `reportportal.properties` name. It can be situated in the class path (in the project
+directory) and if client can’t find the file it logs a warning. But you can also use your custom property file 
+specifying file's path in `rp.properties.path` system property or `RP_PROPERTIES_PATH` environment variable. The first 
+option has priority, so if you specify the path in both system properties and environment variables then system property
+value will be used.
 
 ## Parameters
 
