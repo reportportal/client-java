@@ -39,7 +39,7 @@ public class ListenerParametersTest {
 
 	@Test
 	public void testNoNPEs() {
-		PropertiesLoader properties = PropertiesLoader.load();
+		PropertiesLoader properties = PropertiesLoader.load("test.null.properties");
 		ListenerParameters listenerParameters = new ListenerParameters(properties);
 
 		assertThat(listenerParameters.getBaseUrl(), nullValue());
