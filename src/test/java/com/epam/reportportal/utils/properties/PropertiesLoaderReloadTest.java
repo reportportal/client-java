@@ -27,6 +27,8 @@ public class PropertiesLoaderReloadTest {
 
 	@Test
 	public void testFullReloadProperties() {
+		PropertiesLoader.load(); // avoid initialization exception
+
 		Properties props = new Properties();
 		for (ListenerProperty listenerProperties : ListenerProperty.values()) {
 			props.setProperty(listenerProperties.getPropertyName(), listenerProperties.getPropertyName());
