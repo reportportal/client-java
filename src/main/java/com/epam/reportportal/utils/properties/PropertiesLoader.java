@@ -17,6 +17,7 @@ package com.epam.reportportal.utils.properties;
 
 import com.epam.reportportal.utils.MemoizingSupplier;
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,13 +34,14 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.values;
+import static java.util.Optional.ofNullable;
 
 /**
  * Load report portal launch start properties
  */
 public class PropertiesLoader {
 	private static final Logger LOGGER = LoggerFactory.getLogger(PropertiesLoader.class);
-
+	public static final String PROPERTIES_PATH_PROPERTY = "rp.properties.path";
 	public static final String INNER_PATH = "reportportal.properties";
 	public static final Charset STANDARD_CHARSET = StandardCharsets.UTF_8;
 
@@ -90,7 +92,11 @@ public class PropertiesLoader {
 	 * @see #INNER_PATH
 	 */
 	public static PropertiesLoader load() {
-		return load(INNER_PATH);
+		String propertyFilePath = ofNullable(normalizeOverrides(System.getProperties()).get(PROPERTIES_PATH_PROPERTY)).filter(
+						StringUtils::isNotBlank)
+				.orElseGet(() -> ofNullable(normalizeOverrides(System.getenv()).get(PROPERTIES_PATH_PROPERTY)).filter(
+						StringUtils::isNotBlank).orElse(INNER_PATH));
+		return load(propertyFilePath);
 	}
 
 	private PropertiesLoader(final Supplier<Properties> propertiesSupplier) {
@@ -184,15 +190,14 @@ public class PropertiesLoader {
 	 * @return the overrides without underscores and with dots.
 	 */
 	private static Map<String, String> normalizeOverrides(Map<?, ?> overrides) {
-		return overrides.entrySet()
-				.stream()
-				.collect(Collectors.toMap(e -> e.getKey().toString().toLowerCase().replace('_', '.'),
-						e -> e.getValue().toString(),
-						(original, duplicate) -> {
-							LOGGER.warn("Duplicate key found in property overrides.");
-							return original;
-						}
-				));
+		return overrides.entrySet().stream().collect(Collectors.toMap(
+				e -> e.getKey().toString().toLowerCase().replace('_', '.'),
+				e -> e.getValue().toString(),
+				(original, duplicate) -> {
+					LOGGER.warn("Duplicate key found in property overrides.");
+					return original;
+				}
+		));
 	}
 
 	/**
@@ -206,7 +211,10 @@ public class PropertiesLoader {
 		Map<String, String> overridesNormalized = normalizeOverrides(overrides);
 		for (ListenerProperty listenerProperty : values()) {
 			if (overridesNormalized.get(listenerProperty.getPropertyName()) != null) {
-				source.setProperty(listenerProperty.getPropertyName(), overridesNormalized.get(listenerProperty.getPropertyName()));
+				source.setProperty(
+						listenerProperty.getPropertyName(),
+						overridesNormalized.get(listenerProperty.getPropertyName())
+				);
 			}
 		}
 	}
@@ -223,8 +231,8 @@ public class PropertiesLoader {
 	}
 
 	private static Optional<URL> getResource(String resourceName) {
-		ClassLoader loader = Optional.ofNullable(Thread.currentThread().getContextClassLoader())
-				.orElse(PropertiesLoader.class.getClassLoader());
-		return Optional.ofNullable(loader.getResource(resourceName));
+		ClassLoader loader = ofNullable(Thread.currentThread()
+				.getContextClassLoader()).orElse(PropertiesLoader.class.getClassLoader());
+		return ofNullable(loader.getResource(resourceName));
 	}
 }

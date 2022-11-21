@@ -44,6 +44,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.epam.reportportal.service.launch.lock.LockTestUtil.*;
+import static com.epam.reportportal.util.test.ProcessUtils.*;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -159,7 +160,7 @@ public class LaunchIdLockSocketTest {
 		}).collect(toList());
 
 		List<Triple<OutputStreamWriter, BufferedReader, BufferedReader>> processIos = processes.stream()
-				.map(LockTestUtil::getProcessIos)
+				.map(ProcessUtils::getProcessIos)
 				.collect(toList());
 		String lineSeparator = System.getProperty("line.separator");
 		List<String> results;
@@ -199,7 +200,7 @@ public class LaunchIdLockSocketTest {
 			});
 		} finally {
 			LOGGER.info("Done. Closing them out.");
-			processIos.forEach(LockTestUtil::closeIos);
+			processIos.forEach(ProcessUtils::closeIos);
 			processes.forEach(Process::destroyForcibly);
 		}
 
