@@ -51,11 +51,8 @@ jobs:
           version-file: ${{ env.VERSION_FILE }}
           version-file-extraction-pattern: ${{ env.VERSION_EXTRACT_PATTERN }}
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
       - name: Setup git credentials
-        uses: oleksiyrudenko/gha-git-credentials@v2
+        uses: oleksiyrudenko/gha-git-credentials@v2.1
         with:
           name: 'reportportal.io'
           email: 'support@reportportal.io'
@@ -96,7 +93,7 @@ jobs:
         with:
           tag: ${{ env.RELEASE_VERSION }}
           name: Release ${{ env.RELEASE_VERSION }}
-          body: ${{ steps.readChangelogEntry.outputs.log_entry }}
+          body: ${{ steps.readChangelogEntry.outputs.changes }}
 
       - name: Checkout develop branch
         if: ${{ github.ref }} == 'master'
