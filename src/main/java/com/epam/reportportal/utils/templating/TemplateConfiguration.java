@@ -21,7 +21,13 @@ import com.epam.reportportal.annotations.TemplateConfig;
 
 import java.util.Objects;
 
+/**
+ * Template configuration holder class. With the help of {@link TemplateConfig} annotation one can configure every
+ * aspect of template keywords and special characters.
+ */
 public class TemplateConfiguration {
+	public static final String CLASS_SIMPLE_NAME_TEMPLATE = "class";
+	public static final String CLASS_FULL_NAME_TEMPLATE = "classRef";
 	public static final String METHOD_NAME_TEMPLATE = "method";
 	public static final String SELF_NAME_TEMPLATE = "this";
 	public static final String FIELD_REFERENCE_DELIMITER = ".";
@@ -32,6 +38,8 @@ public class TemplateConfiguration {
 	public static final String ARRAY_END_PATTERN = "}";
 	public static final String ARRAY_ELEMENT_DELIMITER = ", ";
 
+	private String className;
+	private String classRef;
 	private String methodName;
 	private String selfName;
 	private String fieldDelimiter;
@@ -43,6 +51,8 @@ public class TemplateConfiguration {
 	private String arrayDelimiter;
 
 	public TemplateConfiguration() {
+		className = CLASS_SIMPLE_NAME_TEMPLATE;
+		classRef = CLASS_FULL_NAME_TEMPLATE;
 		methodName = METHOD_NAME_TEMPLATE;
 		selfName = SELF_NAME_TEMPLATE;
 		fieldDelimiter = FIELD_REFERENCE_DELIMITER;
@@ -63,15 +73,19 @@ public class TemplateConfiguration {
 			return false;
 		}
 		TemplateConfiguration that = (TemplateConfiguration) o;
-		return methodName.equals(that.methodName) && selfName.equals(that.selfName) && fieldDelimiter.equals(that.fieldDelimiter)
-				&& iterableStart.equals(that.iterableStart) && iterableEnd.equals(that.iterableEnd)
-				&& iterableDelimiter.equals(that.iterableDelimiter) && arrayStart.equals(that.arrayStart) && arrayEnd.equals(that.arrayEnd)
-				&& arrayDelimiter.equals(that.arrayDelimiter);
+		return className.equals(that.className) && classRef.equals(that.classRef) && methodName.equals(that.methodName)
+				&& selfName.equals(that.selfName) && fieldDelimiter.equals(that.fieldDelimiter) && iterableStart.equals(
+				that.iterableStart) && iterableEnd.equals(that.iterableEnd)
+				&& iterableDelimiter.equals(that.iterableDelimiter) && arrayStart.equals(that.arrayStart)
+				&& arrayEnd.equals(that.arrayEnd) && arrayDelimiter.equals(that.arrayDelimiter);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(methodName,
+		return Objects.hash(
+				className,
+				classRef,
+				methodName,
 				selfName,
 				fieldDelimiter,
 				iterableStart,
@@ -95,6 +109,8 @@ public class TemplateConfiguration {
 	}
 
 	public TemplateConfiguration(TemplateConfig config) {
+		className = config.classNameTemplate();
+		classRef = config.classRefTemplate();
 		methodName = config.methodNameTemplate();
 		selfName = config.selfNameTemplate();
 		fieldDelimiter = config.fieldDelimiter();
@@ -104,6 +120,24 @@ public class TemplateConfiguration {
 		arrayStart = config.arrayStartSymbol();
 		arrayEnd = config.arrayEndSymbol();
 		arrayDelimiter = config.arrayElementDelimiter();
+	}
+
+	public String getClassName() {
+		return className;
+	}
+
+	public TemplateConfiguration setClassName(String className) {
+		this.className = className;
+		return this;
+	}
+
+	public String getClassRef() {
+		return classRef;
+	}
+
+	public TemplateConfiguration setClassRef(String classRef) {
+		this.classRef = classRef;
+		return this;
 	}
 
 	public String getMethodName() {
