@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Added
 - `class` and `classRef` keywords for `@Step` templating, by @HardNorth
+- `PropertiesLoader.getPropertyFilePath`method, by @HardNorth
 
 ## [5.1.14]
 ### Added
