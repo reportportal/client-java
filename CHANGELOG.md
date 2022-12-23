@@ -1,10 +1,13 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `class` and `classRef` keywords for `@Step` templating, by @HardNorth
+- `PropertiesLoader.getPropertyFilePath`method, by @HardNorth
 
 ## [5.1.14]
 ### Added
-- Issue [#198](https://github.com/reportportal/client-java/issues/198) Property file customization, by @HardNorth
+- Issue [#198](https://github.com/reportportal/client-java/issues/198) Property file customization with `rp.properties.path` property, by @HardNorth
 ### Changed
 - `jackson-databind` dependency was forcibly updated to address vulnerabilities, by @HardNorth
 

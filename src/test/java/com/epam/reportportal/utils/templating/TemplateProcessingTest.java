@@ -45,7 +45,7 @@ public class TemplateProcessingTest {
 		Outer.Inner someObject = createInnerObject();
 
 		Step stepAnnotation = TemplateProcessingTest.class.getDeclaredMethod("annotationProvider").getAnnotation(Step.class);
-		TemplateConfiguration templateConfig = new TemplateConfiguration(stepAnnotation.templateConfig());
+		TemplateConfiguration templateConfig = new TemplateConfiguration(stepAnnotation.config());
 		String replacement = TemplateProcessing.retrieveValue(templateConfig, 1, template.split("\\."), someObject);
 
 		assertThat(replacement, equalTo(expected));
@@ -82,6 +82,7 @@ public class TemplateProcessingTest {
 		return Lists.newArrayList("firstInner", "secondInner", "thirdInner");
 	}
 
+	@SuppressWarnings({"unused", "FieldCanBeLocal"})
 	private static class Outer {
 
 		private final String outerName;

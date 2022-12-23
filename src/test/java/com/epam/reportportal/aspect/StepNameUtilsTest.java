@@ -75,8 +75,8 @@ public class StepNameUtilsTest {
 				joinPoint
 		);
 
-		//3 for name key + 3 for index key + method name key
-		assertThat(paramsMapping.size(), equalTo(namesArray.length * 2 + 1));
+		//3 for name key + 3 for index key + method name key + class name key + classRef key
+		assertThat(paramsMapping.size(), equalTo(namesArray.length * 2 + 3));
 		Arrays.stream(namesArray).forEach(name -> assertThat(paramsMapping, hasKey(name)));
 
 		assertThat(paramsMapping, hasEntry("firstName", "first"));
@@ -97,11 +97,15 @@ public class StepNameUtilsTest {
 	@ParameterizedTest
 	@MethodSource("stepNameValues")
 	public void test_special_characters_in_step_name(String name) throws NoSuchMethodException {
-		when(methodSignature.getMethod()).thenReturn(this.getClass().getDeclaredMethod("stepWithAValueInName", String.class));
+		when(methodSignature.getMethod()).thenReturn(this.getClass()
+				.getDeclaredMethod("stepWithAValueInName", String.class));
 		when(methodSignature.getParameterNames()).thenReturn(new String[] { "value" });
 		when(joinPoint.getArgs()).thenReturn(new String[] { name });
 
-		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class), methodSignature, joinPoint);
+		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class),
+				methodSignature,
+				joinPoint
+		);
 		String expected = "A test step value " + (name == null ? "NULL" : name);
 		assertThat(result, equalTo(expected));
 	}
@@ -117,14 +121,20 @@ public class StepNameUtilsTest {
 		when(methodSignature.getParameterNames()).thenReturn(new String[0]);
 		when(joinPoint.getArgs()).thenReturn(new String[0]);
 
-		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class), methodSignature, joinPoint);
+		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class),
+				methodSignature,
+				joinPoint
+		);
 		assertThat(result, equalTo(STEP_NAME_PATTERN));
 	}
 
-	private static Stream<String[]> formatData() {
-		return Stream.of(new String[] { "Method name: {method}", "Method name: stepMethod" },
-				new String[] { "Inner value: {this.value}", "Inner value: stepValue" },
-				new String[] { "Inner value: {this.object.value}", "Inner value: pojoValue" }
+	private static Iterable<Object[]> formatData() {
+		return Arrays.asList(new Object[] { "Method name: {method}", "Method name: stepMethod" },
+				new Object[] { "Inner value: {this.value}", "Inner value: stepValue" },
+				new Object[] { "Inner value: {this.object.value}", "Inner value: pojoValue" },
+				new Object[] { "Class name: {class}", "Class name: StepNameUtilsTest" },
+				new Object[] { "Class reference: {classRef}",
+						"Class reference: com.epam.reportportal.aspect.StepNameUtilsTest" }
 		);
 	}
 
@@ -178,10 +188,9 @@ public class StepNameUtilsTest {
 		when(joinPoint.getThis()).thenReturn(null);
 		when(joinPoint.getArgs()).thenReturn(null);
 
-		String result = StepNameUtils.getStepName(this.getClass().getDeclaredMethod("verifyNulls").getAnnotation(Step.class),
-				methodSignature,
-				joinPoint
-		);
+		String result = StepNameUtils.getStepName(this.getClass()
+				.getDeclaredMethod("verifyNulls")
+				.getAnnotation(Step.class), methodSignature, joinPoint);
 
 		assertThat(result, equalTo("{method} {this} {0}"));
 	}
@@ -195,7 +204,9 @@ public class StepNameUtilsTest {
 	public void test_null_reference() throws NoSuchMethodException {
 		when(joinPoint.getThis()).thenReturn(null);
 
-		String result = StepNameUtils.getStepName(this.getClass().getDeclaredMethod("verifyNullReference").getAnnotation(Step.class),
+		String result = StepNameUtils.getStepName(this.getClass()
+						.getDeclaredMethod("verifyNullReference")
+						.getAnnotation(Step.class),
 				methodSignature,
 				joinPoint
 		);
@@ -204,7 +215,8 @@ public class StepNameUtilsTest {
 	}
 
 	@Step(value = "A {mmmethod}", templateConfig = @StepTemplateConfig(methodNameTemplate = "mmmethod"))
-	public void verifyStepConfigurationUsage() {}
+	public void verifyStepConfigurationUsage() {
+	}
 
 	@Test
 	public void test_step_template_config() throws NoSuchMethodException {
@@ -212,12 +224,16 @@ public class StepNameUtilsTest {
 		when(methodSignature.getParameterNames()).thenReturn(new String[0]);
 		when(joinPoint.getArgs()).thenReturn(new String[0]);
 
-		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class), methodSignature, joinPoint);
+		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class),
+				methodSignature,
+				joinPoint
+		);
 		assertThat(result, equalTo("A verifyStepConfigurationUsage"));
 	}
 
 	@Step(value = "A {mmmethod}", config = @TemplateConfig(methodNameTemplate = "mmmethod"))
-	public void verifyConfigurationUsage() {}
+	public void verifyConfigurationUsage() {
+	}
 
 	@Test
 	public void test_template_config() throws NoSuchMethodException {
@@ -225,13 +241,16 @@ public class StepNameUtilsTest {
 		when(methodSignature.getParameterNames()).thenReturn(new String[0]);
 		when(joinPoint.getArgs()).thenReturn(new String[0]);
 
-		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class), methodSignature, joinPoint);
+		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class),
+				methodSignature,
+				joinPoint
+		);
 		assertThat(result, equalTo("A verifyConfigurationUsage"));
 	}
 
-	@Step(value = "A {mmmethod}", templateConfig = @StepTemplateConfig(methodNameTemplate = "mmethod"),
-			config = @TemplateConfig(methodNameTemplate = "mmmethod"))
-	public void verifyConfigurationOverride() {}
+	@Step(value = "A {mmmethod}", templateConfig = @StepTemplateConfig(methodNameTemplate = "mmethod"), config = @TemplateConfig(methodNameTemplate = "mmmethod"))
+	public void verifyConfigurationOverride() {
+	}
 
 	@Test
 	public void test_template_config_override() throws NoSuchMethodException {
@@ -239,7 +258,10 @@ public class StepNameUtilsTest {
 		when(methodSignature.getParameterNames()).thenReturn(new String[0]);
 		when(joinPoint.getArgs()).thenReturn(new String[0]);
 
-		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class), methodSignature, joinPoint);
+		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class),
+				methodSignature,
+				joinPoint
+		);
 		assertThat(result, equalTo("A verifyConfigurationOverride"));
 	}
 }

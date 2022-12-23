@@ -86,17 +86,24 @@ public class PropertiesLoader {
 	}
 
 	/**
+	 * Get path to Report Portal configuration file according to Environment Variables and System Properties.
+	 *
+	 * @return path to Report Portal configuration file
+	 */
+	public static String getPropertyFilePath() {
+		return ofNullable(normalizeOverrides(System.getProperties()).get(PROPERTIES_PATH_PROPERTY)).filter(StringUtils::isNotBlank)
+				.orElseGet(() -> ofNullable(normalizeOverrides(System.getenv()).get(PROPERTIES_PATH_PROPERTY)).filter(
+						StringUtils::isNotBlank).orElse(INNER_PATH));
+	}
+
+	/**
 	 * Loads properties from default location
 	 *
 	 * @return PropertiesLoader instance
 	 * @see #INNER_PATH
 	 */
 	public static PropertiesLoader load() {
-		String propertyFilePath = ofNullable(normalizeOverrides(System.getProperties()).get(PROPERTIES_PATH_PROPERTY)).filter(
-						StringUtils::isNotBlank)
-				.orElseGet(() -> ofNullable(normalizeOverrides(System.getenv()).get(PROPERTIES_PATH_PROPERTY)).filter(
-						StringUtils::isNotBlank).orElse(INNER_PATH));
-		return load(propertyFilePath);
+		return load(getPropertyFilePath());
 	}
 
 	private PropertiesLoader(final Supplier<Properties> propertiesSupplier) {

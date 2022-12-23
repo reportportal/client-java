@@ -34,6 +34,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface TemplateConfig {
 
+	String classNameTemplate() default TemplateConfiguration.CLASS_SIMPLE_NAME_TEMPLATE;
+
+	String classRefTemplate() default TemplateConfiguration.CLASS_FULL_NAME_TEMPLATE;
+
 	String methodNameTemplate() default TemplateConfiguration.METHOD_NAME_TEMPLATE;
 
 	String selfNameTemplate() default TemplateConfiguration.SELF_NAME_TEMPLATE;

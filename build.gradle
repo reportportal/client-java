@@ -35,7 +35,6 @@ targetCompatibility = JavaVersion.VERSION_1_8
 
 repositories {
     mavenCentral()
-    maven { url "https://jitpack.io" }
 }
 
 dependencies {
@@ -74,7 +73,7 @@ dependencies {
         exclude group: 'org.hamcrest'
     }
     testImplementation 'org.apache.commons:commons-io:1.3.2'
-    testImplementation 'com.github.reportportal:agent-java-test-utils:2d652c6'
+    testImplementation 'com.epam.reportportal:agent-java-test-utils:0.0.1'
 }
 
 test {
