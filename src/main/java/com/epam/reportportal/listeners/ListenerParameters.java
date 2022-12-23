@@ -42,7 +42,7 @@ import static com.epam.reportportal.utils.properties.ListenerProperty.*;
 import static java.util.Optional.ofNullable;
 
 /**
- * Report portal listeners parameters
+ * Report portal client parameters. The class is a placeholder for client and agent parameters.
  */
 public class ListenerParameters implements Cloneable {
 
@@ -153,6 +153,9 @@ public class ListenerParameters implements Cloneable {
 		)).orElse(null);
 	}
 
+	/**
+	 * Create class instance with default parameters
+	 */
 	public ListenerParameters() {
 
 		this.isSkippedAnIssue = DEFAULT_SKIP_ISSUE;
@@ -188,6 +191,11 @@ public class ListenerParameters implements Cloneable {
 		this.attributeLengthLimit = DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT;
 	}
 
+	/**
+	 * Create class instance with parameters from property source
+	 *
+	 * @param properties property source
+	 */
 	public ListenerParameters(PropertiesLoader properties) {
 		this.description = properties.getProperty(DESCRIPTION);
 		this.apiKey = ofNullable(properties.getProperty(API_KEY, properties.getProperty(UUID))).map(String::trim)
