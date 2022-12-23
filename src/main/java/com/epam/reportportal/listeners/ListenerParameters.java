@@ -576,6 +576,7 @@ public class ListenerParameters implements Cloneable {
 	}
 
 	/**
+	 * @return to truncate or not truncate
 	 * @deprecated use {@link #isTruncateFields} instead
 	 */
 	@Deprecated
@@ -584,6 +585,7 @@ public class ListenerParameters implements Cloneable {
 	}
 
 	/**
+	 * @param truncate to truncate or not truncate
 	 * @deprecated use {@link #setTruncateFields} instead
 	 */
 	@Deprecated
@@ -608,6 +610,7 @@ public class ListenerParameters implements Cloneable {
 	}
 
 	/**
+	 * @return truncation replacement
 	 * @deprecated Use {@link #getTruncateReplacement} instead
 	 */
 	@Deprecated
@@ -616,6 +619,7 @@ public class ListenerParameters implements Cloneable {
 	}
 
 	/**
+	 * @param replacement truncation replacement
 	 * @deprecated Use {@link #setTruncateReplacement} instead
 	 */
 	@Deprecated
