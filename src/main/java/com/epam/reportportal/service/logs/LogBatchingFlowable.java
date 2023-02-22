@@ -109,6 +109,7 @@ public class LogBatchingFlowable extends Flowable<List<SaveLogRQ>> implements Ha
 			List<List<SaveLogRQ>> toSend = new ArrayList<>();
 			lock.lock();
 			if (buffer == null) {
+				lock.unlock();
 				return;
 			}
 			if (payloadSize + size > payloadLimit) {

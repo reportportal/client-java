@@ -215,7 +215,6 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 	 *             obtain lock on '.lock' file, returned to every client instance.
 	 * @return either a Client instance UUID, either the first UUID which thread managed to place a lock on a '.lock' file.
 	 */
-	@SuppressWarnings("StringEquality")
 	@Override
 	public String obtainLaunchUuid(@Nonnull final String uuid) {
 		Objects.requireNonNull(uuid);
@@ -233,7 +232,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 				classLevelLock.unlock();
 				LOGGER.debug("Unable to obtain lock socket", e);
 			}
-			if (uuid == lockUuid) {
+			if (uuid.equals(lockUuid)) {
 				// This is the main thread, serve clients
 				handler = new ServerHandler();
 				handler.start();
@@ -242,7 +241,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 				writeInstanceUuid(uuid);
 			}
 		} else {
-			if (uuid != lockUuid) {
+			if (!uuid.equals(lockUuid)) {
 				writeInstanceUuid(uuid);
 			}
 		}
