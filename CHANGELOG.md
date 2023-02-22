@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `PropertiesLoader.overrideWith(java.util.Properties)` method, by @HardNorth
+### Changed
+- `MemoizingSupplier` class was refactored to get rid of `synchronized` keyword, by @HardNorth
 
 ## [5.1.15]
 ### Added
