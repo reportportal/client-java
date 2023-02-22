@@ -33,6 +33,7 @@ import org.reactivestreams.Subscription;
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A flowable which compile {@link SaveLogRQ} messages into specific batches limited by the number of entities in the batch and estimated
@@ -53,7 +54,10 @@ public class LogBatchingFlowable extends Flowable<List<SaveLogRQ>> implements Ha
 
 	@Override
 	protected void subscribeActual(Subscriber<? super List<SaveLogRQ>> s) {
-		source.subscribe(new LogBatchingFlowable.BufferSubscriber(new SerializedSubscriber<>(s), maxSize, payloadLimit));
+		source.subscribe(new LogBatchingFlowable.BufferSubscriber(new SerializedSubscriber<>(s),
+				maxSize,
+				payloadLimit
+		));
 	}
 
 	@Override
@@ -62,14 +66,15 @@ public class LogBatchingFlowable extends Flowable<List<SaveLogRQ>> implements Ha
 	}
 
 	private static final class BufferSubscriber implements FlowableSubscriber<SaveLogRQ>, Subscription {
+		private final ReentrantLock lock = new ReentrantLock();
 		private final Subscriber<List<SaveLogRQ>> downstream;
 		private final int maxSize;
 		private final long payloadLimit;
 
-		private List<SaveLogRQ> buffer;
-		private long payloadSize;
-		private Subscription upstream;
-		boolean done;
+		private volatile List<SaveLogRQ> buffer;
+		private volatile long payloadSize;
+		private volatile Subscription upstream;
+		private volatile boolean done;
 
 		public BufferSubscriber(Subscriber<List<SaveLogRQ>> actual, int batchMaxSize, long batchPayloadLimit) {
 			downstream = actual;
@@ -95,29 +100,31 @@ public class LogBatchingFlowable extends Flowable<List<SaveLogRQ>> implements Ha
 		}
 
 		@Override
+		@SuppressWarnings("UnnecessaryLocalVariable")
 		public void onNext(SaveLogRQ t) {
 			if (done) {
 				return;
 			}
 			long size = HttpRequestUtils.calculateRequestSize(t);
 			List<List<SaveLogRQ>> toSend = new ArrayList<>();
-			synchronized (this) {
-				if (buffer == null) {
-					return;
-				}
-				if (payloadSize + size > payloadLimit) {
-					if (buffer.size() > 0) {
-						toSend.add(buffer);
-						reset();
-					}
-				}
-				buffer.add(t);
-				payloadSize += size;
-				if (buffer.size() >= maxSize) {
+			lock.lock();
+			if (buffer == null) {
+				return;
+			}
+			if (payloadSize + size > payloadLimit) {
+				if (buffer.size() > 0) {
 					toSend.add(buffer);
 					reset();
 				}
 			}
+			buffer.add(t);
+			long newSize = payloadSize + size;
+			payloadSize = newSize;
+			if (buffer.size() >= maxSize) {
+				toSend.add(buffer);
+				reset();
+			}
+			lock.unlock();
 			toSend.forEach(downstream::onNext);
 		}
 
@@ -139,12 +146,12 @@ public class LogBatchingFlowable extends Flowable<List<SaveLogRQ>> implements Ha
 			done = true;
 
 			List<List<SaveLogRQ>> toSend = new ArrayList<>();
-			synchronized (this) {
-				if (buffer != null && !buffer.isEmpty()) {
-					toSend.add(buffer);
-					reset();
-				}
+			lock.lock();
+			if (buffer != null && !buffer.isEmpty()) {
+				toSend.add(buffer);
+				reset();
 			}
+			lock.unlock();
 			toSend.forEach(downstream::onNext);
 			downstream.onComplete();
 		}
