@@ -208,6 +208,15 @@ public class PropertiesLoader {
 	}
 
 	/**
+	 * Overrides properties with provided values
+	 *
+	 * @param overrides Values to overrides
+	 */
+	public void overrideWith(Properties overrides) {
+		overrideWith(propertiesSupplier.get(), overrides);
+	}
+
+	/**
 	 * Overrides properties from another source
 	 *
 	 * @param source    Properties to be overridden
