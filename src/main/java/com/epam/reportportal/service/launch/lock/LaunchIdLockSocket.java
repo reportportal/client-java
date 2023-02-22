@@ -35,6 +35,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 /**
@@ -52,6 +53,8 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 	private static final String COMMAND_DELIMITER = " - ";
 	private static final String OK_SUFFIX = COMMAND_DELIMITER + "OK";
 	private static final Map<String, Date> INSTANCES = new ConcurrentHashMap<>();
+
+	private static final ReentrantLock classLevelLock = new ReentrantLock();
 
 	private static volatile ServerSocket mainLock;
 	private static volatile String lockUuid;
@@ -90,13 +93,15 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 					byte[] launchUuid = lockUuid.getBytes(TRANSFER_CHARSET);
 					os.write(launchUuid);
 					os.flush();
-					byte[] updateUuid = new byte[(Command.UPDATE.name() + COMMAND_DELIMITER + lockUuid).getBytes(TRANSFER_CHARSET).length];
+					byte[] updateUuid = new byte[(Command.UPDATE.name() + COMMAND_DELIMITER + lockUuid).getBytes(
+							TRANSFER_CHARSET).length];
 					InputStream is = s.getInputStream();
 					//noinspection ResultOfMethodCallIgnored
 					is.read(updateUuid);
 					String data = new String(updateUuid, TRANSFER_CHARSET);
 					final Command command = Command.valueOf(data.substring(0, data.indexOf(COMMAND_DELIMITER)));
-					final String instanceUuid = data.substring(data.indexOf(COMMAND_DELIMITER) + COMMAND_DELIMITER.length());
+					final String instanceUuid = data.substring(
+							data.indexOf(COMMAND_DELIMITER) + COMMAND_DELIMITER.length());
 					switch (command) {
 						case UPDATE:
 							INSTANCES.put(instanceUuid, new Date());
@@ -154,7 +159,8 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 						//noinspection ResultOfMethodCallIgnored
 						is.read(launchAnswerBuffer);
 						String launchUuid = new String(launchAnswerBuffer, TRANSFER_CHARSET);
-						byte[] saveBuffer = (command.name() + COMMAND_DELIMITER + instanceUuid).getBytes(TRANSFER_CHARSET);
+						byte[] saveBuffer = (command.name() + COMMAND_DELIMITER + instanceUuid).getBytes(
+								TRANSFER_CHARSET);
 						OutputStream os = socket.getOutputStream();
 						os.write(saveBuffer);
 						os.flush();
@@ -169,7 +175,12 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 						}
 						return launchUuid;
 					} catch (IOException e) {
-						LOGGER.warn("Unable to '{}' instance UUID on port '{}', connection error", command.name(), portNumber, e);
+						LOGGER.warn(
+								"Unable to '{}' instance UUID on port '{}', connection error",
+								command.name(),
+								portNumber,
+								e
+						);
 						return null;
 					}
 				});
@@ -204,38 +215,38 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 	 *             obtain lock on '.lock' file, returned to every client instance.
 	 * @return either a Client instance UUID, either the first UUID which thread managed to place a lock on a '.lock' file.
 	 */
+	@SuppressWarnings("StringEquality")
 	@Override
 	public String obtainLaunchUuid(@Nonnull final String uuid) {
 		Objects.requireNonNull(uuid);
 		if (mainLock == null) {
+			classLevelLock.lock();
 			try {
-				synchronized (LaunchIdLockSocket.class) {
-					if (mainLock == null) {
-						mainLock = new ServerSocket(portNumber, SOCKET_BACKLOG, InetAddress.getLocalHost());
-						lockUuid = uuid;
-						INSTANCES.put(uuid, new Date());
-					}
+				if (mainLock == null) {
+					mainLock = new ServerSocket(portNumber, SOCKET_BACKLOG, InetAddress.getLocalHost());
+					lockUuid = uuid;
+					INSTANCES.put(uuid, new Date());
 				}
-				if (uuid.equals(lockUuid)) {
-					// This is the main thread, serve clients
-					handler = new ServerHandler();
-					handler.start();
-				} else {
-					// Another thread acquired lock while synchronization wait
-					writeInstanceUuid(uuid);
-				}
-				return lockUuid;
+				classLevelLock.unlock();
 			} catch (IOException e) {
 				// already busy, try to connect
+				classLevelLock.unlock();
 				LOGGER.debug("Unable to obtain lock socket", e);
-				return writeInstanceUuid(uuid);
 			}
-		} else {
-			if (!uuid.equals(lockUuid)) {
+			if (uuid == lockUuid) {
+				// This is the main thread, serve clients
+				handler = new ServerHandler();
+				handler.start();
+			} else {
+				// Another thread acquired lock while synchronization wait
 				writeInstanceUuid(uuid);
 			}
-			return lockUuid;
+		} else {
+			if (uuid != lockUuid) {
+				writeInstanceUuid(uuid);
+			}
 		}
+		return lockUuid;
 	}
 
 	@Override
@@ -248,6 +259,8 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 			handler.running = false;
 			handler = null;
 		}
+		lockUuid = null;
+		INSTANCES.clear();
 		if (mainLock != null) {
 			ServerSocket socket = mainLock;
 			mainLock = null; // faster than closing connection
@@ -257,8 +270,6 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 				LOGGER.warn("Unable to close server socket properly", e);
 			}
 		}
-		lockUuid = null;
-		INSTANCES.clear();
 	}
 
 	/**
@@ -272,11 +283,11 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 		executeCommand(Command.FINISH, instanceUuid);
 		if (mainLock != null) {
 			if (instanceUuid.equals(lockUuid)) {
-				synchronized (LaunchIdLockSocket.class) {
-					if (mainLock != null) {
-						reset();
-					}
+				classLevelLock.lock();
+				if (mainLock != null) {
+					reset();
 				}
+				classLevelLock.unlock();
 			}
 		}
 	}
@@ -285,7 +296,10 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 	@Override
 	public Collection<String> getLiveInstanceUuids() {
 		Calendar calendar = Calendar.getInstance();
-		calendar.add(Calendar.MILLISECOND, -instanceWaitTimeout < Integer.MIN_VALUE ? Integer.MIN_VALUE : (int) -instanceWaitTimeout);
+		calendar.add(
+				Calendar.MILLISECOND,
+				-instanceWaitTimeout < Integer.MIN_VALUE ? Integer.MIN_VALUE : (int) -instanceWaitTimeout
+		);
 		Date timeoutTime = calendar.getTime();
 		return INSTANCES.entrySet()
 				.stream()
