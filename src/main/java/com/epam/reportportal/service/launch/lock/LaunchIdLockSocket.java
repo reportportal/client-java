@@ -238,7 +238,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 				handler.start();
 			} else {
 				// Another thread acquired lock while synchronization wait
-				writeInstanceUuid(uuid);
+				return writeInstanceUuid(uuid);
 			}
 		} else {
 			if (!uuid.equals(lockUuid)) {
