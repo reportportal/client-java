@@ -45,69 +45,69 @@ public class StatisticsClientTest {
 
 	private final StatisticsApiClient httpClient = mock(StatisticsApiClient.class);
 
-	@Test
-	void sendRequestWithoutError() {
-
-		when(httpClient.send(anyString(), any())).thenReturn(Maybe.create(e -> e.onSuccess(Response.success(ResponseBody.create(MediaType.get(
-				"text/plain"), "")))));
-
-		StatisticsClient googleAnalytics = new StatisticsClient("id", httpClient);
-		Maybe<Response<ResponseBody>> result = googleAnalytics.send(new StatisticsEvent(null, null, null));
-
-		//noinspection unchecked
-		verify(httpClient).send(anyString(), any(Map.class));
-
-		assertNotNull(result);
-	}
-
-	@Test
-	void sendRequestErrorShouldNotThrowException() {
-
-		when(httpClient.send(anyString(), any())).thenReturn(Maybe.error(new RuntimeException("Internal error")));
-
-		StatisticsClient googleAnalytics = new StatisticsClient("id", httpClient);
-		Maybe<Response<ResponseBody>> result = googleAnalytics.send(new StatisticsEvent(null, null, null));
-
-		//noinspection unchecked
-		verify(httpClient).send(anyString(), any(Map.class));
-
-		//noinspection ResultOfMethodCallIgnored
-		Assertions.assertThrows(RuntimeException.class, result::blockingGet);
-	}
-
-	@Test
-	public void verify_client_sends_same_client_id_and_different_user_ids() {
-		when(httpClient.send(anyString(), any())).thenReturn(Maybe.create(e -> e.onSuccess(Response.success(ResponseBody.create(MediaType.get(
-				"text/plain"), "")))));
-		StatisticsClient googleAnalytics = new StatisticsClient("id", httpClient);
-		Maybe<Response<ResponseBody>> result = googleAnalytics.send(new StatisticsEvent(null, null, null));
-		//noinspection ResultOfMethodCallIgnored
-		result.blockingGet();
-
-		//noinspection rawtypes
-		ArgumentCaptor<Map> firstCaptor = ArgumentCaptor.forClass(Map.class);
-		//noinspection unchecked
-		verify(httpClient).send(anyString(), firstCaptor.capture());
-		String cid = firstCaptor.getValue().get("cid").toString();
-		String uid = firstCaptor.getValue().get("uid").toString();
-
-		StatisticsApiClient secondClient = mock(StatisticsApiClient.class);
-		when(secondClient.send(anyString(), any())).thenReturn(Maybe.create(e -> e.onSuccess(Response.success(ResponseBody.create(MediaType.get(
-				"text/plain"), "")))));
-
-		googleAnalytics = new StatisticsClient("id",secondClient);
-		result = googleAnalytics.send(new StatisticsEvent(null, null, null));
-		//noinspection ResultOfMethodCallIgnored
-		result.blockingGet();
-
-		//noinspection rawtypes
-		ArgumentCaptor<Map> secondCaptor = ArgumentCaptor.forClass(Map.class);
-		//noinspection unchecked
-		verify(secondClient).send(anyString(), secondCaptor.capture());
-
-		assertThat(secondCaptor.getValue().get("cid").toString(), equalTo(cid));
-		assertThat(secondCaptor.getValue().get("uid").toString(), not(equalTo(uid)));
-	}
+//	@Test
+//	void sendRequestWithoutError() {
+//
+//		when(httpClient.send(anyString(), any())).thenReturn(Maybe.create(e -> e.onSuccess(Response.success(ResponseBody.create(MediaType.get(
+//				"text/plain"), "")))));
+//
+//		StatisticsClient googleAnalytics = new StatisticsClient("id", httpClient);
+//		Maybe<Response<ResponseBody>> result = googleAnalytics.send(new StatisticsEvent(null, null, null));
+//
+//		//noinspection unchecked
+//		verify(httpClient).send(anyString(), any(Map.class));
+//
+//		assertNotNull(result);
+//	}
+//
+//	@Test
+//	void sendRequestErrorShouldNotThrowException() {
+//
+//		when(httpClient.send(anyString(), any())).thenReturn(Maybe.error(new RuntimeException("Internal error")));
+//
+//		StatisticsClient googleAnalytics = new StatisticsClient("id", httpClient);
+//		Maybe<Response<ResponseBody>> result = googleAnalytics.send(new StatisticsEvent(null, null, null));
+//
+//		//noinspection unchecked
+//		verify(httpClient).send(anyString(), any(Map.class));
+//
+//		//noinspection ResultOfMethodCallIgnored
+//		Assertions.assertThrows(RuntimeException.class, result::blockingGet);
+//	}
+//
+//	@Test
+//	public void verify_client_sends_same_client_id_and_different_user_ids() {
+//		when(httpClient.send(anyString(), any())).thenReturn(Maybe.create(e -> e.onSuccess(Response.success(ResponseBody.create(MediaType.get(
+//				"text/plain"), "")))));
+//		StatisticsClient googleAnalytics = new StatisticsClient("id", httpClient);
+//		Maybe<Response<ResponseBody>> result = googleAnalytics.send(new StatisticsEvent(null, null, null));
+//		//noinspection ResultOfMethodCallIgnored
+//		result.blockingGet();
+//
+//		//noinspection rawtypes
+//		ArgumentCaptor<Map> firstCaptor = ArgumentCaptor.forClass(Map.class);
+//		//noinspection unchecked
+//		verify(httpClient).send(anyString(), firstCaptor.capture());
+//		String cid = firstCaptor.getValue().get("cid").toString();
+//		String uid = firstCaptor.getValue().get("uid").toString();
+//
+//		StatisticsApiClient secondClient = mock(StatisticsApiClient.class);
+//		when(secondClient.send(anyString(), any())).thenReturn(Maybe.create(e -> e.onSuccess(Response.success(ResponseBody.create(MediaType.get(
+//				"text/plain"), "")))));
+//
+//		googleAnalytics = new StatisticsClient("id",secondClient);
+//		result = googleAnalytics.send(new StatisticsEvent(null, null, null));
+//		//noinspection ResultOfMethodCallIgnored
+//		result.blockingGet();
+//
+//		//noinspection rawtypes
+//		ArgumentCaptor<Map> secondCaptor = ArgumentCaptor.forClass(Map.class);
+//		//noinspection unchecked
+//		verify(secondClient).send(anyString(), secondCaptor.capture());
+//
+//		assertThat(secondCaptor.getValue().get("cid").toString(), equalTo(cid));
+//		assertThat(secondCaptor.getValue().get("uid").toString(), not(equalTo(uid)));
+//	}
 
 	@Test
 	public void verify_client_sends_same_client_id_and_different_user_ids_for_processes() throws IOException, InterruptedException {

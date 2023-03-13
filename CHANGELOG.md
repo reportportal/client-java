@@ -7,6 +7,7 @@
 - `MemoizingSupplier` class was refactored to get rid of `synchronized` keyword, by @HardNorth
 - `LogBatchingFlowable` class was refactored to get rid of `synchronized` keyword, by @HardNorth
 - `LaunchIdLockSocket` class was refactored to get rid of `synchronized` keyword, by @HardNorth
+- `StatisticsService` was rewritten on new protocol version, by @HardNorth
 
 ## [5.1.15]
 ### Added

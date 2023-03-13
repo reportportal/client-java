@@ -16,69 +16,34 @@
 
 package com.epam.reportportal.service.statistics.item;
 
-import com.google.common.collect.Maps;
-import io.reactivex.annotations.Nullable;
-
+import javax.annotation.Nonnull;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Representation of the Statistics EVENT entity
- *
- * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
-public class StatisticsEvent implements StatisticsItem {
+public class StatisticsEvent {
+	private final String name;
 
-	private static final String TYPE = "event";
+	private Map<String, Object> params = new HashMap<>();
 
-	private final Map<String, String> params;
-
-	public StatisticsEvent(@Nullable String eventCategory, @Nullable String eventAction, @Nullable String eventLabel) {
-		params = Maps.newHashMapWithExpectedSize(4);
-		params.put("t", TYPE);
-		params.put("ec", eventCategory);
-		params.put("ea", eventAction);
-		params.put("el", eventLabel);
+	public StatisticsEvent(String name) {
+		this.name = name;
 	}
 
-	private StatisticsEvent(Map<String, String> params) {
-		this.params = params;
+	public void setParams(@Nonnull Map<String, Object> params) {
+		Objects.requireNonNull(params);
+		this.params = new HashMap<>(params);
 	}
 
-	public static StatisticsEventBuilder builder() {
-		return new StatisticsEventBuilder();
+	public Map<String, Object> getParams() {
+		return new HashMap<>(params);
 	}
 
-	@Override
-	public Map<String, String> getParams() {
-		return params;
-	}
-
-	public static class StatisticsEventBuilder {
-
-		private final Map<String, String> params;
-
-		public StatisticsEventBuilder() {
-			params = Maps.newHashMapWithExpectedSize(4);
-			params.put("t", TYPE);
-		}
-
-		public StatisticsEventBuilder withCategory(String category) {
-			params.put("ec", category);
-			return this;
-		}
-
-		public StatisticsEventBuilder withAction(String action) {
-			params.put("ea", action);
-			return this;
-		}
-
-		public StatisticsEventBuilder withLabel(String label) {
-			params.put("el", label);
-			return this;
-		}
-
-		public StatisticsEvent build() {
-			return new StatisticsEvent(params);
-		}
+	public StatisticsEvent addParam(String name, Object value) {
+		params.put(name, value);
+		return this;
 	}
 }

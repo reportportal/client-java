@@ -18,6 +18,7 @@ package com.epam.reportportal.service.statistics;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.statistics.item.StatisticsEvent;
+import com.epam.reportportal.service.statistics.item.StatisticsItem;
 import com.epam.reportportal.utils.properties.ClientProperties;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
@@ -29,43 +30,91 @@ import io.reactivex.Maybe;
 import io.reactivex.Scheduler;
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.ResponseBody;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit2.Response;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.Base64;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static java.util.Optional.ofNullable;
 
 public class StatisticsService implements Closeable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(StatisticsService.class);
 
+	private static final String CLIENT_INFO = "Ry1XUDU3UlNHOFhMOjUxREVTTzQ4UV9DbmlnbVEwY2JoYmc=";
+
 	public static final String DISABLE_PROPERTY = "AGENT_NO_ANALYTICS";
-
 	private static final String CLIENT_PROPERTIES_FILE = "client.properties";
-	private static final String START_LAUNCH_EVENT_ACTION = "Start launch";
-	private static final String CATEGORY_VALUE_FORMAT = "Client name \"%s\", version \"%s\", interpreter \"Java %s\"";
-	private static final String LABEL_VALUE_FORMAT = "Agent name \"%s\", version \"%s\"";
+	private static final String START_LAUNCH_EVENT_ACTION = "start_launch";
+	private static final String CLIENT_NAME_PARAM = "client_name";
+	private static final String CLIENT_VERSION_PARAM = "client_version";
+	private static final String INTERPRETER_PARAM = "interpreter";
+	private static final String INTERPRETER_FORMAT = "Java %s";
+	private static final String AGENT_NAME_PARAM = "agent_name";
+	private static final String AGENT_VERSION_PARAM = "agent_version";
 
-	private final ExecutorService statisticsExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(
-			"rp-stat-%s").setDaemon(true).build());
+	private static final String CLIENT_ID_PROPERTY = "client.id";
+	private static final Path LOCAL_DATA_STORAGE = Paths.get(System.getProperty("user.home"), ".rp", "rp.properties");
+	private static final String CLIENT_ID = getClientId();
+
+	private static final AtomicLong THREAD_COUNTER = new AtomicLong();
+	private static final ThreadFactory THREAD_FACTORY = r -> {
+		Thread t = new Thread(r);
+		t.setDaemon(true);
+		t.setName("rp-stat-" + THREAD_COUNTER.incrementAndGet());
+		return t;
+	};
+	private final ExecutorService statisticsExecutor = Executors.newSingleThreadExecutor(THREAD_FACTORY);
 	private final Scheduler scheduler = Schedulers.from(statisticsExecutor);
 	private final Statistics statistics;
 	private final List<Completable> dependencies = new CopyOnWriteArrayList<>();
 
 	private final ListenerParameters parameters;
 
+	private static String getClientId() {
+		Properties properties = new Properties();
+		if (Files.exists(LOCAL_DATA_STORAGE)) {
+			try {
+				properties.load(Files.newInputStream(LOCAL_DATA_STORAGE, StandardOpenOption.READ));
+			} catch (IOException ignore) {
+			}
+
+			String storedId = properties.getProperty(CLIENT_ID_PROPERTY);
+			if (storedId != null) {
+				return storedId;
+			}
+		}
+		String id = UUID.randomUUID().toString();
+		properties.setProperty(CLIENT_ID_PROPERTY, id);
+		try {
+			Path folder = LOCAL_DATA_STORAGE.getParent();
+			Files.createDirectories(folder);
+			properties.store(Files.newOutputStream(LOCAL_DATA_STORAGE, StandardOpenOption.CREATE), null);
+		} catch (IOException ignore) {
+		}
+		return id;
+	}
+
 	public StatisticsService(ListenerParameters listenerParameters) {
 		this.parameters = listenerParameters;
 		boolean isDisabled = System.getenv(DISABLE_PROPERTY) != null;
-		statistics = isDisabled ? new DummyClient() : new StatisticsClient("UA-173456809-1", parameters);
+		String[] clientInfo = new String(Base64.getDecoder().decode(CLIENT_INFO), StandardCharsets.UTF_8).split(":");
+		statistics = isDisabled ? new DummyClient() : new StatisticsClient(clientInfo[0], clientInfo[1], parameters);
 	}
 
 	protected Statistics getStatistics() {
@@ -73,33 +122,30 @@ public class StatisticsService implements Closeable {
 	}
 
 	public void sendEvent(Maybe<String> launchIdMaybe, StartLaunchRQ rq) {
-		StatisticsEvent.StatisticsEventBuilder statisticsEventBuilder = StatisticsEvent.builder().withAction(START_LAUNCH_EVENT_ACTION);
+		StatisticsEvent event = new StatisticsEvent(START_LAUNCH_EVENT_ACTION);
 		SystemAttributesExtractor.extract(CLIENT_PROPERTIES_FILE, getClass().getClassLoader(), ClientProperties.CLIENT)
 				.stream()
 				.map(ItemAttributeResource::getValue)
 				.map(a -> a.split(Pattern.quote(SystemAttributesExtractor.ATTRIBUTE_VALUE_SEPARATOR)))
 				.filter(a -> a.length >= 2)
-				.map(a -> {
-					Object[] r = new Object[a.length + 1];
-					System.arraycopy(a, 0, r, 0, a.length);
-					r[a.length] = System.getProperty("java.version");
-					return r;
-				})
-				.findFirst()
-				.ifPresent(clientAttribute -> statisticsEventBuilder.withCategory(String.format(CATEGORY_VALUE_FORMAT, clientAttribute)));
+				.flatMap(a -> Stream.of(Pair.of(CLIENT_NAME_PARAM, a[0]), Pair.of(CLIENT_VERSION_PARAM, a[1]), Pair.of(
+						INTERPRETER_PARAM,
+						String.format(INTERPRETER_FORMAT, System.getProperty("java.version"))
+				)))
+				.forEach(p -> event.addParam(p.getKey(), p.getValue()));
 
 		ofNullable(rq.getAttributes()).flatMap(r -> r.stream()
-						.filter(attribute -> attribute.isSystem() && DefaultProperties.AGENT.getName().equalsIgnoreCase(attribute.getKey()))
+						.filter(attribute -> attribute.isSystem() && DefaultProperties.AGENT.getName()
+								.equalsIgnoreCase(attribute.getKey()))
 						.findAny())
 				.map(ItemAttributeResource::getValue)
 				.map(a -> a.split(Pattern.quote(SystemAttributesExtractor.ATTRIBUTE_VALUE_SEPARATOR)))
 				.filter(a -> a.length >= 2)
-				.ifPresent(agentAttribute -> statisticsEventBuilder.withLabel(String.format(LABEL_VALUE_FORMAT,
-						(Object[]) agentAttribute
-				)));
-		Maybe<Response<ResponseBody>> statisticsMaybe = launchIdMaybe.flatMap(l -> getStatistics().send(statisticsEventBuilder.build()))
-				.cache()
-				.subscribeOn(scheduler);
+				.ifPresent(a -> Stream.of(Pair.of(AGENT_NAME_PARAM, a[0]), Pair.of(AGENT_VERSION_PARAM, a[1]))
+						.forEach(p -> event.addParam(p.getKey(), p.getValue())));
+
+		Maybe<Response<ResponseBody>> statisticsMaybe = launchIdMaybe.flatMap(l -> getStatistics().send(new StatisticsItem(
+				CLIENT_ID).addEvent(event))).cache().subscribeOn(scheduler);
 		dependencies.add(statisticsMaybe.ignoreElement());
 		//noinspection ResultOfMethodCallIgnored
 		statisticsMaybe.subscribe(t -> {
@@ -113,7 +159,9 @@ public class StatisticsService implements Closeable {
 
 	@Override
 	public void close() {
-		Throwable result = Completable.concat(dependencies).timeout(parameters.getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
+		Throwable result = Completable.concat(dependencies)
+				.timeout(parameters.getReportingTimeout(), TimeUnit.SECONDS)
+				.blockingGet();
 		if (result != null) {
 			LOGGER.warn("Unable to complete execution of all dependencies", result);
 		}

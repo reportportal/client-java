@@ -18,7 +18,10 @@ package com.epam.reportportal.service.statistics.item;
 
 import com.epam.reportportal.service.statistics.StatisticsClient;
 
-import java.util.Map;
+import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * Interface for mapping any Statistics entity to the parameters mapping
@@ -26,8 +29,30 @@ import java.util.Map;
  *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
-public interface StatisticsItem {
+public class StatisticsItem {
 
-	Map<String, String> getParams();
+	private final String clientId;
+	private List<StatisticsEvent> events = new ArrayList<>();
 
+	public StatisticsItem(String clientId) {
+		this.clientId = clientId;
+	}
+
+	private String getClientId() {
+		return clientId;
+	}
+
+	public void setEvents(@Nonnull List<StatisticsEvent> events) {
+		Objects.requireNonNull(events);
+		this.events = new ArrayList<>(events);
+	}
+
+	public List<StatisticsEvent> getEvents() {
+		return new ArrayList<>(events);
+	}
+
+	public StatisticsItem addEvent(StatisticsEvent event) {
+		events.add(event);
+		return this;
+	}
 }
