@@ -43,5 +43,12 @@ public @interface TestCaseId {
 	 */
 	boolean parametrized() default false;
 
+	String[] selectedParameters() default {};
+
+	/**
+	 * TestCaseId template configuration to customize keywords and special symbols.
+	 *
+	 * @return template configuration
+	 */
 	TemplateConfig config() default @TemplateConfig;
 }
