@@ -17,8 +17,11 @@
 package com.epam.reportportal.service.statistics;
 
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.statistics.item.StatisticsEvent;
 import com.epam.reportportal.service.statistics.item.StatisticsItem;
 import com.epam.reportportal.test.TestUtils;
+import com.epam.reportportal.util.test.ProcessUtils;
+import com.epam.reportportal.utils.files.Utils;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
@@ -30,8 +33,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import retrofit2.Response;
 
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -141,5 +147,61 @@ public class StatisticsServiceTest {
 		StartLaunchRQ launchRq = TestUtils.standardLaunchRequest(parameters);
 		service.sendEvent(launchMaybe, launchRq);
 		verify(statistics, timeout(2000).times(1)).send(any());
+	}
+
+//	@Test
+//	public void verify_service_sends_same_client_id() {
+//		when(httpClient.send(anyString(), anyString(), anyString(), any(StatisticsItem.class))).thenReturn(Maybe.create(
+//				e -> e.onSuccess(Response.success(ResponseBody.create(MediaType.get("text/plain"), "")))));
+//		try (StatisticsClient googleAnalytics = new StatisticsClient("id", "secret", httpClient)) {
+//			Maybe<Response<ResponseBody>> result = googleAnalytics.send(new StatisticsItem("client-id"));
+//			//noinspection ResultOfMethodCallIgnored
+//			result.blockingGet();
+//
+//			//noinspection rawtypes
+//			ArgumentCaptor<Map> firstCaptor = ArgumentCaptor.forClass(Map.class);
+//			//noinspection unchecked
+//			verify(httpClient).send(anyString(), firstCaptor.capture());
+//			String cid = firstCaptor.getValue().get("cid").toString();
+//			String uid = firstCaptor.getValue().get("uid").toString();
+//
+//			StatisticsApiClient secondClient = mock(StatisticsApiClient.class);
+//			when(secondClient.send(anyString(), any())).thenReturn(Maybe.create(e -> e.onSuccess(Response.success(
+//					ResponseBody.create(MediaType.get("text/plain"), "")))));
+//
+//			googleAnalytics = new StatisticsClient("id", secondClient);
+//			result = googleAnalytics.send(new StatisticsEvent(null, null, null));
+//			//noinspection ResultOfMethodCallIgnored
+//			result.blockingGet();
+//
+//			//noinspection rawtypes
+//			ArgumentCaptor<Map> secondCaptor = ArgumentCaptor.forClass(Map.class);
+//			//noinspection unchecked
+//			verify(secondClient).send(anyString(), secondCaptor.capture());
+//
+//			assertThat(secondCaptor.getValue().get("cid").toString(), equalTo(cid));
+//			assertThat(secondCaptor.getValue().get("uid").toString(), not(equalTo(uid)));
+//		}
+//
+//	}
+
+	@Test
+	public void verify_service_sends_same_client_id_and_different_user_ids_for_processes()
+			throws IOException, InterruptedException {
+		Process process = ProcessUtils.buildProcess(false, StatisticsIdsRunnable.class);
+		assertThat("Exit code should be '0'", process.waitFor(), equalTo(0));
+		String result = Utils.readInputStreamToString(process.getInputStream());
+		process.destroyForcibly();
+		Map<String, String> values = Arrays.stream(result.split(System.getProperty("line.separator")))
+				.collect(Collectors.toMap(k -> k.substring(0, k.indexOf("=")), v -> v.substring(v.indexOf("=") + 1)));
+
+		Process process2 = ProcessUtils.buildProcess(false, StatisticsIdsRunnable.class);
+		assertThat("Exit code should be '0'", process2.waitFor(), equalTo(0));
+		String result2 = Utils.readInputStreamToString(process2.getInputStream());
+		Map<String, String> values2 = Arrays.stream(result2.split(System.getProperty("line.separator")))
+				.collect(Collectors.toMap(k -> k.substring(0, k.indexOf("=")), v -> v.substring(v.indexOf("=") + 1)));
+
+		assertThat(values2.get("cid"), equalTo(values.get("cid")));
+		assertThat(values2.get("uid"), not(equalTo(values.get("uid"))));
 	}
 }
