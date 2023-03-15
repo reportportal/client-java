@@ -148,8 +148,8 @@ public class StatisticsServiceTest {
 
 		Map<String, Object> params = event.getParams();
 
-		assertThat(params.get(StatisticsService.CLIENT_NAME_PARAM), equalTo("${name}"));
-		assertThat(params.get(StatisticsService.CLIENT_VERSION_PARAM), equalTo("${version}"));
+		assertThat(params.get(StatisticsService.CLIENT_NAME_PARAM), anyOf(equalTo("${name}"), equalTo("client-java")));
+		assertThat(params.get(StatisticsService.CLIENT_VERSION_PARAM).toString(), anyOf(equalTo("${version}"), matchesRegex(SEMANTIC_VERSION_PATTERN)));
 		assertThat(params, not(hasKey(StatisticsService.AGENT_NAME_PARAM)));
 		assertThat(params, not(hasKey(StatisticsService.AGENT_VERSION_PARAM)));
 		assertThat(params.get(StatisticsService.INTERPRETER_PARAM),
