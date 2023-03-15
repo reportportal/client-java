@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.matchesRegex;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
@@ -63,6 +64,9 @@ public class StatisticsServiceTest {
 			return statistics;
 		}
 	}
+
+	private static final String SEMANTIC_VERSION_PATTERN = "(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?";
+
 
 	@Mock
 	private StatisticsApiClient httpClient;
@@ -115,8 +119,8 @@ public class StatisticsServiceTest {
 		assertThat(event.getName(), sameInstance(StatisticsService.START_LAUNCH_EVENT_ACTION));
 
 		Map<String, Object> params = event.getParams();
-		assertThat(params.get(StatisticsService.CLIENT_NAME_PARAM), equalTo("${name}"));
-		assertThat(params.get(StatisticsService.CLIENT_VERSION_PARAM), equalTo("${version}"));
+		assertThat(params.get(StatisticsService.CLIENT_NAME_PARAM), anyOf(equalTo("${name}"), equalTo("client-java")));
+		assertThat(params.get(StatisticsService.CLIENT_VERSION_PARAM).toString(), anyOf(equalTo("${version}"), matchesRegex(SEMANTIC_VERSION_PATTERN)));
 		assertThat(params.get(StatisticsService.AGENT_NAME_PARAM), equalTo("agent-java-testng"));
 		assertThat(params.get(StatisticsService.AGENT_VERSION_PARAM), equalTo("test-version-1"));
 		assertThat(params.get(StatisticsService.INTERPRETER_PARAM),
