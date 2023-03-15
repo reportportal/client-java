@@ -38,7 +38,7 @@ public class StatisticsItem {
 		this.clientId = clientId;
 	}
 
-	private String getClientId() {
+	public String getClientId() {
 		return clientId;
 	}
 

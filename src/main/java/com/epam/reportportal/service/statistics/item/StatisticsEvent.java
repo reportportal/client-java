@@ -33,6 +33,10 @@ public class StatisticsEvent {
 		this.name = name;
 	}
 
+	public String getName() {
+		return name;
+	}
+
 	public void setParams(@Nonnull Map<String, Object> params) {
 		Objects.requireNonNull(params);
 		this.params = new HashMap<>(params);

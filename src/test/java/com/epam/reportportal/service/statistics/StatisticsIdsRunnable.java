@@ -16,14 +16,13 @@
 
 package com.epam.reportportal.service.statistics;
 
-import com.epam.reportportal.service.statistics.item.StatisticsEvent;
+import com.epam.reportportal.service.statistics.item.StatisticsItem;
+import com.epam.reportportal.test.TestUtils;
 import io.reactivex.Maybe;
 import okhttp3.MediaType;
 import okhttp3.ResponseBody;
 import org.mockito.ArgumentCaptor;
 import retrofit2.Response;
-
-import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -31,23 +30,26 @@ import static org.mockito.Mockito.*;
 public class StatisticsIdsRunnable {
 	public static void main(String... args) {
 
-//		StatisticsApiClient api = mock(StatisticsApiClient.class);
-//		when(api.send(anyString(), any())).thenReturn(Maybe.create(e -> e.onSuccess(Response.success(ResponseBody.create(
-//				MediaType.get("text/plain"),
-//				""
-//		)))));
-//
-//		StatisticsClient client = new StatisticsClient("tid", api);
-//		Maybe<Response<ResponseBody>> result = client.send(new StatisticsEvent(null, null, null));
-//		//noinspection ResultOfMethodCallIgnored
-//		result.blockingGet();
-//
-//		//noinspection rawtypes
-//		ArgumentCaptor<Map> captor = ArgumentCaptor.forClass(Map.class);
-//		//noinspection unchecked
-//		verify(api).send(anyString(), captor.capture());
-//
-//		System.out.println("cid=" + captor.getValue().get("cid").toString());
-//		System.out.println("uid=" + captor.getValue().get("uid").toString());
+		StatisticsApiClient api = mock(StatisticsApiClient.class);
+		when(api.send(
+				anyString(),
+				anyString(),
+				anyString(),
+				any(StatisticsItem.class)
+		)).thenReturn(Maybe.create(e -> e.onSuccess(Response.success(ResponseBody.create(MediaType.get("text/plain"),
+				""
+		)))));
+
+		try (StatisticsClient client = new StatisticsClient("id", "secret", api)) {
+			try (StatisticsService service = new StatisticsService(TestUtils.standardParameters(), client)) {
+				service.sendEvent(Maybe.just("launch_id"),
+						TestUtils.standardLaunchRequest(TestUtils.standardParameters())
+				);
+			}
+			ArgumentCaptor<StatisticsItem> captor = ArgumentCaptor.forClass(StatisticsItem.class);
+			verify(api).send(anyString(), anyString(), anyString(), captor.capture());
+
+			System.out.println("cid=" + captor.getValue().getClientId());
+		}
 	}
 }

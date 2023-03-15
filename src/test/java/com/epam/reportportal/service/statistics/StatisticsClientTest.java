@@ -22,6 +22,7 @@ import okhttp3.MediaType;
 import okhttp3.ResponseBody;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import retrofit2.Response;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -32,7 +33,8 @@ import static org.mockito.Mockito.*;
  */
 public class StatisticsClientTest {
 
-	private final StatisticsApiClient httpClient = mock(StatisticsApiClient.class);
+	@Mock
+	private StatisticsApiClient httpClient;
 
 	@Test
 	void sendRequestWithoutError() {
