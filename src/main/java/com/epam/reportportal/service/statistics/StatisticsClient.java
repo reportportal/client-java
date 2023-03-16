@@ -109,6 +109,7 @@ public class StatisticsClient implements Statistics {
 	 * tid - Statistics resource id
 	 *
 	 * @param measurementId       ID of the statistics resource
+	 * @param apiSecret			  API Secret Key
 	 * @param statisticsApiClient {@link StatisticsApiClient} instance
 	 */
 	public StatisticsClient(String measurementId, String apiSecret, StatisticsApiClient statisticsApiClient) {
