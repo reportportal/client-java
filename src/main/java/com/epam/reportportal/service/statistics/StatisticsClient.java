@@ -93,6 +93,13 @@ public class StatisticsClient implements Statistics {
 		return retrofit.create(StatisticsApiClient.class);
 	}
 
+	/**
+	 * Create an instance of the client, construct own HTTP client by given parameters
+	 *
+	 * @param measurementId ID of the statistics resource
+	 * @param apiSecret     API Secret Key
+	 * @param parameters    {@link ListenerParameters} Report Portal parameters
+	 */
 	public StatisticsClient(String measurementId, String apiSecret, ListenerParameters parameters) {
 		this.measurementId = measurementId;
 		this.apiSecret = apiSecret;
@@ -102,14 +109,10 @@ public class StatisticsClient implements Statistics {
 	}
 
 	/**
-	 * Adds set of mandatory parameters to the request params:
-	 * de - Encoding
-	 * v - Protocol version
-	 * cid - Client id
-	 * tid - Statistics resource id
+	 * Create an instance of the client with given HTTP client
 	 *
 	 * @param measurementId       ID of the statistics resource
-	 * @param apiSecret			  API Secret Key
+	 * @param apiSecret           API Secret Key
 	 * @param statisticsApiClient {@link StatisticsApiClient} instance
 	 */
 	public StatisticsClient(String measurementId, String apiSecret, StatisticsApiClient statisticsApiClient) {
