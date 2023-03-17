@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.16]
 ### Added
 - `PropertiesLoader.overrideWith(java.util.Properties)` method, by @HardNorth
 ### Changed
