@@ -36,7 +36,7 @@ import java.util.stream.Stream;
 import static java.util.Optional.ofNullable;
 
 /**
- * An utility class for parameters read and processing.
+ * A utility class for parameters read and processing.
  */
 public class ParameterUtils {
 

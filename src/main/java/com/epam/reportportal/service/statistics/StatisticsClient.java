@@ -18,8 +18,6 @@ package com.epam.reportportal.service.statistics;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.statistics.item.StatisticsItem;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
 import io.reactivex.Scheduler;
 import io.reactivex.schedulers.Schedulers;
@@ -30,72 +28,40 @@ import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
  * Statistics backend service asynchronous client. Require resource identifier by provided `trackingId` for sending statistics event.
- *
- * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  */
 public class StatisticsClient implements Statistics {
 	private static final String BASE_URL = "https://www.google-analytics.com/";
-	private static final String CLIENT_ID_PROPERTY = "client.id";
+
 	private static final String USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36";
 
-	private static final Map<String, String> CONSTANT_REQUEST_PARAMS = ImmutableMap.<String, String>builder()
-			.put("de", "UTF-8")
-			.put("v", "1")
-			.build();
+	private static final AtomicLong THREAD_COUNTER = new AtomicLong();
+	private static final ThreadFactory THREAD_FACTORY = r -> {
+		Thread t = new Thread(r);
+		t.setDaemon(true);
+		t.setName("rp-stat-io-" + THREAD_COUNTER.incrementAndGet());
+		return t;
+	};
 
-	private static final Path LOCAL_DATA_STORAGE = Paths.get(System.getProperty("user.home"), ".rp", "rp.properties");
-	private static final String CLIENT_ID = getClientId();
-
-	private final Map<String, String> commonParameters;
 	private final StatisticsApiClient client;
+	private final String measurementId;
+	private final String apiSecret;
 	private OkHttpClient httpClient;
 	private ExecutorService executor;
-
-	private static String getClientId() {
-		Properties properties = new Properties();
-		if (Files.exists(LOCAL_DATA_STORAGE)) {
-			try {
-				properties.load(Files.newInputStream(LOCAL_DATA_STORAGE, StandardOpenOption.READ));
-			} catch (IOException ignore) {
-			}
-
-			String storedId = properties.getProperty(CLIENT_ID_PROPERTY);
-			if (storedId != null) {
-				return storedId;
-			}
-		}
-		String id = UUID.randomUUID().toString();
-		properties.setProperty(CLIENT_ID_PROPERTY, id);
-		try {
-			Path folder = LOCAL_DATA_STORAGE.getParent();
-			Files.createDirectories(folder);
-			properties.store(Files.newOutputStream(LOCAL_DATA_STORAGE, StandardOpenOption.CREATE), null);
-		} catch (IOException ignore) {
-		}
-		return id;
-	}
 
 	private static OkHttpClient buildHttpClient(ListenerParameters parameters) {
 		OkHttpClient.Builder okHttpClient = new OkHttpClient.Builder();
@@ -106,7 +72,9 @@ public class StatisticsClient implements Statistics {
 				URL proxyUrl = new URL(proxyStr);
 				String host = proxyUrl.getHost();
 				int port = proxyUrl.getPort();
-				InetSocketAddress address = InetSocketAddress.createUnresolved(host, port >= 0 ? port : proxyUrl.getDefaultPort());
+				InetSocketAddress address = InetSocketAddress.createUnresolved(host,
+						port >= 0 ? port : proxyUrl.getDefaultPort()
+				);
 				okHttpClient.proxy(new Proxy(Proxy.Type.HTTP, address));
 			} catch (MalformedURLException ignore) {
 			}
@@ -125,34 +93,31 @@ public class StatisticsClient implements Statistics {
 		return retrofit.create(StatisticsApiClient.class);
 	}
 
-	private static Map<String, String> buildParams(String trackingId) {
-		return ImmutableMap.<String, String>builder()
-				.putAll(CONSTANT_REQUEST_PARAMS)
-				.put("cid", CLIENT_ID)
-				.put("uid", UUID.randomUUID().toString())
-				.put("tid", trackingId)
-				.build();
-	}
-
-	public StatisticsClient(String trackingId, ListenerParameters parameters) {
-		commonParameters = buildParams(trackingId);
-		executor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("rp-stat-%s").setDaemon(true).build());
+	/**
+	 * Create an instance of the client, construct own HTTP client by given parameters
+	 *
+	 * @param measurementId ID of the statistics resource
+	 * @param apiSecret     API Secret Key
+	 * @param parameters    {@link ListenerParameters} Report Portal parameters
+	 */
+	public StatisticsClient(String measurementId, String apiSecret, ListenerParameters parameters) {
+		this.measurementId = measurementId;
+		this.apiSecret = apiSecret;
+		executor = Executors.newSingleThreadExecutor(THREAD_FACTORY);
 		httpClient = buildHttpClient(parameters);
 		client = buildClient(httpClient, Schedulers.from(executor));
 	}
 
 	/**
-	 * Adds set of mandatory parameters to the request params:
-	 * de - Encoding
-	 * v - Protocol version
-	 * cid - Client id
-	 * tid - Statistics resource id
+	 * Create an instance of the client with given HTTP client
 	 *
-	 * @param trackingId          ID of the statistics resource
+	 * @param measurementId       ID of the statistics resource
+	 * @param apiSecret           API Secret Key
 	 * @param statisticsApiClient {@link StatisticsApiClient} instance
 	 */
-	public StatisticsClient(String trackingId, StatisticsApiClient statisticsApiClient) {
-		commonParameters = buildParams(trackingId);
+	public StatisticsClient(String measurementId, String apiSecret, StatisticsApiClient statisticsApiClient) {
+		this.measurementId = measurementId;
+		this.apiSecret = apiSecret;
 		client = statisticsApiClient;
 	}
 
@@ -164,13 +129,7 @@ public class StatisticsClient implements Statistics {
 	 */
 	@Override
 	public Maybe<Response<ResponseBody>> send(StatisticsItem item) {
-		return client.send(USER_AGENT, buildPostRequest(item));
-	}
-
-	private Map<String, String> buildPostRequest(StatisticsItem item) {
-		Map<String, String> nameValuePairs = new HashMap<>(item.getParams());
-		nameValuePairs.putAll(commonParameters);
-		return nameValuePairs;
+		return client.send(USER_AGENT, measurementId, apiSecret, item);
 	}
 
 	@Override

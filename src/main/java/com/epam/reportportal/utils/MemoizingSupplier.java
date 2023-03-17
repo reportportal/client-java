@@ -18,6 +18,8 @@ package com.epam.reportportal.utils;
 
 import javax.annotation.Nonnull;
 import java.io.Serializable;
+import java.util.Objects;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
 /**
@@ -26,24 +28,30 @@ import java.util.function.Supplier;
  * @param <T> the supplier type
  */
 public class MemoizingSupplier<T> implements Supplier<T>, Serializable {
+	private final ReentrantLock lock = new ReentrantLock();
 	private final Supplier<T> delegate;
 	private transient volatile boolean initialized;
 	private transient volatile T value;
 	private static final long serialVersionUID = 0L;
 
 	public MemoizingSupplier(@Nonnull final Supplier<T> delegate) {
+		Objects.requireNonNull(delegate);
 		this.delegate = delegate;
 	}
 
 	public T get() {
 		if (!initialized) {
-			synchronized (this) {
+			lock.lock();
+			try {
 				if (!initialized) {
 					value = delegate.get();
 					initialized = true;
-					return value;
 				}
+			} catch (RuntimeException e) {
+				lock.unlock();
+				throw e;
 			}
+			lock.unlock();
 		}
 		return value;
 	}
@@ -52,7 +60,7 @@ public class MemoizingSupplier<T> implements Supplier<T>, Serializable {
 		return initialized;
 	}
 
-	public synchronized void reset() {
+	public void reset() {
 		initialized = false;
 	}
 

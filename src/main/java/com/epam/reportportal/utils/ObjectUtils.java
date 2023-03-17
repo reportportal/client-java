@@ -22,6 +22,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 
+/**
+ * A class for auxiliary manipulations with objects.
+ */
 public class ObjectUtils {
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 
