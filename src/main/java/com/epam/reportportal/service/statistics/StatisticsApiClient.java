@@ -16,19 +16,19 @@
 
 package com.epam.reportportal.service.statistics;
 
+import com.epam.reportportal.service.statistics.item.StatisticsItem;
 import io.reactivex.Maybe;
 import okhttp3.ResponseBody;
 import retrofit2.Response;
-import retrofit2.http.FieldMap;
-import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.Body;
 import retrofit2.http.Header;
 import retrofit2.http.POST;
-
-import java.util.Map;
+import retrofit2.http.Query;
 
 public interface StatisticsApiClient {
 
-	@FormUrlEncoded
-	@POST("collect")
-	Maybe<Response<ResponseBody>> send(@Header("User-Agent") String agent, @FieldMap Map<String, String> params);
+	@POST("mp/collect")
+	Maybe<Response<ResponseBody>> send(@Header("User-Agent") String agent,
+			@Query("measurement_id") String measurement_id, @Query("api_secret") String apiSecret,
+			@Body StatisticsItem item);
 }
