@@ -54,6 +54,7 @@ public class StepNameUtils {
 		}
 
 		TemplateConfiguration defaultConfig = new TemplateConfiguration();
+		@SuppressWarnings("deprecation")
 		TemplateConfiguration deprecatedConfig = new TemplateConfiguration(step.templateConfig());
 		TemplateConfiguration config = new TemplateConfiguration(step.config());
 		if (!deprecatedConfig.equals(defaultConfig)) {
@@ -77,27 +78,24 @@ public class StepNameUtils {
 	@Nonnull
 	public static String getStepName(@Nonnull String nameTemplate, @Nonnull TemplateConfiguration config,
 			@Nonnull MethodSignature signature, @Nonnull JoinPoint joinPoint) {
-		Map<String, Object> parametersMap = createParamsMapping(config, signature, joinPoint);
-		return TemplateProcessing.processTemplate(nameTemplate, parametersMap, config);
+		Map<String, Object> parametersMap = createParamsMapping(signature, joinPoint);
+		return TemplateProcessing.processTemplate(nameTemplate,
+				joinPoint.getThis(),
+				signature.getMethod(),
+				parametersMap,
+				config
+		);
 	}
 
 	@Nonnull
-	static Map<String, Object> createParamsMapping(@Nonnull TemplateConfiguration templateConfig,
-			@Nonnull MethodSignature signature, @Nonnull JoinPoint joinPoint) {
+	static Map<String, Object> createParamsMapping(@Nonnull MethodSignature signature, @Nonnull JoinPoint joinPoint) {
 		Object[] args = joinPoint.getArgs();
 		String[] parameterNames = signature.getParameterNames();
-		int paramsCount = Math.min(
-				ofNullable(parameterNames).map(p -> p.length).orElse(0),
+		int paramsCount = Math.min(ofNullable(parameterNames).map(p -> p.length).orElse(0),
 				ofNullable(args).map(a -> a.length).orElse(0)
 		);
+
 		Map<String, Object> paramsMapping = new HashMap<>();
-		ofNullable(signature.getMethod()).ifPresent(method -> {
-			paramsMapping.put(templateConfig.getMethodName(), method.getName());
-			Class<?> clazz = method.getDeclaringClass();
-			paramsMapping.put(templateConfig.getClassName(), clazz.getSimpleName());
-			paramsMapping.put(templateConfig.getClassRef(), clazz.getName());
-		});
-		ofNullable(joinPoint.getThis()).ifPresent(current -> paramsMapping.put(templateConfig.getSelfName(), current));
 		for (int i = 0; i < paramsCount; i++) {
 			paramsMapping.put(parameterNames[i], args[i]);
 			paramsMapping.put(Integer.toString(i), args[i]);

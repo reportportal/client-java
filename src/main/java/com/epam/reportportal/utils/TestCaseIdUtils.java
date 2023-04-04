@@ -28,7 +28,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -80,7 +79,8 @@ public class TestCaseIdUtils {
 		Annotation[][] parameterAnnotations = executable.getParameterAnnotations();
 		List<Integer> keys = new ArrayList<>();
 		for (int paramIndex = 0; paramIndex < parameterAnnotations.length; paramIndex++) {
-			for (int annotationIndex = 0; annotationIndex < parameterAnnotations[paramIndex].length; annotationIndex++) {
+			for (int annotationIndex = 0; annotationIndex < parameterAnnotations[paramIndex].length;
+					annotationIndex++) {
 				Annotation testCaseIdAnnotation = parameterAnnotations[paramIndex][annotationIndex];
 				if (testCaseIdAnnotation.annotationType() == TestCaseIdKey.class) {
 					keys.add(paramIndex);
@@ -90,7 +90,7 @@ public class TestCaseIdUtils {
 		if (keys.isEmpty()) {
 			return TRANSFORM_PARAMETERS.apply(parameters);
 		}
-		if (keys.size() <= 1) {
+		if (keys.size() == 1) {
 			return String.valueOf(parameters.get(keys.get(0)));
 		}
 		return TRANSFORM_PARAMETERS.apply(keys.stream().map(parameters::get).collect(Collectors.toList()));
@@ -148,21 +148,28 @@ public class TestCaseIdUtils {
 							.orElse(ofNullable(codRef).map(c -> getTestCaseId(c, parameters))
 									.orElse(getTestCaseId(executable, parameters)));
 				} else {
-					return ofNullable(codRef).map(c -> getTestCaseId(c, parameters)).orElse(getTestCaseId(executable, parameters));
+					return ofNullable(codRef).map(c -> getTestCaseId(c, parameters))
+							.orElse(getTestCaseId(executable, parameters));
 				}
 			} else {
 				String idTemplate = annotation.value();
 				TemplateConfiguration templateConfig = new TemplateConfiguration(annotation.config());
-				Map<String, Object> parametersMap = ofNullable(parameters).map(params -> IntStream.range(0, params.size())
+				Map<String, Object> parametersMap = ofNullable(parameters).map(params -> IntStream.range(0,
+								params.size()
+						)
 						.boxed()
-						.collect(Collectors.toMap(Object::toString, i -> (Object) params.get(i)))).orElse(new HashMap<>());
-				ofNullable(executable).map(Executable::getName).ifPresent(name -> parametersMap.put(templateConfig.getMethodName(), name));
-				ofNullable(testInstance).ifPresent(instance -> parametersMap.put(templateConfig.getSelfName(), instance));
-				String id = TemplateProcessing.processTemplate(idTemplate, parametersMap, templateConfig);
+						.collect(Collectors.toMap(Object::toString, i -> (Object) params.get(i)))).orElse(null);
+				String id = TemplateProcessing.processTemplate(idTemplate,
+						testInstance,
+						executable,
+						parametersMap,
+						templateConfig
+				);
 
 				if (annotation.parametrized()) {
 					String resultParameters = getParametersForTestCaseId(executable, parameters);
-					return ofNullable(resultParameters).map(p -> new TestCaseIdEntry(id + (p.startsWith("[") ? p : "[" + p + "]")))
+					return ofNullable(resultParameters).map(p -> new TestCaseIdEntry(
+									id + (p.startsWith("[") ? p : "[" + p + "]")))
 							.orElse(ofNullable(codRef).map(c -> getTestCaseId(c, parameters))
 									.orElse(getTestCaseId(executable, parameters)));
 				} else {
@@ -183,7 +190,8 @@ public class TestCaseIdUtils {
 	 */
 	@Nullable
 	public static <T> TestCaseIdEntry getTestCaseId(@Nullable Executable executable, @Nullable List<T> parameters) {
-		return ofNullable(executable).map(m -> getTestCaseId(getCodeRef(m), parameters)).orElse(getTestCaseId(parameters));
+		return ofNullable(executable).map(m -> getTestCaseId(getCodeRef(m), parameters))
+				.orElse(getTestCaseId(parameters));
 	}
 
 	/**
@@ -196,7 +204,8 @@ public class TestCaseIdUtils {
 	 */
 	@Nullable
 	public static <T> TestCaseIdEntry getTestCaseId(@Nullable String codeRef, @Nullable List<T> parameters) {
-		return ofNullable(codeRef).map(r -> new TestCaseIdEntry(codeRef + ofNullable(parameters).map(TRANSFORM_PARAMETERS).orElse("")))
+		return ofNullable(codeRef).map(r -> new TestCaseIdEntry(
+						codeRef + ofNullable(parameters).map(TRANSFORM_PARAMETERS).orElse("")))
 				.orElse(getTestCaseId(parameters));
 	}
 

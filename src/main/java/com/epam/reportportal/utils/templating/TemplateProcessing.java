@@ -23,10 +23,14 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Array;
+import java.lang.reflect.Executable;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * Class for processing simple string templates.
@@ -45,21 +49,48 @@ public class TemplateProcessing {
 	/**
 	 * Format given pattern with given parameters and configuration.
 	 *
-	 * @param pattern text patter to format
+	 * @param pattern    text patter to format
+	 * @param object     current object context
+	 * @param executable current execution context
 	 * @param parameters a map which will be used to locate reference replacements in pattern
-	 * @param config templating mechanism configuration
+	 * @param config     templating mechanism configuration
 	 * @return formatted string
 	 */
-	public static String processTemplate(String pattern, Map<String, Object> parameters, TemplateConfiguration config) {
+	public static String processTemplate(@Nonnull String pattern, @Nullable Object object,
+			@Nullable Executable executable, @Nullable Map<String, Object> parameters,
+			@Nonnull TemplateConfiguration config) {
+		HashMap<String, Object> myParams = ofNullable(parameters).map(HashMap::new).orElse(new HashMap<>());
+		ofNullable(executable).ifPresent(e -> {
+			myParams.put(config.getMethodName(), e.getName());
+			Class<?> clazz = e.getDeclaringClass();
+			myParams.put(config.getClassName(), clazz.getSimpleName());
+			myParams.put(config.getClassRef(), clazz.getName());
+		});
+		ofNullable(object).ifPresent(o -> myParams.put(config.getSelfName(), object));
 		Matcher matcher = TEMPLATE_GROUP.matcher(pattern);
 		StringBuffer stringBuffer = new StringBuffer();
 		while (matcher.find()) {
 			String templatePart = matcher.group(1);
-			String replacement = getReplacement(templatePart, parameters, config);
-			matcher.appendReplacement(stringBuffer, Matcher.quoteReplacement(replacement != null ? replacement : matcher.group(0)));
+			String replacement = getReplacement(templatePart, myParams, config);
+			matcher.appendReplacement(stringBuffer,
+					Matcher.quoteReplacement(replacement != null ? replacement : matcher.group(0))
+			);
 		}
 		matcher.appendTail(stringBuffer);
 		return stringBuffer.toString();
+	}
+
+	/**
+	 * Format given pattern with given parameters and configuration.
+	 *
+	 * @param pattern    text patter to format
+	 * @param parameters a map which will be used to locate reference replacements in pattern
+	 * @param config     templating mechanism configuration
+	 * @return formatted string
+	 */
+	public static String processTemplate(@Nonnull String pattern, @Nullable Map<String, Object> parameters,
+			@Nonnull TemplateConfiguration config) {
+		return processTemplate(pattern, null, null, parameters, config);
 	}
 
 	@Nullable
@@ -153,8 +184,8 @@ public class TemplateProcessing {
 	 * @param fields         Fields of the template part
 	 * @return {@link String} representation of the parsed Collection
 	 */
-	private static String parseCollection(TemplateConfiguration templateConfig, Iterable<?> iterable, int index, String[] fields)
-			throws NoSuchFieldException {
+	private static String parseCollection(TemplateConfiguration templateConfig, Iterable<?> iterable, int index,
+			String[] fields) throws NoSuchFieldException {
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append(templateConfig.getIterableStart());
 

@@ -19,7 +19,6 @@ package com.epam.reportportal.aspect;
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.annotations.StepTemplateConfig;
 import com.epam.reportportal.annotations.TemplateConfig;
-import com.epam.reportportal.utils.templating.TemplateConfiguration;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.Test;
@@ -49,6 +48,7 @@ public class StepNameUtilsTest {
 	@Mock(lenient = true)
 	private JoinPoint joinPoint;
 
+	@SuppressWarnings({"deprecation", "unused"})
 	@Step(templateConfig = @StepTemplateConfig)
 	private void templateConfigMethod() {
 
@@ -58,25 +58,15 @@ public class StepNameUtilsTest {
 	 * @see <a href="https://github.com/reportportal/client-java/issues/73">Covers NPE issue fix</a>
 	 */
 	@Test
-	public void createParamsMapping() throws NoSuchMethodException {
-
+	public void createParamsMapping() {
 		String[] namesArray = { "firstName", "secondName", "thirdName" };
-		when(methodSignature.getMethod()).thenReturn(this.getClass().getDeclaredMethod("templateConfigMethod"));
 		when(methodSignature.getParameterNames()).thenReturn(namesArray);
 		when(joinPoint.getArgs()).thenReturn(new String[] { "first", "second", null });
 
-		StepTemplateConfig templateConfig = this.getClass()
-				.getDeclaredMethod("templateConfigMethod")
-				.getDeclaredAnnotation(Step.class)
-				.templateConfig();
+		Map<String, Object> paramsMapping = StepNameUtils.createParamsMapping(methodSignature, joinPoint);
 
-		Map<String, Object> paramsMapping = StepNameUtils.createParamsMapping(new TemplateConfiguration(templateConfig),
-				methodSignature,
-				joinPoint
-		);
-
-		//3 for name key + 3 for index key + method name key + class name key + classRef key
-		assertThat(paramsMapping.size(), equalTo(namesArray.length * 2 + 3));
+		//3 for name key + 3 for index key
+		assertThat(paramsMapping.size(), equalTo(namesArray.length * 2));
 		Arrays.stream(namesArray).forEach(name -> assertThat(paramsMapping, hasKey(name)));
 
 		assertThat(paramsMapping, hasEntry("firstName", "first"));
@@ -214,6 +204,7 @@ public class StepNameUtilsTest {
 		assertThat(result, equalTo("{this.test}"));
 	}
 
+	@SuppressWarnings({"deprecation"})
 	@Step(value = "A {mmmethod}", templateConfig = @StepTemplateConfig(methodNameTemplate = "mmmethod"))
 	public void verifyStepConfigurationUsage() {
 	}
@@ -248,6 +239,7 @@ public class StepNameUtilsTest {
 		assertThat(result, equalTo("A verifyConfigurationUsage"));
 	}
 
+	@SuppressWarnings({"deprecation"})
 	@Step(value = "A {mmmethod}", templateConfig = @StepTemplateConfig(methodNameTemplate = "mmethod"), config = @TemplateConfig(methodNameTemplate = "mmmethod"))
 	public void verifyConfigurationOverride() {
 	}

@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `class` and `classRef` keywords for `@TestCaseId` templating, by @HardNorth
 
 ## [5.1.16]
 ### Added
