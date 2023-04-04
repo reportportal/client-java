@@ -199,7 +199,7 @@ public class StatisticsServiceTest {
 	}
 
 	@Test
-	public void verify_service_sends_same_client_id_and_different_user_ids_for_processes()
+	public void verify_service_sends_same_client_id_for_processes()
 			throws IOException, InterruptedException {
 		Process process = ProcessUtils.buildProcess(false, StatisticsIdsRunnable.class);
 		assertThat("Exit code should be '0'", process.waitFor(), equalTo(0));
