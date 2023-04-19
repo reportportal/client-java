@@ -18,6 +18,7 @@ package com.epam.reportportal.service.statistics;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.statistics.item.StatisticsItem;
+import com.epam.reportportal.utils.http.ClientUtils;
 import io.reactivex.Maybe;
 import io.reactivex.Scheduler;
 import io.reactivex.schedulers.Schedulers;
@@ -28,10 +29,6 @@ import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.Proxy;
-import java.net.URL;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -39,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.Optional.ofNullable;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 /**
  * Statistics backend service asynchronous client. Require resource identifier by provided `trackingId` for sending statistics event.
@@ -64,23 +60,7 @@ public class StatisticsClient implements Statistics {
 	private ExecutorService executor;
 
 	private static OkHttpClient buildHttpClient(ListenerParameters parameters) {
-		OkHttpClient.Builder okHttpClient = new OkHttpClient.Builder();
-		String proxyStr = parameters.getProxyUrl();
-
-		if (isNotBlank(proxyStr)) {
-			try {
-				URL proxyUrl = new URL(proxyStr);
-				String host = proxyUrl.getHost();
-				int port = proxyUrl.getPort();
-				InetSocketAddress address = InetSocketAddress.createUnresolved(host,
-						port >= 0 ? port : proxyUrl.getDefaultPort()
-				);
-				okHttpClient.proxy(new Proxy(Proxy.Type.HTTP, address));
-			} catch (MalformedURLException ignore) {
-			}
-		}
-		okHttpClient.retryOnConnectionFailure(true);
-		return okHttpClient.build();
+		return ClientUtils.setupProxy(new OkHttpClient.Builder(), parameters).retryOnConnectionFailure(true).build();
 	}
 
 	private static StatisticsApiClient buildClient(OkHttpClient httpClient, Scheduler scheduler) {

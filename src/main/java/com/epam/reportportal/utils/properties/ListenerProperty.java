@@ -30,6 +30,14 @@ public enum ListenerProperty {
      */
     HTTP_PROXY_URL("rp.http.proxy", false),
     /**
+     * A username for used proxy, works only if {@link #HTTP_PROXY_URL} is set
+     */
+    HTTP_PROXY_USER("rp.http.proxy.username", false),
+    /**
+     * Password for proxy, works only if {@link #HTTP_PROXY_URL} and {@link #HTTP_PROXY_USER} are set
+     */
+    HTTP_PROXY_PASSWORD("rp.http.proxy.password", false),
+    /**
      * Enable / Disable raw HTTP requests logging
      */
     HTTP_LOGGING("rp.http.logging", false),

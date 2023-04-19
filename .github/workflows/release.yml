@@ -30,6 +30,9 @@ env:
   REPOSITORY_URL: 'https://maven.pkg.github.com/'
   CHANGE_LOG_FILE: CHANGELOG.md
   CHANGE_LOG_TMP_FILE: CHANGELOG_updated.md
+  README_FILE: README.md
+  README_TEMPLATE_FILE: README_TEMPLATE.md
+  README_VERSION_PLACEHOLDER: $LATEST_VERSION
 
 jobs:
   release:
@@ -65,6 +68,13 @@ jobs:
           -Prelease.newVersion=${{ env.NEXT_VERSION }} -PpublishRepo=${{ env.REPOSITORY_URL }}${{ github.repository }} \
           -PgithubUserName=${{ github.actor }} -PgithubToken=${{ secrets.GITHUB_TOKEN }} \
           -PgpgPassphrase=${{  secrets.GPG_PASSPHRASE  }} -PgpgPrivateKey="${{ secrets.GPG_PRIVATE_KEY }}"
+
+      - name: Update README.md
+        id: readmeUpdate
+        run: |
+          sed 's/${{ env.README_VERSION_PLACEHOLDER }}/${{ env.RELEASE_VERSION }}/g' ${{ env.README_TEMPLATE_FILE }} > ${{ env.README_FILE }}
+          git add ${{ env.README_FILE }}
+          git commit -m "Readme update"
 
       - name: Update CHANGELOG.md
         id: changelogUpdate

@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `rp.http.proxy.username` and `rp.http.proxy.password` parameters, by @HardNorth
 ### Fixed
 - `NullPointerException` in `TestCaseIdUtils` class for case with null-value parameters, by @HardNorth
 

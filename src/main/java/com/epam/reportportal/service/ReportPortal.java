@@ -22,6 +22,7 @@ import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.service.launch.PrimaryLaunch;
 import com.epam.reportportal.service.launch.SecondaryLaunch;
 import com.epam.reportportal.utils.SslUtils;
+import com.epam.reportportal.utils.http.ClientUtils;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.reportportal.utils.properties.ListenerProperty;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
@@ -30,10 +31,7 @@ import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
 import io.reactivex.schedulers.Schedulers;
-import okhttp3.Cookie;
-import okhttp3.CookieJar;
-import okhttp3.HttpUrl;
-import okhttp3.OkHttpClient;
+import okhttp3.*;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -52,6 +50,7 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -536,24 +535,7 @@ public class ReportPortal {
 					throw new InternalReportPortalClientException(error, e);
 				}
 			}
-
-			String proxyStr = parameters.getProxyUrl();
-			if (isNotBlank(proxyStr)) {
-				try {
-					URL proxyUrl = new URL(proxyStr);
-					int port = proxyUrl.getPort();
-					builder.proxy(new Proxy(Proxy.Type.HTTP,
-							InetSocketAddress.createUnresolved(
-									proxyUrl.getHost(),
-									port >= 0 ? port : proxyUrl.getDefaultPort()
-							)
-					));
-				} catch (MalformedURLException e) {
-					LOGGER.warn("Unable to parse proxy URL", e);
-					return null;
-				}
-			}
-
+			ClientUtils.setupProxy(builder, parameters);
 			builder.addInterceptor(new BearerAuthInterceptor(parameters.getApiKey()));
 			builder.addInterceptor(new PathParamInterceptor("projectName", parameters.getProjectName()));
 			if (parameters.isHttpLogging()) {
