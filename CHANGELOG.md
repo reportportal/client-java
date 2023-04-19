@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- `NullPointerException` in `TestCaseIdUtils` class for case with null-value parameters, by @HardNorth
 
 ## [5.1.17]
 ### Added

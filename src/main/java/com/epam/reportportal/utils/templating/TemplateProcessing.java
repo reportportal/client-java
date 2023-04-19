@@ -38,7 +38,7 @@ import static java.util.Optional.ofNullable;
 public class TemplateProcessing {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TemplateProcessing.class);
 
-	private static final String NULL_VALUE = "NULL";
+	public static final String NULL_VALUE = "NULL";
 
 	private static final Pattern TEMPLATE_GROUP = Pattern.compile("\\{([\\w$]+(\\.[\\w$]+)*)}");
 

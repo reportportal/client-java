@@ -46,7 +46,7 @@ public class TestCaseIdUtils {
 	}
 
 	private static final Function<List<?>, String> TRANSFORM_PARAMETERS = it -> it.stream()
-			.map(String::valueOf)
+			.map(p -> ofNullable(p).map(String::valueOf).orElse(TemplateProcessing.NULL_VALUE))
 			.collect(Collectors.joining(",", "[", "]"));
 
 	/**
@@ -80,7 +80,7 @@ public class TestCaseIdUtils {
 		List<Integer> keys = new ArrayList<>();
 		for (int paramIndex = 0; paramIndex < parameterAnnotations.length; paramIndex++) {
 			for (int annotationIndex = 0; annotationIndex < parameterAnnotations[paramIndex].length;
-					annotationIndex++) {
+			     annotationIndex++) {
 				Annotation testCaseIdAnnotation = parameterAnnotations[paramIndex][annotationIndex];
 				if (testCaseIdAnnotation.annotationType() == TestCaseIdKey.class) {
 					keys.add(paramIndex);
@@ -107,7 +107,7 @@ public class TestCaseIdUtils {
 	 */
 	@Nullable
 	public static <T> TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Executable executable,
-			@Nullable List<T> parameters) {
+	                                                @Nullable List<T> parameters) {
 		return getTestCaseId(annotation, executable, null, parameters);
 	}
 
@@ -123,7 +123,7 @@ public class TestCaseIdUtils {
 	 */
 	@Nullable
 	public static <T> TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Executable executable,
-			@Nullable String codRef, @Nullable List<T> parameters) {
+	                                                @Nullable String codRef, @Nullable List<T> parameters) {
 		return getTestCaseId(annotation, executable, codRef, parameters, null);
 	}
 
@@ -140,7 +140,8 @@ public class TestCaseIdUtils {
 	 */
 	@Nullable
 	public static <T> TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Executable executable,
-			@Nullable String codRef, @Nullable List<T> parameters, @Nullable Object testInstance) {
+	                                                @Nullable String codRef, @Nullable List<T> parameters,
+	                                                @Nullable Object testInstance) {
 		if (annotation != null) {
 			if (annotation.value().isEmpty()) {
 				if (annotation.parametrized()) {
@@ -158,7 +159,10 @@ public class TestCaseIdUtils {
 								params.size()
 						)
 						.boxed()
-						.collect(Collectors.toMap(Object::toString, i -> (Object) params.get(i)))).orElse(null);
+						.collect(Collectors.toMap(
+								Object::toString,
+								i -> ofNullable((Object) params.get(i)).orElse(TemplateProcessing.NULL_VALUE)
+						))).orElse(null);
 				String id = TemplateProcessing.processTemplate(idTemplate,
 						testInstance,
 						executable,
