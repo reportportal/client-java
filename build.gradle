@@ -73,7 +73,7 @@ dependencies {
         exclude group: 'org.hamcrest'
     }
     testImplementation 'org.apache.commons:commons-io:1.3.2'
-    testImplementation 'com.epam.reportportal:agent-java-test-utils:0.0.1'
+    testImplementation 'com.epam.reportportal:agent-java-test-utils:0.0.2'
 }
 
 test {

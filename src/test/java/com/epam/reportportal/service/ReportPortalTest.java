@@ -16,9 +16,9 @@
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.util.test.SocketUtils;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
-import com.epam.reportportal.util.test.SocketUtils;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -33,6 +33,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
 import java.net.ServerSocket;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.*;
@@ -100,10 +101,47 @@ public class ReportPortalTest {
 					Collections.emptyMap(),
 					"files/simple_response.txt"
 			);
-			Pair<String, Response> result = SocketUtils.executeServerCallable(serverCallable,
+			Pair<List<String>, Response> result = SocketUtils.executeServerCallable(serverCallable,
 					() -> client.newCall(new Request.Builder().url(baseUrl).build()).execute()
 			);
 			assertThat(result.getValue().code(), equalTo(200));
+		} catch (Exception e) {
+			error = e;
+		}
+		server.close();
+		if (error != null) {
+			throw error;
+		}
+	}
+
+	@Test
+	public void verify_proxy_credential_works() throws Exception {
+		String baseUrl = "http://example.com:8080";
+		String userName = "user";
+		String password = "password";
+		String expectedAuth = "Authorization: Basic "
+				+ Base64.getEncoder().encodeToString((userName + ":" + password).getBytes(StandardCharsets.UTF_8))
+				+ "\n";
+		ServerSocket server = SocketUtils.getServerSocketOnFreePort();
+		ListenerParameters params = standardParameters();
+		params.setBaseUrl(baseUrl);
+		params.setProxyUrl("http://localhost:" + server.getLocalPort());
+		params.setProxyUser(userName);
+		params.setProxyPassword(password);
+		OkHttpClient client = ReportPortal.builder().defaultClient(params);
+		assertThat(client, notNullValue());
+		Exception error = null;
+		try {
+			SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(server,
+					Collections.emptyMap(),
+					Arrays.asList("files/proxy_auth_response.txt", "files/simple_response.txt")
+			);
+			Pair<List<String>, Response> proxyAuth = SocketUtils.executeServerCallable(serverCallable,
+					() -> client.newCall(new Request.Builder().url(baseUrl).build()).execute()
+			);
+			assertThat(proxyAuth.getValue().code(), equalTo(200));
+			assertThat(proxyAuth.getKey(), hasSize(2));
+			assertThat(proxyAuth.getKey().get(1), containsString(expectedAuth));
 		} catch (Exception e) {
 			error = e;
 		}
@@ -139,15 +177,15 @@ public class ReportPortalTest {
 			Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ())
 					.timeout(5, TimeUnit.SECONDS)
 					.blockingGet();
-			Pair<String, StartLaunchRS> result = SocketUtils.executeServerCallable(serverCallable, clientCallable);
+			Pair<List<String>, StartLaunchRS> result = SocketUtils.executeServerCallable(serverCallable, clientCallable);
 
 			assertThat(result.getValue(), notNullValue());
-			assertThat("First request should not contain cookie value", result.getKey(), not(containsString(COOKIE)));
+			assertThat("First request should not contain cookie value", result.getKey().get(0), not(containsString(COOKIE)));
 
 			result = SocketUtils.executeServerCallable(serverCallable, clientCallable);
 
 			assertThat(result.getValue(), notNullValue());
-			assertThat("Second request should contain cookie value", result.getKey(), containsString(COOKIE));
+			assertThat("Second request should contain cookie value", result.getKey().get(0), containsString(COOKIE));
 		} catch (Exception e) {
 			error = e;
 		}
