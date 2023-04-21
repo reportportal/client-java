@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.18]
 ### Added
 - `rp.http.proxy.username` and `rp.http.proxy.password` parameters, by @HardNorth
 ### Fixed
