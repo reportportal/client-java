@@ -38,7 +38,7 @@ import static java.util.Optional.ofNullable;
 public class TemplateProcessing {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TemplateProcessing.class);
 
-	private static final String NULL_VALUE = "NULL";
+	public static final String NULL_VALUE = "NULL";
 
 	private static final Pattern TEMPLATE_GROUP = Pattern.compile("\\{([\\w$]+(\\.[\\w$]+)*)}");
 
@@ -59,7 +59,7 @@ public class TemplateProcessing {
 	public static String processTemplate(@Nonnull String pattern, @Nullable Object object,
 			@Nullable Executable executable, @Nullable Map<String, Object> parameters,
 			@Nonnull TemplateConfiguration config) {
-		HashMap<String, Object> myParams = ofNullable(parameters).map(HashMap::new).orElse(new HashMap<>());
+		HashMap<String, Object> myParams = ofNullable(parameters).map(HashMap::new).orElseGet(HashMap::new);
 		ofNullable(executable).ifPresent(e -> {
 			myParams.put(config.getMethodName(), e.getName());
 			Class<?> clazz = e.getDeclaringClass();

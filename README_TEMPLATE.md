@@ -12,6 +12,8 @@
 [![Build with Love](https://img.shields.io/badge/build%20with-❤%EF%B8%8F%E2%80%8D-lightgrey.svg)](http://reportportal.io?style=flat)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
+The latest version: $LATEST_VERSION. Please use `Maven Central` link above to get the client.
+
 ## JVM-based clients configuration
 
 ### How to provide parameters
@@ -132,6 +134,8 @@ etc.
 | **Property name**             | **Type** | **Description**                                                                                                                                                                                                                                          | 
 |-------------------------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | rp.http.proxy                 | String   | A URL of a HTTP proxy to connect to the endpoint.                                                                                                                                                                                                        |
+| rp.http.proxy.username        | String   | A username for used proxy, works only if Proxy URL is set.                                                                                                                                                                                               |
+| rp.http.proxy.password        | String   | Password for proxy, works only if Proxy URL and Proxy Username are set.                                                                                                                                                                                  |
 | rp.http.logging               | Boolean  | Default: `false`<br> Enable / Disable HTTP logging.                                                                                                                                                                                                      |
 | rp.http.timeout.call.value    | Integer  | Default: Infinitive<br> Timeout value for the entire call: resolving DNS, connecting, writing the request body, server processing, and reading the response body. If the call requires redirects or retries all must complete within one timeout period. |
 | rp.http.timeout.call.unit     | Enum     | Default: `MILLISECONDS`<br> Timeout value time unit. Should be one of values from `java.util.concurrent.TimeUnit` class                                                                                                                                  |

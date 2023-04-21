@@ -83,6 +83,8 @@ public class ListenerParameters implements Cloneable {
 	private String apiKey;
 	private String baseUrl;
 	private String proxyUrl;
+	private String proxyUser;
+	private String proxyPassword;
 	private boolean httpLogging;
 	private Duration httpCallTimeout;
 	private Duration httpConnectTimeout;
@@ -202,6 +204,8 @@ public class ListenerParameters implements Cloneable {
 				.orElse(null);
 		this.baseUrl = properties.getProperty(BASE_URL) != null ? properties.getProperty(BASE_URL).trim() : null;
 		this.proxyUrl = properties.getProperty(HTTP_PROXY_URL);
+		this.proxyUser = properties.getProperty(HTTP_PROXY_USER);
+		this.proxyPassword = properties.getProperty(HTTP_PROXY_PASSWORD);
 		this.httpLogging = properties.getPropertyAsBoolean(HTTP_LOGGING, DEFAULT_HTTP_LOGGING);
 
 		this.httpCallTimeout = getDurationProperty(properties, HTTP_CALL_TIMEOUT_VALUE, HTTP_CALL_TIMEOUT_UNIT);
@@ -362,6 +366,22 @@ public class ListenerParameters implements Cloneable {
 
 	public void setProxyUrl(String proxyUrl) {
 		this.proxyUrl = proxyUrl;
+	}
+
+	public String getProxyUser() {
+		return proxyUser;
+	}
+
+	public void setProxyUser(String proxyUser) {
+		this.proxyUser = proxyUser;
+	}
+
+	public String getProxyPassword() {
+		return proxyPassword;
+	}
+
+	public void setProxyPassword(String proxyPassword) {
+		this.proxyPassword = proxyPassword;
 	}
 
 	public String getProjectName() {
