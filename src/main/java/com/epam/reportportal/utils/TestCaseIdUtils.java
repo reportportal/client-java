@@ -28,6 +28,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -46,13 +47,13 @@ public class TestCaseIdUtils {
 	}
 
 	private static final Function<List<?>, String> TRANSFORM_PARAMETERS = it -> it.stream()
-			.map(p -> ofNullable(p).map(String::valueOf).orElse(TemplateProcessing.NULL_VALUE))
+			.map(String::valueOf)
 			.collect(Collectors.joining(",", "[", "]"));
 
 	/**
 	 * Generates a text code reference by consuming a {@link Executable}
 	 *
-	 * @param executable a executable or constructor, the value should not be null
+	 * @param executable an executable or constructor, the value should not be null
 	 * @return a text code reference
 	 */
 	@Nonnull
@@ -155,14 +156,12 @@ public class TestCaseIdUtils {
 			} else {
 				String idTemplate = annotation.value();
 				TemplateConfiguration templateConfig = new TemplateConfiguration(annotation.config());
-				Map<String, Object> parametersMap = ofNullable(parameters).map(params -> IntStream.range(0,
+				Map<String, Object> parametersMap = new HashMap<>();
+				ofNullable(parameters).ifPresent(params -> IntStream.range(0,
 								params.size()
 						)
 						.boxed()
-						.collect(Collectors.toMap(
-								Object::toString,
-								i -> ofNullable((Object) params.get(i)).orElse(TemplateProcessing.NULL_VALUE)
-						))).orElse(null);
+						.forEach(i -> parametersMap.put(i.toString(), params.get(i))));
 				String id = TemplateProcessing.processTemplate(idTemplate,
 						testInstance,
 						executable,
@@ -185,7 +184,7 @@ public class TestCaseIdUtils {
 	}
 
 	/**
-	 * Generates Test Case ID based on a executable reference and a list of parameters
+	 * Generates Test Case ID based on an executable reference and a list of parameters
 	 *
 	 * @param <T>        parameters type
 	 * @param executable a {@link Executable} object

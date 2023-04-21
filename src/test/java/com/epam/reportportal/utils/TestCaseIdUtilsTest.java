@@ -108,7 +108,7 @@ public class TestCaseIdUtilsTest {
 				Integer.TYPE
 		);
 		TestCaseId annotation = method.getAnnotation(TestCaseId.class);
-		String expectedTestCaseId = "[NULL,5]";
+		String expectedTestCaseId = "[null,5]";
 		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(
 				annotation,
 				method,
