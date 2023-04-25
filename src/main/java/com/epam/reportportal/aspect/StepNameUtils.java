@@ -83,7 +83,8 @@ public class StepNameUtils {
 				joinPoint.getThis(),
 				signature.getMethod(),
 				parametersMap,
-				config
+				config,
+				null
 		);
 	}
 

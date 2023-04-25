@@ -29,6 +29,9 @@ import java.lang.annotation.Target;
  *
  * {@link TemplateConfig#selfNameTemplate()} required to set the current object name template to be included in the result value to
  * prevent situations when the method argument has the same name as a default {@link TemplateConfiguration#SELF_NAME_TEMPLATE}
+ *
+ * {@link TemplateConfig#parametersIndexTemplate()} required to set the current index template to be included in the result value to
+ * prevent situations when the method argument has the same name as a default {@link TemplateConfiguration#PARAMETERS_INDEX_TEMPLATE}
  */
 @Target({})
 @Retention(RetentionPolicy.RUNTIME)
@@ -41,6 +44,8 @@ public @interface TemplateConfig {
 	String methodNameTemplate() default TemplateConfiguration.METHOD_NAME_TEMPLATE;
 
 	String selfNameTemplate() default TemplateConfiguration.SELF_NAME_TEMPLATE;
+
+	String parametersIndexTemplate() default TemplateConfiguration.PARAMETERS_INDEX_TEMPLATE;
 
 	String fieldDelimiter() default TemplateConfiguration.FIELD_REFERENCE_DELIMITER;
 

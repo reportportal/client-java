@@ -125,7 +125,24 @@ public class TestCaseIdUtils {
 	@Nullable
 	public static <T> TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Executable executable,
 	                                                @Nullable String codRef, @Nullable List<T> parameters) {
-		return getTestCaseId(annotation, executable, codRef, parameters, null);
+		return getTestCaseId(annotation, executable, codRef, parameters, null, null);
+	}
+
+	/**
+	 * Generates a {@link TestCaseIdEntry}
+	 *
+	 * @param annotation a {@link TestCaseId} annotation instance
+	 * @param executable a constructor or method for {@link TestCaseIdKey} scan
+	 * @param codRef     a code reference to use to generate the ID
+	 * @param parameters a list of parameter values
+	 * @param testInstance an instance of the current test, used in template processing
+	 * @param <T>        a type of parameters
+	 * @return Test Case ID or null if not possible to generate (all parameters are nulls, empty, etc.)
+	 */
+	@Nullable
+	public static <T> TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Executable executable,
+													@Nullable String codRef, @Nullable List<T> parameters, @Nullable Object testInstance) {
+		return getTestCaseId(annotation, executable, codRef, parameters, testInstance, null);
 	}
 
 	/**
@@ -142,7 +159,7 @@ public class TestCaseIdUtils {
 	@Nullable
 	public static <T> TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Executable executable,
 	                                                @Nullable String codRef, @Nullable List<T> parameters,
-	                                                @Nullable Object testInstance) {
+	                                                @Nullable Object testInstance, @Nullable Integer parametersIndex) {
 		if (annotation != null) {
 			if (annotation.value().isEmpty()) {
 				if (annotation.parametrized()) {
@@ -166,7 +183,8 @@ public class TestCaseIdUtils {
 						testInstance,
 						executable,
 						parametersMap,
-						templateConfig
+						templateConfig,
+						parametersIndex
 				);
 
 				if (annotation.parametrized()) {

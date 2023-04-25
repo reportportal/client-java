@@ -58,13 +58,14 @@ public class TemplateProcessing {
 	 */
 	public static String processTemplate(@Nonnull String pattern, @Nullable Object object,
 			@Nullable Executable executable, @Nullable Map<String, Object> parameters,
-			@Nonnull TemplateConfiguration config) {
+			@Nonnull TemplateConfiguration config, @Nullable Integer parametersIndex) {
 		HashMap<String, Object> myParams = ofNullable(parameters).map(HashMap::new).orElseGet(HashMap::new);
 		ofNullable(executable).ifPresent(e -> {
 			myParams.put(config.getMethodName(), e.getName());
 			Class<?> clazz = e.getDeclaringClass();
 			myParams.put(config.getClassName(), clazz.getSimpleName());
 			myParams.put(config.getClassRef(), clazz.getName());
+			myParams.put(config.getParametersIndex(), parametersIndex);
 		});
 		ofNullable(object).ifPresent(o -> myParams.put(config.getSelfName(), object));
 		Matcher matcher = TEMPLATE_GROUP.matcher(pattern);
@@ -90,7 +91,7 @@ public class TemplateProcessing {
 	 */
 	public static String processTemplate(@Nonnull String pattern, @Nullable Map<String, Object> parameters,
 			@Nonnull TemplateConfiguration config) {
-		return processTemplate(pattern, null, null, parameters, config);
+		return processTemplate(pattern, null, null, parameters, config, null);
 	}
 
 	@Nullable

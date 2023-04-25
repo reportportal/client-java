@@ -29,6 +29,7 @@ public class TemplateConfiguration {
 	public static final String CLASS_SIMPLE_NAME_TEMPLATE = "class";
 	public static final String CLASS_FULL_NAME_TEMPLATE = "classRef";
 	public static final String METHOD_NAME_TEMPLATE = "method";
+	public static final String PARAMETERS_INDEX_TEMPLATE = "parametersIndex";
 	public static final String SELF_NAME_TEMPLATE = "this";
 	public static final String FIELD_REFERENCE_DELIMITER = ".";
 	public static final String ITERABLE_START_PATTERN = "[";
@@ -42,6 +43,7 @@ public class TemplateConfiguration {
 	private String classRef;
 	private String methodName;
 	private String selfName;
+	private String parametersIndex;
 	private String fieldDelimiter;
 	private String iterableStart;
 	private String iterableEnd;
@@ -55,6 +57,7 @@ public class TemplateConfiguration {
 		classRef = CLASS_FULL_NAME_TEMPLATE;
 		methodName = METHOD_NAME_TEMPLATE;
 		selfName = SELF_NAME_TEMPLATE;
+		parametersIndex = PARAMETERS_INDEX_TEMPLATE;
 		fieldDelimiter = FIELD_REFERENCE_DELIMITER;
 		iterableStart = ITERABLE_START_PATTERN;
 		iterableEnd = ITERABLE_END_PATTERN;
@@ -74,10 +77,11 @@ public class TemplateConfiguration {
 		}
 		TemplateConfiguration that = (TemplateConfiguration) o;
 		return className.equals(that.className) && classRef.equals(that.classRef) && methodName.equals(that.methodName)
-				&& selfName.equals(that.selfName) && fieldDelimiter.equals(that.fieldDelimiter) && iterableStart.equals(
-				that.iterableStart) && iterableEnd.equals(that.iterableEnd)
-				&& iterableDelimiter.equals(that.iterableDelimiter) && arrayStart.equals(that.arrayStart)
-				&& arrayEnd.equals(that.arrayEnd) && arrayDelimiter.equals(that.arrayDelimiter);
+				&& selfName.equals(that.selfName) && parametersIndex.equals(that.parametersIndex)
+				&& fieldDelimiter.equals(that.fieldDelimiter) && iterableStart.equals(that.iterableStart)
+				&& iterableEnd.equals(that.iterableEnd)&& iterableDelimiter.equals(that.iterableDelimiter)
+				&& arrayStart.equals(that.arrayStart) && arrayEnd.equals(that.arrayEnd)
+				&& arrayDelimiter.equals(that.arrayDelimiter);
 	}
 
 	@Override
@@ -87,6 +91,7 @@ public class TemplateConfiguration {
 				classRef,
 				methodName,
 				selfName,
+				parametersIndex,
 				fieldDelimiter,
 				iterableStart,
 				iterableEnd,
@@ -113,6 +118,7 @@ public class TemplateConfiguration {
 		classRef = config.classRefTemplate();
 		methodName = config.methodNameTemplate();
 		selfName = config.selfNameTemplate();
+		parametersIndex = config.parametersIndexTemplate();
 		fieldDelimiter = config.fieldDelimiter();
 		iterableStart = config.iterableStartSymbol();
 		iterableEnd = config.iterableEndSymbol();
@@ -156,6 +162,14 @@ public class TemplateConfiguration {
 	public TemplateConfiguration setSelfName(String selfName) {
 		this.selfName = selfName;
 		return this;
+	}
+
+	public String getParametersIndex() {
+		return parametersIndex;
+	}
+
+	public void setParametersIndex(String parametersIndex) {
+		this.parametersIndex = parametersIndex;
 	}
 
 	public String getFieldDelimiter() {

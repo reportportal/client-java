@@ -335,7 +335,9 @@ public class TestCaseIdUtilsTest {
 				new Object[] { null, "Test Case ID {1}", "Test Case ID {1}" },
 				new Object[] { null, "Test Case ID {class}", "Test Case ID TestCaseIdUtilsTest" },
 				new Object[] { null, "Test Case ID {classRef}",
-						"Test Case ID com.epam.reportportal.utils.TestCaseIdUtilsTest" }
+						"Test Case ID com.epam.reportportal.utils.TestCaseIdUtilsTest" },
+				new Object[] { null, "Test Case ID {parametersIndex}",
+						"Test Case ID 1" }
 		);
 	}
 
@@ -369,7 +371,7 @@ public class TestCaseIdUtilsTest {
 			return invocationMethod.invoke(realId, invocation.getArguments());
 		}));
 
-		TestCaseIdEntry result = TestCaseIdUtils.getTestCaseId(testCaseId, method, null, params, this);
+		TestCaseIdEntry result = TestCaseIdUtils.getTestCaseId(testCaseId, method, null, params, this, 1);
 
 		assertThat(result, notNullValue());
 		assertThat(result.getId(), equalTo(expectedResult));
