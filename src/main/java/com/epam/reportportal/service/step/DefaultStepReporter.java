@@ -40,8 +40,8 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Supplier;
 
 import static com.epam.reportportal.service.step.StepRequestUtils.buildFinishTestItemRequest;
-import static com.google.common.base.Throwables.getStackTraceAsString;
 import static java.util.Optional.ofNullable;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 
 /**
  * {@inheritDoc}
@@ -318,7 +318,7 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	private SaveLogRQ buildSaveLogRequest(String itemId, Throwable throwable, File file) {
-		String message = throwable != null ? getStackTraceAsString(throwable) : "Test has failed without exception";
+		String message = throwable != null ? getStackTrace(throwable) : "Test has failed without exception";
 		return buildSaveLogRequest(itemId, message, LogLevel.ERROR, file);
 	}
 

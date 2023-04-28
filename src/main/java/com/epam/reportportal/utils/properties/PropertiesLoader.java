@@ -16,7 +16,6 @@
 package com.epam.reportportal.utils.properties;
 
 import com.epam.reportportal.utils.MemoizingSupplier;
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -222,7 +221,6 @@ public class PropertiesLoader {
 	 * @param source    Properties to be overridden
 	 * @param overrides Overrides
 	 */
-	@VisibleForTesting
 	static void overrideWith(Properties source, Map<?, ?> overrides) {
 		Map<String, String> overridesNormalized = normalizeOverrides(overrides);
 		for (ListenerProperty listenerProperty : values()) {
@@ -241,7 +239,6 @@ public class PropertiesLoader {
 	 * @param source    Properties to be overridden
 	 * @param overrides Overrides
 	 */
-	@VisibleForTesting
 	static void overrideWith(Properties source, Properties overrides) {
 		overrideWith(source, (Map<Object, Object>) overrides);
 	}

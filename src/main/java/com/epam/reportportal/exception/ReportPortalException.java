@@ -16,7 +16,6 @@
 package com.epam.reportportal.exception;
 
 import com.epam.ta.reportportal.ws.model.ErrorRS;
-import com.google.common.annotations.VisibleForTesting;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
@@ -64,7 +63,6 @@ public class ReportPortalException extends GeneralReportPortalException {
 		return builder.toString();
 	}
 
-	@VisibleForTesting
 	static String trimMessage(String message, int maxLength) {
 		if (isBlank(message)) {
 			return "";

@@ -15,7 +15,7 @@
  */
 package com.epam.reportportal.utils.markdown;
 
-import static com.google.common.base.Strings.nullToEmpty;
+import static java.util.Optional.ofNullable;
 
 /**
  * Set helpful of utility methods for reporting to ReportPortal
@@ -45,13 +45,9 @@ public class MarkdownUtils {
 	 * @return Message to be sent to ReportPortal
 	 */
 	public static String asCode(String language, String script) {
-		//@formatter:off
-		return new StringBuilder()
-				.append(MARKDOWN_MODE)
-				.append("```").append(nullToEmpty(language)).append(NEW_LINE)
-				.append(script).append(NEW_LINE)
-				.append("```")
-				.toString();
-		//@formatter:on
+		return MARKDOWN_MODE +
+				"```" + ofNullable(language).orElse("") + NEW_LINE +
+				script + NEW_LINE +
+				"```";
 	}
 }

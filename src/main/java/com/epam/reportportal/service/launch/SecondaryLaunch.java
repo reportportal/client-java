@@ -92,8 +92,8 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 
 	@Override
 	public void finish(final FinishExecutionRQ request) {
-		QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
-		Throwable throwable = Completable.concat(QUEUE.getUnchecked(this.launch).getChildren())
+		QUEUE.getOrCompute(launch).addToQueue(LaunchLoggingContext.complete());
+		Throwable throwable = Completable.concat(QUEUE.getOrCompute(this.launch).getChildren())
 				.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS)
 				.blockingGet();
 		if (throwable != null) {
