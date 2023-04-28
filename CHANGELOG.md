@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- AspectJ version updated on 1.9.19 to support newer versions of Java and bug fixes, by @HardNorth
 
 ## [5.1.18]
 ### Added
