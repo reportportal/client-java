@@ -17,11 +17,18 @@
 package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
+import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.service.Launch;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.*;
+import org.aspectj.lang.annotation.AfterReturning;
+import org.aspectj.lang.annotation.AfterThrowing;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
+
+import javax.annotation.Nonnull;
 
 import static java.util.Optional.ofNullable;
 
@@ -30,6 +37,8 @@ import static java.util.Optional.ofNullable;
  */
 @Aspect
 public class StepAspect {
+	private static final ThreadLocal<ItemStatus> STEP_STATUS = ThreadLocal.withInitial(() -> ItemStatus.PASSED);
+
 	@Pointcut("@annotation(step)")
 	public void withStepAnnotation(Step step) {
 
@@ -38,6 +47,10 @@ public class StepAspect {
 	@Pointcut("execution(* *.*(..))")
 	public void anyMethod() {
 
+	}
+
+	public static void setFinishNestedStepStatus(@Nonnull ItemStatus itemStatus) {
+		STEP_STATUS.set(itemStatus);
 	}
 
 	@Before(value = "anyMethod() && withStepAnnotation(step)", argNames = "joinPoint,step")
@@ -55,7 +68,8 @@ public class StepAspect {
 		if (step.isIgnored()) {
 			return;
 		}
-		ofNullable(Launch.currentLaunch()).ifPresent(l -> l.getStepReporter().finishNestedStep());
+		ofNullable(Launch.currentLaunch()).ifPresent(l -> l.getStepReporter().finishNestedStep(STEP_STATUS.get()));
+		STEP_STATUS.set(ItemStatus.PASSED);
 	}
 
 	@AfterThrowing(value = "anyMethod() && withStepAnnotation(step)", throwing = "throwable", argNames = "step,throwable")
