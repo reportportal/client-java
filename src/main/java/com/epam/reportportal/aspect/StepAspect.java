@@ -24,8 +24,6 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.MethodSignature;
 
-import javax.annotation.Nonnull;
-
 import static java.util.Optional.ofNullable;
 
 /**
@@ -33,7 +31,7 @@ import static java.util.Optional.ofNullable;
  */
 @Aspect
 public class StepAspect {
-	private static final ThreadLocal<ItemStatus> STEP_STATUS = ThreadLocal.withInitial(() -> ItemStatus.PASSED);
+	private static final ThreadLocal<Boolean> FAILED_STEP_STATUS = ThreadLocal.withInitial(() -> false);
 
 	@Pointcut("@annotation(step)")
 	public void withStepAnnotation(Step step) {
@@ -45,8 +43,8 @@ public class StepAspect {
 
 	}
 
-	public static void setFinishNestedStepStatus(@Nonnull ItemStatus itemStatus) {
-		STEP_STATUS.set(itemStatus);
+	public static void failFinishNestedStepStatus() {
+		FAILED_STEP_STATUS.set(true);
 	}
 
 	@Before(value = "anyMethod() && withStepAnnotation(step)", argNames = "joinPoint,step")
@@ -64,8 +62,10 @@ public class StepAspect {
 		if (step.isIgnored()) {
 			return;
 		}
-		ofNullable(Launch.currentLaunch()).ifPresent(l -> l.getStepReporter().finishNestedStep(STEP_STATUS.get()));
-		STEP_STATUS.set(ItemStatus.PASSED);
+		ofNullable(Launch.currentLaunch()).ifPresent(l -> l.getStepReporter().finishNestedStep(
+				FAILED_STEP_STATUS.get() ? ItemStatus.FAILED : ItemStatus.PASSED
+		));
+		FAILED_STEP_STATUS.set(false);
 	}
 
 	@AfterThrowing(value = "anyMethod() && withStepAnnotation(step)", throwing = "throwable", argNames = "step,throwable")
