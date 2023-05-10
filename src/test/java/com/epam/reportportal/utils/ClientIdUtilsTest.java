@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -61,7 +62,8 @@ public class ClientIdUtilsTest {
 	public void test_get_client_id_should_save_id_to_property_file() throws IOException {
 		try {
 			Files.delete(RP_PROPERTIES_FILE_PATH);
-		} catch (NoSuchFileException ignore) {}
+		} catch (NoSuchFileException ignore) {
+		}
 		String clientId = getClientId();
 		List<String> lines = Files.readAllLines(RP_PROPERTIES_FILE_PATH);
 		assertThat(lines, hasItem(matchesRegex("^client\\.id\\s*=\\s*" + clientId + "\\s*$")));
@@ -71,31 +73,39 @@ public class ClientIdUtilsTest {
 	public void test_get_client_id_should_read_id_from_property_file() throws IOException {
 		try {
 			Files.delete(RP_PROPERTIES_FILE_PATH);
-		} catch (NoSuchFileException ignore) {}
+		} catch (NoSuchFileException ignore) {
+		}
 		String clientId = UUID.randomUUID().toString();
-		Files.write(RP_PROPERTIES_FILE_PATH, Collections.singletonList("client.id=" + clientId), StandardCharsets.UTF_8);
+		Files.write(RP_PROPERTIES_FILE_PATH, Collections.singletonList("client.id=" + clientId), StandardCharsets.UTF_8,
+				StandardOpenOption.CREATE);
 		String actualClientId = getClientId();
 		assertThat(actualClientId, equalTo(clientId));
 	}
 
 	@Test
-	public void test_get_client_id_should_read_id_from_property_file_if_not_empty_and_id_is_the_first_line() throws IOException {
+	public void test_get_client_id_should_read_id_from_property_file_if_not_empty_and_id_is_the_first_line()
+			throws IOException {
 		try {
 			Files.delete(RP_PROPERTIES_FILE_PATH);
-		} catch (NoSuchFileException ignore) {}
+		} catch (NoSuchFileException ignore) {
+		}
 		String clientId = UUID.randomUUID().toString();
-		Files.write(RP_PROPERTIES_FILE_PATH, Arrays.asList("client.id=" + clientId, "test.property=555"), StandardCharsets.UTF_8);
+		Files.write(RP_PROPERTIES_FILE_PATH, Arrays.asList("client.id=" + clientId, "test.property=555"),
+				StandardCharsets.UTF_8, StandardOpenOption.CREATE);
 		String actualClientId = getClientId();
 		assertThat(actualClientId, equalTo(clientId));
 	}
 
 	@Test
-	public void test_get_client_id_should_read_id_from_property_file_if_not_empty_and_id_is_not_the_first_line() throws IOException {
+	public void test_get_client_id_should_read_id_from_property_file_if_not_empty_and_id_is_not_the_first_line()
+			throws IOException {
 		try {
 			Files.delete(RP_PROPERTIES_FILE_PATH);
-		} catch (NoSuchFileException ignore) {}
+		} catch (NoSuchFileException ignore) {
+		}
 		String clientId = UUID.randomUUID().toString();
-		Files.write(RP_PROPERTIES_FILE_PATH, Arrays.asList("test.property=555", "client.id=" + clientId), StandardCharsets.UTF_8);
+		Files.write(RP_PROPERTIES_FILE_PATH, Arrays.asList("test.property=555", "client.id=" + clientId),
+				StandardCharsets.UTF_8, StandardOpenOption.CREATE);
 		String actualClientId = getClientId();
 		assertThat(actualClientId, equalTo(clientId));
 	}
@@ -104,10 +114,12 @@ public class ClientIdUtilsTest {
 	public void test_get_client_id_should_write_id_to_property_file_if_it_is_not_empty() throws IOException {
 		try {
 			Files.delete(RP_PROPERTIES_FILE_PATH);
-		} catch (NoSuchFileException ignore) {}
+		} catch (NoSuchFileException ignore) {
+		}
 		Files.write(RP_PROPERTIES_FILE_PATH, Collections.singletonList("test.property=555"), StandardCharsets.UTF_8);
 		String clientId = getClientId();
 		List<String> lines = Files.readAllLines(RP_PROPERTIES_FILE_PATH);
-		assertThat(lines, hasItems(matchesRegex("^client\\.id\\s*=\\s*" + clientId + "\\s*$"), equalTo("test.property=555")));
+		assertThat(lines, hasItems(matchesRegex("^client\\.id\\s*=\\s*" + clientId + "\\s*$"),
+				equalTo("test.property=555")));
 	}
 }
