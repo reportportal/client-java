@@ -36,14 +36,14 @@ public class ClientIdUtils {
 
 
 	private static final String CLIENT_ID_PROPERTY = "client.id";
-	private static final Path LOCAL_DATA_STORAGE = Paths.get(System.getProperty("user.home"), ".rp", "rp.properties");
+	public static final Path RP_PROPERTIES_FILE_PATH = Paths.get(System.getProperty("user.home"), ".rp", "rp.properties");
 
 	@Nullable
 	private static String readClientId() {
 		Properties properties = new Properties();
-		if (Files.exists(LOCAL_DATA_STORAGE)) {
+		if (Files.exists(RP_PROPERTIES_FILE_PATH)) {
 			try {
-				properties.load(Files.newInputStream(LOCAL_DATA_STORAGE, StandardOpenOption.READ));
+				properties.load(Files.newInputStream(RP_PROPERTIES_FILE_PATH, StandardOpenOption.READ));
 			} catch (IOException ignore) {
 				// do nothing on read error, client ID will be always new
 			}
@@ -53,17 +53,17 @@ public class ClientIdUtils {
 	}
 
 	private static void storeClientId(@Nonnull String clientId) {
-		Path folder = LOCAL_DATA_STORAGE.getParent();
+		Path folder = RP_PROPERTIES_FILE_PATH.getParent();
 		try {
 			if (!Files.exists(folder)) {
 				Files.createDirectories(folder);
 			}
 			Properties properties = new Properties();
-			if (Files.exists(LOCAL_DATA_STORAGE)) {
-				properties.load(Files.newInputStream(LOCAL_DATA_STORAGE, StandardOpenOption.READ));
+			if (Files.exists(RP_PROPERTIES_FILE_PATH)) {
+				properties.load(Files.newInputStream(RP_PROPERTIES_FILE_PATH, StandardOpenOption.READ));
 			}
 			properties.put(CLIENT_ID_PROPERTY, clientId);
-			properties.store(Files.newOutputStream(LOCAL_DATA_STORAGE, StandardOpenOption.CREATE), null);
+			properties.store(Files.newOutputStream(RP_PROPERTIES_FILE_PATH, StandardOpenOption.CREATE), null);
 		} catch (IOException ignore) {
 			// do nothing on saving error, client ID will be always new
 		}
