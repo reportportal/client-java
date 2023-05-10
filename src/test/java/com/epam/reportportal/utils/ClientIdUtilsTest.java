@@ -17,6 +17,7 @@
 package com.epam.reportportal.utils;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -33,6 +34,8 @@ import static com.epam.reportportal.utils.ClientIdUtils.getClientId;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
+
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ClientIdUtilsTest {
 	@Test
 	public void test_get_client_id_should_return_the_id_for_two_calls() {
