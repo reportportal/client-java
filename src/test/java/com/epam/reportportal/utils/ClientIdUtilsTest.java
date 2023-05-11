@@ -16,9 +16,7 @@
 
 package com.epam.reportportal.utils;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -36,14 +34,10 @@ import static org.hamcrest.Matchers.*;
 
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ClientIdUtilsTest {
-
-	@BeforeAll
-	public static void makeDirs() throws IOException {
-		Files.createDirectories(RP_PROPERTIES_FILE_PATH.getParent());
-	}
-
 	@Test
+	@Order(0)
 	public void test_get_client_id_should_return_the_id_for_two_calls() {
 		String clientId1 = getClientId();
 		String clientId2 = getClientId();
