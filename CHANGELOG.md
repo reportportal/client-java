@@ -5,7 +5,7 @@
 - AspectJ version updated on 1.9.19 to support newer versions of Java and bug fixes, by @HardNorth
 - Some classes were refactored to less use Guava library and more core Java, by @HardNorth
 ### Added
-- `ClientIdUtils` class to store and read a client's unique ID, by @HardNorth
+- `ClientIdProvider` class to store and read a client's unique ID, by @HardNorth
 
 ## [5.1.18]
 ### Added

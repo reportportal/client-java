@@ -19,7 +19,7 @@ package com.epam.reportportal.service.statistics;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.statistics.item.StatisticsEvent;
 import com.epam.reportportal.service.statistics.item.StatisticsItem;
-import com.epam.reportportal.utils.ClientIdUtils;
+import com.epam.reportportal.utils.ClientIdProvider;
 import com.epam.reportportal.utils.properties.ClientProperties;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
@@ -65,7 +65,7 @@ public class StatisticsService implements Closeable {
 	public static final String AGENT_NAME_PARAM = "agent_name";
 	public static final String AGENT_VERSION_PARAM = "agent_version";
 
-	private static final String CLIENT_ID = ClientIdUtils.getClientId();
+	private static final String CLIENT_ID = ClientIdProvider.getClientId();
 
 	private static final AtomicLong THREAD_COUNTER = new AtomicLong();
 	private static final ThreadFactory THREAD_FACTORY = r -> {

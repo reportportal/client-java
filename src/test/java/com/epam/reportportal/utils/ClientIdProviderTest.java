@@ -27,15 +27,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import static com.epam.reportportal.utils.ClientIdUtils.RP_PROPERTIES_FILE_PATH;
-import static com.epam.reportportal.utils.ClientIdUtils.getClientId;
+import static com.epam.reportportal.utils.ClientIdProvider.RP_PROPERTIES_FILE_PATH;
+import static com.epam.reportportal.utils.ClientIdProvider.getClientId;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class ClientIdUtilsTest {
+public class ClientIdProviderTest {
 	@Test
 	@Order(0)
 	public void test_get_client_id_should_return_the_id_for_two_calls() {

@@ -29,8 +29,8 @@ import java.util.UUID;
 /**
  * A static class which contains methods to get current Client ID.
  */
-public class ClientIdUtils {
-	private ClientIdUtils() {
+public class ClientIdProvider {
+	private ClientIdProvider() {
 		throw new IllegalStateException("Static only class");
 	}
 
