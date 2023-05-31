@@ -24,6 +24,7 @@ import io.reactivex.Maybe;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.File;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.function.Supplier;
 
@@ -118,27 +119,51 @@ public interface StepReporter {
 	@Nullable
 	<T> T step(@Nonnull String name, @Nonnull Supplier<T> actions);
 
+	default void setStepStatus(@Nonnull ItemStatus status) {
+	}
+
 	class StepEntry {
 		private final Maybe<String> itemId;
 		private final Date timestamp;
 		private final FinishTestItemRQ finishTestItemRQ;
+		private volatile ItemStatus status;
 
-		public StepEntry(Maybe<String> itemId, Date timestamp, FinishTestItemRQ finishTestItemRQ) {
+		public StepEntry(@Nonnull Maybe<String> itemId, @Nonnull Date stepStartTime,
+		                 @Nullable FinishTestItemRQ finishTestItemRQ) {
 			this.itemId = itemId;
-			this.timestamp = timestamp;
+			this.timestamp = stepStartTime;
 			this.finishTestItemRQ = finishTestItemRQ;
 		}
 
+		public StepEntry(@Nonnull Maybe<String> itemId, @Nonnull Date stepStartTime) {
+			this(itemId, stepStartTime, null);
+		}
+
+		public StepEntry(@Nonnull Maybe<String> itemId) {
+			this(itemId, Calendar.getInstance().getTime());
+		}
+
+		@Nonnull
 		public Maybe<String> getItemId() {
 			return itemId;
 		}
 
+		@Nonnull
 		public Date getTimestamp() {
 			return timestamp;
 		}
 
 		public FinishTestItemRQ getFinishTestItemRQ() {
 			return finishTestItemRQ;
+		}
+
+		@Nullable
+		public ItemStatus getStatus() {
+			return status;
+		}
+
+		public void setStatus(@Nullable ItemStatus itemStatus) {
+			status = itemStatus;
 		}
 	}
 

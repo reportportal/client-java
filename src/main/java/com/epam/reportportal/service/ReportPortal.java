@@ -63,6 +63,7 @@ import static com.epam.reportportal.utils.MimeTypeDetector.detect;
 import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
 import static com.epam.reportportal.utils.files.Utils.readFileToBytes;
 import static java.util.Optional.ofNullable;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 
 /**
  * Default ReportPortal Reporter implementation. Uses
@@ -377,6 +378,27 @@ public class ReportPortal {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setLaunchUuid(launchUuid);
 			fillSaveLogRQ(rq, level, time, message);
+			return rq;
+		});
+	}
+
+	/**
+	 * Formats and reports a {@link Throwable} to Report Portal
+	 *
+	 * @param cause a {@link Throwable}
+	 */
+	public static void sendStackTraceToRP(final Throwable cause) {
+		ReportPortal.emitLog(itemUuid -> {
+			SaveLogRQ rq = new SaveLogRQ();
+			rq.setItemUuid(itemUuid);
+			rq.setLevel("ERROR");
+			rq.setLogTime(Calendar.getInstance().getTime());
+			if (cause != null) {
+				rq.setMessage(getStackTrace(cause));
+			} else {
+				rq.setMessage("Test has failed without exception");
+			}
+			rq.setLogTime(Calendar.getInstance().getTime());
 			return rq;
 		});
 	}
