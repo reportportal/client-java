@@ -21,6 +21,7 @@ import com.epam.reportportal.listeners.LogLevel;
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.utils.ObjectUtils;
 import com.epam.reportportal.utils.StatusEvaluation;
 import com.epam.reportportal.utils.files.Utils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
@@ -55,6 +56,8 @@ public class DefaultStepReporter implements StepReporter {
 
 	private final Map<Maybe<String>, StepEntry> steps = new ConcurrentHashMap<>();
 
+	private final Deque<Maybe<String>> imperativeSteps = new ConcurrentLinkedDeque<>();
+
 	private final Set<Maybe<String>> parentFailures = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
 	private final Launch launch;
@@ -68,8 +71,14 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	@Override
+	@Nullable
+	public Maybe<String> getParent() {
+		return getParentStack().peekLast();
+	}
+
+	@Override
 	public void setStepStatus(@Nonnull ItemStatus status) {
-		ofNullable(steps.get(getParent())).ifPresent(step -> step.setStatus(status));
+		ofNullable(steps.get(getParent())).ifPresent(step -> step.getFinishTestItemRQ().setStatus(status.name()));
 	}
 
 	@Override
@@ -77,12 +86,6 @@ public class DefaultStepReporter implements StepReporter {
 		if (parentUuid != null) {
 			getParentStack().add(parentUuid);
 		}
-	}
-
-	@Override
-	@Nullable
-	public Maybe<String> getParent() {
-		return getParentStack().peekLast();
 	}
 
 	@Override
@@ -104,6 +107,7 @@ public class DefaultStepReporter implements StepReporter {
 	protected void sendStep(@Nonnull final ItemStatus status, @Nonnull final String name, @Nullable final Runnable actions) {
 		StartTestItemRQ rq = buildStartStepRequest(name);
 		Maybe<String> stepId = startStepRequest(rq);
+		imperativeSteps.add(stepId);
 		if (actions != null) {
 			try {
 				actions.run();
@@ -167,7 +171,7 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	private Optional<StepEntry> finishPreviousStepInternal(@Nullable ItemStatus finishStatus) {
-		return ofNullable(getParentStack().pollLast()).map(steps::remove).map(stepEntry -> {
+		return ofNullable(imperativeSteps.pollLast()).map(steps::remove).map(stepEntry -> {
 			FinishTestItemRQ finishRq = stepEntry.getFinishTestItemRQ();
 			ItemStatus status = StatusEvaluation.evaluateStatus(
 					ofNullable(finishRq.getStatus()).map(ItemStatus::valueOf).orElse(null),
@@ -210,7 +214,7 @@ public class DefaultStepReporter implements StepReporter {
 			return Maybe.empty();
 		}
 		Maybe<String> itemId = launch.startTestItem(parent, startStepRequest);
-		steps.put(itemId, new StepEntry(itemId));
+		steps.put(itemId, new StepEntry(itemId, buildFinishTestItemRequest(ItemStatus.PASSED)));
 		return itemId;
 	}
 
@@ -221,16 +225,21 @@ public class DefaultStepReporter implements StepReporter {
 			LOGGER.warn("Unable to find item ID, skipping step a finish step");
 			return;
 		}
-		launch.finishTestItem(stepId, finishStepRequest);
-		steps.remove(stepId);
+		StepEntry manualRequest = steps.remove(stepId);
+		ItemStatus runStatus = ofNullable(finishStepRequest.getStatus()).map(ItemStatus::valueOf).orElse(ItemStatus.PASSED);
+		ItemStatus setStatus =
+				ofNullable(manualRequest).map(StepEntry::getFinishTestItemRQ)
+						.map(FinishTestItemRQ::getStatus).map(ItemStatus::valueOf).orElse(ItemStatus.PASSED);
+
+		ItemStatus actualStatus = ofNullable(StatusEvaluation.evaluateStatus(runStatus, setStatus)).orElse(runStatus);
+		FinishTestItemRQ actualRequest = ObjectUtils.clonePojo(finishStepRequest, FinishTestItemRQ.class);
+		actualRequest.setStatus(actualStatus.name());
+		launch.finishTestItem(stepId, actualRequest);
 	}
 
 	@Override
 	public void finishNestedStep(@Nonnull ItemStatus status) {
-		ItemStatus setStatus =
-				ofNullable(getParent()).map(steps::get).map(StepEntry::getStatus).orElse(ItemStatus.PASSED);
-		ItemStatus actualStatus = ofNullable(StatusEvaluation.evaluateStatus(status, setStatus)).orElse(status);
-		FinishTestItemRQ finishStepRequest = buildFinishTestItemRequest(actualStatus);
+		FinishTestItemRQ finishStepRequest = buildFinishTestItemRequest(status);
 		finishNestedStep(finishStepRequest);
 	}
 

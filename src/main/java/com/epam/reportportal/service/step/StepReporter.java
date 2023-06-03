@@ -126,21 +126,17 @@ public interface StepReporter {
 		private final Maybe<String> itemId;
 		private final Date timestamp;
 		private final FinishTestItemRQ finishTestItemRQ;
-		private volatile ItemStatus status;
 
 		public StepEntry(@Nonnull Maybe<String> itemId, @Nonnull Date stepStartTime,
-		                 @Nullable FinishTestItemRQ finishTestItemRQ) {
+		                 @Nonnull FinishTestItemRQ finishTestItemRQ) {
 			this.itemId = itemId;
 			this.timestamp = stepStartTime;
 			this.finishTestItemRQ = finishTestItemRQ;
 		}
 
-		public StepEntry(@Nonnull Maybe<String> itemId, @Nonnull Date stepStartTime) {
-			this(itemId, stepStartTime, null);
-		}
-
-		public StepEntry(@Nonnull Maybe<String> itemId) {
-			this(itemId, Calendar.getInstance().getTime());
+		public StepEntry(@Nonnull Maybe<String> itemId,
+				@Nonnull FinishTestItemRQ finishTestItemRQ) {
+			this(itemId, Calendar.getInstance().getTime(), finishTestItemRQ);
 		}
 
 		@Nonnull
@@ -153,17 +149,9 @@ public interface StepReporter {
 			return timestamp;
 		}
 
+		@Nonnull
 		public FinishTestItemRQ getFinishTestItemRQ() {
 			return finishTestItemRQ;
-		}
-
-		@Nullable
-		public ItemStatus getStatus() {
-			return status;
-		}
-
-		public void setStatus(@Nullable ItemStatus itemStatus) {
-			status = itemStatus;
 		}
 	}
 
