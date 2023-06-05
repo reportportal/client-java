@@ -115,7 +115,7 @@ public class DefaultStepReporter implements StepReporter {
 				LOGGER.error("Unable to process nested step: " + e.getLocalizedMessage(), e);
 			}
 		}
-		finishStepRequest(stepId, status, rq.getStartTime());
+		addStepEntry(stepId, status, rq.getStartTime());
 	}
 
 	@Override
@@ -174,7 +174,7 @@ public class DefaultStepReporter implements StepReporter {
 		return ofNullable(imperativeSteps.pollLast()).map(steps::remove).map(stepEntry -> {
 			FinishTestItemRQ finishRq = stepEntry.getFinishTestItemRQ();
 			ItemStatus status = StatusEvaluation.evaluateStatus(
-					ofNullable(finishRq.getStatus()).map(ItemStatus::valueOf).orElse(null),
+					ofNullable(finishRq.getStatus()).map(ItemStatus::valueOf).orElse(ItemStatus.PASSED),
 					finishStatus
 			);
 			ofNullable(status).ifPresent(s -> finishRq.setStatus(s.name()));
@@ -202,7 +202,7 @@ public class DefaultStepReporter implements StepReporter {
 	 */
 	@Override
 	public void finishPreviousStep() {
-		finishPreviousStep(ItemStatus.PASSED);
+		finishPreviousStep(null);
 	}
 
 	@Override
@@ -214,7 +214,7 @@ public class DefaultStepReporter implements StepReporter {
 			return Maybe.empty();
 		}
 		Maybe<String> itemId = launch.startTestItem(parent, startStepRequest);
-		steps.put(itemId, new StepEntry(itemId, buildFinishTestItemRequest(ItemStatus.PASSED)));
+		steps.put(itemId, new StepEntry(itemId, new FinishTestItemRQ()));
 		return itemId;
 	}
 
@@ -226,14 +226,13 @@ public class DefaultStepReporter implements StepReporter {
 			return;
 		}
 		StepEntry manualRequest = steps.remove(stepId);
-		ItemStatus runStatus = ofNullable(finishStepRequest.getStatus()).map(ItemStatus::valueOf).orElse(ItemStatus.PASSED);
-		ItemStatus setStatus =
+		String manualStatus =
 				ofNullable(manualRequest).map(StepEntry::getFinishTestItemRQ)
-						.map(FinishTestItemRQ::getStatus).map(ItemStatus::valueOf).orElse(ItemStatus.PASSED);
+						.map(FinishTestItemRQ::getStatus).orElse(null);
+		String runStatus = ofNullable(finishStepRequest.getStatus()).orElse(ItemStatus.PASSED.name());
 
-		ItemStatus actualStatus = ofNullable(StatusEvaluation.evaluateStatus(runStatus, setStatus)).orElse(runStatus);
 		FinishTestItemRQ actualRequest = ObjectUtils.clonePojo(finishStepRequest, FinishTestItemRQ.class);
-		actualRequest.setStatus(actualStatus.name());
+		actualRequest.setStatus(ofNullable(manualStatus).orElse(runStatus));
 		launch.finishTestItem(stepId, actualRequest);
 	}
 
@@ -275,7 +274,6 @@ public class DefaultStepReporter implements StepReporter {
 			finishNestedStep(stepSuccessStatus);
 			return result;
 		} catch (RuntimeException | Error e) {
-			ReportPortal.sendStackTraceToRP(e);
 			finishNestedStep(ItemStatus.FAILED);
 			throw e;
 		}
@@ -288,7 +286,7 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	private Maybe<String> startStepRequest(final StartTestItemRQ startTestItemRQ) {
-		finishPreviousStepInternal(ItemStatus.PASSED).ifPresent(e -> {
+		finishPreviousStepInternal(null).ifPresent(e -> {
 			Date previousDate = e.getTimestamp();
 			Date currentDate = startTestItemRQ.getStartTime();
 			if (!previousDate.before(currentDate)) {
@@ -310,7 +308,7 @@ public class DefaultStepReporter implements StepReporter {
 		return startTestItemRQ;
 	}
 
-	private void finishStepRequest(Maybe<String> stepId, ItemStatus status, Date timestamp) {
+	private void addStepEntry(Maybe<String> stepId, ItemStatus status, Date timestamp) {
 		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status);
 		steps.put(stepId, new StepEntry(stepId, timestamp, finishTestItemRQ));
 	}
