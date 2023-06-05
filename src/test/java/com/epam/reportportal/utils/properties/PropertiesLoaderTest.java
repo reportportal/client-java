@@ -30,7 +30,6 @@ import java.util.Properties;
 import static com.epam.reportportal.util.test.ProcessUtils.waitForLine;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
 
 public class PropertiesLoaderTest {
 
@@ -86,7 +85,7 @@ public class PropertiesLoaderTest {
 	public void testUtf() {
 		assertThat("Incorrect encoding!",
 				PropertiesLoader.load("property-test/utf-demo.properties").getProperty("utf8"),
-				is("привет мир!")
+				equalTo("привет мир!")
 		);
 	}
 
