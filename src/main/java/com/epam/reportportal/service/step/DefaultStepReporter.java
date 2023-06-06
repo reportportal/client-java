@@ -183,6 +183,10 @@ public class DefaultStepReporter implements StepReporter {
 		});
 	}
 
+	private void failParents() {
+		parentFailures.addAll(getParentStack());
+	}
+
 	/**
 	 * Finish current step started by any of <code>#sendStep</code> methods. Overrides original status if provided.
 	 *
@@ -192,7 +196,7 @@ public class DefaultStepReporter implements StepReporter {
 	public void finishPreviousStep(@Nullable ItemStatus status) {
 		finishPreviousStepInternal(status).ifPresent(e -> {
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
-				parentFailures.addAll(getParentStack());
+				failParents();
 			}
 		});
 	}
@@ -232,6 +236,14 @@ public class DefaultStepReporter implements StepReporter {
 		String runStatus = ofNullable(finishStepRequest.getStatus()).orElse(ItemStatus.PASSED.name());
 
 		FinishTestItemRQ actualRequest = ObjectUtils.clonePojo(finishStepRequest, FinishTestItemRQ.class);
+		if (manualStatus != null) {
+			actualRequest.setStatus(manualStatus);
+			if (ItemStatus.FAILED.name().equalsIgnoreCase(manualStatus)) {
+				failParents();
+			}
+		} else {
+			actualRequest.setStatus(runStatus);
+		}
 		actualRequest.setStatus(ofNullable(manualStatus).orElse(runStatus));
 		launch.finishTestItem(stepId, actualRequest);
 	}
@@ -293,7 +305,7 @@ public class DefaultStepReporter implements StepReporter {
 				startTestItemRQ.setStartTime(new Date(previousDate.getTime() + 1));
 			}
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
-				parentFailures.addAll(getParentStack());
+				failParents();
 			}
 		});
 		return startNestedStep(startTestItemRQ);
