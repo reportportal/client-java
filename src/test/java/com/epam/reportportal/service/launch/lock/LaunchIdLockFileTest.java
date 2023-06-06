@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.channels.FileLock;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -78,11 +79,11 @@ public class LaunchIdLockFileTest {
 		}
 		final File myLockFile = new File(lockFileName);
 		if (myLockFile.exists()) {
-			Awaitility.await().until(myLockFile::delete);
+			Awaitility.await().atMost(Duration.ofSeconds(60)).until(myLockFile::delete);
 		}
 		final File mySyncFile = new File(syncFileName);
 		if (mySyncFile.exists()) {
-			Awaitility.await().until(mySyncFile::delete);
+			Awaitility.await().atMost(Duration.ofSeconds(60)).until(mySyncFile::delete);
 		}
 	}
 
@@ -282,17 +283,14 @@ public class LaunchIdLockFileTest {
 		Assertions.assertThrows(NullPointerException.class, () -> launchIdLockFile.obtainLaunchUuid(null));
 	}
 
-	private FileLock getFileLock(File file) throws IOException {
-		RandomAccessFile raf = new RandomAccessFile(file, "rwd");
-		return raf.getChannel().lock();
-	}
-
 	@Test
 	public void test_lock_file_should_not_throw_exception_if_it_is_not_possible_to_write_sync_file()
 			throws IOException {
 		File syncFile = new File(syncFileName);
-		try (FileLock ignored = getFileLock(syncFile)) {
-			assertThat(launchIdLockFile.obtainLaunchUuid(UUID.randomUUID().toString()), nullValue());
+		try(RandomAccessFile raf = new RandomAccessFile(syncFile, "rwd")) {
+			try (FileLock ignored = raf.getChannel().lock()) {
+				assertThat(launchIdLockFile.obtainLaunchUuid(UUID.randomUUID().toString()), nullValue());
+			}
 		}
 	}
 
@@ -301,8 +299,10 @@ public class LaunchIdLockFileTest {
 			throws IOException {
 		String launchUuid = UUID.randomUUID().toString();
 		File lockFile = new File(lockFileName);
-		try (FileLock ignored = getFileLock(lockFile)) {
-			assertThat(launchIdLockFile.obtainLaunchUuid(launchUuid), equalTo(launchUuid));
+		try(RandomAccessFile raf = new RandomAccessFile(lockFile, "rwd")) {
+			try (FileLock ignored = raf.getChannel().lock()) {
+				assertThat(launchIdLockFile.obtainLaunchUuid(launchUuid), equalTo(launchUuid));
+			}
 		}
 	}
 

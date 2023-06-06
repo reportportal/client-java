@@ -21,11 +21,11 @@ import com.epam.reportportal.service.LaunchIdLock;
 import com.epam.reportportal.service.LaunchImpl;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
 
 import java.util.Random;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * The class for mandatory logic for launches which were joined by {@link LaunchIdLock} object.
@@ -33,8 +33,14 @@ import java.util.concurrent.*;
 public class AbstractJoinedLaunch extends LaunchImpl {
 	final LaunchIdLock lock;
 	volatile String uuid;
-	private final ScheduledExecutorService updater = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat(
-			"rp-poll").setDaemon(true).build());
+	private static final AtomicLong THREAD_COUNTER = new AtomicLong();
+	private static final ThreadFactory THREAD_FACTORY = r -> {
+		Thread t = new Thread(r);
+		t.setDaemon(true);
+		t.setName("rp-poll-" + THREAD_COUNTER.incrementAndGet());
+		return t;
+	};
+	private final ScheduledExecutorService updater = Executors.newSingleThreadScheduledExecutor(THREAD_FACTORY);
 	private final ScheduledFuture<?> updateTask;
 
 	private static ScheduledFuture<?> getUpdateTask(String instanceUuid, long updateInterval, LaunchIdLock launchIdLock,

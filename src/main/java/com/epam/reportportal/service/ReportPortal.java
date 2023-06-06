@@ -28,10 +28,12 @@ import com.epam.reportportal.utils.properties.ListenerProperty;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.Maybe;
 import io.reactivex.schedulers.Schedulers;
-import okhttp3.*;
+import okhttp3.Cookie;
+import okhttp3.CookieJar;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -46,19 +48,14 @@ import javax.annotation.Nullable;
 import javax.net.ssl.*;
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
-import java.net.Proxy;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import static com.epam.reportportal.service.LaunchLoggingContext.DEFAULT_LAUNCH_KEY;
@@ -66,7 +63,7 @@ import static com.epam.reportportal.utils.MimeTypeDetector.detect;
 import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
 import static com.epam.reportportal.utils.files.Utils.readFileToBytes;
 import static java.util.Optional.ofNullable;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 
 /**
  * Default ReportPortal Reporter implementation. Uses
@@ -88,7 +85,7 @@ public class ReportPortal {
 	 * @param parameters Listener Parameters
 	 */
 	ReportPortal(@Nullable ReportPortalClient rpClient, @Nonnull ExecutorService executor,
-			@Nonnull ListenerParameters parameters, @Nullable LaunchIdLock launchIdLock) {
+	             @Nonnull ListenerParameters parameters, @Nullable LaunchIdLock launchIdLock) {
 		this.rpClient = rpClient;
 		this.executor = executor;
 		this.parameters = Objects.requireNonNull(parameters);
@@ -203,7 +200,7 @@ public class ReportPortal {
 	 */
 	@Nonnull
 	public static ReportPortal create(@Nonnull final ReportPortalClient client,
-			@Nonnull final ListenerParameters params, @Nonnull final ExecutorService executor) {
+	                                  @Nonnull final ListenerParameters params, @Nonnull final ExecutorService executor) {
 		return new ReportPortal(client, executor, params, getLaunchLock(params));
 	}
 
@@ -293,7 +290,7 @@ public class ReportPortal {
 	}
 
 	private static void fillSaveLogRQ(final SaveLogRQ rq, final String message, final String level, final Date time,
-			final File file) {
+	                                  final File file) {
 		rq.setMessage(message);
 		rq.setLevel(level);
 		rq.setLogTime(time);
@@ -348,7 +345,7 @@ public class ReportPortal {
 	}
 
 	private static void fillSaveLogRQ(final SaveLogRQ rq, final String level, final Date time,
-			final ReportPortalMessage message) {
+	                                  final ReportPortalMessage message) {
 		rq.setLevel(level);
 		rq.setLogTime(time);
 		rq.setMessage(message.getMessage());
@@ -381,6 +378,27 @@ public class ReportPortal {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setLaunchUuid(launchUuid);
 			fillSaveLogRQ(rq, level, time, message);
+			return rq;
+		});
+	}
+
+	/**
+	 * Formats and reports a {@link Throwable} to Report Portal
+	 *
+	 * @param cause a {@link Throwable}
+	 */
+	public static void sendStackTraceToRP(final Throwable cause) {
+		ReportPortal.emitLog(itemUuid -> {
+			SaveLogRQ rq = new SaveLogRQ();
+			rq.setItemUuid(itemUuid);
+			rq.setLevel("ERROR");
+			rq.setLogTime(Calendar.getInstance().getTime());
+			if (cause != null) {
+				rq.setMessage(getStackTrace(cause));
+			} else {
+				rq.setMessage("Test has failed without exception");
+			}
+			rq.setLogTime(Calendar.getInstance().getTime());
 			return rq;
 		});
 	}
@@ -430,7 +448,7 @@ public class ReportPortal {
 		 * @return a Report Portal Client instance
 		 */
 		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType,
-				@Nonnull final ListenerParameters params) {
+		                                                    @Nonnull final ListenerParameters params) {
 			return buildClient(clientType, params, buildExecutorService(params));
 		}
 
@@ -442,7 +460,7 @@ public class ReportPortal {
 		 * @return a Report Portal Client instance
 		 */
 		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType,
-				@Nonnull final ListenerParameters params, @Nonnull final ExecutorService executor) {
+		                                                    @Nonnull final ListenerParameters params, @Nonnull final ExecutorService executor) {
 			OkHttpClient client = ofNullable(this.httpClient).map(c -> c.addInterceptor(new BearerAuthInterceptor(params.getApiKey()))
 					.build()).orElseGet(() -> defaultClient(params));
 
@@ -455,7 +473,7 @@ public class ReportPortal {
 		 * @return a ReportPortal endpoint description class
 		 */
 		protected Retrofit buildRestEndpoint(@Nonnull final ListenerParameters parameters,
-				@Nonnull final OkHttpClient client) {
+		                                     @Nonnull final OkHttpClient client) {
 			return buildRestEndpoint(parameters, client, buildExecutorService(parameters));
 		}
 
@@ -466,7 +484,7 @@ public class ReportPortal {
 		 * @return a ReportPortal endpoint description class
 		 */
 		protected Retrofit buildRestEndpoint(@Nonnull final ListenerParameters parameters,
-				@Nonnull final OkHttpClient client, @Nonnull final ExecutorService executor) {
+		                                     @Nonnull final OkHttpClient client, @Nonnull final ExecutorService executor) {
 			String baseUrl =
 					(parameters.getBaseUrl().endsWith("/") ? parameters.getBaseUrl() : parameters.getBaseUrl() + "/")
 							+ API_PATH;
@@ -474,10 +492,12 @@ public class ReportPortal {
 			try {
 				builder.baseUrl(baseUrl);
 			} catch (NoSuchMethodError e) {
-				throw new InternalReportPortalClientException("Unable to initialize OkHttp client. " + "Report Portal client supports OkHttp version 3.11.0 as minimum.\n"
-								+ "Please update OkHttp dependency.\n"
-								+ "Besides this usually happens due to old selenium-java version (it overrides our dependency), "
-								+ "please use selenium-java 3.141.0 as minimum.",
+				throw new InternalReportPortalClientException(
+						"Unable to initialize OkHttp client. "
+						+ "Report Portal client supports OkHttp version 3.11.0 as minimum.\n"
+						+ "Please update OkHttp dependency.\n"
+						+ "Besides this usually happens due to old selenium-java version (it overrides our dependency), "
+						+ "please use selenium-java 3.141.0 as minimum.",
 						e
 				);
 			}
@@ -526,7 +546,7 @@ public class ReportPortal {
 									"Unable to find X509 trust manager, managers:" + Arrays.toString(trustManagers)));
 
 					SSLContext sslContext = SSLContext.getInstance("TLS");
-					sslContext.init(null, new TrustManager[] { trustManager }, null);
+					sslContext.init(null, new TrustManager[]{trustManager}, null);
 					SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 					builder.sslSocketFactory(sslSocketFactory, trustManager);
 				} catch (KeyStoreException | NoSuchAlgorithmException | KeyManagementException e) {
@@ -590,8 +610,13 @@ public class ReportPortal {
 	}
 
 	private static ExecutorService buildExecutorService(ListenerParameters params) {
-		return Executors.newFixedThreadPool(params.getIoPoolSize(),
-				new ThreadFactoryBuilder().setNameFormat("rp-io-%s").setDaemon(true).build()
-		);
+		AtomicLong threadCounter = new AtomicLong();
+		ThreadFactory threadFactory = r -> {
+			Thread t = new Thread(r);
+			t.setDaemon(true);
+			t.setName("rp-io-" + threadCounter.incrementAndGet());
+			return t;
+		};
+		return Executors.newFixedThreadPool(params.getIoPoolSize(), threadFactory);
 	}
 }

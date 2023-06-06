@@ -121,7 +121,7 @@ public class ReportPortalTest {
 		String password = "password";
 		String expectedAuth = "Authorization: Basic "
 				+ Base64.getEncoder().encodeToString((userName + ":" + password).getBytes(StandardCharsets.UTF_8))
-				+ "\n";
+				+ System.lineSeparator();
 		ServerSocket server = SocketUtils.getServerSocketOnFreePort();
 		ListenerParameters params = standardParameters();
 		params.setBaseUrl(baseUrl);

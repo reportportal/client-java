@@ -27,9 +27,6 @@ import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import io.reactivex.*;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
@@ -39,10 +36,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
@@ -53,7 +47,6 @@ import static com.epam.reportportal.service.logs.LaunchLoggingCallback.*;
 import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
 import static com.epam.reportportal.utils.SubscriptionUtils.logCompletableResults;
 import static com.epam.reportportal.utils.SubscriptionUtils.logMaybeResults;
-import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
@@ -103,13 +96,7 @@ public class LaunchImpl extends Launch {
 	/**
 	 * Messages queue to track items execution order
 	 */
-	protected final LoadingCache<Maybe<String>, LaunchImpl.TreeItem> QUEUE = CacheBuilder.newBuilder()
-			.build(new CacheLoader<Maybe<String>, LaunchImpl.TreeItem>() {
-				@Override
-				public LaunchImpl.TreeItem load(@Nonnull Maybe<String> key) {
-					return new LaunchImpl.TreeItem();
-				}
-			});
+	protected final ComputationConcurrentHashMap QUEUE = new ComputationConcurrentHashMap();
 
 	protected final Maybe<String> launch;
 	private final ExecutorService executor;
@@ -269,8 +256,8 @@ public class LaunchImpl extends Launch {
 	 * @param request Finish RQ
 	 */
 	public void finish(final FinishExecutionRQ request) {
-		QUEUE.getUnchecked(launch).addToQueue(LaunchLoggingContext.complete());
-		Completable finish = Completable.concat(QUEUE.getUnchecked(launch).getChildren());
+		QUEUE.getOrCompute(launch).addToQueue(LaunchLoggingContext.complete());
+		Completable finish = Completable.concat(QUEUE.getOrCompute(launch).getChildren());
 		if (StringUtils.isBlank(getParameters().getLaunchUuid())) {
 			FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
 			truncateAttributes(rq);
@@ -323,7 +310,7 @@ public class LaunchImpl extends Launch {
 		}).cache();
 
 		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start test item"));
-		QUEUE.getUnchecked(item).addToQueue(item.ignoreElement().onErrorComplete());
+		QUEUE.getOrCompute(item).addToQueue(item.ignoreElement().onErrorComplete());
 		LoggingContext.init(launch, item, getClient(), getScheduler(), getParameters());
 
 		getStepReporter().setParent(item);
@@ -376,7 +363,7 @@ public class LaunchImpl extends Launch {
 			return result.map(TO_ID);
 		})).cache();
 		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start test item"));
-		QUEUE.getUnchecked(item).withParent(parentId).addToQueue(item.ignoreElement().onErrorComplete());
+		QUEUE.getOrCompute(item).withParent(parentId).addToQueue(item.ignoreElement().onErrorComplete());
 		LoggingContext.init(launch, item, getClient(), getScheduler(), getParameters());
 
 		getStepReporter().setParent(item);
@@ -411,9 +398,9 @@ public class LaunchImpl extends Launch {
 			rq.setIssue(Launch.NOT_ISSUE);
 		}
 
-		QUEUE.getUnchecked(launch).addToQueue(LoggingContext.complete());
+		QUEUE.getOrCompute(launch).addToQueue(LoggingContext.complete());
 
-		LaunchImpl.TreeItem treeItem = QUEUE.getIfPresent(item);
+		LaunchImpl.TreeItem treeItem = QUEUE.get(item);
 		if (null == treeItem) {
 			treeItem = new LaunchImpl.TreeItem();
 			LOGGER.error("Item {} not found in the cache", item);
@@ -435,17 +422,17 @@ public class LaunchImpl extends Launch {
 
 		Completable finishCompletion = Completable.concat(treeItem.getChildren())
 				.andThen(finishResponse)
-				.doAfterTerminate(() -> QUEUE.invalidate(item)) //cleanup children
+				.doAfterTerminate(() -> QUEUE.remove(item)) //cleanup children
 				.ignoreElement()
 				.cache();
 		finishCompletion.subscribeOn(getScheduler()).subscribe(logCompletableResults("Finish test item"));
 		//find parent and add to its queue
 		final Maybe<String> parent = treeItem.getParent();
 		if (null != parent) {
-			QUEUE.getUnchecked(parent).addToQueue(finishCompletion.onErrorComplete());
+			QUEUE.getOrCompute(parent).addToQueue(finishCompletion.onErrorComplete());
 		} else {
 			//seems like this is root item
-			QUEUE.getUnchecked(this.launch).addToQueue(finishCompletion.onErrorComplete());
+			QUEUE.getOrCompute(this.launch).addToQueue(finishCompletion.onErrorComplete());
 		}
 
 		getStepReporter().removeParent(item);
@@ -459,21 +446,29 @@ public class LaunchImpl extends Launch {
 		private volatile Maybe<String> parent;
 		private final List<Completable> children = new CopyOnWriteArrayList<>();
 
-		public LaunchImpl.TreeItem withParent(Maybe<String> parent) {
+		public LaunchImpl.TreeItem withParent(@Nullable Maybe<String> parent) {
 			this.parent = parent;
 			return this;
 		}
 
-		public void addToQueue(Completable completable) {
+		public void addToQueue(@Nonnull Completable completable) {
 			this.children.add(completable);
 		}
 
+		@Nonnull
 		public List<Completable> getChildren() {
-			return newArrayList(this.children);
+			return new ArrayList<>(this.children);
 		}
 
+		@Nullable
 		public Maybe<String> getParent() {
 			return parent;
+		}
+	}
+
+	protected static class ComputationConcurrentHashMap extends ConcurrentHashMap<Maybe<String>, LaunchImpl.TreeItem>  {
+		public LaunchImpl.TreeItem getOrCompute(Maybe<String> key) {
+			return computeIfAbsent(key, k -> new LaunchImpl.TreeItem());
 		}
 	}
 }

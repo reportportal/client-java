@@ -21,6 +21,7 @@ import com.epam.reportportal.listeners.LogLevel;
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.utils.ObjectUtils;
 import com.epam.reportportal.utils.StatusEvaluation;
 import com.epam.reportportal.utils.files.Utils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
@@ -40,8 +41,8 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Supplier;
 
 import static com.epam.reportportal.service.step.StepRequestUtils.buildFinishTestItemRequest;
-import static com.google.common.base.Throwables.getStackTraceAsString;
 import static java.util.Optional.ofNullable;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 
 /**
  * {@inheritDoc}
@@ -53,7 +54,9 @@ public class DefaultStepReporter implements StepReporter {
 
 	private final ThreadLocal<Deque<Maybe<String>>> stepStack = ThreadLocal.withInitial(ConcurrentLinkedDeque::new);
 
-	private final ThreadLocal<Deque<StepEntry>> steps = ThreadLocal.withInitial(ConcurrentLinkedDeque::new);
+	private final Map<Maybe<String>, StepEntry> steps = new ConcurrentHashMap<>();
+
+	private final Deque<Maybe<String>> imperativeSteps = new ConcurrentLinkedDeque<>();
 
 	private final Set<Maybe<String>> parentFailures = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -68,16 +71,21 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	@Override
+	@Nullable
+	public Maybe<String> getParent() {
+		return getParentStack().peekLast();
+	}
+
+	@Override
+	public void setStepStatus(@Nonnull ItemStatus status) {
+		ofNullable(steps.get(getParent())).ifPresent(step -> step.getFinishTestItemRQ().setStatus(status.name()));
+	}
+
+	@Override
 	public void setParent(@Nullable final Maybe<String> parentUuid) {
 		if (parentUuid != null) {
 			getParentStack().add(parentUuid);
 		}
-	}
-
-	@Override
-	@Nullable
-	public Maybe<String> getParent() {
-		return getParentStack().peekLast();
 	}
 
 	@Override
@@ -99,6 +107,7 @@ public class DefaultStepReporter implements StepReporter {
 	protected void sendStep(@Nonnull final ItemStatus status, @Nonnull final String name, @Nullable final Runnable actions) {
 		StartTestItemRQ rq = buildStartStepRequest(name);
 		Maybe<String> stepId = startStepRequest(rq);
+		imperativeSteps.add(stepId);
 		if (actions != null) {
 			try {
 				actions.run();
@@ -106,7 +115,7 @@ public class DefaultStepReporter implements StepReporter {
 				LOGGER.error("Unable to process nested step: " + e.getLocalizedMessage(), e);
 			}
 		}
-		finishStepRequest(stepId, status, rq.getStartTime());
+		addStepEntry(stepId, status, rq.getStartTime());
 	}
 
 	@Override
@@ -161,14 +170,13 @@ public class DefaultStepReporter implements StepReporter {
 		});
 	}
 
-	private Deque<StepEntry> getSteps() {
-		return steps.get();
-	}
-
 	private Optional<StepEntry> finishPreviousStepInternal(@Nullable ItemStatus finishStatus) {
-		return ofNullable(getSteps().pollLast()).map(stepEntry -> {
+		return ofNullable(imperativeSteps.pollLast()).map(steps::remove).map(stepEntry -> {
 			FinishTestItemRQ finishRq = stepEntry.getFinishTestItemRQ();
-			ItemStatus status = StatusEvaluation.evaluateStatus(ItemStatus.valueOf(finishRq.getStatus()), finishStatus);
+			ItemStatus status = StatusEvaluation.evaluateStatus(
+					ofNullable(finishRq.getStatus()).map(ItemStatus::valueOf).orElse(ItemStatus.PASSED),
+					finishStatus
+			);
 			ofNullable(status).ifPresent(s -> finishRq.setStatus(s.name()));
 			launch.finishTestItem(stepEntry.getItemId(), finishRq);
 			return stepEntry;
@@ -194,7 +202,7 @@ public class DefaultStepReporter implements StepReporter {
 	 */
 	@Override
 	public void finishPreviousStep() {
-		finishPreviousStep(ItemStatus.PASSED);
+		finishPreviousStep(null);
 	}
 
 	@Override
@@ -205,7 +213,9 @@ public class DefaultStepReporter implements StepReporter {
 			LOGGER.warn("Unable to find parent ID, skipping step: " + startStepRequest.getName());
 			return Maybe.empty();
 		}
-		return launch.startTestItem(parent, startStepRequest);
+		Maybe<String> itemId = launch.startTestItem(parent, startStepRequest);
+		steps.put(itemId, new StepEntry(itemId, new FinishTestItemRQ()));
+		return itemId;
 	}
 
 	@Override
@@ -215,7 +225,15 @@ public class DefaultStepReporter implements StepReporter {
 			LOGGER.warn("Unable to find item ID, skipping step a finish step");
 			return;
 		}
-		launch.finishTestItem(stepId, finishStepRequest);
+		StepEntry manualRequest = steps.remove(stepId);
+		String manualStatus =
+				ofNullable(manualRequest).map(StepEntry::getFinishTestItemRQ)
+						.map(FinishTestItemRQ::getStatus).orElse(null);
+		String runStatus = ofNullable(finishStepRequest.getStatus()).orElse(ItemStatus.PASSED.name());
+
+		FinishTestItemRQ actualRequest = ObjectUtils.clonePojo(finishStepRequest, FinishTestItemRQ.class);
+		actualRequest.setStatus(ofNullable(manualStatus).orElse(runStatus));
+		launch.finishTestItem(stepId, actualRequest);
 	}
 
 	@Override
@@ -232,20 +250,19 @@ public class DefaultStepReporter implements StepReporter {
 	@Override
 	public void finishNestedStep(@Nullable Throwable throwable) {
 		ReportPortal.emitLog(itemUuid -> buildSaveLogRequest(itemUuid, throwable));
-		FinishTestItemRQ finishStepRequest = buildFinishTestItemRequest(ItemStatus.FAILED);
-		finishNestedStep(finishStepRequest);
+		finishNestedStep(ItemStatus.FAILED);
 	}
 
 	@Override
 	public void step(@Nonnull String name) {
 		startNestedStep(buildStartStepRequest(name));
-		finishNestedStep(buildFinishTestItemRequest(ItemStatus.PASSED));
+		finishNestedStep(ItemStatus.PASSED);
 	}
 
 	@Override
 	public void step(@Nonnull ItemStatus status, @Nonnull String name) {
 		startNestedStep(buildStartStepRequest(name));
-		finishNestedStep(buildFinishTestItemRequest(status));
+		finishNestedStep(status);
 	}
 
 	@Nullable
@@ -254,10 +271,10 @@ public class DefaultStepReporter implements StepReporter {
 		startNestedStep(buildStartStepRequest(name));
 		try {
 			T result = actions.get();
-			finishNestedStep(buildFinishTestItemRequest(stepSuccessStatus));
+			finishNestedStep(stepSuccessStatus);
 			return result;
 		} catch (RuntimeException | Error e) {
-			finishNestedStep(buildFinishTestItemRequest(ItemStatus.FAILED));
+			finishNestedStep(ItemStatus.FAILED);
 			throw e;
 		}
 	}
@@ -269,7 +286,7 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	private Maybe<String> startStepRequest(final StartTestItemRQ startTestItemRQ) {
-		finishPreviousStepInternal(ItemStatus.PASSED).ifPresent(e -> {
+		finishPreviousStepInternal(null).ifPresent(e -> {
 			Date previousDate = e.getTimestamp();
 			Date currentDate = startTestItemRQ.getStartTime();
 			if (!previousDate.before(currentDate)) {
@@ -291,9 +308,9 @@ public class DefaultStepReporter implements StepReporter {
 		return startTestItemRQ;
 	}
 
-	private void finishStepRequest(Maybe<String> stepId, ItemStatus status, Date timestamp) {
+	private void addStepEntry(Maybe<String> stepId, ItemStatus status, Date timestamp) {
 		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status);
-		getSteps().add(new StepEntry(stepId, timestamp, finishTestItemRQ));
+		steps.put(stepId, new StepEntry(stepId, timestamp, finishTestItemRQ));
 	}
 
 	private SaveLogRQ buildSaveLogRequest(String itemId, String message, LogLevel level) {
@@ -318,7 +335,7 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	private SaveLogRQ buildSaveLogRequest(String itemId, Throwable throwable, File file) {
-		String message = throwable != null ? getStackTraceAsString(throwable) : "Test has failed without exception";
+		String message = throwable != null ? getStackTrace(throwable) : "Test has failed without exception";
 		return buildSaveLogRequest(itemId, message, LogLevel.ERROR, file);
 	}
 

@@ -19,6 +19,7 @@ package com.epam.reportportal.service.statistics;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.statistics.item.StatisticsEvent;
 import com.epam.reportportal.service.statistics.item.StatisticsItem;
+import com.epam.reportportal.utils.ClientIdProvider;
 import com.epam.reportportal.utils.properties.ClientProperties;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
@@ -37,14 +38,8 @@ import retrofit2.Response;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Base64;
 import java.util.List;
-import java.util.Properties;
-import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
@@ -70,9 +65,7 @@ public class StatisticsService implements Closeable {
 	public static final String AGENT_NAME_PARAM = "agent_name";
 	public static final String AGENT_VERSION_PARAM = "agent_version";
 
-	private static final String CLIENT_ID_PROPERTY = "client.id";
-	private static final Path LOCAL_DATA_STORAGE = Paths.get(System.getProperty("user.home"), ".rp", "rp.properties");
-	private static final String CLIENT_ID = getClientId();
+	private static final String CLIENT_ID = ClientIdProvider.getClientId();
 
 	private static final AtomicLong THREAD_COUNTER = new AtomicLong();
 	private static final ThreadFactory THREAD_FACTORY = r -> {
@@ -87,30 +80,6 @@ public class StatisticsService implements Closeable {
 	private final List<Completable> dependencies = new CopyOnWriteArrayList<>();
 
 	private final ListenerParameters parameters;
-
-	private static String getClientId() {
-		Properties properties = new Properties();
-		if (Files.exists(LOCAL_DATA_STORAGE)) {
-			try {
-				properties.load(Files.newInputStream(LOCAL_DATA_STORAGE, StandardOpenOption.READ));
-			} catch (IOException ignore) {
-			}
-
-			String storedId = properties.getProperty(CLIENT_ID_PROPERTY);
-			if (storedId != null) {
-				return storedId;
-			}
-		}
-		String id = UUID.randomUUID().toString();
-		properties.setProperty(CLIENT_ID_PROPERTY, id);
-		try {
-			Path folder = LOCAL_DATA_STORAGE.getParent();
-			Files.createDirectories(folder);
-			properties.store(Files.newOutputStream(LOCAL_DATA_STORAGE, StandardOpenOption.CREATE), null);
-		} catch (IOException ignore) {
-		}
-		return id;
-	}
 
 	public StatisticsService(ListenerParameters listenerParameters, Statistics client) {
 		this.parameters = listenerParameters;
