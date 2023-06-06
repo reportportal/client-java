@@ -28,11 +28,13 @@ import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 import okhttp3.MultipartBody;
 import org.apache.commons.lang3.tuple.Pair;
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.*;
 import org.mockito.ArgumentCaptor;
 import org.opentest4j.AssertionFailedError;
 
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -219,7 +221,10 @@ public class ManualNestedStepTest {
 				.map(e -> Pair.of(e.getLevel(), e.getMessage()))
 				.collect(Collectors.toList());
 
-		assertThat(logRequests, hasItems(IntStream.range(0, logNumber).mapToObj(i -> Pair.of("INFO", logs[i])).toArray(Pair[]::new)));
+		Collection<Matcher<? super Pair<String, String>>> expectedItems =
+				IntStream.range(0, logNumber).mapToObj(i -> equalTo(Pair.of("INFO", logs[i]))).collect(Collectors.toList());
+
+		assertThat(logRequests, containsInAnyOrder(expectedItems));
 
 		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest());
 		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest());
