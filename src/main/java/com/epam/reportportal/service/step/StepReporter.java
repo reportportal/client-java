@@ -119,6 +119,13 @@ public interface StepReporter {
 	@Nullable
 	<T> T step(@Nonnull String name, @Nonnull Supplier<T> actions);
 
+	/**
+	 * Set execution status for current step. This status will be applied to the step no matter what will happen with
+	 * the step next. E.G. if you set {@link ItemStatus#PASSED} with the method and then throw an exception the status
+	 * of the step will stay passed.
+	 *
+	 * @param status wanted step status
+	 */
 	default void setStepStatus(@Nonnull ItemStatus status) {
 	}
 

@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- `StepReporter.setStepStatus` method now fail all step's parents for `ItemStatus#FAILED`, by @HardNorth
 
 ## [5.1.19]
 ### Changed
