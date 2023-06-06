@@ -219,10 +219,8 @@ public class ManualNestedStepTest {
 				.map(e -> Pair.of(e.getLevel(), e.getMessage()))
 				.collect(Collectors.toList());
 
-		IntStream.range(0, logNumber).forEach(i -> {
-			assertThat(logRequests.get(i).getKey(), equalTo("INFO"));
-			assertThat(logRequests.get(i).getValue(), equalTo(logs[i]));
-		});
+		assertThat(logRequests, hasItems(IntStream.range(0, logNumber).mapToObj(i -> Pair.of("INFO", logs[i])).toArray(Pair[]::new)));
+
 		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest());
 		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest());
 		launch.finish(standardLaunchFinishRequest());
@@ -400,7 +398,7 @@ public class ManualNestedStepTest {
 	@Test
 	public void verify_nested_step_manual_failure_set_overrides_any_other_status_for_passed_actions() {
 		mockNestedSteps(client, nestedStepPairs.get(0));
-		String stepName = "verify_passed_actions_nested_step_failure";
+		String stepName = "verify_nested_step_manual_failure_set_overrides_any_other_status_for_passed_actions";
 		String returnValue = "return value";
 		String logMessage = "Test message";
 		AssertionFailedError result = Assertions.assertThrows(AssertionFailedError.class, () -> sr.step(stepName, () -> {
@@ -420,5 +418,33 @@ public class ManualNestedStepTest {
 		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest());
 		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest());
 		launch.finish(standardLaunchFinishRequest());
+	}
+
+	@Test
+	public void verify_manually_set_nested_step_status_marks_parent_test_as_failed() {
+		mockNestedSteps(client, nestedStepPairs.get(0));
+		String stepName = "verify_manually_set_nested_step_status_marks_parent_test_as_failed";
+		String returnValue = "return value";
+		String result = sr.step(stepName, () -> {
+			sr.setStepStatus(ItemStatus.FAILED);
+			return returnValue;
+		});
+		assertThat(result, equalTo(returnValue));
+
+		verify(client, timeout(1000)).startTestItem(eq(testMethodUuid), any());
+		ArgumentCaptor<FinishTestItemRQ> finishStepCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(client, timeout(1000)).finishTestItem(eq(nestedSteps.get(0)), finishStepCaptor.capture());
+
+		assertThat(finishStepCaptor.getValue().getStatus(), equalTo(ItemStatus.FAILED.name()));
+		assertThat("StepReporter should save parent failures", sr.isFailed(testClassUuidMaybe), equalTo(Boolean.TRUE));
+		assertThat("StepReporter should save parent failures", sr.isFailed(testMethodUuidMaybe), equalTo(Boolean.TRUE));
+
+		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest());
+		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest());
+		launch.finish(standardLaunchFinishRequest());
+		ArgumentCaptor<FinishTestItemRQ> finishTestCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(client, timeout(1000)).finishTestItem(eq(testClassUuid), finishTestCaptor.capture());
+
+		assertThat(finishTestCaptor.getValue().getStatus(), equalTo(ItemStatus.FAILED.name()));
 	}
 }
