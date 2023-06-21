@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Slf4j version updated on version 2.0.4 to support newer versions of Logback with security fixes, by @HardNorth
 
 ## [5.1.20]
 ### Changed
