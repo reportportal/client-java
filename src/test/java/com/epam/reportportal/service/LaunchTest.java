@@ -32,13 +32,19 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -520,5 +526,36 @@ public class LaunchTest {
 
 		Maybe<String> getLaunch = launch.getLaunch();
 		assertThat(getLaunch, sameInstance(launchUuid));
+	}
+
+	@Test
+	public void verify_launch_print() throws UnsupportedEncodingException {
+		simulateStartLaunchResponse(rpClient);
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		PrintStream testStream = new PrintStream(baos);
+		ListenerParameters parameters = standardParameters();
+		parameters.setPrintLaunchUuid(true);
+		parameters.setPrintLaunchUuidOutput(testStream);
+
+		Launch launch = new LaunchImpl(
+				rpClient,
+				parameters,
+				standardLaunchRequest(STANDARD_PARAMETERS),
+				executor
+		) {
+			@Override
+			StatisticsService getStatisticsService() {
+				return statisticsService;
+			}
+		};
+
+		String launchUuid = launch.start().blockingGet();
+		Awaitility.await("Wait for Launch UUID output").atMost(Duration.ofSeconds(10)).until(() -> {
+			testStream.flush();
+			return baos.size() > 0;
+		});
+		String result = baos.toString(StandardCharsets.UTF_8.name());
+		assertThat(result, endsWith(launchUuid + System.lineSeparator()));
 	}
 }
