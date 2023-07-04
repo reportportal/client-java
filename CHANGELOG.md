@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.21]
 ### Added
 - `rp.launch.uuid.print` and `rp.launch.uuid.print.output` configuration parameters, by @HardNorth
 ### Changed
