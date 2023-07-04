@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `rp.launch.uuid.print` and `rp.launch.uuid.print.output` configuration parameters, by @HardNorth
 ### Changed
 - Slf4j version updated on version 2.0.4 to support newer versions of Logback with security fixes, by @HardNorth
 
