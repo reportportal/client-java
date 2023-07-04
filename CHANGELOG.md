@@ -1,12 +1,12 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `rp.launch.uuid.print` and `rp.launch.uuid.print.output` configuration parameters, by @HardNorth
+### Changed
+- Slf4j version updated on version 2.0.4 to support newer versions of Logback with security fixes, by @HardNorth
 
 ## [5.1.20]
-### Fixed
-- `StepReporter.setStepStatus` method now fail all step's parents for `ItemStatus#FAILED`, by @HardNorth
-
-## [5.1.19]
 ### Changed
 - AspectJ version updated on 1.9.19 to support newer versions of Java and bug fixes, by @HardNorth
 - Some classes were refactored to less use Guava library and more core Java, by @HardNorth

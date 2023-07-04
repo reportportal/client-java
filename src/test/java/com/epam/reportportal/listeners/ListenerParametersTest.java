@@ -19,8 +19,12 @@ import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.PrintStream;
 import java.time.Duration;
+import java.util.Arrays;
 
 import static com.epam.ta.reportportal.ws.model.launch.Mode.DEBUG;
 import static com.epam.ta.reportportal.ws.model.launch.Mode.DEFAULT;
@@ -205,5 +209,23 @@ public class ListenerParametersTest {
 		assertEquals(expected, listenerParameters.getHttpConnectTimeout());
 		assertEquals(expected, listenerParameters.getHttpReadTimeout());
 		assertEquals(expected, listenerParameters.getHttpWriteTimeout());
+	}
+
+	public static Iterable<Object[]> launchPrintTests() {
+		return Arrays.asList(
+				new Object[]{"launch-print-false.properties", false, System.out},
+				new Object[]{"launch-print-true.properties", true, System.out},
+				new Object[]{"launch-print-true-stderr.properties", true, System.err}
+		);
+	}
+
+	@ParameterizedTest
+	@MethodSource("launchPrintTests")
+	public void verify_launch_uuid_print(String propertyFile, boolean expectedEnabled, PrintStream expectedPrintStream) {
+		PropertiesLoader properties = PropertiesLoader.load("property-test/" + propertyFile);
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		assertThat(listenerParameters.isPrintLaunchUuid(), equalTo(expectedEnabled));
+		assertThat(listenerParameters.getPrintLaunchUuidOutput(), sameInstance(expectedPrintStream));
 	}
 }

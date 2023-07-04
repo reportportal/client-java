@@ -45,8 +45,7 @@ import java.util.stream.Collectors;
 
 import static com.epam.reportportal.service.logs.LaunchLoggingCallback.*;
 import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
-import static com.epam.reportportal.utils.SubscriptionUtils.logCompletableResults;
-import static com.epam.reportportal.utils.SubscriptionUtils.logMaybeResults;
+import static com.epam.reportportal.utils.SubscriptionUtils.*;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
@@ -245,6 +244,10 @@ public class LaunchImpl extends Launch {
 	@Nonnull
 	public Maybe<String> start() {
 		launch.subscribe(logMaybeResults("Launch start"));
+		ListenerParameters params = getParameters();
+		if(params.isPrintLaunchUuid()) {
+			launch.subscribe(printLaunch(params));
+		}
 		LaunchLoggingContext.init(this.launch, getClient(), getScheduler(), getParameters());
 		getStatisticsService().sendEvent(launch, startRq);
 		return launch;

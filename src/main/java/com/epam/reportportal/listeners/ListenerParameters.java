@@ -19,6 +19,7 @@ import com.epam.reportportal.service.LoggingContext;
 import com.epam.reportportal.service.launch.lock.LaunchIdLockMode;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.properties.ListenerProperty;
+import com.epam.reportportal.utils.properties.OutputTypes;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.Mode;
@@ -28,13 +29,11 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.PrintStream;
 import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.*;
@@ -77,6 +76,9 @@ public class ListenerParameters implements Cloneable {
 
 	// Due to shortcoming of payload calculation mechanism this value is set to 65 million of bytes rather than 65 megabytes
 	public static final long DEFAULT_BATCH_PAYLOAD_LIMIT = 65 * 1000 * 1000;
+
+	public static final boolean DEFAULT_LAUNCH_UUID_PRINT = false;
+	public static final String DEFAULT_LAUNCH_UUID_OUTPUT = "stdout";
 
 	private String description;
 	private String apiKey;
@@ -122,6 +124,9 @@ public class ListenerParameters implements Cloneable {
 	private int truncateItemNamesLimit;
 	private String truncateReplacement;
 	private int attributeLengthLimit;
+
+	private boolean printLaunchUuid;
+	private PrintStream printLaunchUuidOutput;
 
 	@Nonnull
 	private static ChronoUnit toChronoUnit(@Nonnull TimeUnit t) {
@@ -190,6 +195,10 @@ public class ListenerParameters implements Cloneable {
 		this.truncateItemNamesLimit = DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT;
 		this.truncateReplacement = DEFAULT_TRUNCATE_REPLACEMENT;
 		this.attributeLengthLimit = DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT;
+
+		this.printLaunchUuid = DEFAULT_LAUNCH_UUID_PRINT;
+		this.printLaunchUuidOutput =
+				OutputTypes.valueOf(DEFAULT_LAUNCH_UUID_OUTPUT.toUpperCase(Locale.ROOT)).getOutput();
 	}
 
 	/**
@@ -333,6 +342,14 @@ public class ListenerParameters implements Cloneable {
 				TRUNCATE_ATTRIBUTE_LIMIT,
 				DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT
 		);
+
+		this.printLaunchUuid = properties.getPropertyAsBoolean(LAUNCH_UUID_PRINT, DEFAULT_LAUNCH_UUID_PRINT);
+		this.printLaunchUuidOutput =
+				OutputTypes.valueOf(
+						properties
+								.getProperty(LAUNCH_UUID_PRINT_OUTPUT, DEFAULT_LAUNCH_UUID_OUTPUT)
+								.toUpperCase(Locale.ROOT)
+				).getOutput();
 	}
 
 	public String getDescription() {
@@ -406,6 +423,23 @@ public class ListenerParameters implements Cloneable {
 
 	public void setLaunchUuid(@Nullable String launchUuid) {
 		this.launchUuid = launchUuid;
+	}
+
+	public boolean isPrintLaunchUuid() {
+		return printLaunchUuid;
+	}
+
+	public void setPrintLaunchUuid(boolean printLaunchUuid) {
+		this.printLaunchUuid = printLaunchUuid;
+	}
+
+	@Nonnull
+	public PrintStream getPrintLaunchUuidOutput() {
+		return printLaunchUuidOutput;
+	}
+
+	public void setPrintLaunchUuidOutput(@Nonnull PrintStream printLaunchUuidOutput) {
+		this.printLaunchUuidOutput = printLaunchUuidOutput;
 	}
 
 	public Mode getLaunchRunningMode() {
@@ -751,6 +785,8 @@ public class ListenerParameters implements Cloneable {
 		sb.append(", projectName='").append(projectName).append('\'');
 		sb.append(", launchName='").append(launchName).append('\'');
 		sb.append(", launchUuid='").append(launchUuid).append('\'');
+		sb.append(", printLaunchUuid='").append(printLaunchUuid).append('\'');
+		sb.append(", printLaunchUuidOutput='").append(printLaunchUuidOutput).append('\'');
 		sb.append(", launchRunningMode=").append(launchRunningMode);
 		sb.append(", attributes=").append(attributes);
 		sb.append(", enable=").append(enable);

@@ -55,9 +55,17 @@ public enum ListenerProperty {
     PROJECT_NAME("rp.project", true),
     LAUNCH_NAME("rp.launch", true),
     /**
-     * Do not create new launch and use predefined Launch UUID
+     * Do not create new launch and use predefined Launch UUID.
      */
     LAUNCH_UUID("rp.launch.uuid", false),
+    /**
+     * Print Launch UUID after start in a format: `Report Portal Launch UUID: {UUID}`.
+     */
+    LAUNCH_UUID_PRINT("rp.launch.uuid.print", false),
+    /**
+     * Launch UUID printing stream. Possible values: 'stdout', 'stderr'.
+     */
+    LAUNCH_UUID_PRINT_OUTPUT("rp.launch.uuid.print.output", false),
     UUID("rp.uuid", false),
     API_KEY("rp.api.key", true),
     BATCH_SIZE_LOGS("rp.batch.size.logs", false),
