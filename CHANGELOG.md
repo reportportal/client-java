@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.22]
 ### Changed
 - Async reporting is now used bby default, by @HardNorth
 
