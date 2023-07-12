@@ -4,7 +4,7 @@
 
 ## [5.1.22]
 ### Changed
-- Async reporting is now used bby default, by @HardNorth
+- Async reporting is now used by default, by @HardNorth
 
 ## [5.1.21]
 ### Added
