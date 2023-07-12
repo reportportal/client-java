@@ -54,7 +54,7 @@ public class ListenerParameters implements Cloneable {
 	private static final boolean DEFAULT_SKIP_ISSUE = true;
 	private static final boolean DEFAULT_CONVERT_IMAGE = false;
 	private static final boolean DEFAULT_RETURN = false;
-	private static final boolean DEFAULT_ASYNC_REPORTING = false;
+	private static final boolean DEFAULT_ASYNC_REPORTING = true;
 	private static final boolean DEFAULT_CALLBACK_REPORTING_ENABLED = false;
 	private static final boolean DEFAULT_HTTP_LOGGING = false;
 	private static final int DEFAULT_RX_BUFFER_SIZE = 128;
