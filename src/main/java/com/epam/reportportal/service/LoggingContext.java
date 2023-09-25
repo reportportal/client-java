@@ -101,7 +101,7 @@ public class LoggingContext {
 	 * @param itemUuid          a Test Item UUID
 	 * @param client            Client of ReportPortal
 	 * @param scheduler         a {@link Scheduler} to use with this LoggingContext
-	 * @param parameters        Report Portal client configuration parameters
+	 * @param parameters        ReportPortal client configuration parameters
 	 * @param loggingSubscriber RxJava subscriber on logging results
 	 * @return New Logging Context
 	 */
@@ -121,7 +121,7 @@ public class LoggingContext {
 	 * @param itemUuid   a Test Item UUID
 	 * @param client     Client of ReportPortal
 	 * @param scheduler  a {@link Scheduler} to use with this LoggingContext
-	 * @param parameters Report Portal client configuration parameters
+	 * @param parameters ReportPortal client configuration parameters
 	 * @return New Logging Context
 	 */
 	@Nonnull

@@ -45,7 +45,7 @@ public class ReportPortalException extends GeneralReportPortalException {
 	@Override
 	public String getMessage() {
 		final StringBuilder builder = new StringBuilder();
-		builder.append("Report Portal returned error\n")
+		builder.append("ReportPortal returned error\n")
 				.append("Status code: ")
 				.append(statusCode)
 				.append("\n")

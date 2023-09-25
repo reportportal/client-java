@@ -36,7 +36,7 @@ import static com.epam.reportportal.utils.properties.ListenerProperty.values;
 import static java.util.Optional.ofNullable;
 
 /**
- * Load report portal launch start properties
+ * Load ReportPortal launch start properties
  */
 public class PropertiesLoader {
 	private static final Logger LOGGER = LoggerFactory.getLogger(PropertiesLoader.class);
@@ -78,16 +78,16 @@ public class PropertiesLoader {
 			try {
 				return loadProperties(resource);
 			} catch (IOException e) {
-				LOGGER.warn("Unable to load Report Portal property file: " + e.getMessage(), e);
+				LOGGER.warn("Unable to load ReportPortal property file: " + e.getMessage(), e);
 				return new Properties();
 			}
 		});
 	}
 
 	/**
-	 * Get path to Report Portal configuration file according to Environment Variables and System Properties.
+	 * Get path to ReportPortal configuration file according to Environment Variables and System Properties.
 	 *
-	 * @return path to Report Portal configuration file
+	 * @return path to ReportPortal configuration file
 	 */
 	public static String getPropertyFilePath() {
 		return ofNullable(normalizeOverrides(System.getProperties()).get(PROPERTIES_PATH_PROPERTY)).filter(StringUtils::isNotBlank)

@@ -86,7 +86,7 @@ public class SubscriptionUtils {
 
 			@Override
 			public void onSuccess(@Nonnull String result) {
-				parameters.getPrintLaunchUuidOutput().println("Report Portal Launch UUID: " + result);
+				parameters.getPrintLaunchUuidOutput().println("ReportPortal Launch UUID: " + result);
 			}
 
 			@Override

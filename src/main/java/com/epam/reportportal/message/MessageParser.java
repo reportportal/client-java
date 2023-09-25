@@ -18,7 +18,7 @@ package com.epam.reportportal.message;
 import java.io.IOException;
 
 /**
- * Parses formatted message for report portal
+ * Parses formatted message for ReportPortal
  *
  * @author Andrei Varabyeu
  */

@@ -91,7 +91,7 @@ public class LaunchLoggingContext {
 	 * @param launchUuid        a UUID of a Launch
 	 * @param client            Client of ReportPortal
 	 * @param scheduler         a {@link Scheduler} to use with this LoggingContext
-	 * @param parameters        Report Portal client configuration parameters
+	 * @param parameters        ReportPortal client configuration parameters
 	 * @param loggingSubscriber RxJava subscriber on logging results
 	 * @return New Logging Context
 	 */
@@ -109,7 +109,7 @@ public class LaunchLoggingContext {
 	 * @param launchUuid a UUID of a Launch
 	 * @param client     Client of ReportPortal
 	 * @param scheduler  a {@link Scheduler} to use with this LoggingContext
-	 * @param parameters Report Portal client configuration parameters
+	 * @param parameters ReportPortal client configuration parameters
 	 * @return New Logging Context
 	 */
 	public static LaunchLoggingContext init(@Nonnull final Maybe<String> launchUuid, @Nonnull final ReportPortalClient client,

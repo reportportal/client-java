@@ -40,7 +40,7 @@ import static com.epam.reportportal.utils.properties.ListenerProperty.*;
 import static java.util.Optional.ofNullable;
 
 /**
- * Report portal client parameters. The class is a placeholder for client and agent parameters.
+ * ReportPortal client parameters. The class is a placeholder for client and agent parameters.
  */
 public class ListenerParameters implements Cloneable {
 

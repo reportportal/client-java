@@ -35,7 +35,7 @@ import java.util.Set;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Launch object represents a lifecycle of a Launch on Report Portal. It is used to manipulate its state: starting,
+ * Launch object represents a lifecycle of a Launch on ReportPortal. It is used to manipulate its state: starting,
  * finishing, adding test results.
  */
 public abstract class Launch {
@@ -141,7 +141,7 @@ public abstract class Launch {
 	}
 
 	/**
-	 * Returns Report Portal client for the launch.
+	 * Returns ReportPortal client for the launch.
 	 *
 	 * @return a {@link ReportPortalClient} instance
 	 */

@@ -1,10 +1,12 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Unified ReportPortal product naming, by @HardNorth
 
 ## [5.1.22]
 ### Changed
-- Async reporting is now used bby default, by @HardNorth
+- Async reporting is now used by default, by @HardNorth
 
 ## [5.1.21]
 ### Added
@@ -141,7 +143,7 @@
 ## [5.1.0-RC-7]
 ### Added
 - Error message on incompatible OkHttp dependency version
-- It's now possible to obtain Report Portal client by `Launch.currentLaunch().getClient()`
+- It's now possible to obtain ReportPortal client by `Launch.currentLaunch().getClient()`
 
 ## [5.1.0-RC-6]
 

@@ -39,8 +39,8 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * An implementation of a {@link Launch} object which didn't manage to obtain main lock with {@link LaunchIdLock}
- * object. Therefore, it does not create an actual launch Report Portal, but using provided Launch UUID. It also does
- * not actually finish the launch on Report Portal, but just waits for graceful items upload.
+ * object. Therefore, it does not create an actual launch ReportPortal, but using provided Launch UUID. It also does
+ * not actually finish the launch on ReportPortal, but just waits for graceful items upload.
  */
 public class SecondaryLaunch extends AbstractJoinedLaunch {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SecondaryLaunch.class);
