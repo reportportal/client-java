@@ -23,7 +23,7 @@ import java.io.IOException;
 import static com.epam.reportportal.utils.files.Utils.getFile;
 
 /**
- * Report portal message wrapper. This wrapper should be used if any file <br>
+ * ReportPortal message wrapper. This wrapper should be used if any file <br>
  * should be attached to log message. This wrapper should be used<br>
  * only with log4j log framework.
  */

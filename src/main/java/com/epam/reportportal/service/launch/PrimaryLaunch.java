@@ -35,7 +35,7 @@ import static java.util.Optional.ofNullable;
 
 /**
  * An implementation of a {@link Launch} object which managed to obtain main lock with {@link LaunchIdLock} object.
- * Therefore, it is responsible for an actual launch creation on Report Portal and contains logic to wait secondary
+ * Therefore, it is responsible for an actual launch creation on ReportPortal and contains logic to wait secondary
  * launches.
  */
 public class PrimaryLaunch extends AbstractJoinedLaunch {

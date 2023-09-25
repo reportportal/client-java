@@ -78,7 +78,7 @@ public class StatisticsClient implements Statistics {
 	 *
 	 * @param measurementId ID of the statistics resource
 	 * @param apiSecret     API Secret Key
-	 * @param parameters    {@link ListenerParameters} Report Portal parameters
+	 * @param parameters    {@link ListenerParameters} ReportPortal parameters
 	 */
 	public StatisticsClient(String measurementId, String apiSecret, ListenerParameters parameters) {
 		this.measurementId = measurementId;

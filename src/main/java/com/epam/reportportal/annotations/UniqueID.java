@@ -21,14 +21,14 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Report Portal uses uniqueID for identifying test item's originality.
- * Report portal generates ID automatically by default.
+ * ReportPortal uses uniqueID for identifying test item's originality.
+ * ReportPortal generates ID automatically by default.
  * Using the annotation you can provide custom ID for test item.
  * Note that custom ID can affect functionality based on
  * test item uniqueness.
  *
  * @author Pavel Bortnik
- * @since Report Portal Api v3.1.0
+ * @since ReportPortal Api v3.1.0
  * @deprecated use {@link TestCaseId} instead
  */
 @Retention(RetentionPolicy.RUNTIME)

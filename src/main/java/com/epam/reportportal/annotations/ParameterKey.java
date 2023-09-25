@@ -21,12 +21,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Used in parametrized tests. Report portal waiting test parameters
+ * Used in parametrized tests. ReportPortal waiting test parameters
  * in <b>key - value</b> style. Using the annotation for method parameter
  * the specific <b>key</b> can be provided.
  *
  * @author Pavel Bortnik
- * @since Report Portal Api v3.1.0
+ * @since ReportPortal Api v3.1.0
  */
 
 @Retention(RetentionPolicy.RUNTIME)

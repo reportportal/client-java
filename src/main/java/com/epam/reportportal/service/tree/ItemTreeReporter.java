@@ -33,7 +33,7 @@ import java.util.Date;
 import static com.epam.reportportal.utils.files.Utils.getFile;
 
 /**
- * This class provides methods for sending requests to the Report Portal instance, using {@link ReportPortalClient}
+ * This class provides methods for sending requests to the ReportPortal instance, using {@link ReportPortalClient}
  * and {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}.
  * Provided requests:
  * - start test item

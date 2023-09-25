@@ -181,7 +181,7 @@ public class ReportPortal {
 	/**
 	 * Creates new ReportPortal based on already built dependencies
 	 *
-	 * @param client Report Portal Client
+	 * @param client ReportPortal Client
 	 * @param params {@link ListenerParameters}
 	 * @return builder for {@link ReportPortal}
 	 */
@@ -193,7 +193,7 @@ public class ReportPortal {
 	/**
 	 * Creates new ReportPortal based on already built dependencies
 	 *
-	 * @param client   Report Portal Client
+	 * @param client   ReportPortal Client
 	 * @param params   {@link ListenerParameters}
 	 * @param executor An executor service which will be used for internal request / response queue
 	 * @return builder for {@link ReportPortal}
@@ -383,7 +383,7 @@ public class ReportPortal {
 	}
 
 	/**
-	 * Formats and reports a {@link Throwable} to Report Portal
+	 * Formats and reports a {@link Throwable} to ReportPortal
 	 *
 	 * @param cause a {@link Throwable}
 	 */
@@ -443,9 +443,9 @@ public class ReportPortal {
 
 		/**
 		 * @param clientType a class to instantiate
-		 * @param params     {@link ListenerParameters} Report Portal parameters
-		 * @param <T>        Report Portal Client interface class
-		 * @return a Report Portal Client instance
+		 * @param params     {@link ListenerParameters} ReportPortal parameters
+		 * @param <T>        ReportPortal Client interface class
+		 * @return a ReportPortal Client instance
 		 */
 		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType,
 		                                                    @Nonnull final ListenerParameters params) {
@@ -454,10 +454,10 @@ public class ReportPortal {
 
 		/**
 		 * @param clientType a class to instantiate
-		 * @param params     {@link ListenerParameters} Report Portal parameters
-		 * @param <T>        Report Portal Client interface class
+		 * @param params     {@link ListenerParameters} ReportPortal parameters
+		 * @param <T>        ReportPortal Client interface class
 		 * @param executor   {@link ExecutorService} an Executor which will be used for internal request / response queue processing
-		 * @return a Report Portal Client instance
+		 * @return a ReportPortal Client instance
 		 */
 		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType,
 		                                                    @Nonnull final ListenerParameters params, @Nonnull final ExecutorService executor) {
@@ -468,7 +468,7 @@ public class ReportPortal {
 		}
 
 		/**
-		 * @param parameters {@link ListenerParameters} Report Portal parameters
+		 * @param parameters {@link ListenerParameters} ReportPortal parameters
 		 * @param client     {@link OkHttpClient} an HTTP client instance
 		 * @return a ReportPortal endpoint description class
 		 */
@@ -478,7 +478,7 @@ public class ReportPortal {
 		}
 
 		/**
-		 * @param parameters {@link ListenerParameters} Report Portal parameters
+		 * @param parameters {@link ListenerParameters} ReportPortal parameters
 		 * @param client     {@link OkHttpClient} an HTTP client instance
 		 * @param executor   {@link ExecutorService} an Executor which will be used for internal request / response queue processing
 		 * @return a ReportPortal endpoint description class
@@ -494,7 +494,7 @@ public class ReportPortal {
 			} catch (NoSuchMethodError e) {
 				throw new InternalReportPortalClientException(
 						"Unable to initialize OkHttp client. "
-						+ "Report Portal client supports OkHttp version 3.11.0 as minimum.\n"
+						+ "ReportPortal client supports OkHttp version 3.11.0 as minimum.\n"
 						+ "Please update OkHttp dependency.\n"
 						+ "Besides this usually happens due to old selenium-java version (it overrides our dependency), "
 						+ "please use selenium-java 3.141.0 as minimum.",
@@ -510,7 +510,7 @@ public class ReportPortal {
 		protected OkHttpClient defaultClient(@Nonnull ListenerParameters parameters) {
 			String baseUrlStr = parameters.getBaseUrl();
 			if (baseUrlStr == null) {
-				LOGGER.warn("Base url for Report Portal server is not set!");
+				LOGGER.warn("Base url for ReportPortal server is not set!");
 				return null;
 			}
 
@@ -518,7 +518,7 @@ public class ReportPortal {
 			try {
 				baseUrl = new URL(baseUrlStr);
 			} catch (MalformedURLException e) {
-				LOGGER.warn("Unable to parse Report Portal URL", e);
+				LOGGER.warn("Unable to parse ReportPortal URL", e);
 				return null;
 			}
 
@@ -587,7 +587,7 @@ public class ReportPortal {
 		}
 
 		/**
-		 * @param parameters Report Portal parameters
+		 * @param parameters ReportPortal parameters
 		 * @return Launch lock instance
 		 * @deprecated use {@link #buildLaunchLock(ListenerParameters)}
 		 */

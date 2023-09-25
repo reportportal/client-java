@@ -50,7 +50,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
 /**
- * A basic Launch object implementation which does straight requests to Report Portal.
+ * A basic Launch object implementation which does straight requests to ReportPortal.
  */
 public class LaunchImpl extends Launch {
 

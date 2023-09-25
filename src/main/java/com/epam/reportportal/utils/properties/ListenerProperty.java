@@ -22,7 +22,7 @@ public enum ListenerProperty {
 
 	//@formatter:off
     /**
-     * Report Portal instance URL
+     * ReportPortal instance URL
      */
     BASE_URL("rp.endpoint", true),
     /**
@@ -59,7 +59,7 @@ public enum ListenerProperty {
      */
     LAUNCH_UUID("rp.launch.uuid", false),
     /**
-     * Print Launch UUID after start in a format: `Report Portal Launch UUID: {UUID}`.
+     * Print Launch UUID after start in a format: `ReportPortal Launch UUID: {UUID}`.
      */
     LAUNCH_UUID_PRINT("rp.launch.uuid.print", false),
     /**
@@ -86,9 +86,9 @@ public enum ListenerProperty {
     IO_POOL_SIZE("rp.io.pool.size", false),
 
     /**
-     * Run report portal client in multiple client mode. In such mode RC client will share one launch ID between all clients on the machine.
-     * Such build systems as Gradle forks JVMs during parallel run, that leads to multiple launches on dashboard,
-     * so using that property should allow to merge them all in one.
+     * Run ReportPortal client in multiple client mode. In such mode RC client will share one launch ID between all
+     * clients on the machine. Such build systems as Gradle forks JVMs during parallel run, that leads to multiple
+     * launches on dashboard, so using that property should allow to merge them all in one.
      */
     CLIENT_JOIN_MODE("rp.client.join", false),
     CLIENT_JOIN_MODE_VALUE("rp.client.join.mode", false),
