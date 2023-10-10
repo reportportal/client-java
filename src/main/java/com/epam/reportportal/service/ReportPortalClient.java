@@ -17,10 +17,7 @@ package com.epam.reportportal.service;
 
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
-import com.epam.ta.reportportal.ws.model.launch.LaunchResource;
-import com.epam.ta.reportportal.ws.model.launch.MergeLaunchesRQ;
-import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
-import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
+import com.epam.ta.reportportal.ws.model.launch.*;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import okhttp3.MultipartBody;
@@ -35,6 +32,9 @@ public interface ReportPortalClient {
 
 	@POST("v1/{projectName}/launch/merge")
 	Maybe<LaunchResource> mergeLaunches(@Body MergeLaunchesRQ rq);
+
+	@PUT("v1/{projectName}/launch/{launchId}/update")
+	Maybe<LaunchResource> updateLaunch(@Path("launchId") String launchId, @Body UpdateLaunchRQ rq);
 
 	@PUT("v1/{projectName}/launch/{launchId}/finish")
 	Maybe<OperationCompletionRS> finishLaunch(@Path("launchId") String launch, @Body FinishExecutionRQ rq);
