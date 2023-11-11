@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- `SecondaryLaunchFinishCondition` class was separated to resolve fat jar issues, by @HardNorth
 
 ## [5.1.23]
 ### Changed
