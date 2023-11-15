@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.24]
 ### Added
 - `ReportPortalClient.updateLaunch` method, by @matt-richardson
 ### Changed
