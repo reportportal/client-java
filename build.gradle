@@ -52,7 +52,9 @@ dependencies {
     implementation ("com.squareup.retrofit2:converter-jackson:${project.retrofit_version}") {
         exclude module: 'jackson-databind'
     }
-    implementation "com.squareup.retrofit2:adapter-rxjava2:${project.retrofit_version}"
+    implementation ("com.squareup.retrofit2:adapter-rxjava2:${project.retrofit_version}") {
+        exclude module: 'rxjava'
+    }
     implementation 'com.squareup.okhttp3:logging-interceptor:3.14.9'
 
     api "org.aspectj:aspectjrt:${project.aspectj_version}"

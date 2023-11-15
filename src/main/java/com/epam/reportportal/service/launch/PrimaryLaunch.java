@@ -25,13 +25,11 @@ import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
-import static java.util.Optional.ofNullable;
 
 /**
  * An implementation of a {@link Launch} object which managed to obtain main lock with {@link LaunchIdLock} object.
@@ -44,37 +42,19 @@ public class PrimaryLaunch extends AbstractJoinedLaunch {
 		super(rpClient, parameters, launch, executorService, launchIdLock, instanceUuid);
 	}
 
+	/**
+	 * Wait for all secondary launches finish and then close the Primary Launch. If there was running secondary launch
+	 * number change then the timeout will reset.
+	 *
+	 * @param request Finish Launch Request to use (end time will be updated after wait).
+	 */
 	@Override
 	public void finish(final FinishExecutionRQ request) {
 		stopRunning();
-
-		// Secondary launch wait finish condition
-		Callable<Boolean> finishCondition = new Callable<Boolean>() {
-			private volatile Collection<String> launches;
-
-			@Override
-			public Boolean call() {
-				// Get current live secondary launches, locks `.sync` file
-				Collection<String> current = lock.getLiveInstanceUuids();
-
-				// If there is no live launches, or the only live launch is the primary launch we are done
-				if (current.isEmpty() || (current.size() == 1 && uuid.equals(current.iterator().next()))) {
-					return true;
-				}
-
-				// Determine whether there were any updates in secondary launches: new launches started or old one finished
-				Boolean changed = ofNullable(launches).map(l -> !l.equals(current)).orElse(Boolean.TRUE);
-				launches = current;
-				if (changed) {
-					// If there were changes in secondary launches than the execution is live, and we are going wait more
-					return false;
-				}
-				// No changes from last time
-				return null;
-			}
-		};
-
+		Callable<Boolean> finishCondition = new SecondaryLaunchFinishCondition(lock, uuid);
 		Boolean finished = Boolean.FALSE;
+		// If there was launch number change (finished == false) we will wait more.
+		// Only if
 		while (finished != Boolean.TRUE && finished != null) {
 			Waiter waiter = new Waiter("Wait for all launches end").duration(
 					getParameters().getClientJoinTimeout(),
