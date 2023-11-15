@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `ReportPortalClient.updateLaunch` method, by @matt-richardson
 ### Changed
 - `SecondaryLaunchFinishCondition` class was separated to resolve fat jar issues, by @HardNorth
 - `rxjava` was forcibly excluded from `retrofit2:adapter-rxjava2` transitive dependencies to resolve fat jar issues, by @HardNorth
