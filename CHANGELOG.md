@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Changed
 - `SecondaryLaunchFinishCondition` class was separated to resolve fat jar issues, by @HardNorth
+- `rxjava` was forcibly excluded from `retrofit2:adapter-rxjava2` transitive dependencies to resolve fat jar issues, by @HardNorth
 
 ## [5.1.23]
 ### Changed
