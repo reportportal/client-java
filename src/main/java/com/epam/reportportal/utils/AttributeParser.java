@@ -19,16 +19,22 @@ import com.epam.reportportal.annotations.attribute.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * This class contains functionality for parsing tags from string.
+ * This class contains functionality for parsing tags and attributes from string.
  */
 public class AttributeParser {
 
 	public static final String ATTRIBUTES_SPLITTER = ";";
 	public static final String KEY_VALUE_SPLITTER = ":";
+
+	private AttributeParser() {
+		throw new IllegalStateException("Static only class");
+	}
 
 	/**
 	 * Parse attribute string.<br>
@@ -42,7 +48,8 @@ public class AttributeParser {
 	 * @param rawAttributes Attributes string
 	 * @return {@link Set} of {@link ItemAttributesRQ}
 	 */
-	public static Set<ItemAttributesRQ> parseAsSet(String rawAttributes) {
+	@Nonnull
+	public static Set<ItemAttributesRQ> parseAsSet(@Nullable String rawAttributes) {
 		if (null == rawAttributes) {
 			return Collections.emptySet();
 		}
@@ -58,7 +65,15 @@ public class AttributeParser {
 		return attributes;
 	}
 
-	public static ItemAttributesRQ splitKeyValue(String attribute) {
+	/**
+	 * Parse a string representation of an attribute to ReportPortal attribute object instance.
+	 * E.G.: 'key:value', '   :value', 'tag'
+	 *
+	 * @param attribute string representation of an attribute
+	 * @return ReportPortal attribute object instance
+	 */
+	@Nullable
+	public static ItemAttributesRQ splitKeyValue(@Nullable String attribute) {
 		if (null == attribute || attribute.trim().isEmpty()) {
 			return null;
 		}
@@ -75,7 +90,14 @@ public class AttributeParser {
 		return null;
 	}
 
-	public static Set<ItemAttributesRQ> retrieveAttributes(Attributes attributesAnnotation) {
+	/**
+	 * Parse ReportPortal attributes from {@link Attributes} annotation instance.
+	 *
+	 * @param attributesAnnotation annotation instance
+	 * @return a set of ReportPortal attributes
+	 */
+	@Nonnull
+	public static Set<ItemAttributesRQ> retrieveAttributes(@Nonnull Attributes attributesAnnotation) {
 		Set<ItemAttributesRQ> itemAttributes = new LinkedHashSet<>();
 		for (Attribute attribute : attributesAnnotation.attributes()) {
 			if (!attribute.value().trim().isEmpty()) {
@@ -97,7 +119,15 @@ public class AttributeParser {
 		return itemAttributes;
 	}
 
-	private static List<ItemAttributesRQ> createItemAttributes(String[] keys, String value) {
+	/**
+	 * Create list of attributes from key array and a value.
+	 *
+	 * @param keys  attribute keys
+	 * @param value attribute value
+	 * @return list of ReportPortal attributes
+	 */
+	@Nonnull
+	public static List<ItemAttributesRQ> createItemAttributes(@Nullable String[] keys, @Nullable String value) {
 		if (value == null || value.trim().isEmpty()) {
 			return Collections.emptyList();
 		}
@@ -108,18 +138,33 @@ public class AttributeParser {
 		return Arrays.stream(keys).map(k -> createItemAttribute(k, value)).collect(Collectors.toList());
 	}
 
-	private static List<ItemAttributesRQ> createItemAttributes(String key, String[] values) {
+	/**
+	 * Create list of attributes from a key and value array.
+	 *
+	 * @param key    attribute key
+	 * @param values attribute values
+	 * @return list of ReportPortal attributes
+	 */
+	@Nonnull
+	public static List<ItemAttributesRQ> createItemAttributes(@Nullable String key, @Nullable String[] values) {
 		if (values != null && values.length > 0) {
 			return Arrays.stream(values)
 					.filter(StringUtils::isNotBlank)
 					.map(v -> createItemAttribute(key, v))
 					.collect(Collectors.toList());
 		}
-
 		return Collections.emptyList();
 	}
 
-	private static ItemAttributesRQ createItemAttribute(String key, String value) {
+	/**
+	 * Create an ItemAttributesRQ instance with key and value.
+	 *
+	 * @param key   attribute key
+	 * @param value attribute value
+	 * @return ReportPortal attribute
+	 */
+	@Nonnull
+	public static ItemAttributesRQ createItemAttribute(@Nullable String key, @Nonnull String value) {
 		return new ItemAttributesRQ(key, value);
 	}
 }
