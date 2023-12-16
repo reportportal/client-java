@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.25]
 ### Changed
 - Static methods of `AttributeParser` are now public, Javadoc and JSR annotations added, by @HardNorth
 
