@@ -39,11 +39,13 @@ import static org.hamcrest.Matchers.*;
 public class ParameterUtilsTest {
 
 	public static class ParameterUtilsTestObject {
+		@SuppressWarnings("unused")
 		public ParameterUtilsTestObject(String string, TestCaseIdEntry id, int number) {
 		}
 	}
 
 	public static class ParameterUtilsTestObjectKey {
+		@SuppressWarnings("unused")
 		public ParameterUtilsTestObjectKey(String string, TestCaseIdEntry id, @ParameterKey("index") int number) {
 		}
 	}
@@ -66,9 +68,11 @@ public class ParameterUtilsTest {
 			.findAny()
 			.orElse(null);
 
+	@SuppressWarnings("unused")
 	public void test(String string, TestCaseIdEntry id, int number) {
 	}
 
+	@SuppressWarnings("unused")
 	public void testKey(String string, @ParameterKey("id") TestCaseIdEntry id, int number) {
 	}
 
