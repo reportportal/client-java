@@ -17,6 +17,7 @@
 package com.epam.reportportal.utils;
 
 import com.epam.reportportal.annotations.ParameterKey;
+import com.epam.reportportal.utils.markdown.MarkdownUtils;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -25,10 +26,7 @@ import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Parameter;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -153,5 +151,19 @@ public class ParameterUtils {
 					.filter(m -> m.getParameterCount() == paramValues.map(List::size).orElse(0))
 					.findAny());
 		}).map(m -> ParameterUtils.getParameters(m, paramValues.orElse(null))).orElse(getParameters(parameters));
+	}
+
+	/**
+	 * Format parameters as Markdown table.
+	 *
+	 * @param parameters list of parameters
+	 * @return text representation of parameter table
+	 */
+	@Nonnull
+	public static String formatParametersAsTable(@Nonnull List<ParameterResource> parameters) {
+		List<List<String>> tableList = new ArrayList<>();
+		tableList.add(parameters.stream().map(ParameterResource::getKey).collect(Collectors.toList()));
+		tableList.add(parameters.stream().map(ParameterResource::getValue).collect(Collectors.toList()));
+		return MarkdownUtils.formatDataTable(tableList);
 	}
 }
