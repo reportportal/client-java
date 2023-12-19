@@ -18,6 +18,7 @@ package com.epam.reportportal.utils;
 
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
+import com.epam.reportportal.utils.markdown.MarkdownUtilsTest;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
@@ -38,11 +39,13 @@ import static org.hamcrest.Matchers.*;
 public class ParameterUtilsTest {
 
 	public static class ParameterUtilsTestObject {
+		@SuppressWarnings("unused")
 		public ParameterUtilsTestObject(String string, TestCaseIdEntry id, int number) {
 		}
 	}
 
 	public static class ParameterUtilsTestObjectKey {
+		@SuppressWarnings("unused")
 		public ParameterUtilsTestObjectKey(String string, TestCaseIdEntry id, @ParameterKey("index") int number) {
 		}
 	}
@@ -65,9 +68,11 @@ public class ParameterUtilsTest {
 			.findAny()
 			.orElse(null);
 
+	@SuppressWarnings("unused")
 	public void test(String string, TestCaseIdEntry id, int number) {
 	}
 
+	@SuppressWarnings("unused")
 	public void testKey(String string, @ParameterKey("id") TestCaseIdEntry id, int number) {
 	}
 
@@ -234,5 +239,22 @@ public class ParameterUtilsTest {
 			assertThat(p.getKey(), equalTo(PARAM_KEY_VALUES.get(i).getKey()));
 			assertThat(p.getValue(), equalTo(v == null ? "NULL" : v.toString()));
 		});
+	}
+
+	@Test
+	public void test_parameters_format() {
+		ParameterResource varA = new ParameterResource();
+		ParameterResource varB = new ParameterResource();
+		ParameterResource result = new ParameterResource();
+
+		varA.setKey("var_a");
+		varB.setKey("var_b");
+		result.setKey("result");
+		varA.setValue("2");
+		varB.setValue("2");
+		result.setValue("4");
+
+		assertThat(ParameterUtils.formatParametersAsTable(Arrays.asList(varA, varB, result)),
+				equalTo(MarkdownUtilsTest.ONE_ROW_EXPECTED_TABLE));
 	}
 }
