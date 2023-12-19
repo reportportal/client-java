@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.26]
 ### Added
 - `MarkdownUtils.formatDataTable` and `ParameterUtils.formatParametersAsTable` methods to support parameter reporting for BDD frameworks, by @HardNorth
 
