@@ -36,9 +36,7 @@ public class StatisticsIdsRunnable {
 				anyString(),
 				anyString(),
 				any(StatisticsItem.class)
-		)).thenReturn(Maybe.create(e -> e.onSuccess(Response.success(ResponseBody.create(MediaType.get("text/plain"),
-				""
-		)))));
+		)).thenReturn(Maybe.create(e -> e.onSuccess(Response.success(ResponseBody.create("", MediaType.get("text/plain"))))));
 
 		try (StatisticsClient client = new StatisticsClient("id", "secret", api)) {
 			try (StatisticsService service = new StatisticsService(TestUtils.standardParameters(), client)) {

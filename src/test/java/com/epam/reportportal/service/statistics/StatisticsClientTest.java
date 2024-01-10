@@ -40,7 +40,7 @@ public class StatisticsClientTest {
 	void sendRequestWithoutError() {
 
 		when(httpClient.send(anyString(), anyString(), anyString(), any(StatisticsItem.class))).thenReturn(Maybe.create(
-				e -> e.onSuccess(Response.success(ResponseBody.create(MediaType.get("text/plain"), "")))));
+				e -> e.onSuccess(Response.success(ResponseBody.create("", MediaType.get("text/plain"))))));
 
 		try (StatisticsClient googleAnalytics = new StatisticsClient("id", "secret", httpClient)) {
 			StatisticsItem item = new StatisticsItem("client-id");
@@ -62,8 +62,6 @@ public class StatisticsClientTest {
 			Maybe<Response<ResponseBody>> result = googleAnalytics.send(new StatisticsItem("client-id"));
 
 			verify(httpClient).send(anyString(), anyString(), anyString(), any(StatisticsItem.class));
-
-			//noinspection ResultOfMethodCallIgnored
 			Assertions.assertThrows(RuntimeException.class, result::blockingGet);
 		}
 	}

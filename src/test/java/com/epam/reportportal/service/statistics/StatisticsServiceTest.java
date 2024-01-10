@@ -84,9 +84,7 @@ public class StatisticsServiceTest {
 	private ListenerParameters parameters;
 
 	private void stubSend() {
-		when(statistics.send(any())).thenReturn(Maybe.create(e -> e.onSuccess(Response.success(ResponseBody.create(MediaType.get("text/plain"),
-				""
-		)))));
+		when(statistics.send(any())).thenReturn(Maybe.create(e -> e.onSuccess(Response.success(ResponseBody.create("", MediaType.get("text/plain"))))));
 	}
 
 	@BeforeEach
@@ -168,7 +166,7 @@ public class StatisticsServiceTest {
 	@Test
 	public void verify_service_sends_same_client_id() {
 		when(httpClient.send(anyString(), anyString(), anyString(), any(StatisticsItem.class))).thenReturn(Maybe.create(
-				e -> e.onSuccess(Response.success(ResponseBody.create(MediaType.get("text/plain"), "")))));
+				e -> e.onSuccess(Response.success(ResponseBody.create("", MediaType.get("text/plain"))))));
 		String cid;
 		try (StatisticsClient client = new StatisticsClient("id", "secret", httpClient)) {
 			try (StatisticsService service = new StatisticsService(TestUtils.standardParameters(), client)) {
@@ -182,7 +180,7 @@ public class StatisticsServiceTest {
 		}
 		StatisticsApiClient secondClient = mock(StatisticsApiClient.class);
 		when(secondClient.send(anyString(), anyString(), anyString(), any())).thenReturn(Maybe.create(e -> e.onSuccess(
-				Response.success(ResponseBody.create(MediaType.get("text/plain"), "")))));
+				Response.success(ResponseBody.create("", MediaType.get("text/plain"))))));
 
 		try (StatisticsClient client = new StatisticsClient("id", "secret", secondClient)) {
 			try (StatisticsService service = new StatisticsService(TestUtils.standardParameters(), client)) {
@@ -205,13 +203,13 @@ public class StatisticsServiceTest {
 		assertThat("Exit code should be '0'", process.waitFor(), equalTo(0));
 		String result = Utils.readInputStreamToString(process.getInputStream());
 		process.destroyForcibly();
-		Map<String, String> values = Arrays.stream(result.split(System.getProperty("line.separator")))
+		Map<String, String> values = Arrays.stream(result.split(System.lineSeparator()))
 				.collect(Collectors.toMap(k -> k.substring(0, k.indexOf("=")), v -> v.substring(v.indexOf("=") + 1)));
 
 		Process process2 = ProcessUtils.buildProcess(false, StatisticsIdsRunnable.class);
 		assertThat("Exit code should be '0'", process2.waitFor(), equalTo(0));
 		String result2 = Utils.readInputStreamToString(process2.getInputStream());
-		Map<String, String> values2 = Arrays.stream(result2.split(System.getProperty("line.separator")))
+		Map<String, String> values2 = Arrays.stream(result2.split(System.lineSeparator()))
 				.collect(Collectors.toMap(k -> k.substring(0, k.indexOf("=")), v -> v.substring(v.indexOf("=") + 1)));
 
 		assertThat(values2.get("cid"), equalTo(values.get("cid")));
