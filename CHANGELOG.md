@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.1.27]
 ### Changed
 - Guava version update to address a vulnerability on `33.0.0-android`, by @HardNorth
 - Okhttp version update to address a vulnerability on `4.12.0`, by @HardNorth
