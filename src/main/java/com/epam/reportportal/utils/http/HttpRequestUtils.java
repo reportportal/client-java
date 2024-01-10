@@ -60,12 +60,11 @@ public class HttpRequestUtils {
 	public static List<MultipartBody.Part> buildLogMultiPartRequest(List<SaveLogRQ> rqs) {
 		List<MultipartBody.Part> result = new ArrayList<>();
 		try {
+			String payload = MAPPER.writerFor(new TypeReference<List<SaveLogRQ>>() {
+			}).writeValueAsString(rqs);
 			result.add(MultipartBody.Part.createFormData(Constants.LOG_REQUEST_JSON_PART,
 					null,
-					RequestBody.create(okhttp3.MediaType.get("application/json; charset=utf-8"),
-							MAPPER.writerFor(new TypeReference<List<SaveLogRQ>>() {
-							}).writeValueAsString(rqs)
-					)
+					RequestBody.create(payload, okhttp3.MediaType.get("application/json; charset=utf-8"))
 			));
 		} catch (JsonProcessingException e) {
 			throw new InternalReportPortalClientException("Unable to process JSON", e);
@@ -85,7 +84,7 @@ public class HttpRequestUtils {
 				}
 				result.add(MultipartBody.Part.createFormData(Constants.LOG_REQUEST_BINARY_PART,
 						file.getName(),
-						RequestBody.create(type, file.getContent())
+						RequestBody.create(file.getContent(), type)
 				));
 			}
 		}
