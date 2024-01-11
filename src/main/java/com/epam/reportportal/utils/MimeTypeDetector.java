@@ -39,7 +39,7 @@ public class MimeTypeDetector {
 	private static final String UNKNOWN_TYPE = "application/octet-stream";
 	private static final String EXTENSION_DELIMITER = ".";
 
-	private static final Map<String, String> ADDITIONAL_EXTENSION_MAPPING = new HashMap<String, String>(){{
+	private static final Map<String, String> ADDITIONAL_EXTENSION_MAPPING = new HashMap<String, String>() {{
 		put(".properties", "text/plain");
 	}};
 
@@ -49,7 +49,7 @@ public class MimeTypeDetector {
 
 	private static String detectByExtensionInternal(String name) {
 		int extensionIndex = name.lastIndexOf(EXTENSION_DELIMITER);
-		if(extensionIndex >= 0) {
+		if (extensionIndex >= 0) {
 			return ADDITIONAL_EXTENSION_MAPPING.get(name.substring(extensionIndex));
 		}
 		return null;
@@ -57,8 +57,9 @@ public class MimeTypeDetector {
 
 	@Nonnull
 	public static String detect(@Nonnull final File file) throws IOException {
-		String type = URLConnection.guessContentTypeFromStream(new ByteArrayInputStream(Utils.readInputStreamToBytes(new FileInputStream(
-				file))));
+		String type = URLConnection
+				.guessContentTypeFromStream(new ByteArrayInputStream(Utils.readInputStreamToBytes(new FileInputStream(
+						file))));
 		if (type == null) {
 			type = Files.probeContentType(file.toPath());
 		}
@@ -74,10 +75,11 @@ public class MimeTypeDetector {
 	@Nonnull
 	public static String detect(@Nonnull final ByteSource source, @Nullable final String resourceName) throws IOException {
 		String type = URLConnection.guessContentTypeFromStream(source.openStream());
-		if(resourceName != null) {
+		if (resourceName != null) {
 			if (type == null) {
 				type = Files.probeContentType(Paths.get(resourceName));
-			} if (type == null) {
+			}
+			if (type == null) {
 				type = URLConnection.guessContentTypeFromName(resourceName);
 			}
 			if (type == null) {
