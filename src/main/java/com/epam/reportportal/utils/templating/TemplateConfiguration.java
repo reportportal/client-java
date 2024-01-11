@@ -16,7 +16,6 @@
 
 package com.epam.reportportal.utils.templating;
 
-import com.epam.reportportal.annotations.StepTemplateConfig;
 import com.epam.reportportal.annotations.TemplateConfig;
 
 import java.util.Objects;
@@ -95,17 +94,6 @@ public class TemplateConfiguration {
 				arrayEnd,
 				arrayDelimiter
 		);
-	}
-
-	public TemplateConfiguration(StepTemplateConfig config) {
-		this();
-		methodName = config.methodNameTemplate();
-		iterableStart = config.iterableStartSymbol();
-		iterableEnd = config.iterableEndSymbol();
-		iterableDelimiter = config.iterableElementDelimiter();
-		arrayStart = config.arrayStartSymbol();
-		arrayEnd = config.arrayEndSymbol();
-		arrayDelimiter = config.arrayElementDelimiter();
 	}
 
 	public TemplateConfiguration(TemplateConfig config) {

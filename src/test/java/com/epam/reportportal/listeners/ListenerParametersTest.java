@@ -120,9 +120,9 @@ public class ListenerParametersTest {
 		PropertiesLoader properties = PropertiesLoader.load("property-test/utf-demo.properties");
 		ListenerParameters listenerParameters = new ListenerParameters(properties);
 
-		assertTrue(listenerParameters.isTruncateItemNames());
+		assertTrue(listenerParameters.isTruncateFields());
 		assertEquals(1024, listenerParameters.getTruncateItemNamesLimit());
-		assertEquals("...", listenerParameters.getTruncateItemNamesReplacement());
+		assertEquals("...", listenerParameters.getTruncateReplacement());
 	}
 
 	@Test
@@ -130,9 +130,9 @@ public class ListenerParametersTest {
 		PropertiesLoader properties = PropertiesLoader.load("property-test/reportportal-item-names-truncation.properties");
 		ListenerParameters listenerParameters = new ListenerParameters(properties);
 
-		assertFalse(listenerParameters.isTruncateItemNames());
+		assertFalse(listenerParameters.isTruncateFields());
 		assertEquals(512, listenerParameters.getTruncateItemNamesLimit());
-		assertEquals("\\", listenerParameters.getTruncateItemNamesReplacement());
+		assertEquals("\\", listenerParameters.getTruncateReplacement());
 	}
 
 	@Test

@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Changed
 - Guava library dependency was removed, by @HardNorth
+- Deprecated code remove, by @HardNorth
 
 ## [5.1.27]
 ### Changed
