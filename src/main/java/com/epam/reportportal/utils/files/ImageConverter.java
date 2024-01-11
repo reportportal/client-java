@@ -17,7 +17,6 @@ package com.epam.reportportal.utils.files;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.message.TypeAwareByteSource;
-import com.google.common.io.ByteSource;
 import com.google.common.net.MediaType;
 
 import javax.imageio.ImageIO;

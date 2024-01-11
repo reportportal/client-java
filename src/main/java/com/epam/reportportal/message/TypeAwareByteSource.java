@@ -15,11 +15,11 @@
  */
 package com.epam.reportportal.message;
 
-import com.google.common.io.ByteSource;
+import com.epam.reportportal.utils.files.ByteSource;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Objects;
 
 /**
  * {@link ByteSource} which knows about content mime type
@@ -27,20 +27,19 @@ import java.util.Objects;
  * @author Andrei Varabyeu
  */
 public class TypeAwareByteSource extends ByteSource {
-
-	private final ByteSource delegate;
 	private final String mediaType;
 
-	public TypeAwareByteSource(ByteSource delegate, String mediaType) {
-		this.delegate = Objects.requireNonNull(delegate);
+	public TypeAwareByteSource(@Nonnull ByteSource delegate, @Nonnull String mediaType) {
+		super(delegate);
 		this.mediaType = mediaType;
 	}
 
-	@Override
+	@Nonnull
 	public InputStream openStream() throws IOException {
-		return delegate.openStream();
+		return super.openStream();
 	}
 
+	@Nonnull
 	public String getMediaType() {
 		return mediaType;
 	}

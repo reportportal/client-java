@@ -37,7 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static com.epam.reportportal.utils.files.ImageConverter.convert;
 import static com.epam.reportportal.utils.files.ImageConverter.isImage;
-import static com.google.common.io.ByteSource.wrap;
+import static com.epam.reportportal.utils.files.ByteSource.wrap;
 
 /**
  * Logging context holds {@link ConcurrentHashMap} context for launch logging and converts

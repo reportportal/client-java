@@ -24,7 +24,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.ByteSource;
+import com.epam.reportportal.utils.files.ByteSource;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import org.slf4j.Logger;

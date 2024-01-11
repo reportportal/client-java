@@ -17,7 +17,6 @@ package com.epam.reportportal.utils.files;
 
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.utils.MimeTypeDetector;
-import com.google.common.io.ByteSource;
 import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;

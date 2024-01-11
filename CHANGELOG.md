@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Guava library dependency was removed, by @HardNorth
 
 ## [5.1.27]
 ### Changed

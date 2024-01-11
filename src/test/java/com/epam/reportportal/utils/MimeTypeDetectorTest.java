@@ -16,7 +16,7 @@
 
 package com.epam.reportportal.utils;
 
-import com.google.common.io.ByteSource;
+import com.epam.reportportal.utils.files.ByteSource;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;

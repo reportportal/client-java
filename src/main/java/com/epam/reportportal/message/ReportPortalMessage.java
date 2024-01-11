@@ -15,7 +15,7 @@
  */
 package com.epam.reportportal.message;
 
-import com.google.common.io.ByteSource;
+import com.epam.reportportal.utils.files.ByteSource;
 
 import java.io.File;
 import java.io.IOException;

@@ -18,10 +18,10 @@ package com.epam.reportportal.utils.files;
 
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.utils.MimeTypeDetector;
-import com.google.common.io.ByteSource;
 
 import javax.annotation.Nonnull;
 import java.io.*;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -58,12 +58,7 @@ public class Utils {
 			return "";
 		}
 
-		try {
-			return new String(bytes, StandardCharsets.UTF_8.name());
-		} catch (UnsupportedEncodingException e) {
-			// Most likely impossible case unless you run these tests on embedded controllers
-			throw new IllegalStateException("Unable to read InputStream", e);
-		}
+		return new String(bytes, StandardCharsets.UTF_8);
 	}
 
 	/**
@@ -110,6 +105,44 @@ public class Utils {
 	}
 
 	/**
+	 * Returns an input stream for reading the specified resource.
+	 *
+	 * @param path resource name or path to the resource
+	 * @return readable stream for the resource
+	 * @throws FileNotFoundException if no resource found
+	 */
+	@Nonnull
+	public static InputStream getResourceAsStream(@Nonnull String path) throws FileNotFoundException {
+		InputStream resource = Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
+		if (resource == null) {
+			resource = Utils.class.getResourceAsStream(path);
+			if (resource == null) {
+				throw new FileNotFoundException("Unable to locate file of path: " + path);
+			}
+		}
+		return resource;
+	}
+
+	/**
+	 * Finds a resource with a given name.
+	 *
+	 * @param path resource name or path to the resource
+	 * @return location reference
+	 * @throws FileNotFoundException if no resource found
+	 */
+	@Nonnull
+	public static URL getResource(@Nonnull String path) throws FileNotFoundException {
+		URL resource = Thread.currentThread().getContextClassLoader().getResource(path);
+		if (resource == null) {
+			resource = Utils.class.getResource(path);
+			if (resource == null) {
+				throw new FileNotFoundException("Unable to locate file of path: " + path);
+			}
+		}
+		return resource;
+	}
+
+	/**
 	 * Locates and reads a file either by a direct path or by a relative path in classpath.
 	 *
 	 * @param file a file to locate and read
@@ -121,12 +154,7 @@ public class Utils {
 		if (file.exists() && file.isFile()) {
 			data = readFileToBytes(file);
 		} else {
-			String path = file.getPath();
-			InputStream resource = Thread.currentThread().getContextClassLoader().getResourceAsStream(path);
-			if (resource == null) {
-				throw new FileNotFoundException("Unable to locate file of path: " + file.getPath());
-			}
-			data = readInputStreamToBytes(resource);
+			data = readInputStreamToBytes(getResourceAsStream(file.getPath()));
 		}
 		String name = file.getName();
 		ByteSource byteSource = ByteSource.wrap(data);

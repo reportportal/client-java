@@ -15,7 +15,7 @@
  */
 package com.epam.reportportal.utils;
 
-import com.google.common.io.ByteSource;
+import com.epam.reportportal.utils.files.ByteSource;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
