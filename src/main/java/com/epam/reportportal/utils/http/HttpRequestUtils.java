@@ -54,7 +54,7 @@ public class HttpRequestUtils {
 	private static final String DEFAULT_TYPE = "application/octet-stream";
 
 	private HttpRequestUtils() {
-		throw new IllegalStateException("Static only class");
+		throw new IllegalStateException("Static only class. No instances should exist for the class!");
 	}
 
 	public static List<MultipartBody.Part> buildLogMultiPartRequest(List<SaveLogRQ> rqs) {
