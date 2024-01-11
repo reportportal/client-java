@@ -15,11 +15,11 @@
  */
 package com.epam.reportportal.service;
 
-import com.google.common.net.HttpHeaders;
 import okhttp3.Interceptor;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 
 /**
@@ -27,15 +27,16 @@ import java.io.IOException;
  */
 public class BearerAuthInterceptor implements Interceptor {
 
-	private final String uuid;
+	private final String apiKey;
 
-	public BearerAuthInterceptor(String uuid) {
-		this.uuid = uuid;
+	public BearerAuthInterceptor(String apiKey) {
+		this.apiKey = apiKey;
 	}
 
 	@Override
-	public Response intercept(Chain chain)  throws IOException {
-		Request rq = chain.request().newBuilder().addHeader(HttpHeaders.AUTHORIZATION, "bearer " + uuid).build();
+	@Nonnull
+	public Response intercept(Chain chain) throws IOException {
+		Request rq = chain.request().newBuilder().addHeader("Authorization", "Bearer " + apiKey).build();
 		return chain.proceed(rq);
 	}
 }

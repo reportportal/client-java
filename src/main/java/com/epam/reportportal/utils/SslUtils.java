@@ -16,12 +16,14 @@
 package com.epam.reportportal.utils;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
-import com.google.common.io.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.InputStream;
 import java.security.KeyStore;
+
+import static com.epam.reportportal.utils.files.Utils.getFile;
 
 /**
  * @author Andrei Varabyeu
@@ -37,7 +39,7 @@ public class SslUtils {
 	 * @return JKD keystore representation
 	 */
 	public static KeyStore loadKeyStore(String keyStore, String password) {
-		try (InputStream is = Resources.asByteSource(Resources.getResource(keyStore)).openStream()) {
+		try (InputStream is = getFile(new File(keyStore)).openStream()) {
 			KeyStore trustStore = KeyStore.getInstance("JKS");
 			trustStore.load(is, password.toCharArray());
 			return trustStore;
