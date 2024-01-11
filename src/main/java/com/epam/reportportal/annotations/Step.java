@@ -60,14 +60,6 @@ public @interface Step {
 	 * Step template configuration.
 	 *
 	 * @return template configuration
-	 * @deprecated Use more generic {@link #config()} method
-	 */
-	@Deprecated StepTemplateConfig templateConfig() default @StepTemplateConfig;
-
-	/**
-	 * Step template configuration.
-	 *
-	 * @return template configuration
 	 */
 	TemplateConfig config() default @TemplateConfig;
 }

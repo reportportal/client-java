@@ -15,12 +15,10 @@
  */
 package com.epam.reportportal.message;
 
-import com.google.common.io.ByteSource;
-import com.google.common.io.Resources;
+import com.epam.reportportal.utils.files.ByteSource;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -29,7 +27,7 @@ import java.util.regex.Pattern;
 
 import static com.epam.reportportal.utils.MimeTypeDetector.detect;
 import static com.epam.reportportal.utils.files.Utils.getFile;
-import static java.util.Optional.ofNullable;
+import static com.epam.reportportal.utils.files.Utils.getResource;
 
 /**
  * Colon separated message parser. Expects string in the following format:<br>
@@ -70,13 +68,7 @@ public class HashMarkSeparatedMessageParser implements MessageParser {
 		RESOURCE {
 			@Override
 			public TypeAwareByteSource toByteSource(String resourceName) throws IOException {
-				URL resource = ofNullable(Thread.currentThread()
-						.getContextClassLoader()
-						.getResource(resourceName)).orElseGet(() -> HashMarkSeparatedMessageParser.class.getResource(resourceName));
-				if (null == resource) {
-					return null;
-				}
-				final ByteSource source = Resources.asByteSource(resource);
+				ByteSource source = new ByteSource(getResource(resourceName));
 				return new TypeAwareByteSource(source, detect(source, resourceName));
 			}
 		};

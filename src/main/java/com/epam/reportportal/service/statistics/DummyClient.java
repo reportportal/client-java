@@ -25,7 +25,9 @@ import retrofit2.Response;
 public class DummyClient implements Statistics {
 
 	@Override
+	@SuppressWarnings("deprecation")
 	public Maybe<Response<ResponseBody>> send(StatisticsItem item) {
+		// Deprecated method call left here till the very end for backward compatibility
 		return Maybe.create(e -> e.onSuccess(Response.success(ResponseBody.create(MediaType.get("text/plain"), ""))));
 	}
 

@@ -16,7 +16,6 @@
 package com.epam.reportportal.utils.properties;
 
 import com.epam.reportportal.util.test.ProcessUtils;
-import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Triple;
 import org.junit.jupiter.api.Test;
@@ -25,6 +24,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Properties;
 
 import static com.epam.reportportal.util.test.ProcessUtils.waitForLine;
@@ -40,7 +40,7 @@ public class PropertiesLoaderTest {
 		properties.setProperty(propertyKey, "testvalue");
 
 		PropertiesLoader.overrideWith(properties,
-				ImmutableMap.<String, String>builder().put(propertyKey, "anothervalue").build()
+				Collections.singletonMap(propertyKey, "anothervalue")
 		);
 		assertThat("Incorrect override behaviour", properties.getProperty(propertyKey), equalTo("anothervalue"));
 
@@ -59,7 +59,7 @@ public class PropertiesLoaderTest {
 		properties.setProperty("rp.description", "testvalue");
 
 		PropertiesLoader.overrideWith(properties,
-				ImmutableMap.<String, String>builder().put("rp_description", "anothervalue").build()
+				Collections.singletonMap("rp_description", "anothervalue")
 		);
 		assertThat("Incorrect override behaviour",
 				properties.getProperty(ListenerProperty.DESCRIPTION.getPropertyName()),
@@ -73,7 +73,7 @@ public class PropertiesLoaderTest {
 		properties.setProperty("rp.description", "testvalue");
 
 		PropertiesLoader.overrideWith(properties,
-				ImmutableMap.<String, String>builder().put("RP_DESCRIPTION", "anothervalue").build()
+				Collections.singletonMap("RP_DESCRIPTION", "anothervalue")
 		);
 		assertThat("Incorrect override behaviour",
 				properties.getProperty(ListenerProperty.DESCRIPTION.getPropertyName()),
@@ -94,12 +94,11 @@ public class PropertiesLoaderTest {
 		Properties properties = new Properties();
 		properties.setProperty("rp.description", "testvalue");
 
-		PropertiesLoader.overrideWith(properties,
-				ImmutableMap.<String, String>builder()
-						.put("rp_description", "anothervalue")
-						.put("rp.description", "thirdvalue")
-						.build()
-		);
+		HashMap<Object, Object> override = new HashMap<>();
+		override.put("rp_description", "anothervalue");
+		override.put("rp.description", "thirdvalue");
+
+		PropertiesLoader.overrideWith(properties, override);
 		assertThat("Incorrect override behaviour",
 				properties.getProperty(ListenerProperty.DESCRIPTION.getPropertyName()),
 				equalTo("anothervalue")

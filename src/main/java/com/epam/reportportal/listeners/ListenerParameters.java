@@ -23,9 +23,6 @@ import com.epam.reportportal.utils.properties.OutputTypes;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.launch.Mode;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -43,11 +40,6 @@ import static java.util.Optional.ofNullable;
  * ReportPortal client parameters. The class is a placeholder for client and agent parameters.
  */
 public class ListenerParameters implements Cloneable {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(ListenerParameters.class);
-
-	private static final String PROPERTY_WILL_BE_REMOVED = "Property '{}' will be removed in the next major version, please use '{}' instead";
-
 	private static final int DEFAULT_REPORTING_TIMEOUT = 5 * 60;
 	private static final int DEFAULT_IO_POOL_SIZE = 100;
 	private static final boolean DEFAULT_ENABLE = true;
@@ -260,88 +252,28 @@ public class ListenerParameters implements Cloneable {
 						properties.getProperty(CLIENT_JOIN_TIMEOUT_UNIT, DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT))
 				.toMillis(Long.parseLong(t))).orElse(DEFAULT_CLIENT_JOIN_TIMEOUT);
 
-		lockFileName = properties.getProperty(LOCK_FILE_NAME);
-		if (lockFileName != null) {
-			LOGGER.warn(PROPERTY_WILL_BE_REMOVED, LOCK_FILE_NAME.getPropertyName(), FILE_LOCK_NAME.getPropertyName());
-			lockFileName = properties.getProperty(FILE_LOCK_NAME, lockFileName);
-		} else {
-			lockFileName = properties.getProperty(FILE_LOCK_NAME, DEFAULT_LOCK_FILE_NAME);
-		}
-		syncFileName = properties.getProperty(SYNC_FILE_NAME);
-		if (syncFileName != null) {
-			LOGGER.warn(PROPERTY_WILL_BE_REMOVED, SYNC_FILE_NAME.getPropertyName(), FILE_SYNC_NAME.getPropertyName());
-			syncFileName = properties.getProperty(FILE_SYNC_NAME, syncFileName);
-		} else {
-			syncFileName = properties.getProperty(FILE_SYNC_NAME, DEFAULT_SYNC_FILE_NAME);
-		}
+		lockFileName = properties.getProperty(FILE_LOCK_NAME, DEFAULT_LOCK_FILE_NAME);
+		syncFileName = properties.getProperty(FILE_SYNC_NAME, DEFAULT_SYNC_FILE_NAME);
 
-		String fileWaitTimeoutStr = properties.getProperty(FILE_WAIT_TIMEOUT_MS);
-		if (fileWaitTimeoutStr != null) {
-			LOGGER.warn(PROPERTY_WILL_BE_REMOVED,
-					FILE_WAIT_TIMEOUT_MS.getPropertyName(),
-					CLIENT_JOIN_LOCK_TIMEOUT_VALUE.getPropertyName() + ","
-							+ CLIENT_JOIN_LOCK_TIMEOUT_UNIT.getPropertyName()
-			);
-			lockWaitTimeout = Long.parseLong(fileWaitTimeoutStr);
-		}
 		String waitTimeoutStr = properties.getProperty(CLIENT_JOIN_LOCK_TIMEOUT_VALUE);
 		if (waitTimeoutStr != null) {
 			TimeUnit waitTimeUnit = TimeUnit.valueOf(properties.getProperty(CLIENT_JOIN_LOCK_TIMEOUT_UNIT,
 					DEFAULT_CLIENT_JOIN_LOCK_TIMEOUT_UNIT
 			));
 			lockWaitTimeout = waitTimeUnit.toMillis(Long.parseLong(waitTimeoutStr));
-		}
-		if (fileWaitTimeoutStr == null && waitTimeoutStr == null) {
+		} else {
 			lockWaitTimeout = DEFAULT_FILE_WAIT_TIMEOUT_MS;
 		}
-
 		lockPortNumber = properties.getPropertyAsInt(CLIENT_JOIN_LOCK_PORT, DEFAULT_CLIENT_JOIN_LOCK_PORT);
 
 		this.rxBufferSize = properties.getPropertyAsInt(RX_BUFFER_SIZE, DEFAULT_RX_BUFFER_SIZE);
 
-		String truncateLegacy = properties.getProperty(TRUNCATE_ITEM_NAMES);
-		if (StringUtils.isNotBlank(truncateLegacy)) {
-			LOGGER.warn(PROPERTY_WILL_BE_REMOVED,
-					TRUNCATE_ITEM_NAMES.getPropertyName(),
-					TRUNCATE_FIELDS.getPropertyName()
-			);
-			this.truncateFields = properties.getPropertyAsBoolean(TRUNCATE_FIELDS,
-					Boolean.parseBoolean(truncateLegacy)
-			);
-		} else {
-			this.truncateFields = properties.getPropertyAsBoolean(TRUNCATE_FIELDS, DEFAULT_TRUNCATE);
-		}
-
-		String legacyTruncateItemNamesLimit = properties.getProperty(TRUNCATE_ITEM_LIMIT);
-		if (StringUtils.isNotBlank(legacyTruncateItemNamesLimit)) {
-			LOGGER.warn(PROPERTY_WILL_BE_REMOVED,
-					TRUNCATE_ITEM_LIMIT.getPropertyName(),
-					TRUNCATE_ITEM_NAME_LIMIT.getPropertyName()
-			);
-			this.truncateItemNamesLimit = properties.getPropertyAsInt(TRUNCATE_ITEM_NAME_LIMIT,
-					Integer.parseInt(legacyTruncateItemNamesLimit)
-			);
-		} else {
-			this.truncateItemNamesLimit = properties.getPropertyAsInt(TRUNCATE_ITEM_NAME_LIMIT,
-					DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT
-			);
-		}
-
-		String legacyTruncateReplacement = properties.getProperty(TRUNCATE_ITEM_REPLACEMENT);
-		if (StringUtils.isNotBlank(legacyTruncateReplacement)) {
-			LOGGER.warn(PROPERTY_WILL_BE_REMOVED,
-					TRUNCATE_ITEM_REPLACEMENT.getPropertyName(),
-					TRUNCATE_REPLACEMENT.getPropertyName()
-			);
-			this.truncateReplacement = properties.getProperty(TRUNCATE_REPLACEMENT, legacyTruncateReplacement);
-		} else {
-			this.truncateReplacement = properties.getProperty(TRUNCATE_REPLACEMENT, DEFAULT_TRUNCATE_REPLACEMENT);
-		}
-
-		this.attributeLengthLimit = properties.getPropertyAsInt(
-				TRUNCATE_ATTRIBUTE_LIMIT,
-				DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT
-		);
+		this.truncateFields = properties.getPropertyAsBoolean(TRUNCATE_FIELDS, DEFAULT_TRUNCATE);
+		this.truncateItemNamesLimit = properties.getPropertyAsInt(TRUNCATE_ITEM_NAME_LIMIT,
+				DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT);
+		this.truncateReplacement = properties.getProperty(TRUNCATE_REPLACEMENT, DEFAULT_TRUNCATE_REPLACEMENT);
+		this.attributeLengthLimit = properties.getPropertyAsInt(TRUNCATE_ATTRIBUTE_LIMIT,
+				DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT);
 
 		this.printLaunchUuid = properties.getPropertyAsBoolean(LAUNCH_UUID_PRINT, DEFAULT_LAUNCH_UUID_PRINT);
 		this.printLaunchUuidOutput =
@@ -636,24 +568,6 @@ public class ListenerParameters implements Cloneable {
 		rxBufferSize = size;
 	}
 
-	/**
-	 * @return to truncate or not truncate
-	 * @deprecated use {@link #isTruncateFields} instead
-	 */
-	@Deprecated
-	public boolean isTruncateItemNames() {
-		return truncateFields;
-	}
-
-	/**
-	 * @param truncate to truncate or not truncate
-	 * @deprecated use {@link #setTruncateFields} instead
-	 */
-	@Deprecated
-	public void setTruncateItemNames(boolean truncate) {
-		this.truncateFields = truncate;
-	}
-
 	public boolean isTruncateFields() {
 		return truncateFields;
 	}
@@ -668,24 +582,6 @@ public class ListenerParameters implements Cloneable {
 
 	public void setTruncateItemNamesLimit(int limit) {
 		this.truncateItemNamesLimit = limit;
-	}
-
-	/**
-	 * @return truncation replacement
-	 * @deprecated Use {@link #getTruncateReplacement} instead
-	 */
-	@Deprecated
-	public String getTruncateItemNamesReplacement() {
-		return truncateReplacement;
-	}
-
-	/**
-	 * @param replacement truncation replacement
-	 * @deprecated Use {@link #setTruncateReplacement} instead
-	 */
-	@Deprecated
-	public void setTruncateItemNamesReplacement(String replacement) {
-		this.truncateReplacement = replacement;
 	}
 
 	public String getTruncateReplacement() {

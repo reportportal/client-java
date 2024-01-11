@@ -22,7 +22,7 @@ import com.epam.reportportal.service.logs.LoggingSubscriber;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import com.google.common.io.ByteSource;
+import com.epam.reportportal.utils.files.ByteSource;
 import io.reactivex.*;
 import io.reactivex.functions.Function;
 import io.reactivex.internal.operators.flowable.FlowableFromObservable;

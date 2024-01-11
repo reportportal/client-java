@@ -24,7 +24,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.ByteSource;
+import com.epam.reportportal.utils.files.ByteSource;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import org.slf4j.Logger;
@@ -54,14 +54,16 @@ public class HttpRequestUtils {
 	private static final String DEFAULT_TYPE = "application/octet-stream";
 
 	private HttpRequestUtils() {
-		throw new IllegalStateException("Static only class");
+		throw new IllegalStateException("Static only class. No instances should exist for the class!");
 	}
 
+	@SuppressWarnings("deprecation")
 	public static List<MultipartBody.Part> buildLogMultiPartRequest(List<SaveLogRQ> rqs) {
 		List<MultipartBody.Part> result = new ArrayList<>();
 		try {
 			result.add(MultipartBody.Part.createFormData(Constants.LOG_REQUEST_JSON_PART,
 					null,
+					// Deprecated method call left here till the very end for backward compatibility
 					RequestBody.create(okhttp3.MediaType.get("application/json; charset=utf-8"),
 							MAPPER.writerFor(new TypeReference<List<SaveLogRQ>>() {
 							}).writeValueAsString(rqs)
@@ -85,6 +87,7 @@ public class HttpRequestUtils {
 				}
 				result.add(MultipartBody.Part.createFormData(Constants.LOG_REQUEST_BINARY_PART,
 						file.getName(),
+						// Deprecated method call left here till the very end for backward compatibility
 						RequestBody.create(type, file.getContent())
 				));
 			}

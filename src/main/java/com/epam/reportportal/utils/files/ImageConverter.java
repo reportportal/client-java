@@ -17,14 +17,15 @@ package com.epam.reportportal.utils.files;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.message.TypeAwareByteSource;
-import com.google.common.io.ByteSource;
-import com.google.common.net.MediaType;
+import com.epam.reportportal.utils.http.ContentType;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * This class contains functionality for converting images to Black and white
@@ -80,18 +81,8 @@ public class ImageConverter {
 	 * @param contentType ContentType
 	 * @return true if image
 	 */
-	public static boolean isImage(MediaType contentType) {
-		return contentType.type().equalsIgnoreCase(IMAGE_TYPE);
-	}
-
-	/**
-	 * Check is input file is image
-	 *
-	 * @param contentType ContentType
-	 * @return true if image
-	 */
 	public static boolean isImage(String contentType) {
-		return isImage(MediaType.parse(contentType));
+		return ofNullable(ContentType.parse(contentType)).map(type -> type.startsWith(IMAGE_TYPE)).orElse(false);
 	}
 
 	/**
@@ -106,8 +97,6 @@ public class ImageConverter {
 		} catch (IOException e) {
 			throw new InternalReportPortalClientException("Unable to transform file to byte array.", e);
 		}
-		return new TypeAwareByteSource(ByteSource.wrap(byteOutputStream.toByteArray()), MediaType.PNG.toString());
-
+		return new TypeAwareByteSource(ByteSource.wrap(byteOutputStream.toByteArray()), ContentType.IMAGE_PNG);
 	}
-
 }

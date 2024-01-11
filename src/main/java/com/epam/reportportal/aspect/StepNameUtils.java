@@ -53,16 +53,7 @@ public class StepNameUtils {
 			return signature.getMethod().getName();
 		}
 
-		TemplateConfiguration defaultConfig = new TemplateConfiguration();
-		@SuppressWarnings("deprecation")
-		TemplateConfiguration deprecatedConfig = new TemplateConfiguration(step.templateConfig());
 		TemplateConfiguration config = new TemplateConfiguration(step.config());
-		if (!deprecatedConfig.equals(defaultConfig)) {
-			if (config.equals(defaultConfig)) {
-				config = deprecatedConfig;
-			}
-		}
-
 		return getStepName(nameTemplate, config, signature, joinPoint);
 	}
 

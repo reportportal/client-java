@@ -120,19 +120,9 @@ public class ListenerParametersTest {
 		PropertiesLoader properties = PropertiesLoader.load("property-test/utf-demo.properties");
 		ListenerParameters listenerParameters = new ListenerParameters(properties);
 
-		assertTrue(listenerParameters.isTruncateItemNames());
+		assertTrue(listenerParameters.isTruncateFields());
 		assertEquals(1024, listenerParameters.getTruncateItemNamesLimit());
-		assertEquals("...", listenerParameters.getTruncateItemNamesReplacement());
-	}
-
-	@Test
-	public void test_item_name_truncation_property_file_bypass() {
-		PropertiesLoader properties = PropertiesLoader.load("property-test/reportportal-item-names-truncation.properties");
-		ListenerParameters listenerParameters = new ListenerParameters(properties);
-
-		assertFalse(listenerParameters.isTruncateItemNames());
-		assertEquals(512, listenerParameters.getTruncateItemNamesLimit());
-		assertEquals("\\", listenerParameters.getTruncateItemNamesReplacement());
+		assertEquals("...", listenerParameters.getTruncateReplacement());
 	}
 
 	@Test
@@ -152,14 +142,6 @@ public class ListenerParametersTest {
 		ListenerParameters listenerParameters = new ListenerParameters(properties);
 
 		assertEquals(ListenerParameters.DEFAULT_FILE_WAIT_TIMEOUT_MS, listenerParameters.getLockWaitTimeout());
-	}
-
-	@Test
-	public void verify_lock_wait_timeout_property_set_by_file_wait_property() {
-		PropertiesLoader properties = PropertiesLoader.load("property-test/lock-wait-file.properties");
-		ListenerParameters listenerParameters = new ListenerParameters(properties);
-
-		assertEquals(15223, listenerParameters.getLockWaitTimeout());
 	}
 
 	@Test
