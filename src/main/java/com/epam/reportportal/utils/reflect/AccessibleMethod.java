@@ -16,26 +16,31 @@
 
 package com.epam.reportportal.utils.reflect;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
- * Accessible method implementation. Set accessibility == true for specified
- * method and can invoke methods
- *
- * @author Andrei Varabyeu
+ * Utility class to decorate routine code of invoking a method thought Reflections.
  */
 public class AccessibleMethod {
 
 	private final Method method;
 	private final Object bean;
 
-	AccessibleMethod(Object bean, Method method) {
+	AccessibleMethod(@Nonnull Object bean, @Nonnull Method method) {
 		this.bean = bean;
 		this.method = method;
 	}
 
-	public Object invoke(Object... args) throws Throwable {
+	/**
+	 * Set given method.
+	 *
+	 * @param args arguments to pass to the method
+	 */
+	@Nullable
+	public Object invoke(@Nullable Object... args) throws Throwable {
 		try {
 			return invoke(this.bean, this.method, args);
 		} catch (IllegalAccessException accessException) { //NOSONAR
@@ -48,7 +53,8 @@ public class AccessibleMethod {
 		}
 	}
 
-	private Object invoke(Object bean, Method m, Object... args) throws Throwable {
+	@Nullable
+	private Object invoke(@Nonnull Object bean, @Nonnull Method m, @Nullable Object... args) throws Throwable {
 		try {
 			return m.invoke(bean, args);
 		} catch (IllegalArgumentException e) {

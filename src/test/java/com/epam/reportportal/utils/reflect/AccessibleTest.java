@@ -88,8 +88,7 @@ public class AccessibleTest extends BaseReflectTest {
 	}
 
 	public static Stream<Arguments> methodData() throws NoSuchMethodException {
-		return Stream.of(Arguments.of(
-						"publicMethodNoParams",
+		return Stream.of(Arguments.of("publicMethodNoParams",
 						AccessibleTest.class.getMethod("publicMethodNoParams"),
 						null,
 						PUBLIC_METHOD_NO_PARAMS_VALUE

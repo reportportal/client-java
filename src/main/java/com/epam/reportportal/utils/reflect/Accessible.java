@@ -17,37 +17,80 @@
 package com.epam.reportportal.utils.reflect;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /**
- * Representation of accessible method or field
+ * Utility class to decorate routine code of accessing fields and methods in complex objects. Supports access to private elements and
+ * inheritance.
  */
 public class Accessible {
 
 	private final Object object;
 
-	public Accessible(Object object) {
+	/**
+	 * Create the decorator for given object.
+	 *
+	 * @param object an instance of object on which you need reflective access
+	 */
+	public Accessible(@Nonnull Object object) {
 		this.object = object;
 	}
 
-	public AccessibleMethod method(Method m) {
+	/**
+	 * Create a decorator for an instance of accessible method.
+	 *
+	 * @param m method to access
+	 * @return decorator instance
+	 */
+	@Nonnull
+	public AccessibleMethod method(@Nonnull Method m) {
 		return new AccessibleMethod(object, m);
 	}
 
-	public AccessibleMethod method(String m, Class<?>... parameterTypes) throws NoSuchMethodException {
+	/**
+	 * Create a decorator for an instance of accessible method.
+	 *
+	 * @param m              method to access
+	 * @param parameterTypes an array of specific parameters to distinguish the method
+	 * @return decorator instance
+	 * @throws NoSuchMethodException no such method found
+	 */
+	@Nonnull
+	public AccessibleMethod method(@Nonnull String m, @Nullable Class<?>... parameterTypes) throws NoSuchMethodException {
 		return new AccessibleMethod(object, getMethod(m, parameterTypes));
 	}
 
-	public AccessibleField field(Field f) {
+	/**
+	 * Create a decorator for an instance of accessible field.
+	 *
+	 * @param f field to access
+	 * @return decorator instance
+	 */
+	@Nonnull
+	public AccessibleField field(@Nonnull Field f) {
 		return new AccessibleField(object, f);
 	}
 
-	public AccessibleField field(String name) throws NoSuchFieldException {
+	/**
+	 * Create a decorator for an instance of accessible field.
+	 *
+	 * @param name field to access
+	 * @return decorator instance
+	 */
+	@Nonnull
+	public AccessibleField field(@Nonnull String name) throws NoSuchFieldException {
 		return new AccessibleField(object, getField(name));
 	}
 
-	public static Accessible on(Object object) {
+	/**
+	 * Create the decorator for given object.
+	 *
+	 * @param object an instance of object on which you need reflective access
+	 */
+	@Nonnull
+	public static Accessible on(@Nonnull Object object) {
 		return new Accessible(object);
 	}
 
@@ -69,7 +112,8 @@ public class Accessible {
 		}
 	}
 
-	private Method getMethod(String methodName, Class<?>... parameterTypes) throws NoSuchMethodException {
+	@Nonnull
+	private Method getMethod(@Nonnull String methodName, @Nullable Class<?>... parameterTypes) throws NoSuchMethodException {
 		Class<?> clazz = object.getClass();
 		try {
 			return clazz.getMethod(methodName, parameterTypes);
