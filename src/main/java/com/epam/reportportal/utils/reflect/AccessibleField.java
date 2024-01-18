@@ -16,28 +16,34 @@
 
 package com.epam.reportportal.utils.reflect;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 
 /**
- * Setter and Getter for Accessible Field
- *
- * @author Andrei Varabyeu
+ * Utility class to decorate routine code of setting and getting a field thought Reflections.
  */
 public class AccessibleField {
 
 	private final Field f;
 	private final Object bean;
 
-	AccessibleField(Object bean, Field f) {
+	AccessibleField(@Nonnull Object bean, @Nonnull Field f) {
 		this.bean = bean;
 		this.f = f;
 	}
 
+	@Nonnull
 	public Class<?> getType() {
 		return this.f.getType();
 	}
 
-	public void setValue(Object value) {
+	/**
+	 * Set given field value.
+	 *
+	 * @param value value to set
+	 */
+	public void setValue(@Nullable Object value) {
 		try {
 			this.f.set(this.bean, value);
 		} catch (IllegalAccessException accessException) { //NOSONAR
@@ -50,6 +56,10 @@ public class AccessibleField {
 		}
 	}
 
+	/**
+	 * Return given field value.
+	 */
+	@Nullable
 	public Object getValue() {
 		try {
 			return this.f.get(this.bean);
