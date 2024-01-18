@@ -16,13 +16,12 @@
 
 package com.epam.reportportal.utils.reflect;
 
+import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /**
  * Representation of accessible method or field
- *
- * @author Andrei Varabyeu
  */
 public class Accessible {
 
@@ -34,6 +33,10 @@ public class Accessible {
 
 	public AccessibleMethod method(Method m) {
 		return new AccessibleMethod(object, m);
+	}
+
+	public AccessibleMethod method(String m, Class<?>... parameterTypes) throws NoSuchMethodException {
+		return new AccessibleMethod(object, getMethod(m, parameterTypes));
 	}
 
 	public AccessibleField field(Field f) {
@@ -48,9 +51,9 @@ public class Accessible {
 		return new Accessible(object);
 	}
 
-	private Field getField(String fieldName) throws NoSuchFieldException {
+	@Nonnull
+	private Field getField(@Nonnull String fieldName) throws NoSuchFieldException {
 		Class<?> clazz = object.getClass();
-
 		try {
 			return clazz.getField(fieldName);
 		} catch (NoSuchFieldException e) {
@@ -62,7 +65,23 @@ public class Accessible {
 
 				clazz = clazz.getSuperclass();
 			} while (clazz != null);
+			throw e;
+		}
+	}
 
+	private Method getMethod(String methodName, Class<?>... parameterTypes) throws NoSuchMethodException {
+		Class<?> clazz = object.getClass();
+		try {
+			return clazz.getMethod(methodName, parameterTypes);
+		} catch (NoSuchMethodException e) {
+			do {
+				try {
+					return clazz.getDeclaredMethod(methodName, parameterTypes);
+				} catch (NoSuchMethodException ignore) {
+				}
+
+				clazz = clazz.getSuperclass();
+			} while (clazz != null);
 			throw e;
 		}
 	}

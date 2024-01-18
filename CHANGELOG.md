@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `Accessible.method(java.lang.String, java.lang.Class<?>...)` method, by @HardNorth
 
 ## [5.2.0]
 ### Changed
