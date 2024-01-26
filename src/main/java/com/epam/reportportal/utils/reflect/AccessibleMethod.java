@@ -38,6 +38,8 @@ public class AccessibleMethod {
 	 * Set given method.
 	 *
 	 * @param args arguments to pass to the method
+	 * @return method call result
+	 * @throws Throwable a throwable which was thrown during the method execution
 	 */
 	@Nullable
 	public Object invoke(@Nullable Object... args) throws Throwable {
