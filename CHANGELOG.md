@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Table size limit in `MarkdownUtils.formatDataTable(List, int)` method, by @HardNorth
+- `MarkdownUtils.formatDataTable(Map<String, String>)` method, by @HardNorth
 
 ## [5.2.1]
 ### Added
