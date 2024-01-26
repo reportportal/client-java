@@ -58,6 +58,8 @@ public class AccessibleField {
 
 	/**
 	 * Return given field value.
+	 *
+	 * @return field value
 	 */
 	@Nullable
 	public Object getValue() {

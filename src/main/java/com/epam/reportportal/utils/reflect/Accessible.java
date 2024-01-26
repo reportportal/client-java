@@ -55,7 +55,7 @@ public class Accessible {
 	 * @param m              method to access
 	 * @param parameterTypes an array of specific parameters to distinguish the method
 	 * @return decorator instance
-	 * @throws NoSuchMethodException no such method found
+	 * @throws NoSuchMethodException no method with such name found
 	 */
 	@Nonnull
 	public AccessibleMethod method(@Nonnull String m, @Nullable Class<?>... parameterTypes) throws NoSuchMethodException {
@@ -78,6 +78,7 @@ public class Accessible {
 	 *
 	 * @param name field to access
 	 * @return decorator instance
+	 * @throws NoSuchFieldException no field with such name found
 	 */
 	@Nonnull
 	public AccessibleField field(@Nonnull String name) throws NoSuchFieldException {
@@ -88,6 +89,7 @@ public class Accessible {
 	 * Create the decorator for given object.
 	 *
 	 * @param object an instance of object on which you need reflective access
+	 * @return decorator instance
 	 */
 	@Nonnull
 	public static Accessible on(@Nonnull Object object) {
