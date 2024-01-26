@@ -80,7 +80,7 @@ public class MarkdownUtils {
 			for (int j = 0; j < colsBySize.size(); j++) {
 				Pair<Integer, Integer> currentCol = colsBySize.get(j);
 				Pair<Integer, Integer> nextCol = colsBySize.size() > j + 1 ? colsBySize.get(j + 1) : Pair.of(0, 0);
-				if(currentCol.getKey() >= nextCol.getKey()) {
+				if (currentCol.getKey() >= nextCol.getKey()) {
 					colsBySize.set(j, Pair.of(currentCol.getKey() - 1, currentCol.getValue()));
 					break;
 				}
@@ -94,7 +94,8 @@ public class MarkdownUtils {
 	/**
 	 * Converts a table represented as List of Lists to a formatted table string.
 	 *
-	 * @param table a table object
+	 * @param table        a table object
+	 * @param maxTableSize maximum size in characters of result table, cells will be truncated
 	 * @return string representation of the table
 	 */
 	@Nonnull
