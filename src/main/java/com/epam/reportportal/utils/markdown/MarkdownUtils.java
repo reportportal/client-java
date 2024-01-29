@@ -40,6 +40,7 @@ public class MarkdownUtils {
 	public static final String TRUNCATION_REPLACEMENT = "...";
 	public static final int PADDING_SPACES_NUM = 2;
 	public static final int MAX_TABLE_SIZE = 83;
+	public static final int MIN_COL_SIZE = 3;
 
 	/**
 	 * Adds special prefix to make log message being processed as markdown
@@ -62,11 +63,36 @@ public class MarkdownUtils {
 		return asMarkdown("```" + ofNullable(language).orElse("") + NEW_LINE + script + NEW_LINE + "```");
 	}
 
-	@Nonnull
-	private static List<Integer> calculateColSizes(@Nonnull List<Integer> colSizes, int maxTableSize) {
+	private static List<Integer> calculateColSizes(@Nonnull List<List<String>> table) {
+		int tableColNum = table.stream().mapToInt(List::size).max().orElse(-1);
+		List<Iterator<String>> iterList = table.stream().map(List::iterator).collect(Collectors.toList());
+		return IntStream.range(0, tableColNum)
+				.mapToObj(n -> iterList.stream().filter(Iterator::hasNext).map(Iterator::next).collect(Collectors.toList()))
+				.map(col -> col.stream().mapToInt(String::length).max().orElse(0))
+				.collect(Collectors.toList());
+	}
+
+	private static int calculateTableSize(@Nonnull List<Integer> colSizes) {
 		int colTableSize = colSizes.stream().reduce(Integer::sum).orElse(-1);
 		colTableSize += (PADDING_SPACES_NUM + TABLE_COLUMN_SEPARATOR.length()) * colSizes.size() - 1; // Inner columns grid
 		colTableSize += 2; // Outer table grid
+		return colTableSize;
+	}
+
+	private static <T> List<List<T>> transposeTable(@Nonnull List<List<T>> table) {
+		int tableColNum = table.stream().mapToInt(List::size).max().orElse(-1);
+		List<Iterator<T>> iterList = table.stream().map(List::iterator).collect(Collectors.toList());
+		return IntStream.range(0, tableColNum)
+				.mapToObj(n -> iterList.stream()
+						.filter(Iterator::hasNext)
+						.map(Iterator::next)
+						.collect(Collectors.toList()))
+				.collect(Collectors.toList());
+	}
+
+	@Nonnull
+	private static List<Integer> adjustColSizes(@Nonnull List<Integer> colSizes, int maxTableSize) {
+		int colTableSize = calculateTableSize(colSizes);
 		if (maxTableSize >= colTableSize) {
 			return colSizes;
 		}
@@ -79,6 +105,9 @@ public class MarkdownUtils {
 		for (int i = 0; i < sizeToShrink; i++) {
 			for (int j = 0; j < colsBySize.size(); j++) {
 				Pair<Integer, Integer> currentCol = colsBySize.get(j);
+				if (currentCol.getKey() <= MIN_COL_SIZE) {
+					continue;
+				}
 				Pair<Integer, Integer> nextCol = colsBySize.size() > j + 1 ? colsBySize.get(j + 1) : Pair.of(0, 0);
 				if (currentCol.getKey() >= nextCol.getKey()) {
 					colsBySize.set(j, Pair.of(currentCol.getKey() - 1, currentCol.getValue()));
@@ -86,9 +115,7 @@ public class MarkdownUtils {
 				}
 			}
 		}
-		List<Integer> result = new ArrayList<>(colSizes);
-		colsBySize.forEach(col -> result.set(col.getValue(), col.getKey()));
-		return result;
+		return colsBySize.stream().sorted(Map.Entry.comparingByValue()).map(Pair::getKey).collect(Collectors.toList());
 	}
 
 	/**
@@ -100,25 +127,30 @@ public class MarkdownUtils {
 	 */
 	@Nonnull
 	public static String formatDataTable(@Nonnull final List<List<String>> table, int maxTableSize) {
+		List<Integer> colSizes = calculateColSizes(table);
+		boolean transpose = colSizes.size() > table.size() && calculateTableSize(colSizes) > maxTableSize;
+		List<List<String>> printTable = transpose ? transposeTable(table) : table;
+		if(transpose) {
+			colSizes = calculateColSizes(printTable);
+		}
+		colSizes = adjustColSizes(colSizes, maxTableSize);
+		int tableSize = calculateTableSize(colSizes);
+		boolean addPadding = tableSize <= maxTableSize;
+		boolean header = !transpose;
 		StringBuilder result = new StringBuilder();
-		int tableColNum = table.stream().mapToInt(List::size).max().orElse(-1);
-		List<Iterator<String>> iterList = table.stream().map(List::iterator).collect(Collectors.toList());
-		List<Integer> colSizes = IntStream.range(0, tableColNum)
-				.mapToObj(n -> iterList.stream().filter(Iterator::hasNext).map(Iterator::next).collect(Collectors.toList()))
-				.map(col -> col.stream().mapToInt(String::length).max().orElse(0))
-				.collect(Collectors.toList());
-		colSizes = calculateColSizes(colSizes, maxTableSize);
-
-		boolean header = true;
-		for (List<String> row : table) {
+		for (List<String> row : printTable) {
 			result.append(TABLE_INDENT).append(TABLE_COLUMN_SEPARATOR);
 			for (int i = 0; i < row.size(); i++) {
 				String cell = row.get(i);
 				int colSize = colSizes.get(i);
 				if (colSize < cell.length()) {
-					cell = cell.substring(0, colSize - TRUNCATION_REPLACEMENT.length()) + TRUNCATION_REPLACEMENT;
+					if (TRUNCATION_REPLACEMENT.length() < colSize) {
+						cell = cell.substring(0, colSize - TRUNCATION_REPLACEMENT.length()) + TRUNCATION_REPLACEMENT;
+					} else {
+						cell = cell.substring(0, colSize);
+					}
 				}
-				int padSize = colSize - cell.length() + PADDING_SPACES_NUM;
+				int padSize = colSize - cell.length() + (addPadding ? PADDING_SPACES_NUM : 0);
 				int lSpace = padSize / 2;
 				int rSpace = padSize - lSpace;
 				IntStream.range(0, lSpace).forEach(j -> result.append(ONE_SPACE));
@@ -131,7 +163,7 @@ public class MarkdownUtils {
 				result.append(NEW_LINE);
 				result.append(TABLE_INDENT).append(TABLE_COLUMN_SEPARATOR);
 				for (int i = 0; i < row.size(); i++) {
-					int maxSize = colSizes.get(i) + 2;
+					int maxSize = colSizes.get(i) + (addPadding ? PADDING_SPACES_NUM : 0);
 					IntStream.range(0, maxSize).forEach(j -> result.append(TABLE_ROW_SEPARATOR));
 					result.append(TABLE_COLUMN_SEPARATOR);
 				}
