@@ -141,4 +141,17 @@ public class MarkdownUtilsTest {
 		List<List<String>> table = Arrays.asList(Arrays.asList("var_a", "result"), Arrays.asList("2", "4"));
 		assertThat(formatDataTable(table, 0), equalTo(MIN_ROW_WIDTH_EXPECTED_TABLE_NO_TRANSPOSE));
 	}
+
+	//@formatter:off
+	public static final String MIN_ROW_WIDTH_EXPECTED_TABLE_TRANSPOSE_PAD =
+			TABLE_INDENT + "|\u00A0var_a\u00A0\u00A0|\u00A02\u00A0|\n"
+					+ TABLE_INDENT + "|\u00A0var_b\u00A0\u00A0|\u00A02\u00A0|\n"
+					+ TABLE_INDENT + "|\u00A0result\u00A0|\u00A04\u00A0|";
+	//@formatter:on
+
+	@Test
+	public void test_format_data_table_min_size_transpose_pad() {
+		List<List<String>> table = Arrays.asList(Arrays.asList("var_a", "var_b", "result"), Arrays.asList("2", "2", "4"));
+		assertThat(formatDataTable(table, 14), equalTo(MIN_ROW_WIDTH_EXPECTED_TABLE_TRANSPOSE_PAD));
+	}
 }
