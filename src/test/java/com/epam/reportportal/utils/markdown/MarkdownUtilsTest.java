@@ -17,7 +17,10 @@ package com.epam.reportportal.utils.markdown;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.epam.reportportal.utils.markdown.MarkdownUtils.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -105,11 +108,50 @@ public class MarkdownUtilsTest {
 
 	@Test
 	public void test_format_data_table_map() {
-		Map<String, String> table = new LinkedHashMap<String, String>(){{
+		Map<String, String> table = new LinkedHashMap<String, String>() {{
 			put("var_a", "2");
 			put("var_b", "2");
 			put("result", "4");
 		}};
 		assertThat(formatDataTable(table), equalTo(ONE_ROW_EXPECTED_TABLE));
+	}
+
+	//@formatter:off
+	public static final String MIN_ROW_WIDTH_EXPECTED_TABLE_TRANSPOSE =
+			TABLE_INDENT + "|var|2|\n"
+					+ TABLE_INDENT + "|var|2|\n"
+					+ TABLE_INDENT + "|res|4|";
+	//@formatter:on
+
+	@Test
+	public void test_format_data_table_min_size_transpose() {
+		List<List<String>> table = Arrays.asList(Arrays.asList("var_a", "var_b", "result"), Arrays.asList("2", "2", "4"));
+		assertThat(formatDataTable(table, 0), equalTo(MIN_ROW_WIDTH_EXPECTED_TABLE_TRANSPOSE));
+	}
+
+	//@formatter:off
+	public static final String MIN_ROW_WIDTH_EXPECTED_TABLE_NO_TRANSPOSE =
+			TABLE_INDENT + "|var|res|\n"
+					+ TABLE_INDENT + "|---|---|\n"
+					+ TABLE_INDENT + "|\u00A02\u00A0|\u00A04\u00A0|";
+	//@formatter:on
+
+	@Test
+	public void test_format_data_table_min_size_no_transpose() {
+		List<List<String>> table = Arrays.asList(Arrays.asList("var_a", "result"), Arrays.asList("2", "4"));
+		assertThat(formatDataTable(table, 0), equalTo(MIN_ROW_WIDTH_EXPECTED_TABLE_NO_TRANSPOSE));
+	}
+
+	//@formatter:off
+	public static final String MIN_ROW_WIDTH_EXPECTED_TABLE_TRANSPOSE_PAD =
+			TABLE_INDENT + "|\u00A0var_a\u00A0\u00A0|\u00A02\u00A0|\n"
+					+ TABLE_INDENT + "|\u00A0var_b\u00A0\u00A0|\u00A02\u00A0|\n"
+					+ TABLE_INDENT + "|\u00A0result\u00A0|\u00A04\u00A0|";
+	//@formatter:on
+
+	@Test
+	public void test_format_data_table_min_size_transpose_pad() {
+		List<List<String>> table = Arrays.asList(Arrays.asList("var_a", "var_b", "result"), Arrays.asList("2", "2", "4"));
+		assertThat(formatDataTable(table, 14), equalTo(MIN_ROW_WIDTH_EXPECTED_TABLE_TRANSPOSE_PAD));
 	}
 }
