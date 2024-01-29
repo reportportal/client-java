@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.2]
 ### Added
 - Table size limit in `MarkdownUtils.formatDataTable(List, int)` method, by @HardNorth
 - Transpose table logic if column number is bigger than row number in `MarkdownUtils.formatDataTable(List, int)` method, by @HardNorth
