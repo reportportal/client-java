@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.3]
 ### Changed
 - Improve MIME type detection in `MimeTypeDetector.detect(java.io.File)`, `ReportPortal.emitLog` and `ReportPortal.emitLaunchLog` methods, by @HardNorth
 
