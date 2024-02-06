@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 ### Changed
-- Improve MIME type detection in `MimeTypeDetector.detect(java.io.File)` method, by @HardNorth
+- Improve MIME type detection in `MimeTypeDetector.detect(java.io.File)`, `ReportPortal.emitLog` and `ReportPortal.emitLaunchLog` methods, by @HardNorth
 
 ## [5.2.2]
 ### Added
