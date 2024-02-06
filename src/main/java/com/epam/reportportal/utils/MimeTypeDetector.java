@@ -16,11 +16,11 @@
 package com.epam.reportportal.utils;
 
 import com.epam.reportportal.utils.files.ByteSource;
+import com.epam.reportportal.utils.files.Utils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URLConnection;
 import java.nio.file.Files;
@@ -55,7 +55,7 @@ public class MimeTypeDetector {
 
 	@Nonnull
 	public static String detect(@Nonnull final File file) throws IOException {
-		String type = URLConnection.guessContentTypeFromStream(new FileInputStream(file));
+		String type = URLConnection.guessContentTypeFromStream(Utils.getFile(file).openStream());
 		if (type == null) {
 			type = Files.probeContentType(file.toPath());
 		}
