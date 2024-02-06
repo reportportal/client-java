@@ -146,18 +146,29 @@ public class Utils {
 	 * Locates and reads a file either by a direct path or by a relative path in classpath.
 	 *
 	 * @param file a file to locate and read
-	 * @return file data and type
+	 * @return file data
 	 * @throws IOException in case of a read error, or a file not found
 	 */
-	public static TypeAwareByteSource getFile(@Nonnull File file) throws IOException {
+	public static ByteSource getFileAsByteSource(@Nonnull File file) throws IOException {
 		byte[] data;
 		if (file.exists() && file.isFile()) {
 			data = readFileToBytes(file);
 		} else {
 			data = readInputStreamToBytes(getResourceAsStream(file.getPath()));
 		}
+		return ByteSource.wrap(data);
+	}
+
+	/**
+	 * Locates and reads a file either by a direct path or by a relative path in classpath.
+	 *
+	 * @param file a file to locate and read
+	 * @return file data and type
+	 * @throws IOException in case of a read error, or a file not found
+	 */
+	public static TypeAwareByteSource getFile(@Nonnull File file) throws IOException {
 		String name = file.getName();
-		ByteSource byteSource = ByteSource.wrap(data);
+		ByteSource byteSource = getFileAsByteSource(file);
 		return new TypeAwareByteSource(byteSource, MimeTypeDetector.detect(byteSource, name));
 	}
 }

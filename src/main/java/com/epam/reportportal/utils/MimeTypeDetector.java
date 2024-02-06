@@ -55,7 +55,7 @@ public class MimeTypeDetector {
 
 	@Nonnull
 	public static String detect(@Nonnull final File file) throws IOException {
-		String type = URLConnection.guessContentTypeFromStream(Utils.getFile(file).openStream());
+		String type = URLConnection.guessContentTypeFromStream(Utils.getFileAsByteSource(file).openStream());
 		if (type == null) {
 			type = Files.probeContentType(file.toPath());
 		}
