@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Improve MIME type detection in `MimeTypeDetector.detect(java.io.File)` method, by @HardNorth
 
 ## [5.2.2]
 ### Added
