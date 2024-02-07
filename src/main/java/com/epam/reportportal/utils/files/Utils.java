@@ -34,12 +34,12 @@ import java.nio.file.Files;
 public class Utils {
 
 	/**
-	 * This is an util class and should not be instantiated.
+	 * This is a util class and should not be instantiated.
 	 */
 	private Utils() {
 	}
 
-	private static final int KILOBYTE = 2 ^ 10;
+	private static final int KILOBYTE = (int) Math.pow(2, 10);
 
 	private static final int READ_BUFFER = 10 * KILOBYTE;
 
@@ -70,6 +70,38 @@ public class Utils {
 	 */
 	public static byte[] readInputStreamToBytes(@Nonnull InputStream is) throws IOException {
 		return readInputStreamToBytes(is, READ_BUFFER);
+	}
+
+	/**
+	 * Copies an {@link InputStream} into on {@link OutputStream} byte-to-byte.
+	 *
+	 * @param is         a stream to read from
+	 * @param os         a stream to write to
+	 * @param bufferSize size of read buffer in bytes
+	 * @return bytes copied
+	 * @throws IOException in case of a read error
+	 */
+	public static int copyStreams(@Nonnull InputStream is, @Nonnull OutputStream os, int bufferSize) throws IOException {
+		byte[] buffer = new byte[bufferSize];
+		int read;
+		int total = 0;
+		while ((read = is.read(buffer)) > 0) {
+			total += read;
+			os.write(buffer, 0, read);
+		}
+		return total;
+	}
+
+	/**
+	 * Copies an {@link InputStream} into on {@link OutputStream} byte-to-byte.
+	 *
+	 * @param is a stream to read from
+	 * @param os a stream to write to
+	 * @return bytes copied
+	 * @throws IOException in case of a read error
+	 */
+	public static int copyStreams(@Nonnull InputStream is, @Nonnull OutputStream os) throws IOException {
+		return copyStreams(is, os, READ_BUFFER);
 	}
 
 	/**

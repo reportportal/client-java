@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Improve MIME type detection in `MimeTypeDetector.detect`, methods, by @HardNorth
 
 ## [5.2.3]
 ### Changed
