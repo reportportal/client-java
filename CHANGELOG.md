@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.5]
 ### Added
 - `Utils.copyFiles` static method to use in examples, by @HardNorth
 
