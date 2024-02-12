@@ -59,7 +59,7 @@ public class MimeTypeDetector {
 		while (((read = is.read()) != -1) && readNum < BYTES_TO_READ_FOR_DETECTION) {
 			bytes[readNum++] = read;
 		}
-		if (readNum < BYTES_TO_READ_FOR_DETECTION - 1) {
+		if (readNum < BYTES_TO_READ_FOR_DETECTION) {
 			bytes = Arrays.copyOf(bytes, readNum);
 		}
 		is.reset();
