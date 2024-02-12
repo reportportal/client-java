@@ -203,4 +203,20 @@ public class Utils {
 		ByteSource byteSource = getFileAsByteSource(file);
 		return new TypeAwareByteSource(byteSource, MimeTypeDetector.detect(byteSource, name));
 	}
+
+	/**
+	 * Copies a {@link File} into {@link File} in binary mode.
+	 *
+	 * @param source a stream to read from
+	 * @param dest   a stream to write to
+	 * @throws IOException in case of a read/write error
+	 */
+	public static void copyFiles(@Nonnull File source, @Nonnull File dest) throws IOException {
+		ByteSource byteSource = Utils.getFileAsByteSource(source);
+		try (InputStream is = byteSource.openStream()) {
+			try (OutputStream os = Files.newOutputStream(dest.toPath())) {
+				Utils.copyStreams(is, os);
+			}
+		}
+	}
 }
