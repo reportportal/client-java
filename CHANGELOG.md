@@ -5,6 +5,10 @@
 ## [5.2.5]
 ### Added
 - `Utils.copyFiles` static method to use in examples, by @HardNorth
+- `Description` annotation, by @HardNorth
+- `DisplayName` annotation, by @HardNorth
+- `TmsLink` annotation, by @HardNorth
+- `TmsLinks` annotation, by @HardNorth
 
 ## [5.2.4]
 ### Changed
