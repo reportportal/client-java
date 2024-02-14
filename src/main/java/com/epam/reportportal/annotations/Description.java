@@ -26,7 +26,7 @@ import java.lang.annotation.Target;
  * This annotation should be handled in priority to other mechanisms of existing test frameworks.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.TYPE })
+@Target({ ElementType.METHOD, ElementType.TYPE })
 public @interface Description {
 
 	/**
