@@ -7,8 +7,7 @@
 - `Utils.copyFiles` static method to use in examples, by @HardNorth
 - `Description` annotation, by @HardNorth
 - `DisplayName` annotation, by @HardNorth
-- `TmsLink` annotation, by @HardNorth
-- `TmsLinks` annotation, by @HardNorth
+- `TmsLink` and `TmsLinks` annotations, by @HardNorth
 - `Issue` and `ExternalIssue` annotations, by @HardNorth
 
 ## [5.2.4]
