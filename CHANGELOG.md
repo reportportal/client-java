@@ -9,6 +9,7 @@
 - `DisplayName` annotation, by @HardNorth
 - `TmsLink` annotation, by @HardNorth
 - `TmsLinks` annotation, by @HardNorth
+- `Issue` and `ExternalIssue` annotations, by @HardNorth
 
 ## [5.2.4]
 ### Changed
