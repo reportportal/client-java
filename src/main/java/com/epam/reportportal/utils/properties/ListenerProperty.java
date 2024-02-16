@@ -15,6 +15,9 @@
  */
 package com.epam.reportportal.utils.properties;
 
+import com.epam.reportportal.annotations.ExternalIssue;
+import com.epam.reportportal.annotations.Issue;
+
 /**
  * Describe properties names
  */
@@ -113,7 +116,28 @@ public enum ListenerProperty {
     TRUNCATE_FIELDS("rp.truncation.field", false),
     TRUNCATE_REPLACEMENT("rp.truncation.replacement", false),
     TRUNCATE_ITEM_NAME_LIMIT("rp.truncation.item.name.limit", false),
-    TRUNCATE_ATTRIBUTE_LIMIT("rp.truncation.attribute.limit", false);
+    TRUNCATE_ATTRIBUTE_LIMIT("rp.truncation.attribute.limit", false),
+
+    // Issue reporting properties
+    /**
+     * Bug Tracking System Project name to use along with {@link ExternalIssue} annotation. Should be the same as in corresponding
+     * integration.
+     */
+    BTS_PROJECT("rp.bts.project", false),
+    /**
+     * Bug Tracking System base URL to use along with {@link ExternalIssue} annotation. Should be the same as in corresponding integration.
+     */
+    BTS_URL("rp.bts.url", false),
+    /**
+     * Bug Tracking System URL Pattern for Issues to use along with {@link ExternalIssue} annotation. Use <code>{issue_id}</code>
+     * placeholder to mark a place where to put Issue ID. The result URL should point on the Issue.
+     */
+    BTS_ISSUE_URL("rp.bts.issue.url", false),
+    /**
+     * Fail tests marked with {@link Issue} annotation if they passed. Default value: <code>true</code>. Designed to not miss the moment
+     * when the issue got fixed but test is still marked by annotation.
+     */
+    BTS_ISSUE_FAIL("rp.bts.issue.fail", false);
     //formatter:on
 
     private final String propertyName;

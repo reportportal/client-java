@@ -1,14 +1,16 @@
 # Changelog
 
 ## [Unreleased]
-
-## [5.2.5]
 ### Added
-- `Utils.copyFiles` static method to use in examples, by @HardNorth
 - `Description` annotation, by @HardNorth
 - `DisplayName` annotation, by @HardNorth
 - `TmsLink` and `TmsLinks` annotations, by @HardNorth
 - `Issue` and `ExternalIssue` annotations, by @HardNorth
+  - `rp.bts.project`, `rp.bts.url`, `rp.bts.issue.url`, `rp.bts.issue.fail` properties, which controls these annotations, by @HardNorth
+
+## [5.2.5]
+### Added
+- `Utils.copyFiles` static method to use in examples, by @HardNorth
 
 ## [5.2.4]
 ### Changed
