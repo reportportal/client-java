@@ -129,8 +129,9 @@ public enum ListenerProperty {
      */
     BTS_URL("rp.bts.url", false),
     /**
-     * Bug Tracking System URL Pattern for Issues to use along with {@link ExternalIssue} annotation. Use <code>{issue_id}</code>
-     * placeholder to mark a place where to put Issue ID. The result URL should point on the Issue.
+     * Bug Tracking System URL Pattern for Issues to use along with {@link ExternalIssue} annotation. Use <code>{issue_id}</code> and
+     * <code>{bts_project}</code> placeholders to mark a place where to put Issue ID and Bug Tracking System Project name. The result URL
+     * should point on the Issue.
      */
     BTS_ISSUE_URL("rp.bts.issue.url", false),
     /**
