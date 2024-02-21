@@ -24,7 +24,8 @@ import java.lang.annotation.*;
 @Documented
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.METHOD })
+@Target(ElementType.METHOD)
+@Repeatable(Issues.class)
 public @interface Issue {
 	/**
 	 * Type (Locator), Short Name (Abbreviation) or Long Name (Defect name) (specified by priority) of an Issue on ReportPortal for

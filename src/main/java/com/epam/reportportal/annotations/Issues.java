@@ -19,12 +19,12 @@ package com.epam.reportportal.annotations;
 import java.lang.annotation.*;
 
 /**
- * Gathering annotation for {@link TmsLink}
+ * Gathering annotation for {@link Issue}
  */
 @Documented
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.METHOD, ElementType.TYPE })
-public @interface TmsLinks {
-	TmsLink[] value();
+@Target(ElementType.METHOD)
+public @interface Issues {
+	Issue[] value();
 }
