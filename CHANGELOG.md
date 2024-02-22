@@ -7,6 +7,7 @@
 - `TmsLink` and `TmsLinks` annotations, by @HardNorth
 - `Issue` and `ExternalIssue` annotations, by @HardNorth
   - `rp.bts.project`, `rp.bts.url`, `rp.bts.issue.url`, `rp.bts.issue.fail` properties, which controls these annotations, by @HardNorth
+  - `TestFilter`, `TestNameFilter`, `TestParamFilter` annotations to control Issue apply on Parameterized and Dynamic Tests, by @HardNorth
 - `ReportPortalClient.getProjectSettings` method, by @HardNorth
 
 ## [5.2.5]

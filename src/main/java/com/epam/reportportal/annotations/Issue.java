@@ -49,4 +49,11 @@ public @interface Issue {
 	 * @return External Issue describing object
 	 */
 	ExternalIssue[] external() default {};
+
+	/**
+	 * For Parameterized and Dynamic tests apply current issue to specific test filtered by certain criteria.
+	 *
+	 * @return filter list
+	 */
+	TestFilter[] filter() default {};
 }
