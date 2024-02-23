@@ -29,7 +29,7 @@ public @interface TestParamFilter {
 
 	/**
 	 * Select a test parameter which name starts with specified String. Designed to use with {@link ParameterKey} annotation, since there is
-	 * no parameters names in Java runtime.
+	 * no parameter names in Java runtime.
 	 *
 	 * @return required prefix
 	 */
@@ -37,7 +37,7 @@ public @interface TestParamFilter {
 
 	/**
 	 * Select a test parameter which name ends with specified String. Designed to use with {@link ParameterKey} annotation, since there is
-	 * no parameters names in Java runtime.
+	 * no parameter names in Java runtime.
 	 *
 	 * @return required prefix
 	 */
@@ -45,7 +45,7 @@ public @interface TestParamFilter {
 
 	/**
 	 * Select a test parameter which name should contain specified String. Designed to use with {@link ParameterKey} annotation, since there
-	 * is no parameters names in Java runtime.
+	 * is no parameter names in Java runtime.
 	 *
 	 * @return required prefix
 	 */
