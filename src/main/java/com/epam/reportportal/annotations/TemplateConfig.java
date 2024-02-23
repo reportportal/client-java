@@ -26,7 +26,7 @@ import java.lang.annotation.Target;
  * Template configuration. Required for customizing representation of the parsed collections and arrays.
  * {@link TemplateConfig#methodNameTemplate()} required to set the current method name template to be included in the result value to
  * prevent situations when the method argument has the same name as a default {@link TemplateConfiguration#METHOD_NAME_TEMPLATE}
- *
+ * <p>
  * {@link TemplateConfig#selfNameTemplate()} required to set the current object name template to be included in the result value to
  * prevent situations when the method argument has the same name as a default {@link TemplateConfiguration#SELF_NAME_TEMPLATE}
  */

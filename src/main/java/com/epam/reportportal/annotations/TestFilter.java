@@ -36,7 +36,6 @@ public @interface TestFilter {
 	 */
 	TestNameFilter[] name() default {};
 
-
 	/**
 	 * Specify Test Parameter filters to select certain test for {@link Issue} applying, suitable for parameterized tests.
 	 *
