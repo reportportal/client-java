@@ -20,7 +20,24 @@ package com.epam.reportportal.annotations;
  * Filter Test Set by Test Name.
  */
 public @interface TestNameFilter {
+	/**
+	 * Select a test which name starts with specified String.
+	 *
+	 * @return required prefix
+	 */
 	String startsWith() default "";
+
+	/**
+	 * Select a test which name ends with specified String.
+	 *
+	 * @return required postfix
+	 */
 	String endsWith() default "";
+
+	/**
+	 * Select a test which name should contain specified String.
+	 *
+	 * @return required contents
+	 */
 	String contains() default "";
 }

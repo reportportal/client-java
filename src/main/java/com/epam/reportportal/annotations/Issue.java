@@ -51,7 +51,8 @@ public @interface Issue {
 	ExternalIssue[] external() default {};
 
 	/**
-	 * For Parameterized and Dynamic tests apply current issue to specific test filtered by certain criteria.
+	 * For Parameterized and Dynamic tests select certain test for Issue applying using filters by certain criteria. Each additional filter
+	 * applies to the set of tests using logical "AND".
 	 *
 	 * @return filter list
 	 */

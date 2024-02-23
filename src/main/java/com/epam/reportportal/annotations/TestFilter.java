@@ -28,7 +28,19 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({})
 public @interface TestFilter {
+
+	/**
+	 * Specify Test Name filters to select certain test for {@link Issue} applying, suitable for dynamic tests.
+	 *
+	 * @return Test Name filters
+	 */
 	TestNameFilter[] name() default {};
 
+
+	/**
+	 * Specify Test Parameter filters to select certain test for {@link Issue} applying, suitable for parameterized tests.
+	 *
+	 * @return Test Name filters
+	 */
 	TestParamFilter[] param() default {};
 }

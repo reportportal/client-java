@@ -20,12 +20,58 @@ package com.epam.reportportal.annotations;
  * Filter Test Set by Parameter.
  */
 public @interface TestParamFilter {
+	/**
+	 * Parameter index to which this filter should be applied. If it's not specified then the filter try to match every parameter.
+	 *
+	 * @return parameter index
+	 */
 	int paramIndex() default -1;
+
+	/**
+	 * Select a test parameter which name starts with specified String. Designed to use with {@link ParameterKey} annotation, since there is
+	 * no parameters names in Java runtime.
+	 *
+	 * @return required prefix
+	 */
 	String nameStartsWith() default "";
+
+	/**
+	 * Select a test parameter which name ends with specified String. Designed to use with {@link ParameterKey} annotation, since there is
+	 * no parameters names in Java runtime.
+	 *
+	 * @return required prefix
+	 */
 	String nameEndsWith() default "";
+
+	/**
+	 * Select a test parameter which name should contain specified String. Designed to use with {@link ParameterKey} annotation, since there
+	 * is no parameters names in Java runtime.
+	 *
+	 * @return required prefix
+	 */
 	String nameContains() default "";
 
+	/**
+	 * Select a test parameter which value starts with specified String. Non-string parameter values convert with {@link Object#toString()},
+	 * method.
+	 *
+	 * @return required prefix
+	 */
 	String valueStartsWith() default "";
+
+	/**
+	 * Select a test parameter which value ends with specified String. Non-string parameter values convert with {@link Object#toString()},
+	 * method.
+	 *
+	 * @return required prefix
+	 */
 	String valueEndsWith() default "";
+
+	/**
+	 * Select a test parameter which value should contain specified String. Non-string parameter values convert with
+	 * {@link Object#toString()}, method.
+	 *
+	 * @return required prefix
+	 */
 	String valueContains() default "";
 }
