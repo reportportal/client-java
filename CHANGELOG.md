@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.6]
 ### Added
 - `Description` annotation, by @HardNorth
 - `DisplayName` annotation, by @HardNorth
