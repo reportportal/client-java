@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.7]
 ### Changed
 - Mark `jackson-databind` dependency as `implementation`, by @HardNorth
 ### Removed
