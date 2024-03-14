@@ -49,7 +49,7 @@ dependencies {
     api ("com.squareup.retrofit2:retrofit:${project.retrofit_version}") {
         exclude module: 'okhttp'
     }
-    api 'com.fasterxml.jackson.core:jackson-databind:2.12.7.1'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.7.1'
     implementation "com.squareup.retrofit2:converter-scalars:${project.retrofit_version}"
     implementation ("com.squareup.retrofit2:converter-jackson:${project.retrofit_version}") {
         exclude module: 'jackson-databind'
