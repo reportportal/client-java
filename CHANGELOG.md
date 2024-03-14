@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Removed
+- `aop-ajc.xml` file, since not all agents have ability to use AspectJ, by @HardNorth
 
 ## [5.2.6]
 ### Added
