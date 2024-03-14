@@ -20,7 +20,7 @@ import java.lang.annotation.*;
 
 /**
  * Add a link to a Test Case located in external Test Management System.
- * This annotation appends a hypertext link to  a Test Case into the Test Item description.
+ * This annotation appends a hypertext link to a Test Case into the Test Item description.
  */
 @Documented
 @Inherited
