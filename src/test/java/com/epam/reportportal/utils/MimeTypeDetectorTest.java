@@ -28,7 +28,6 @@ import java.util.Arrays;
 
 public class MimeTypeDetectorTest {
 
-	@SuppressWarnings("unused")
 	public static Iterable<Object[]> files() {
 		return Arrays.asList(
 				new Object[] { Paths.get("src/test/resources/pug/lucky.jpg").toFile(), "image/jpeg" },
@@ -40,13 +39,13 @@ public class MimeTypeDetectorTest {
 		);
 	}
 
-//	@ParameterizedTest
+	@ParameterizedTest
 	@MethodSource("files")
 	public void test_mime_types_files(File file, String expected) throws IOException {
 		Assertions.assertEquals(expected, MimeTypeDetector.detect(file));
 	}
 
-//	@ParameterizedTest
+	@ParameterizedTest
 	@MethodSource("files")
 	public void test_mime_types_byte_source(File file, String expected) throws IOException {
 		Assertions.assertEquals(expected, MimeTypeDetector.detect(Utils.getFileAsByteSource(file), file.getName()));
@@ -63,7 +62,7 @@ public class MimeTypeDetectorTest {
 		);
 	}
 
-//	@ParameterizedTest
+	@ParameterizedTest
 	@MethodSource("binaryFileTypes")
 	public void test_mime_types_files_by_content_only(File file, String expected) throws IOException {
 		File testFile = Files.createTempFile("test_tmp_", null).toFile();
@@ -75,7 +74,6 @@ public class MimeTypeDetectorTest {
 		Assertions.assertEquals(expected, MimeTypeDetector.detect(testFile));
 	}
 
-	@SuppressWarnings("unused")
 	public static Iterable<Object[]> binaryFilesFallback() {
 		return Arrays.asList(
 				new Object[] { Paths.get("src/test/resources/pug/lucky.jpg").toFile(), "image/jpeg" },
@@ -84,7 +82,7 @@ public class MimeTypeDetectorTest {
 		);
 	}
 
-//	@ParameterizedTest
+	@ParameterizedTest
 	@MethodSource("binaryFilesFallback")
 	public void test_mime_types_files_by_content_only_fallback(File file, String expected) throws IOException {
 		File testFile = Files.createTempFile("test_tmp_", null).toFile();
