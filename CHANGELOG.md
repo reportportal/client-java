@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Some more binary file types detection, by @HardNorth
 
 ## [5.2.7]
 ### Changed
