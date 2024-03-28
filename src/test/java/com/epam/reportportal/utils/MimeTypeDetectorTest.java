@@ -28,7 +28,6 @@ import java.util.Arrays;
 
 public class MimeTypeDetectorTest {
 
-	@SuppressWarnings("unused")
 	public static Iterable<Object[]> files() {
 		return Arrays.asList(
 				new Object[] { Paths.get("src/test/resources/pug/lucky.jpg").toFile(), "image/jpeg" },
@@ -52,8 +51,7 @@ public class MimeTypeDetectorTest {
 		Assertions.assertEquals(expected, MimeTypeDetector.detect(Utils.getFileAsByteSource(file), file.getName()));
 	}
 
-	@SuppressWarnings("unused")
-	public static Iterable<Object[]> binaryFiles() {
+	public static Iterable<Object[]> binaryFileTypes() {
 		return Arrays.asList(
 				new Object[] { Paths.get("src/test/resources/pug/lucky.jpg").toFile(), "image/jpeg" },
 				new Object[] { Paths.get("src/test/resources/pug/unlucky.jpg").toFile(), "image/jpeg" },
@@ -65,7 +63,7 @@ public class MimeTypeDetectorTest {
 	}
 
 	@ParameterizedTest
-	@MethodSource("binaryFiles")
+	@MethodSource("binaryFileTypes")
 	public void test_mime_types_files_by_content_only(File file, String expected) throws IOException {
 		File testFile = Files.createTempFile("test_tmp_", null).toFile();
 		try (InputStream is = new FileInputStream(file)) {
@@ -76,7 +74,6 @@ public class MimeTypeDetectorTest {
 		Assertions.assertEquals(expected, MimeTypeDetector.detect(testFile));
 	}
 
-	@SuppressWarnings("unused")
 	public static Iterable<Object[]> binaryFilesFallback() {
 		return Arrays.asList(
 				new Object[] { Paths.get("src/test/resources/pug/lucky.jpg").toFile(), "image/jpeg" },
@@ -95,5 +92,24 @@ public class MimeTypeDetectorTest {
 			}
 		}
 		Assertions.assertEquals(expected, MimeTypeDetector.guessContentTypeFromStream(Utils.getFileAsByteSource(testFile).openStream()));
+	}
+
+	public static Iterable<Object[]> binaryFiles() {
+		return Arrays.asList(
+				new Object[] { Paths.get("src/test/resources/pug/lucky.jpg").toFile(), true },
+				new Object[] { Paths.get("src/test/resources/pug/unlucky.jpg").toFile(), true },
+				new Object[] { Paths.get("src/test/resources/files/image.png").toFile(), true },
+				new Object[] { Paths.get("src/test/resources/files/demo.zip").toFile(), true },
+				new Object[] { Paths.get("src/test/resources/files/test.jar").toFile(), true },
+				new Object[] { Paths.get("src/test/resources/files/test.pdf").toFile(), true },
+				new Object[] { Paths.get("src/test/resources/files/test.bin").toFile(), true },
+				new Object[] { Paths.get("src/test/resources/files/proxy_auth_response.txt").toFile(), false }
+		);
+	}
+
+	@ParameterizedTest
+	@MethodSource("binaryFiles")
+	public void test_is_binary(File file, boolean expected) throws IOException {
+		Assertions.assertEquals(MimeTypeDetector.isBinary(Utils.getFileAsByteSource(file).openStream()), expected);
 	}
 }

@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Some more binary file types detection, by @HardNorth
+### Changed
+- `jackson-databind` dependency reverted to `api` type, by @HardNorth
 
 ## [5.2.7]
 ### Changed
