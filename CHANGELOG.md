@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Mark `aspectjrt` dependency as `implementation`, by @HardNorth
 
 ## [5.2.8]
 ### Added
