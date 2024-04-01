@@ -73,6 +73,20 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 public class ReportPortal {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportPortal.class);
+	private static final CookieJar COOKIE_JAR = new CookieJar() {
+		private final Map<String, CopyOnWriteArrayList<Cookie>> STORAGE = new ConcurrentHashMap<>();
+
+		@Override
+		public void saveFromResponse(@Nonnull HttpUrl url, @Nonnull List<Cookie> cookies) {
+			STORAGE.computeIfAbsent(url.url().getHost(), u -> new CopyOnWriteArrayList<>()).addAll(cookies);
+		}
+
+		@Override
+		@Nonnull
+		public List<Cookie> loadForRequest(@Nonnull HttpUrl url) {
+			return STORAGE.computeIfAbsent(url.url().getHost(), u -> new CopyOnWriteArrayList<>());
+		}
+	};
 
 	private final ListenerParameters parameters;
 	private final LaunchIdLock launchIdLock;
@@ -556,20 +570,7 @@ public class ReportPortal {
 			ofNullable(parameters.getHttpReadTimeout()).ifPresent(builder::readTimeout);
 			ofNullable(parameters.getHttpWriteTimeout()).ifPresent(builder::writeTimeout);
 
-			builder.retryOnConnectionFailure(true).cookieJar(new CookieJar() {
-				private final Map<String, CopyOnWriteArrayList<Cookie>> STORAGE = new ConcurrentHashMap<>();
-
-				@Override
-				public void saveFromResponse(@Nonnull HttpUrl url, @Nonnull List<Cookie> cookies) {
-					STORAGE.computeIfAbsent(url.url().getHost(), u -> new CopyOnWriteArrayList<>()).addAll(cookies);
-				}
-
-				@Override
-				@Nonnull
-				public List<Cookie> loadForRequest(@Nonnull HttpUrl url) {
-					return STORAGE.computeIfAbsent(url.url().getHost(), u -> new CopyOnWriteArrayList<>());
-				}
-			});
+			builder.retryOnConnectionFailure(true).cookieJar(COOKIE_JAR);
 			return builder.build();
 		}
 

@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Mark `aspectjrt` dependency as `implementation`, by @HardNorth
+- Move `CookieJar` object to static final field in ReportPortal class to use one instance for all HTTP clients, by @HardNorth
 
 ## [5.2.8]
 ### Added
