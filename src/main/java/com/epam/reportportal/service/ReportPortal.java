@@ -562,7 +562,7 @@ public class ReportPortal {
 			if (parameters.isHttpLogging()) {
 				HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
 				logging.setLevel(HttpLoggingInterceptor.Level.BODY);
-				builder.addInterceptor(logging);
+				builder.addNetworkInterceptor(logging);
 			}
 
 			ofNullable(parameters.getHttpCallTimeout()).ifPresent(builder::callTimeout);
