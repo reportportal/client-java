@@ -16,9 +16,9 @@
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.util.test.SocketUtils;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
+import com.epam.reportportal.util.test.SocketUtils;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
@@ -31,6 +31,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
@@ -50,6 +51,11 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
 public class ReportPortalTest {
+	static {
+		SLF4JBridgeHandler.removeHandlersForRootLogger();
+		SLF4JBridgeHandler.install();
+	}
+
 	private static final String COOKIE = "AWSALB=P7cqG8g/K70xHAKOUPrWrG0XgmhG8GJNinj8lDnKVyITyubAen2lBr+fSa/e2JAoGksQphtImp49rZxc41qdqUGvAc67SdZHY1BMFIHKzc8kyWc1oQjq6oI+s39U";
 
 	@Mock
@@ -88,9 +94,10 @@ public class ReportPortalTest {
 
 	@Test
 	public void verify_proxy_parameter_works() throws Exception {
-		String baseUrl = "http://example.com:8080";
 		ServerSocket server = SocketUtils.getServerSocketOnFreePort();
 		ListenerParameters params = standardParameters();
+		@SuppressWarnings("HttpUrlsUsage")
+		String baseUrl = "http://example.com:8080";
 		params.setBaseUrl(baseUrl);
 		params.setProxyUrl("http://localhost:" + server.getLocalPort());
 		OkHttpClient client = ReportPortal.builder().defaultClient(params);
@@ -116,14 +123,15 @@ public class ReportPortalTest {
 
 	@Test
 	public void verify_proxy_credential_works() throws Exception {
-		String baseUrl = "http://example.com:8080";
 		String userName = "user";
 		String password = "password";
-		String expectedAuth = "Authorization: Basic "
-				+ Base64.getEncoder().encodeToString((userName + ":" + password).getBytes(StandardCharsets.UTF_8))
-				+ System.lineSeparator();
+		String expectedAuth =
+				"Authorization: Basic " + Base64.getEncoder().encodeToString((userName + ":" + password).getBytes(StandardCharsets.UTF_8))
+						+ System.lineSeparator();
 		ServerSocket server = SocketUtils.getServerSocketOnFreePort();
 		ListenerParameters params = standardParameters();
+		@SuppressWarnings("HttpUrlsUsage")
+		String baseUrl = "http://example.com:8080";
 		params.setBaseUrl(baseUrl);
 		params.setProxyUrl("http://localhost:" + server.getLocalPort());
 		params.setProxyUser(userName);
@@ -155,10 +163,10 @@ public class ReportPortalTest {
 	public void verify_rp_client_saves_and_bypasses_cookies() throws Exception {
 		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
 		ListenerParameters parameters = standardParameters();
+		parameters.setHttpLogging(true);
 		parameters.setBaseUrl("http://localhost:" + ss.getLocalPort());
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
-		ReportPortalClient rpClient = ReportPortal.builder()
-				.buildClient(ReportPortalClient.class, parameters, clientExecutor);
+		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
 		Exception error = null;
 		try {
 			Map<String, Object> model = new HashMap<>();
@@ -170,10 +178,7 @@ public class ReportPortalTest {
 			cal.add(Calendar.MINUTE, 2);
 			model.put("expire", sdf.format(cal.getTime()));
 
-			SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss,
-					model,
-					"files/socket_response.txt"
-			);
+			SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss, model, "files/socket_response.txt");
 			Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ())
 					.timeout(5, TimeUnit.SECONDS)
 					.blockingGet();
@@ -233,6 +238,7 @@ public class ReportPortalTest {
 			Maybe<String> launchMaybe = launch.start();
 			assertThat(launchMaybe.blockingGet(), equalTo(launchUuid));
 
+			//noinspection ReactiveStreamsUnusedPublisher
 			launch.startTestItem(TestUtils.standardStartSuiteRequest());
 
 			verify(rpClient, timeout(1000).times(0)).startLaunch(any(StartLaunchRQ.class));
