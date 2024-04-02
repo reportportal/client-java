@@ -276,8 +276,7 @@ public class ReportPortalTest {
 		ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
 		listAppender.setContext(loggerContext);
 		listAppender.start();
-		Logger okHttpClientLogger = loggerList.get(0);
-		okHttpClientLogger.addAppender(listAppender);
+		loggerList.get(0).addAppender(listAppender);
 
 		serverCallable = new SocketUtils.ServerCallable(ss, createCookieModel(), Collections.singletonList("files/socket_response.txt"));
 		Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ()).timeout(5, TimeUnit.SECONDS).blockingGet();
