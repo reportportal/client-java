@@ -292,6 +292,7 @@ public class ReportPortalTest {
 
 		executeWithClosing(clientExecutor, ss, serverCallable, clientCallable);
 
+		assertThat(listAppender.list, hasSize(greaterThan(10)));
 		assertThat(listAppender.list.get(0).getMessage(), equalTo(requestTarget));
 		messages = listAppender.list.stream().map(ILoggingEvent::getMessage).collect(Collectors.toList());
 		assertThat(messages, hasItem("Cookie: " + COOKIE));
