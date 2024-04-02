@@ -284,14 +284,15 @@ public class ReportPortalTest {
 		executeWithClosingOnException(clientExecutor, ss, serverCallable, clientCallable);
 
 		assertThat(listAppender.list, hasSize(greaterThan(10)));
-		assertThat(listAppender.list.get(0).getMessage(), equalTo("--> POST " + baseUrl + "/api/v1/unit-test/launch http/1.1"));
+		String requestTarget = "--> POST " + baseUrl + "/api/v1/unit-test/launch http/1.1";
+		assertThat(listAppender.list.get(0).getMessage(), equalTo(requestTarget));
 		List<String> messages = listAppender.list.stream().map(ILoggingEvent::getMessage).collect(Collectors.toList());
 		assertThat(messages, hasItem("Host: " + host));
 		listAppender.list.clear();
 
 		executeWithClosing(clientExecutor, ss, serverCallable, clientCallable);
 
-		assertThat(listAppender.list.get(0).getMessage(), equalTo("--> POST " + baseUrl + "/api/v1/unit-test/launch http/1.1"));
+		assertThat(listAppender.list.get(0).getMessage(), equalTo(requestTarget));
 		messages = listAppender.list.stream().map(ILoggingEvent::getMessage).collect(Collectors.toList());
 		assertThat(messages, hasItem("Cookie: " + COOKIE));
 	}
