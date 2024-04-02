@@ -15,6 +15,10 @@
  */
 package com.epam.reportportal.service;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
@@ -31,6 +35,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.net.ServerSocket;
@@ -42,6 +47,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static com.epam.reportportal.test.TestUtils.*;
 import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
@@ -57,6 +63,7 @@ public class ReportPortalTest {
 	}
 
 	private static final String COOKIE = "AWSALB=P7cqG8g/K70xHAKOUPrWrG0XgmhG8GJNinj8lDnKVyITyubAen2lBr+fSa/e2JAoGksQphtImp49rZxc41qdqUGvAc67SdZHY1BMFIHKzc8kyWc1oQjq6oI+s39U";
+	private static final String OVERRIDING_COOKIE = "AWSALB=4CKP4Er0pg17+DfkR2ItBJbL8bdo2pBpP1SvLyiPwllSai6sawCn2blRepEX9nwdc8Aj4itewNUZdSONcTEgXfJFN2NAWuSl5CMQ3+vKuCO0cZrCxw02hXSXPir5";
 
 	@Mock
 	private ReportPortalClient rpClient;
@@ -159,46 +166,134 @@ public class ReportPortalTest {
 		}
 	}
 
-	@Test
-	public void verify_rp_client_saves_and_bypasses_cookies() throws Exception {
-		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
-		ListenerParameters parameters = standardParameters();
-		parameters.setHttpLogging(true);
-		parameters.setBaseUrl("http://localhost:" + ss.getLocalPort());
-		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
-		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
-		Exception error = null;
+	private static Map<String, Object> createCookieModel() {
+		Map<String, Object> model = new HashMap<>();
+		model.put("cookie", COOKIE);
+		SimpleDateFormat sdf = new SimpleDateFormat(SocketUtils.WEB_DATE_FORMAT, Locale.US);
+		sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+		Calendar cal = Calendar.getInstance();
+		model.put("date", sdf.format(cal.getTime()));
+		cal.add(Calendar.MINUTE, 2);
+		model.put("expire", sdf.format(cal.getTime()));
+		return model;
+	}
+
+	private static <T> Pair<List<String>, T> executeWithClosingOnException(ExecutorService clientExecutor, ServerSocket ss,
+			Callable<Pair<List<String>, T>> actions) throws Exception {
+		Exception error;
 		try {
-			Map<String, Object> model = new HashMap<>();
-			model.put("cookie", COOKIE);
-			SimpleDateFormat sdf = new SimpleDateFormat(SocketUtils.WEB_DATE_FORMAT, Locale.US);
-			sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
-			Calendar cal = Calendar.getInstance();
-			model.put("date", sdf.format(cal.getTime()));
-			cal.add(Calendar.MINUTE, 2);
-			model.put("expire", sdf.format(cal.getTime()));
-
-			SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss, model, "files/socket_response.txt");
-			Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ())
-					.timeout(5, TimeUnit.SECONDS)
-					.blockingGet();
-			Pair<List<String>, StartLaunchRS> result = SocketUtils.executeServerCallable(serverCallable, clientCallable);
-
-			assertThat(result.getValue(), notNullValue());
-			assertThat("First request should not contain cookie value", result.getKey().get(0), not(containsString(COOKIE)));
-
-			result = SocketUtils.executeServerCallable(serverCallable, clientCallable);
-
-			assertThat(result.getValue(), notNullValue());
-			assertThat("Second request should contain cookie value", result.getKey().get(0), containsString(COOKIE));
+			return actions.call();
 		} catch (Exception e) {
 			error = e;
 		}
 		ss.close();
 		shutdownExecutorService(clientExecutor);
-		if (error != null) {
-			throw error;
-		}
+		throw error;
+	}
+
+	private static <T> Pair<List<String>, T> executeWithClosingOnException(ExecutorService clientExecutor, ServerSocket ss,
+			SocketUtils.ServerCallable serverCallable, Callable<T> clientCallable) throws Exception {
+		return executeWithClosingOnException(clientExecutor, ss, () -> SocketUtils.executeServerCallable(serverCallable, clientCallable));
+	}
+
+	private static Pair<List<String>, StartLaunchRS> executeWithClosing(ExecutorService clientExecutor, ServerSocket ss,
+			SocketUtils.ServerCallable serverCallable, Callable<StartLaunchRS> clientCallable) throws Exception {
+		Pair<List<String>, StartLaunchRS> result = executeWithClosingOnException(clientExecutor,
+				ss,
+				() -> SocketUtils.executeServerCallable(serverCallable, clientCallable)
+		);
+		ss.close();
+		shutdownExecutorService(clientExecutor);
+		return result;
+	}
+
+	@Test
+	public void verify_rp_client_saves_and_bypasses_cookies() throws Exception {
+		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
+		ListenerParameters parameters = standardParameters();
+		parameters.setBaseUrl("http://localhost:" + ss.getLocalPort());
+		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
+		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
+		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss, createCookieModel(), "files/socket_response.txt");
+		Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ()).timeout(5, TimeUnit.SECONDS).blockingGet();
+		Pair<List<String>, StartLaunchRS> result = executeWithClosingOnException(clientExecutor, ss, serverCallable, clientCallable);
+
+		assertThat(result.getValue(), notNullValue());
+		assertThat("First request should not contain cookie value", result.getKey().get(0), not(containsString(COOKIE)));
+
+		result = executeWithClosing(clientExecutor, ss, serverCallable, clientCallable);
+
+		assertThat(result.getValue(), notNullValue());
+		assertThat("Second request should contain cookie value", result.getKey().get(0), containsString(COOKIE));
+	}
+
+	@Test
+	public void verify_rp_client_does_not_duplicate_cookies() throws Exception {
+		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
+		ListenerParameters parameters = standardParameters();
+		parameters.setBaseUrl("http://localhost:" + ss.getLocalPort());
+		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
+		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
+		Map<String, Object> model = createCookieModel();
+		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss, model, "files/socket_response.txt");
+		Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ()).timeout(5, TimeUnit.SECONDS).blockingGet();
+		executeWithClosingOnException(clientExecutor, ss, serverCallable, clientCallable);
+		model.put("cookie", OVERRIDING_COOKIE);
+		executeWithClosingOnException(clientExecutor, ss, serverCallable, clientCallable);
+		Pair<List<String>, StartLaunchRS> result = executeWithClosing(clientExecutor, ss, serverCallable, clientCallable);
+
+		assertThat(result.getValue(), notNullValue());
+		assertThat("Second request should contain new cookie value", result.getKey().get(0), containsString(OVERRIDING_COOKIE));
+		assertThat("Second request should not contain old cookie value", result.getKey().get(0), not(containsString(COOKIE)));
+	}
+
+	@Test
+	public void verify_rp_client_http_logging() throws Exception {
+		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
+		ListenerParameters parameters = standardParameters();
+		parameters.setHttpLogging(true);
+		String host = "localhost:" + ss.getLocalPort();
+		@SuppressWarnings("HttpUrlsUsage")
+		String baseUrl = "http://" + host;
+		parameters.setBaseUrl(baseUrl);
+		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
+		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
+
+		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss,
+				Collections.emptyMap(),
+				Collections.singletonList("files/simple_response.txt")
+		);
+		// trigger http logging to init loggers
+		executeWithClosingOnException(clientExecutor, ss, serverCallable, () -> rpClient.getProjectSettings().blockingGet());
+
+		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+		List<Logger> loggerList = loggerContext.getLoggerList()
+				.stream()
+				.filter(l -> l.getName() != null && l.getName().endsWith("OkHttpClient"))
+				.collect(Collectors.toList());
+		assertThat(loggerList, hasSize(1));
+
+		ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
+		listAppender.setContext(loggerContext);
+		listAppender.start();
+		Logger okHttpClientLogger = loggerList.get(0);
+		okHttpClientLogger.addAppender(listAppender);
+
+		serverCallable = new SocketUtils.ServerCallable(ss, createCookieModel(), Collections.singletonList("files/socket_response.txt"));
+		Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ()).timeout(5, TimeUnit.SECONDS).blockingGet();
+		executeWithClosingOnException(clientExecutor, ss, serverCallable, clientCallable);
+
+		assertThat(listAppender.list, hasSize(greaterThan(10)));
+		assertThat(listAppender.list.get(0).getMessage(), equalTo("--> POST " + baseUrl + "/api/v1/unit-test/launch http/1.1"));
+		List<String> messages = listAppender.list.stream().map(ILoggingEvent::getMessage).collect(Collectors.toList());
+		assertThat(messages, hasItem("Host: " + host));
+		listAppender.list.clear();
+
+		executeWithClosing(clientExecutor, ss, serverCallable, clientCallable);
+
+		assertThat(listAppender.list.get(0).getMessage(), equalTo("--> POST " + baseUrl + "/api/v1/unit-test/launch http/1.1"));
+		messages = listAppender.list.stream().map(ILoggingEvent::getMessage).collect(Collectors.toList());
+		assertThat(messages, hasItem("Cookie: " + COOKIE));
 	}
 
 	@Test

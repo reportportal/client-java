@@ -6,5 +6,6 @@ Pragma: no-cache
 X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
 X-Xss-Protection: 1; mode=block
-Content-Length: 0
+Content-Length: 2
 
+{}

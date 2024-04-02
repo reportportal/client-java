@@ -74,17 +74,18 @@ public class ReportPortal {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ReportPortal.class);
 	private static final CookieJar COOKIE_JAR = new CookieJar() {
-		private final Map<String, CopyOnWriteArrayList<Cookie>> STORAGE = new ConcurrentHashMap<>();
+		private final Map<String, Map<String, Cookie>> HOST_STORAGE = new ConcurrentHashMap<>();
 
 		@Override
 		public void saveFromResponse(@Nonnull HttpUrl url, @Nonnull List<Cookie> cookies) {
-			STORAGE.computeIfAbsent(url.url().getHost(), u -> new CopyOnWriteArrayList<>()).addAll(cookies);
+			Map<String, Cookie> storage = HOST_STORAGE.computeIfAbsent(url.url().getHost(), u -> new ConcurrentHashMap<>());
+			cookies.forEach(cookie -> storage.put(cookie.name(), cookie));
 		}
 
 		@Override
 		@Nonnull
 		public List<Cookie> loadForRequest(@Nonnull HttpUrl url) {
-			return STORAGE.computeIfAbsent(url.url().getHost(), u -> new CopyOnWriteArrayList<>());
+			return new ArrayList<>(HOST_STORAGE.computeIfAbsent(url.url().getHost(), u -> new ConcurrentHashMap<>()).values());
 		}
 	};
 

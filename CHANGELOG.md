@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Cookies duplication on requests, by @HardNorth
 
 ## [5.2.10]
 ### Fixed
