@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.10]
 ### Fixed
 - Cookies logging on requests, by @HardNorth
 
