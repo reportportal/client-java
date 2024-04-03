@@ -28,14 +28,20 @@ public class ContentType {
 	private static final Pattern HTTP_HEADER_DELIMITER_PATTERN = Pattern.compile("[=;,]");
 
 	// Binary types
-	public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
 	public static final String IMAGE_BMP = "image/bmp";
 	public static final String IMAGE_GIF = "image/gif";
 	public static final String IMAGE_JPEG = "image/jpeg";
 	public static final String IMAGE_PNG = "image/png";
 	public static final String IMAGE_TIFF = "image/tiff";
 	public static final String IMAGE_WEBP = "image/webp";
-
+	public static final String VIDEO_MPEG = "video/mpeg";
+	public static final String VIDEO_OGG = "video/ogg";
+	public static final String VIDEO_WEBM = "video/webm";
+	public static final String APPLICATION_JAVA_ARCHIVE = "application/java-archive";
+	public static final String APPLICATION_ZIP = "application/zip";
+	public static final String APPLICATION_GZIP = "application/gzip";
+	public static final String APPLICATION_PDF = "application/pdf";
+	public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
 
 	// Text types
 	public static final String APPLICATION_ATOM_XML = "application/atom+xml";
