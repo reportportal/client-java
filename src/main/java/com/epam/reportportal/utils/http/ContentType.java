@@ -17,8 +17,13 @@
 package com.epam.reportportal.utils.http;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Content-Type header constants and utility methods.
@@ -26,20 +31,35 @@ import java.util.regex.Pattern;
 @SuppressWarnings("unused")
 public class ContentType {
 	private static final Pattern HTTP_HEADER_DELIMITER_PATTERN = Pattern.compile("[=;,]");
+	private static final String TOKEN = "[0-9A-Za-z!#$%&'*+.^_`|~-]+";
+	private static final String TYPE = "(application|audio|font|example|image|message|model|multipart|text|video|x-" + TOKEN + ")";
+	private static final String MEDIA_TYPE = TYPE + "/" + "(" + TOKEN + ")";
+	private static final Pattern MEDIA_TYPE_PATTERN = Pattern.compile(MEDIA_TYPE);
 
 	// Binary types
+	// Images
 	public static final String IMAGE_BMP = "image/bmp";
 	public static final String IMAGE_GIF = "image/gif";
 	public static final String IMAGE_JPEG = "image/jpeg";
 	public static final String IMAGE_PNG = "image/png";
 	public static final String IMAGE_TIFF = "image/tiff";
 	public static final String IMAGE_WEBP = "image/webp";
+	public static final String IMAGE_X_ICON = "image/x-icon";
+	// Video
 	public static final String VIDEO_MPEG = "video/mpeg";
 	public static final String VIDEO_OGG = "video/ogg";
 	public static final String VIDEO_WEBM = "video/webm";
+	// Audio
+	public static final String AUDIO_MIDI = "audio/midi";
+	public static final String AUDIO_MPEG = "audio/mpeg";
+	public static final String AUDIO_OGG = "audio/ogg";
+	public static final String AUDIO_WEBM = "audio/webm";
+	public static final String AUDIO_WAV = "audio/wav";
+	// Archives
 	public static final String APPLICATION_JAVA_ARCHIVE = "application/java-archive";
 	public static final String APPLICATION_ZIP = "application/zip";
 	public static final String APPLICATION_GZIP = "application/gzip";
+	// Misc
 	public static final String APPLICATION_PDF = "application/pdf";
 	public static final String APPLICATION_OCTET_STREAM = "application/octet-stream";
 
@@ -65,6 +85,21 @@ public class ContentType {
 	public static final String MULTIPART_DIGEST = "multipart/digest";
 	public static final String MULTIPART_PARALLEL = "multipart/parallel";
 
+	public static final Set<String> KNOWN_TYPES;
+
+	static {
+		KNOWN_TYPES = Collections.unmodifiableSet(Arrays.stream(ContentType.class.getFields())
+				.filter(f -> String.class.equals(f.getType()) && Modifier.isStatic(f.getModifiers()) && Modifier.isPublic(f.getModifiers()))
+				.map(f -> {
+					try {
+						return (String) f.get(null);
+					} catch (IllegalAccessException e) {
+						return null;
+					}
+				})
+				.collect(Collectors.toSet()));
+	}
+
 	private ContentType() {
 		throw new RuntimeException("No instances should exist for the class!");
 	}
@@ -76,7 +111,7 @@ public class ContentType {
 	 * @return Media Type
 	 */
 	@Nullable
-	public static String parse(@Nullable String contentType) {
+	public static String stripMediaType(@Nullable String contentType) {
 		if (contentType == null || contentType.trim().isEmpty()) {
 			return null;
 		}
@@ -89,5 +124,29 @@ public class ContentType {
 			mimeType = trimmed;
 		}
 		return mimeType.isEmpty() ? null : mimeType;
+	}
+
+	/**
+	 * Check if the Media Type is known.
+	 *
+	 * @param mediaType Media Type value
+	 * @return {@code true} if the Media Type is known, {@code false} otherwise
+	 */
+	public static boolean isKnownType(@Nullable String mediaType) {
+		return KNOWN_TYPES.contains(stripMediaType(mediaType));
+	}
+
+	/**
+	 * Check if the Media Type is valid.
+	 *
+	 * @param mediaType Media Type value
+	 * @return {@code true} if the Media Type is valid, {@code false} otherwise
+	 */
+	public static boolean isValidType(@Nullable String mediaType) {
+		if (mediaType == null || mediaType.trim().isEmpty()) {
+			return false;
+		}
+		String trimmed = mediaType.trim();
+		return MEDIA_TYPE_PATTERN.matcher(trimmed).matches();
 	}
 }
