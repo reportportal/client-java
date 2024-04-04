@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.12]
 ### Changed
 - Extend `ContentType` class functionality, by @HardNorth
 
