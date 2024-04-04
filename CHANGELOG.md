@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.13]
 ### Changed
 - Return back `ContentType#parse` method for backward compatibility, by @HardNorth
 
