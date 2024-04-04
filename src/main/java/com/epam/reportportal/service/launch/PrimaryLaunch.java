@@ -21,8 +21,8 @@ import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.LaunchIdLock;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.utils.Waiter;
-import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
-import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import com.epam.ta.reportportal.ws.reporting.FinishExecutionRQ;
+import com.epam.ta.reportportal.ws.reporting.StartLaunchRQ;
 
 import java.util.Calendar;
 import java.util.concurrent.Callable;

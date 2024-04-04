@@ -20,7 +20,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.LaunchIdLock;
 import com.epam.reportportal.service.LaunchImpl;
 import com.epam.reportportal.service.ReportPortalClient;
-import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import com.epam.ta.reportportal.ws.reporting.StartLaunchRQ;
 import io.reactivex.Maybe;
 
 import java.util.Random;

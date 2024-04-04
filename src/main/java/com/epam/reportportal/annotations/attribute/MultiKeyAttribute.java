@@ -21,7 +21,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation used in {@link Attributes} as field, to provide multiple {@link com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ}
+ * Annotation used in {@link Attributes} as field, to provide multiple {@link com.epam.ta.reportportal.ws.reporting.ItemAttributesRQ}
  * with both 'key' and 'value' fields specified.
  * Used to prevent duplication of {@link Attribute} annotation with the same value and different keys
  *

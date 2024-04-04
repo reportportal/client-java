@@ -15,8 +15,6 @@
  */
 package com.epam.reportportal.exception;
 
-import com.epam.ta.reportportal.ws.model.ErrorRS;
-
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
