@@ -53,8 +53,7 @@ public class ImageConverter {
 	 * @throws IOException In case of IO exception
 	 */
 	public static TypeAwareByteSource convert(ByteSource source) throws IOException {
-		BufferedImage image;
-		image = ImageIO.read(source.openBufferedStream());
+		BufferedImage image = ImageIO.read(source.openBufferedStream());
 		final BufferedImage blackAndWhiteImage = new BufferedImage(image.getWidth(null),
 				image.getHeight(null),
 				BufferedImage.TYPE_BYTE_GRAY
@@ -82,7 +81,7 @@ public class ImageConverter {
 	 * @return true if image
 	 */
 	public static boolean isImage(String contentType) {
-		return ofNullable(ContentType.parse(contentType)).map(type -> type.startsWith(IMAGE_TYPE)).orElse(false);
+		return ofNullable(ContentType.stripMediaType(contentType)).map(type -> type.startsWith(IMAGE_TYPE)).orElse(false);
 	}
 
 	/**
