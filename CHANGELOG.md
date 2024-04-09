@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.14]
 ### Added
 - `MarkdownUtils.asTwoParts(String, String)` method, by @HardNorth
 
