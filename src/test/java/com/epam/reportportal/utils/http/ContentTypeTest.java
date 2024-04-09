@@ -70,6 +70,7 @@ public class ContentTypeTest {
 				new Object[] { "application/json", true },
 				new Object[] { "video/vnd.iptvforum.2dparityfec-2005", true },
 				new Object[] { "application/json; charset=utf-8", false },
+				new Object[] { "application/json;", false },
 				new Object[] { "pdf", false },
 				new Object[] { "    ", false },
 				new Object[] { "; charset=utf-8", false },

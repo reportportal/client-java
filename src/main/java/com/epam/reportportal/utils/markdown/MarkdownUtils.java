@@ -41,6 +41,7 @@ public class MarkdownUtils {
 	public static final int PADDING_SPACES_NUM = 2;
 	public static final int MAX_TABLE_SIZE = 83;
 	public static final int MIN_COL_SIZE = 3;
+	public static final String LOGICAL_SEPARATOR = "---";
 
 	/**
 	 * Adds special prefix to make log message being processed as markdown
@@ -197,5 +198,9 @@ public class MarkdownUtils {
 		toFormat.add(keys);
 		toFormat.add(keys.stream().map(table::get).collect(Collectors.toList()));
 		return formatDataTable(toFormat);
+	}
+
+	public static String asTwoParts(@Nonnull String firstPart, @Nonnull String secondPart) {
+		return firstPart + NEW_LINE + LOGICAL_SEPARATOR + NEW_LINE + secondPart;
 	}
 }
