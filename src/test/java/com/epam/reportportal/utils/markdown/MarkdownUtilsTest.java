@@ -154,4 +154,13 @@ public class MarkdownUtilsTest {
 		List<List<String>> table = Arrays.asList(Arrays.asList("var_a", "var_b", "result"), Arrays.asList("2", "2", "4"));
 		assertThat(formatDataTable(table, 14), equalTo(MIN_ROW_WIDTH_EXPECTED_TABLE_TRANSPOSE_PAD));
 	}
+
+	public static final String TEXT_PART_ONE = "This is a text";
+	public static final String TEXT_PART_TWO = "This is another text";
+	public static final String EXPECTED_TWO_PARTS = TEXT_PART_ONE + "\n---\n" + TEXT_PART_TWO;
+
+	@Test
+	public void test_format_two_parts() {
+		assertThat(asTwoParts(TEXT_PART_ONE, TEXT_PART_TWO), equalTo(EXPECTED_TWO_PARTS));
+	}
 }
