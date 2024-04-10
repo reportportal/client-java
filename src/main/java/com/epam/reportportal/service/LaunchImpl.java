@@ -15,6 +15,7 @@
  */
 package com.epam.reportportal.service;
 
+import com.epam.reportportal.exception.ErrorType;
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ItemStatus;
