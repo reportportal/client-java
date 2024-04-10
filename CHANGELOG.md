@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [5.2.14]
+### Added
+- `MarkdownUtils.asTwoParts(String, String)` method, by @HardNorth
+
 ## [5.2.13]
 ### Changed
 - Return back `ContentType#parse` method for backward compatibility, by @HardNorth
