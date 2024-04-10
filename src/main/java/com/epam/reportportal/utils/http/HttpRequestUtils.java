@@ -18,8 +18,8 @@ package com.epam.reportportal.utils.http;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.utils.MimeTypeDetector;
-import com.epam.ta.reportportal.ws.model.Constants;
-import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
+import com.epam.ta.reportportal.ws.reporting.Constants;
+import com.epam.ta.reportportal.ws.reporting.SaveLogRQ;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;

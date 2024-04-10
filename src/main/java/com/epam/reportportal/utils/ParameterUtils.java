@@ -18,7 +18,7 @@ package com.epam.reportportal.utils;
 
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.utils.markdown.MarkdownUtils;
-import com.epam.ta.reportportal.ws.model.ParameterResource;
+import com.epam.ta.reportportal.ws.reporting.ParameterResource;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;

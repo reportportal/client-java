@@ -18,7 +18,7 @@ package com.epam.reportportal.service.tree;
 
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ItemType;
-import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
+import com.epam.ta.reportportal.ws.reporting.OperationCompletionRS;
 import io.reactivex.Maybe;
 
 import javax.annotation.Nonnull;

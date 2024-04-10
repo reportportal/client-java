@@ -21,7 +21,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation used in {@link Attributes} as field, to provide {@link com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ}
+ * Annotation used in {@link Attributes} as field, to provide {@link com.epam.ta.reportportal.ws.reporting.ItemAttributesRQ}
  * with only 'value' field specified ('key' in the resulted entity will be NULL)
  *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>

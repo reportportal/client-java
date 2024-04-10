@@ -16,7 +16,7 @@
 
 package com.epam.reportportal.annotations;
 
-import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.reporting.StartTestItemRQ;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

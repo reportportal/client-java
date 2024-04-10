@@ -16,7 +16,7 @@
 
 package com.epam.reportportal.utils.properties;
 
-import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
+import com.epam.ta.reportportal.ws.reporting.ItemAttributesRQ;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

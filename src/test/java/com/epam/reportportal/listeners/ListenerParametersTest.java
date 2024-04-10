@@ -26,8 +26,8 @@ import java.io.PrintStream;
 import java.time.Duration;
 import java.util.Arrays;
 
-import static com.epam.ta.reportportal.ws.model.launch.Mode.DEBUG;
-import static com.epam.ta.reportportal.ws.model.launch.Mode.DEFAULT;
+import static com.epam.ta.reportportal.ws.reporting.Mode.DEBUG;
+import static com.epam.ta.reportportal.ws.reporting.Mode.DEFAULT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;

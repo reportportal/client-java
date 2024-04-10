@@ -16,7 +16,7 @@
 
 package com.epam.reportportal.utils.properties;
 
-import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
+import com.epam.ta.reportportal.ws.reporting.ItemAttributesRQ;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 

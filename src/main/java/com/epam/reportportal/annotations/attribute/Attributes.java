@@ -19,7 +19,7 @@ package com.epam.reportportal.annotations.attribute;
 import java.lang.annotation.*;
 
 /**
- * Annotation for test methods and classes to attach {@link com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ} to the test items
+ * Annotation for test methods and classes to attach {@link com.epam.ta.reportportal.ws.reporting.ItemAttributesRQ} to the test items
  *
  * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
  * @see Attribute
