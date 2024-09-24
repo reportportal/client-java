@@ -40,8 +40,9 @@ repositories {
 }
 
 dependencies {
-    api ('com.epam.reportportal:commons-model:5.0.0') {
+    api ('com.epam.reportportal:commons-model:5.3.3') {
         exclude module: 'jackson-databind'
+        exclude module: 'guava'
     }
     api 'com.fasterxml.jackson.core:jackson-databind:2.12.7.1' // Access is needed by HTTP loggers to format JSON
     api 'io.reactivex.rxjava2:rxjava:2.2.10'
