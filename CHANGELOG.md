@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.15]
 ### Changed
 - `commons-model` dependency version updated to `5.3.3`, by @HardNorth
 
