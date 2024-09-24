@@ -40,8 +40,9 @@ repositories {
 }
 
 dependencies {
-    api ('com.epam.reportportal:commons-model:5.0.0') {
+    api ('com.epam.reportportal:commons-model:5.3.3') {
         exclude module: 'jackson-databind'
+        exclude module: 'guava'
     }
     api 'com.fasterxml.jackson.core:jackson-databind:2.12.7.1' // Access is needed by HTTP loggers to format JSON
     api 'io.reactivex.rxjava2:rxjava:2.2.10'
@@ -75,7 +76,7 @@ dependencies {
     testImplementation 'org.hamcrest:hamcrest-core:2.2'
     testImplementation "org.mockito:mockito-core:${project.mockito_version}"
     testImplementation "org.mockito:mockito-junit-jupiter:${project.mockito_version}"
-    testImplementation 'ch.qos.logback:logback-classic:1.3.12'
+    testImplementation 'ch.qos.logback:logback-classic:1.3.14'
     testImplementation('org.awaitility:awaitility:4.0.2') {
         exclude group: 'org.hamcrest'
     }
