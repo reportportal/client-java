@@ -239,18 +239,31 @@ public class LaunchImpl extends Launch {
 	/**
 	 * Starts launch in ReportPortal. Does NOT start the same launch twice
 	 *
+	 * @param statistics Send or not Launch statistics
 	 * @return Launch ID promise
 	 */
 	@Nonnull
-	public Maybe<String> start() {
+	protected Maybe<String> start(boolean statistics) {
 		launch.subscribe(logMaybeResults("Launch start"));
 		ListenerParameters params = getParameters();
 		if(params.isPrintLaunchUuid()) {
 			launch.subscribe(printLaunch(params));
 		}
 		LaunchLoggingContext.init(this.launch, getClient(), getScheduler(), getParameters());
-		getStatisticsService().sendEvent(launch, startRq);
+		if(statistics) {
+			getStatisticsService().sendEvent(launch, startRq);
+		}
 		return launch;
+	}
+
+	/**
+	 * Starts launch in ReportPortal. Does NOT start the same launch twice
+	 *
+	 * @return Launch ID promise
+	 */
+	@Nonnull
+	public Maybe<String> start() {
+		return start(true);
 	}
 
 	/**

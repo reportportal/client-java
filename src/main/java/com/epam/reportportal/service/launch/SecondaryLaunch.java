@@ -67,10 +67,8 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 							disposables.add(launch.subscribe(uuid -> {
 								Maybe<LaunchResource> maybeRs = client.getLaunchByUuid(uuid);
 								if (maybeRs != null) {
-									disposables.add(maybeRs.subscribe(
-											launchResource -> result = Boolean.TRUE,
-											throwable -> LOGGER.debug(
-													"Unable to get a Launch: " + throwable.getLocalizedMessage(),
+									disposables.add(maybeRs.subscribe(launchResource -> result = Boolean.TRUE,
+											throwable -> LOGGER.debug("Unable to get a Launch: " + throwable.getLocalizedMessage(),
 													throwable
 											)
 									));
@@ -92,8 +90,10 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 	@Nonnull
 	@Override
 	public Maybe<String> start() {
-		waitForLaunchStart();
-		return super.start();
+		if (!getParameters().isAsyncReporting()) {
+			waitForLaunchStart();
+		}
+		return super.start(false);
 	}
 
 	@Override
