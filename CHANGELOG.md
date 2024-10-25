@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `rp.client.join.launch.timeout.value` and `rp.client.join.launch.timeout.unit` configuration properties to control SecondaryLaunch start timeout on client join, by @HardNorth
 
 ## [5.2.15]
 ### Changed
