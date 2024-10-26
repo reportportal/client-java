@@ -53,6 +53,7 @@ import static java.util.Optional.ofNullable;
  * A basic Launch object implementation which does straight requests to ReportPortal.
  */
 public class LaunchImpl extends Launch {
+	public static final String DISABLE_PROPERTY = "AGENT_NO_ANALYTICS";
 
 	private static final Map<ExecutorService, Scheduler> SCHEDULERS = new ConcurrentHashMap<>();
 
@@ -263,7 +264,7 @@ public class LaunchImpl extends Launch {
 	 */
 	@Nonnull
 	public Maybe<String> start() {
-		return start(true);
+		return start(System.getenv(DISABLE_PROPERTY) == null);
 	}
 
 	/**
