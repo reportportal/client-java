@@ -74,6 +74,8 @@ public class ListenerParameters implements Cloneable {
 	public static final boolean DEFAULT_LAUNCH_UUID_PRINT = false;
 	public static final String DEFAULT_LAUNCH_UUID_OUTPUT = "stdout";
 
+	public static final boolean DEFAULT_BTS_ISSUE_FAIL = true;
+
 	private String description;
 	private String apiKey;
 	private String baseUrl;
@@ -122,6 +124,11 @@ public class ListenerParameters implements Cloneable {
 
 	private boolean printLaunchUuid;
 	private PrintStream printLaunchUuidOutput;
+
+	private String btsProjectId;
+	private String btsUrl;
+	private String btsIssueUrl;
+	private boolean btsIssueFail;
 
 	@Nonnull
 	private static ChronoUnit toChronoUnit(@Nonnull TimeUnit t) {
@@ -195,6 +202,8 @@ public class ListenerParameters implements Cloneable {
 		this.printLaunchUuid = DEFAULT_LAUNCH_UUID_PRINT;
 		this.printLaunchUuidOutput =
 				OutputTypes.valueOf(DEFAULT_LAUNCH_UUID_OUTPUT.toUpperCase(Locale.ROOT)).getOutput();
+
+		this.btsIssueFail = DEFAULT_BTS_ISSUE_FAIL;
 	}
 
 	/**
@@ -287,6 +296,15 @@ public class ListenerParameters implements Cloneable {
 								.getProperty(LAUNCH_UUID_PRINT_OUTPUT, DEFAULT_LAUNCH_UUID_OUTPUT)
 								.toUpperCase(Locale.ROOT)
 				).getOutput();
+
+		this.btsProjectId = properties.getProperty(BTS_PROJECT);
+		this.btsUrl = properties.getProperty(BTS_URL);
+		this.btsIssueUrl = properties.getProperty(BTS_ISSUE_URL);
+		this.btsIssueFail = properties.getPropertyAsBoolean(BTS_ISSUE_FAIL, DEFAULT_BTS_ISSUE_FAIL);
+	}
+
+	Mode parseLaunchMode(String mode) {
+		return Mode.isExists(mode) ? Mode.valueOf(mode.toUpperCase()) : Mode.DEFAULT;
 	}
 
 	public String getDescription() {
@@ -649,8 +667,39 @@ public class ListenerParameters implements Cloneable {
 		return httpWriteTimeout;
 	}
 
-	Mode parseLaunchMode(String mode) {
-		return Mode.isExists(mode) ? Mode.valueOf(mode.toUpperCase()) : Mode.DEFAULT;
+	@Nullable
+	public String getBtsProjectId() {
+		return btsProjectId;
+	}
+
+	public void setBtsProjectId(@Nullable String btsProjectId) {
+		this.btsProjectId = btsProjectId;
+	}
+
+	@Nullable
+	public String getBtsUrl() {
+		return btsUrl;
+	}
+
+	public void setBtsUrl(@Nullable String btsUrl) {
+		this.btsUrl = btsUrl;
+	}
+
+	@Nullable
+	public String getBtsIssueUrl() {
+		return btsIssueUrl;
+	}
+
+	public void setBtsIssueUrl(@Nullable String btsIssueUrl) {
+		this.btsIssueUrl = btsIssueUrl;
+	}
+
+	public boolean isBtsIssueFail() {
+		return btsIssueFail;
+	}
+
+	public void setBtsIssueFail(boolean btsIssueFail) {
+		this.btsIssueFail = btsIssueFail;
 	}
 
 	@Override
@@ -713,11 +762,16 @@ public class ListenerParameters implements Cloneable {
 		sb.append(", clientJoin=").append(clientJoin);
 		sb.append(", clientJoinMode=").append(ofNullable(clientJoinMode).map(Enum::name).orElse(null));
 		sb.append(", clientJoinTimeout=").append(clientJoinTimeout);
+		sb.append(", clientJoinLaunchTimeout=").append(clientJoinLaunchTimeout);
 		sb.append(", lockFileName=").append(lockFileName);
 		sb.append(", syncFileName=").append(syncFileName);
 		sb.append(", lockWaitTimeout=").append(lockWaitTimeout);
 		sb.append(", lockPortNumber=").append(lockPortNumber);
 		sb.append(", rxBufferSize=").append(rxBufferSize);
+		sb.append(", btsProjectId=").append(btsProjectId);
+		sb.append(", btsUrl=").append(btsUrl);
+		sb.append(", btsIssueUrl=").append(btsIssueUrl);
+		sb.append(", btsIssueFail=").append(btsIssueFail);
 		sb.append('}');
 		return sb.toString();
 	}
