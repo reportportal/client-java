@@ -21,9 +21,11 @@ import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.utils.RetryWithDelay;
+import com.epam.reportportal.utils.StaticStructuresUtils;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
+import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
@@ -387,6 +389,33 @@ public class LaunchImpl extends Launch {
 		return item;
 	}
 
+	protected void completeBtsIssues(@Nullable Issue issue) {
+		if(!ofNullable(issue).map(Issue::getExternalSystemIssues).filter(issues -> !issues.isEmpty()).isPresent()) {
+			return;
+		}
+		ListenerParameters params = getParameters();
+		Optional<String> btsUrl = ofNullable(params.getBtsUrl()).filter(url -> !url.trim().isEmpty());
+		Optional<String> btsProjectId = ofNullable(params.getBtsProjectId()).filter(id -> !id.trim().isEmpty());
+		Optional<String> btsIssueUrl = ofNullable(params.getBtsIssueUrl()).filter(url -> !url.trim().isEmpty());
+		issue.getExternalSystemIssues().stream().filter(Objects::nonNull).forEach(externalIssue -> {
+			if(externalIssue.getTicketId() == null || externalIssue.getTicketId().isEmpty()) {
+				return;
+			}
+			if (btsUrl.isPresent() && (externalIssue.getBtsUrl() == null || externalIssue.getBtsUrl().trim().isEmpty())) {
+				externalIssue.setBtsUrl(btsUrl.get());
+			}
+			if (btsProjectId.isPresent() && (externalIssue.getBtsProject() == null || externalIssue.getBtsProject().trim().isEmpty())) {
+				externalIssue.setBtsProject(btsProjectId.get());
+			}
+			if (btsIssueUrl.isPresent() && (externalIssue.getUrl() == null || externalIssue.getUrl().trim().isEmpty())) {
+				externalIssue.setUrl(
+						btsIssueUrl.get().replace("{issue_id}", externalIssue.getTicketId())
+								.replace("{bts_project}", externalIssue.getBtsProject())
+				);
+			}
+		});
+	}
+
 	/**
 	 * Finishes Test Item in ReportPortal. Non-blocking. Schedules finish after success of all child items
 	 *
@@ -411,8 +440,16 @@ public class LaunchImpl extends Launch {
 
 		getStepReporter().finishPreviousStep(ofNullable(rq.getStatus()).map(ItemStatus::valueOf).orElse(null));
 
-		if (ItemStatus.SKIPPED.name().equals(rq.getStatus()) && !getParameters().getSkippedAnIssue()) {
+		ItemStatus status = ofNullable(rq.getStatus()).map(ItemStatus::valueOf).orElse(null);
+		if (status == ItemStatus.FAILED || (status == ItemStatus.SKIPPED && getParameters().getSkippedAnIssue())) {
+			completeBtsIssues(rq.getIssue());
+		} else if (status == ItemStatus.SKIPPED && !getParameters().getSkippedAnIssue()) {
 			rq.setIssue(Launch.NOT_ISSUE);
+		} else if (status == ItemStatus.PASSED && ofNullable(rq.getIssue()).map(Issue::getExternalSystemIssues)
+				.filter(issues -> !issues.isEmpty())
+				.isPresent() && getParameters().isBtsIssueFail()) {
+			rq.setStatus(ItemStatus.FAILED.name());
+			rq.setIssue(StaticStructuresUtils.REDUNDANT_ISSUE);
 		}
 
 		QUEUE.getOrCompute(launch).addToQueue(LoggingContext.complete());

@@ -18,6 +18,7 @@ package com.epam.reportportal.service;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.step.DefaultStepReporter;
 import com.epam.reportportal.service.step.StepReporter;
+import com.epam.reportportal.utils.StaticStructuresUtils;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
@@ -30,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Proxy;
-import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
@@ -213,37 +213,5 @@ public abstract class Launch {
 	/**
 	 * An Issue to remove 'To Investigate' mark from a skipped/failed Test Item
 	 */
-	public static final Issue NOT_ISSUE = new Issue() {
-		public static final String NOT_ISSUE = "NOT_ISSUE";
-
-		@Override
-		public String getIssueType() {
-			return NOT_ISSUE;
-		}
-
-		@Override
-		public void setComment(String comment) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public void setIssueType(String type) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public void setAutoAnalyzed(boolean autoAnalyzed) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public void setIgnoreAnalyzer(boolean ignoreAnalyzer) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public void setExternalSystemIssues(Set<ExternalSystemIssue> externalSystemIssues) {
-			throw new UnsupportedOperationException();
-		}
-	};
+	public static final Issue NOT_ISSUE = StaticStructuresUtils.NOT_ISSUE;
 }
