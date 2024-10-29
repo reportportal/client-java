@@ -445,9 +445,7 @@ public class LaunchImpl extends Launch {
 			completeBtsIssues(rq.getIssue());
 		} else if (status == ItemStatus.SKIPPED && !getParameters().getSkippedAnIssue()) {
 			rq.setIssue(Launch.NOT_ISSUE);
-		} else if (status == ItemStatus.PASSED && ofNullable(rq.getIssue()).map(Issue::getExternalSystemIssues)
-				.filter(issues -> !issues.isEmpty())
-				.isPresent() && getParameters().isBtsIssueFail()) {
+		} else if (status == ItemStatus.PASSED && rq.getIssue() != null && getParameters().isBtsIssueFail()) {
 			rq.setStatus(ItemStatus.FAILED.name());
 			rq.setIssue(StaticStructuresUtils.REDUNDANT_ISSUE);
 		}
