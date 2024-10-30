@@ -57,7 +57,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.epam.reportportal.test.TestUtils.*;
-import static com.epam.reportportal.test.TestUtils.standardLaunchRequest;
 import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
@@ -83,18 +82,10 @@ public class LaunchTest {
 				"Finish time 'Thu Jan 01 00:00:00 UTC 1970' is earlier than start time 'Tue Aug 13 13:21:31 UTC 2019' for resource with ID '5d52b9899bd1160001b8f454'");
 	}
 
-	private static final ReportPortalException START_CLIENT_EXCEPTION = new ReportPortalException(
-			400,
-			"Bad Request",
-			START_ERROR_RS
-	);
+	private static final ReportPortalException START_CLIENT_EXCEPTION = new ReportPortalException(400, "Bad Request", START_ERROR_RS);
 
 	// taken from: https://github.com/reportportal/client-java/issues/99
-	private static final ReportPortalException FINISH_CLIENT_EXCEPTION = new ReportPortalException(
-			406,
-			"Not Acceptable",
-			FINISH_ERROR_RS
-	);
+	private static final ReportPortalException FINISH_CLIENT_EXCEPTION = new ReportPortalException(406, "Not Acceptable", FINISH_ERROR_RS);
 
 	@Mock
 	private ReportPortalClient rpClient;
@@ -146,18 +137,9 @@ public class LaunchTest {
 		Maybe<String> stepRs = launch.startTestItem(testRs, standardStartStepRequest());
 
 		when(rpClient.finishTestItem(eq(stepRs.blockingGet()), any())).thenThrow(FINISH_CLIENT_EXCEPTION);
-		when(rpClient.finishTestItem(
-				eq(testRs.blockingGet()),
-				any()
-		)).thenReturn(Maybe.just(new OperationCompletionRS()));
-		when(rpClient.finishTestItem(
-				eq(suiteRs.blockingGet()),
-				any()
-		)).thenReturn(Maybe.just(new OperationCompletionRS()));
-		when(rpClient.finishLaunch(
-				eq(launchUuid.blockingGet()),
-				any()
-		)).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(eq(testRs.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(eq(suiteRs.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishLaunch(eq(launchUuid.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
 
 		launch.finishTestItem(stepRs, positiveFinishRequest());
 		launch.finishTestItem(testRs, positiveFinishRequest());
@@ -184,18 +166,9 @@ public class LaunchTest {
 		when(rpClient.startTestItem(eq(testRs.blockingGet()), any())).thenThrow(START_CLIENT_EXCEPTION);
 		Maybe<String> stepRs = launch.startTestItem(testRs, standardStartStepRequest());
 
-		when(rpClient.finishTestItem(
-				eq(testRs.blockingGet()),
-				any()
-		)).thenReturn(Maybe.just(new OperationCompletionRS()));
-		when(rpClient.finishTestItem(
-				eq(suiteRs.blockingGet()),
-				any()
-		)).thenReturn(Maybe.just(new OperationCompletionRS()));
-		when(rpClient.finishLaunch(
-				eq(launchUuid.blockingGet()),
-				any()
-		)).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(eq(testRs.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(eq(suiteRs.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishLaunch(eq(launchUuid.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
 
 		launch.finishTestItem(stepRs, positiveFinishRequest());
 		launch.finishTestItem(testRs, positiveFinishRequest());
@@ -229,8 +202,7 @@ public class LaunchTest {
 
 		// Verify Launch set on start root test item
 		ExecutorService launchSuiteStartExecutor = Executors.newSingleThreadExecutor();
-		Maybe<String> parent = launchSuiteStartExecutor.submit(() -> launchOnCreate.startTestItem(
-				standardStartSuiteRequest())).get();
+		Maybe<String> parent = launchSuiteStartExecutor.submit(() -> launchOnCreate.startTestItem(standardStartSuiteRequest())).get();
 		launchGet = launchSuiteStartExecutor.submit(Launch::currentLaunch).get();
 		assertThat(launchGet, sameInstance(launchOnCreate));
 		shutdownExecutorService(launchSuiteStartExecutor);
@@ -298,8 +270,7 @@ public class LaunchTest {
 	}
 
 	@Test
-	public void launch_should_correctly_track_parent_items_for_annotation_based_nested_steps()
-			throws NoSuchMethodException {
+	public void launch_should_correctly_track_parent_items_for_annotation_based_nested_steps() throws NoSuchMethodException {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateFinishTestItemResponse(rpClient);
@@ -506,7 +477,7 @@ public class LaunchTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = {"FAILED", "SKIPPED"})
+	@ValueSource(strings = { "FAILED", "SKIPPED" })
 	public void verify_external_issue_filling_logic(String itemStatus) {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
