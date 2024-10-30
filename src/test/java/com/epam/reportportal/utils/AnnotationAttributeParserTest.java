@@ -1,7 +1,7 @@
 package com.epam.reportportal.utils;
 
 import com.epam.reportportal.annotations.attribute.*;
-import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
+import com.epam.ta.reportportal.ws.reporting.ItemAttributesRQ;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
 

@@ -19,7 +19,7 @@ package com.epam.reportportal.service;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
-import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.reporting.StartTestItemRQ;
 import io.reactivex.Maybe;
 import okhttp3.MultipartBody;
 import org.awaitility.Awaitility;
