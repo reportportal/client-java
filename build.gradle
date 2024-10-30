@@ -80,7 +80,7 @@ dependencies {
     testImplementation('org.awaitility:awaitility:4.0.2') {
         exclude group: 'org.hamcrest'
     }
-    testImplementation 'org.apache.commons:commons-io:1.3.2'
+    testImplementation 'commons-io:commons-io:2.17.0'
     testImplementation 'com.epam.reportportal:agent-java-test-utils:0.0.6'
 
 }

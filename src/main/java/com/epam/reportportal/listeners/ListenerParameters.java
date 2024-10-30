@@ -55,11 +55,13 @@ public class ListenerParameters implements Cloneable {
 	private static final String DEFAULT_CLIENT_JOIN_MODE = "FILE";
 	private static final String DEFAULT_LOCK_FILE_NAME = "reportportal.lock";
 	private static final String DEFAULT_SYNC_FILE_NAME = "reportportal.sync";
-	public static final long DEFAULT_FILE_WAIT_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+	private static final int DEFAULT_CLIENT_JOIN_LOCK_PORT = 25464;
+	public static final long DEFAULT_FILE_WAIT_TIMEOUT = TimeUnit.MINUTES.toMillis(1);
 	private static final long DEFAULT_CLIENT_JOIN_TIMEOUT = TimeUnit.MINUTES.toMillis(30);
+	private static final long DEFAULT_CLIENT_JOIN_LAUNCH_TIMEOUT = TimeUnit.MINUTES.toMillis(1);
 	private static final String DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT = "MILLISECONDS";
 	private static final String DEFAULT_CLIENT_JOIN_LOCK_TIMEOUT_UNIT = DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT;
-	private static final int DEFAULT_CLIENT_JOIN_LOCK_PORT = 25464;
+	private static final String DEFAULT_CLIENT_JOIN_LAUNCH_TIMEOUT_UNIT = DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT;
 
 	private static final boolean DEFAULT_TRUNCATE = true;
 	private static final int DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT = 1024;
@@ -71,6 +73,8 @@ public class ListenerParameters implements Cloneable {
 
 	public static final boolean DEFAULT_LAUNCH_UUID_PRINT = false;
 	public static final String DEFAULT_LAUNCH_UUID_OUTPUT = "stdout";
+
+	public static final boolean DEFAULT_BTS_ISSUE_FAIL = true;
 
 	private String description;
 	private String apiKey;
@@ -106,9 +110,10 @@ public class ListenerParameters implements Cloneable {
 	private LaunchIdLockMode clientJoinMode;
 	private String lockFileName;
 	private String syncFileName;
+	private int lockPortNumber;
 	private long lockWaitTimeout;
 	private long clientJoinTimeout;
-	private int lockPortNumber;
+	private long clientJoinLaunchTimeout;
 
 	private int rxBufferSize;
 
@@ -119,6 +124,11 @@ public class ListenerParameters implements Cloneable {
 
 	private boolean printLaunchUuid;
 	private PrintStream printLaunchUuidOutput;
+
+	private String btsProjectId;
+	private String btsUrl;
+	private String btsIssueUrl;
+	private boolean btsIssueFail;
 
 	@Nonnull
 	private static ChronoUnit toChronoUnit(@Nonnull TimeUnit t) {
@@ -175,11 +185,12 @@ public class ListenerParameters implements Cloneable {
 
 		this.clientJoin = DEFAULT_CLIENT_JOIN;
 		this.clientJoinMode = LaunchIdLockMode.valueOf(DEFAULT_CLIENT_JOIN_MODE);
-		this.clientJoinTimeout = DEFAULT_CLIENT_JOIN_TIMEOUT;
+		this.lockPortNumber = DEFAULT_CLIENT_JOIN_LOCK_PORT;
 		this.lockFileName = DEFAULT_LOCK_FILE_NAME;
 		this.syncFileName = DEFAULT_SYNC_FILE_NAME;
-		this.lockWaitTimeout = DEFAULT_FILE_WAIT_TIMEOUT_MS;
-		this.lockPortNumber = DEFAULT_CLIENT_JOIN_LOCK_PORT;
+		this.lockWaitTimeout = DEFAULT_FILE_WAIT_TIMEOUT;
+		this.clientJoinTimeout = DEFAULT_CLIENT_JOIN_TIMEOUT;
+		this.clientJoinLaunchTimeout = DEFAULT_CLIENT_JOIN_LAUNCH_TIMEOUT;
 
 		this.rxBufferSize = DEFAULT_RX_BUFFER_SIZE;
 
@@ -191,6 +202,8 @@ public class ListenerParameters implements Cloneable {
 		this.printLaunchUuid = DEFAULT_LAUNCH_UUID_PRINT;
 		this.printLaunchUuidOutput =
 				OutputTypes.valueOf(DEFAULT_LAUNCH_UUID_OUTPUT.toUpperCase(Locale.ROOT)).getOutput();
+
+		this.btsIssueFail = DEFAULT_BTS_ISSUE_FAIL;
 	}
 
 	/**
@@ -243,28 +256,29 @@ public class ListenerParameters implements Cloneable {
 
 		this.ioPoolSize = properties.getPropertyAsInt(IO_POOL_SIZE, DEFAULT_IO_POOL_SIZE);
 
+		// client join parameters
 		clientJoin = properties.getPropertyAsBoolean(CLIENT_JOIN_MODE, DEFAULT_CLIENT_JOIN);
 		clientJoinMode = LaunchIdLockMode.valueOf(properties.getProperty(CLIENT_JOIN_MODE_VALUE,
 				DEFAULT_CLIENT_JOIN_MODE
 		));
-
-		clientJoinTimeout = ofNullable(properties.getProperty(CLIENT_JOIN_TIMEOUT_VALUE)).map(t -> TimeUnit.valueOf(
-						properties.getProperty(CLIENT_JOIN_TIMEOUT_UNIT, DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT))
-				.toMillis(Long.parseLong(t))).orElse(DEFAULT_CLIENT_JOIN_TIMEOUT);
-
+		lockPortNumber = properties.getPropertyAsInt(CLIENT_JOIN_LOCK_PORT, DEFAULT_CLIENT_JOIN_LOCK_PORT);
 		lockFileName = properties.getProperty(FILE_LOCK_NAME, DEFAULT_LOCK_FILE_NAME);
 		syncFileName = properties.getProperty(FILE_SYNC_NAME, DEFAULT_SYNC_FILE_NAME);
-
-		String waitTimeoutStr = properties.getProperty(CLIENT_JOIN_LOCK_TIMEOUT_VALUE);
-		if (waitTimeoutStr != null) {
-			TimeUnit waitTimeUnit = TimeUnit.valueOf(properties.getProperty(CLIENT_JOIN_LOCK_TIMEOUT_UNIT,
-					DEFAULT_CLIENT_JOIN_LOCK_TIMEOUT_UNIT
-			));
-			lockWaitTimeout = waitTimeUnit.toMillis(Long.parseLong(waitTimeoutStr));
-		} else {
-			lockWaitTimeout = DEFAULT_FILE_WAIT_TIMEOUT_MS;
-		}
-		lockPortNumber = properties.getPropertyAsInt(CLIENT_JOIN_LOCK_PORT, DEFAULT_CLIENT_JOIN_LOCK_PORT);
+		clientJoinTimeout = ofNullable(properties.getProperty(CLIENT_JOIN_TIMEOUT_VALUE))
+				.map(t -> TimeUnit.valueOf(properties.getProperty(CLIENT_JOIN_TIMEOUT_UNIT,
+						DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT
+				)).toMillis(Long.parseLong(t)))
+				.orElse(DEFAULT_CLIENT_JOIN_TIMEOUT);
+		lockWaitTimeout = ofNullable(properties.getProperty(CLIENT_JOIN_LOCK_TIMEOUT_VALUE))
+				.map(t -> TimeUnit.valueOf(properties.getProperty(CLIENT_JOIN_LOCK_TIMEOUT_UNIT,
+						DEFAULT_CLIENT_JOIN_LOCK_TIMEOUT_UNIT
+				)).toMillis(Long.parseLong(t)))
+				.orElse(DEFAULT_FILE_WAIT_TIMEOUT);
+		clientJoinLaunchTimeout = ofNullable(properties.getProperty(CLIENT_JOIN_LAUNCH_TIMEOUT_VALUE))
+				.map(t -> TimeUnit.valueOf(properties.getProperty(CLIENT_JOIN_LAUNCH_TIMEOUT_UNIT,
+						DEFAULT_CLIENT_JOIN_LAUNCH_TIMEOUT_UNIT
+				)).toMillis(Long.parseLong(t)))
+				.orElse(DEFAULT_CLIENT_JOIN_LAUNCH_TIMEOUT);
 
 		this.rxBufferSize = properties.getPropertyAsInt(RX_BUFFER_SIZE, DEFAULT_RX_BUFFER_SIZE);
 
@@ -282,6 +296,15 @@ public class ListenerParameters implements Cloneable {
 								.getProperty(LAUNCH_UUID_PRINT_OUTPUT, DEFAULT_LAUNCH_UUID_OUTPUT)
 								.toUpperCase(Locale.ROOT)
 				).getOutput();
+
+		this.btsProjectId = properties.getProperty(BTS_PROJECT);
+		this.btsUrl = properties.getProperty(BTS_URL);
+		this.btsIssueUrl = properties.getProperty(BTS_ISSUE_URL);
+		this.btsIssueFail = properties.getPropertyAsBoolean(BTS_ISSUE_FAIL, DEFAULT_BTS_ISSUE_FAIL);
+	}
+
+	Mode parseLaunchMode(String mode) {
+		return Mode.isExists(mode) ? Mode.valueOf(mode.toUpperCase()) : Mode.DEFAULT;
 	}
 
 	public String getDescription() {
@@ -510,6 +533,14 @@ public class ListenerParameters implements Cloneable {
 		this.clientJoinMode = clientJoinMode;
 	}
 
+	public int getLockPortNumber() {
+		return lockPortNumber;
+	}
+
+	public void setLockPortNumber(int lockPortNumber) {
+		this.lockPortNumber = lockPortNumber;
+	}
+
 	public String getLockFileName() {
 		return lockFileName;
 	}
@@ -542,12 +573,12 @@ public class ListenerParameters implements Cloneable {
 		this.lockWaitTimeout = timeout;
 	}
 
-	public int getLockPortNumber() {
-		return lockPortNumber;
+	public long getClientJoinLaunchTimeout() {
+		return clientJoinLaunchTimeout;
 	}
 
-	public void setLockPortNumber(int lockPortNumber) {
-		this.lockPortNumber = lockPortNumber;
+	public void setClientJoinLaunchTimeout(long clientJoinLaunchTimeout) {
+		this.clientJoinLaunchTimeout = clientJoinLaunchTimeout;
 	}
 
 	public boolean isHttpLogging() {
@@ -636,8 +667,39 @@ public class ListenerParameters implements Cloneable {
 		return httpWriteTimeout;
 	}
 
-	Mode parseLaunchMode(String mode) {
-		return Mode.isExists(mode) ? Mode.valueOf(mode.toUpperCase()) : Mode.DEFAULT;
+	@Nullable
+	public String getBtsProjectId() {
+		return btsProjectId;
+	}
+
+	public void setBtsProjectId(@Nullable String btsProjectId) {
+		this.btsProjectId = btsProjectId;
+	}
+
+	@Nullable
+	public String getBtsUrl() {
+		return btsUrl;
+	}
+
+	public void setBtsUrl(@Nullable String btsUrl) {
+		this.btsUrl = btsUrl;
+	}
+
+	@Nullable
+	public String getBtsIssueUrl() {
+		return btsIssueUrl;
+	}
+
+	public void setBtsIssueUrl(@Nullable String btsIssueUrl) {
+		this.btsIssueUrl = btsIssueUrl;
+	}
+
+	public boolean isBtsIssueFail() {
+		return btsIssueFail;
+	}
+
+	public void setBtsIssueFail(boolean btsIssueFail) {
+		this.btsIssueFail = btsIssueFail;
 	}
 
 	@Override
@@ -700,11 +762,16 @@ public class ListenerParameters implements Cloneable {
 		sb.append(", clientJoin=").append(clientJoin);
 		sb.append(", clientJoinMode=").append(ofNullable(clientJoinMode).map(Enum::name).orElse(null));
 		sb.append(", clientJoinTimeout=").append(clientJoinTimeout);
+		sb.append(", clientJoinLaunchTimeout=").append(clientJoinLaunchTimeout);
 		sb.append(", lockFileName=").append(lockFileName);
 		sb.append(", syncFileName=").append(syncFileName);
 		sb.append(", lockWaitTimeout=").append(lockWaitTimeout);
 		sb.append(", lockPortNumber=").append(lockPortNumber);
 		sb.append(", rxBufferSize=").append(rxBufferSize);
+		sb.append(", btsProjectId=").append(btsProjectId);
+		sb.append(", btsUrl=").append(btsUrl);
+		sb.append(", btsIssueUrl=").append(btsIssueUrl);
+		sb.append(", btsIssueFail=").append(btsIssueFail);
 		sb.append('}');
 		return sb.toString();
 	}

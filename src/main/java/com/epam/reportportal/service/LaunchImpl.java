@@ -21,9 +21,11 @@ import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.utils.RetryWithDelay;
+import com.epam.reportportal.utils.StaticStructuresUtils;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
+import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
@@ -53,6 +55,7 @@ import static java.util.Optional.ofNullable;
  * A basic Launch object implementation which does straight requests to ReportPortal.
  */
 public class LaunchImpl extends Launch {
+	public static final String DISABLE_PROPERTY = "AGENT_NO_ANALYTICS";
 
 	private static final Map<ExecutorService, Scheduler> SCHEDULERS = new ConcurrentHashMap<>();
 
@@ -239,18 +242,31 @@ public class LaunchImpl extends Launch {
 	/**
 	 * Starts launch in ReportPortal. Does NOT start the same launch twice
 	 *
+	 * @param statistics Send or not Launch statistics
 	 * @return Launch ID promise
 	 */
 	@Nonnull
-	public Maybe<String> start() {
+	protected Maybe<String> start(boolean statistics) {
 		launch.subscribe(logMaybeResults("Launch start"));
 		ListenerParameters params = getParameters();
 		if(params.isPrintLaunchUuid()) {
 			launch.subscribe(printLaunch(params));
 		}
 		LaunchLoggingContext.init(this.launch, getClient(), getScheduler(), getParameters());
-		getStatisticsService().sendEvent(launch, startRq);
+		if(statistics) {
+			getStatisticsService().sendEvent(launch, startRq);
+		}
 		return launch;
+	}
+
+	/**
+	 * Starts launch in ReportPortal. Does NOT start the same launch twice
+	 *
+	 * @return Launch ID promise
+	 */
+	@Nonnull
+	public Maybe<String> start() {
+		return start(System.getenv(DISABLE_PROPERTY) == null);
 	}
 
 	/**
@@ -373,6 +389,38 @@ public class LaunchImpl extends Launch {
 		return item;
 	}
 
+	protected void completeBtsIssues(@Nullable Issue issue) {
+		if(!ofNullable(issue).map(Issue::getExternalSystemIssues).filter(issues -> !issues.isEmpty()).isPresent()) {
+			return;
+		}
+		ListenerParameters params = getParameters();
+		Optional<String> btsUrl = ofNullable(params.getBtsUrl()).filter(StringUtils::isNotBlank);
+		Optional<String> btsProjectId = ofNullable(params.getBtsProjectId()).filter(StringUtils::isNotBlank);
+		Optional<String> btsIssueUrl = ofNullable(params.getBtsIssueUrl()).filter(StringUtils::isNotBlank);
+		issue.getExternalSystemIssues().stream().filter(Objects::nonNull).forEach(externalIssue -> {
+			if(StringUtils.isBlank(externalIssue.getTicketId())) {
+				return;
+			}
+			if (btsUrl.isPresent() && StringUtils.isBlank(externalIssue.getBtsUrl())) {
+				externalIssue.setBtsUrl(btsUrl.get());
+			}
+			if (btsProjectId.isPresent() && StringUtils.isBlank(externalIssue.getBtsProject())) {
+				externalIssue.setBtsProject(btsProjectId.get());
+			}
+			if (btsIssueUrl.isPresent() && StringUtils.isBlank(externalIssue.getUrl())) {
+				externalIssue.setUrl(btsIssueUrl.get());
+			}
+			if (StringUtils.isNotBlank(externalIssue.getUrl())) {
+				if (StringUtils.isNotBlank(externalIssue.getTicketId())) {
+					externalIssue.setUrl(externalIssue.getUrl().replace("{issue_id}", externalIssue.getTicketId()));
+				}
+				if (StringUtils.isNotBlank(externalIssue.getBtsProject())) {
+					externalIssue.setUrl(externalIssue.getUrl().replace("{bts_project}", externalIssue.getBtsProject()));
+				}
+			}
+		});
+	}
+
 	/**
 	 * Finishes Test Item in ReportPortal. Non-blocking. Schedules finish after success of all child items
 	 *
@@ -397,8 +445,14 @@ public class LaunchImpl extends Launch {
 
 		getStepReporter().finishPreviousStep(ofNullable(rq.getStatus()).map(ItemStatus::valueOf).orElse(null));
 
-		if (ItemStatus.SKIPPED.name().equals(rq.getStatus()) && !getParameters().getSkippedAnIssue()) {
+		ItemStatus status = ofNullable(rq.getStatus()).map(ItemStatus::valueOf).orElse(null);
+		if (status == ItemStatus.FAILED || (status == ItemStatus.SKIPPED && getParameters().getSkippedAnIssue())) {
+			completeBtsIssues(rq.getIssue());
+		} else if (status == ItemStatus.SKIPPED && !getParameters().getSkippedAnIssue()) {
 			rq.setIssue(Launch.NOT_ISSUE);
+		} else if (status == ItemStatus.PASSED && rq.getIssue() != null && getParameters().isBtsIssueFail()) {
+			rq.setStatus(ItemStatus.FAILED.name());
+			rq.setIssue(StaticStructuresUtils.REDUNDANT_ISSUE);
 		}
 
 		QUEUE.getOrCompute(launch).addToQueue(LoggingContext.complete());

@@ -1,6 +1,12 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `rp.client.join.launch.timeout.value` and `rp.client.join.launch.timeout.unit` configuration properties to control SecondaryLaunch start timeout on client join, by @HardNorth
+- `rp.bts.project`, `rp.bts.url`, `rp.bts.issue.url`, `rp.bts.issue.fail` configuration properties to control manual issue set by Agents, by @HardNorth
+### Changed
+- Disable Launch start wait for Secondary Launches if async reporting is enabled, by @HardNorth
+- Disable Statistics for Secondary Launches, by @HardNorth
 
 ## [5.2.15]
 ### Changed
@@ -304,7 +310,7 @@
 ## [5.0.15]
 ### Added
 - A method to emit a log entry for a certain item: 
-  com.epam.reportportal.service.ReportPortal.emitLog(io.reactivex.Maybe<java.lang.String>, 
+  com.epam.reportportal.service.ReportPortal.emitLog(io.reactivex.Maybe<java.lang.String>,
 java.util.function.Function<java.lang.String,com.epam.ta.reportportal.ws.model.log.SaveLogRQ>)
 ### Changed
 - Apache Tika was updated on version 1.20

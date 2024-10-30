@@ -70,6 +70,7 @@ public class ReportPortalClientJoinTest {
 	private final Supplier<ListenerParameters> paramSupplier = () -> {
 		ListenerParameters p = TestUtils.standardParameters();
 		p.setClientJoin(true);
+		p.setAsyncReporting(false);
 		return p;
 	};
 
@@ -346,10 +347,9 @@ public class ReportPortalClientJoinTest {
 	}
 
 	@Test
-	public void test_secondary_launch_awaits_get_launch_by_uuid_correct_response_for_v2() {
+	public void test_secondary_launch_does_not_await_get_launch_by_uuid_correct_response_for_v2() {
 		int num = 2;
 		simulateObtainLaunchUuidResponse(launchIdLock);
-		simulateGetLaunchByUuidResponse(rpClient);
 		ListenerParameters p = paramSupplier.get();
 		p.setAsyncReporting(true);
 		List<Launch> launches = new ArrayList<>(num);
@@ -360,7 +360,7 @@ public class ReportPortalClientJoinTest {
 		launches.get(1).start();
 
 		verify(launchIdLock, timeout(WAIT_TIMEOUT).times(2)).obtainLaunchUuid(anyString());
-		verify(rpClient, after(WAIT_TIMEOUT * 3).times(3)).getLaunchByUuid(anyString());
+		verify(rpClient, after(WAIT_TIMEOUT * 3).times(0)).getLaunchByUuid(anyString());
 	}
 
 	@Test

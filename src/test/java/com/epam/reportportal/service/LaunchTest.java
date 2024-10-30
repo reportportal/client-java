@@ -25,9 +25,11 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.utils.ObjectUtils;
+import com.epam.reportportal.utils.StaticStructuresUtils;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
+import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -36,9 +38,12 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
+import javax.annotation.Nonnull;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
@@ -60,6 +65,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings({ "ReactiveStreamsUnusedPublisher", "ResultOfMethodCallIgnored" })
 public class LaunchTest {
 
 	private static final ErrorRS START_ERROR_RS;
@@ -76,18 +82,10 @@ public class LaunchTest {
 				"Finish time 'Thu Jan 01 00:00:00 UTC 1970' is earlier than start time 'Tue Aug 13 13:21:31 UTC 2019' for resource with ID '5d52b9899bd1160001b8f454'");
 	}
 
-	private static final ReportPortalException START_CLIENT_EXCEPTION = new ReportPortalException(
-			400,
-			"Bad Request",
-			START_ERROR_RS
-	);
+	private static final ReportPortalException START_CLIENT_EXCEPTION = new ReportPortalException(400, "Bad Request", START_ERROR_RS);
 
 	// taken from: https://github.com/reportportal/client-java/issues/99
-	private static final ReportPortalException FINISH_CLIENT_EXCEPTION = new ReportPortalException(
-			406,
-			"Not Acceptable",
-			FINISH_ERROR_RS
-	);
+	private static final ReportPortalException FINISH_CLIENT_EXCEPTION = new ReportPortalException(406, "Not Acceptable", FINISH_ERROR_RS);
 
 	@Mock
 	private ReportPortalClient rpClient;
@@ -101,23 +99,37 @@ public class LaunchTest {
 		shutdownExecutorService(executor);
 	}
 
-	@Test
-	public void launch_should_finish_all_items_even_if_one_of_finishes_failed() {
-		simulateStartLaunchResponse(rpClient);
-		simulateStartTestItemResponse(rpClient);
-		simulateStartChildTestItemResponse(rpClient);
-
-		Launch launch = new LaunchImpl(
-				rpClient,
-				STANDARD_PARAMETERS,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
+	@Nonnull
+	private Launch createLaunch(@Nonnull StartLaunchRQ startRq, @Nonnull ListenerParameters parameters) {
+		return new LaunchImpl(rpClient, parameters, startRq, executor) {
 			@Override
 			StatisticsService getStatisticsService() {
 				return statisticsService;
 			}
 		};
+	}
+
+	@Nonnull
+	private Launch createLaunch(@Nonnull StartLaunchRQ startRq) {
+		return createLaunch(startRq, standardParameters());
+	}
+
+	@Nonnull
+	private Launch createLaunch(@Nonnull ListenerParameters parameters) {
+		return createLaunch(standardLaunchRequest(parameters), parameters);
+	}
+
+	@Nonnull
+	private Launch createLaunch() {
+		return createLaunch(standardLaunchRequest(STANDARD_PARAMETERS));
+	}
+
+	@Test
+	public void launch_should_finish_all_items_even_if_one_of_finishes_failed() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateStartChildTestItemResponse(rpClient);
+		Launch launch = createLaunch();
 
 		Maybe<String> launchUuid = launch.start();
 		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
@@ -125,18 +137,9 @@ public class LaunchTest {
 		Maybe<String> stepRs = launch.startTestItem(testRs, standardStartStepRequest());
 
 		when(rpClient.finishTestItem(eq(stepRs.blockingGet()), any())).thenThrow(FINISH_CLIENT_EXCEPTION);
-		when(rpClient.finishTestItem(
-				eq(testRs.blockingGet()),
-				any()
-		)).thenReturn(Maybe.just(new OperationCompletionRS()));
-		when(rpClient.finishTestItem(
-				eq(suiteRs.blockingGet()),
-				any()
-		)).thenReturn(Maybe.just(new OperationCompletionRS()));
-		when(rpClient.finishLaunch(
-				eq(launchUuid.blockingGet()),
-				any()
-		)).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(eq(testRs.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(eq(suiteRs.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishLaunch(eq(launchUuid.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
 
 		launch.finishTestItem(stepRs, positiveFinishRequest());
 		launch.finishTestItem(testRs, positiveFinishRequest());
@@ -154,18 +157,7 @@ public class LaunchTest {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
-
-		Launch launch = new LaunchImpl(
-				rpClient,
-				STANDARD_PARAMETERS,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch();
 
 		Maybe<String> launchUuid = launch.start();
 		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
@@ -174,18 +166,9 @@ public class LaunchTest {
 		when(rpClient.startTestItem(eq(testRs.blockingGet()), any())).thenThrow(START_CLIENT_EXCEPTION);
 		Maybe<String> stepRs = launch.startTestItem(testRs, standardStartStepRequest());
 
-		when(rpClient.finishTestItem(
-				eq(testRs.blockingGet()),
-				any()
-		)).thenReturn(Maybe.just(new OperationCompletionRS()));
-		when(rpClient.finishTestItem(
-				eq(suiteRs.blockingGet()),
-				any()
-		)).thenReturn(Maybe.just(new OperationCompletionRS()));
-		when(rpClient.finishLaunch(
-				eq(launchUuid.blockingGet()),
-				any()
-		)).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(eq(testRs.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishTestItem(eq(suiteRs.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishLaunch(eq(launchUuid.blockingGet()), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
 
 		launch.finishTestItem(stepRs, positiveFinishRequest());
 		launch.finishTestItem(testRs, positiveFinishRequest());
@@ -205,16 +188,7 @@ public class LaunchTest {
 
 		// Verify Launch set on creation
 		ExecutorService launchCreateExecutor = Executors.newSingleThreadExecutor();
-		Launch launchOnCreate = launchCreateExecutor.submit(() -> new LaunchImpl(rpClient,
-				STANDARD_PARAMETERS,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		}).get();
+		Launch launchOnCreate = launchCreateExecutor.submit(() -> this.createLaunch()).get();
 		Launch launchGet = launchCreateExecutor.submit(Launch::currentLaunch).get();
 		assertThat(launchGet, sameInstance(launchOnCreate));
 		shutdownExecutorService(launchCreateExecutor);
@@ -228,8 +202,7 @@ public class LaunchTest {
 
 		// Verify Launch set on start root test item
 		ExecutorService launchSuiteStartExecutor = Executors.newSingleThreadExecutor();
-		Maybe<String> parent = launchSuiteStartExecutor.submit(() -> launchOnCreate.startTestItem(
-				standardStartSuiteRequest())).get();
+		Maybe<String> parent = launchSuiteStartExecutor.submit(() -> launchOnCreate.startTestItem(standardStartSuiteRequest())).get();
 		launchGet = launchSuiteStartExecutor.submit(Launch::currentLaunch).get();
 		assertThat(launchGet, sameInstance(launchOnCreate));
 		shutdownExecutorService(launchSuiteStartExecutor);
@@ -249,12 +222,7 @@ public class LaunchTest {
 		simulateFinishLaunchResponse(rpClient);
 
 		StartLaunchRQ startRq = standardLaunchRequest(STANDARD_PARAMETERS);
-		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, startRq, executor) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch(startRq);
 		launch.start();
 		launch.finish(standardLaunchFinishRequest());
 
@@ -302,26 +270,14 @@ public class LaunchTest {
 	}
 
 	@Test
-	public void launch_should_correctly_track_parent_items_for_annotation_based_nested_steps()
-			throws NoSuchMethodException {
+	public void launch_should_correctly_track_parent_items_for_annotation_based_nested_steps() throws NoSuchMethodException {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateFinishTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
 		simulateFinishLaunchResponse(rpClient);
 		simulateBatchLogResponse(rpClient);
-
-		Launch launch = new LaunchImpl(
-				rpClient,
-				STANDARD_PARAMETERS,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch();
 
 		launch.start();
 		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
@@ -356,18 +312,7 @@ public class LaunchTest {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
-
-		Launch launch = new LaunchImpl(
-				rpClient,
-				STANDARD_PARAMETERS,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch();
 
 		StartTestItemRQ suiteRq = standardStartSuiteRequest();
 		suiteRq.setName(suiteRq.getName() + RandomStringUtils.random(1025 - suiteRq.getName().length()));
@@ -409,12 +354,7 @@ public class LaunchTest {
 		String longValue = RandomStringUtils.randomAlphanumeric(129);
 		parameters.setAttributes(Collections.singleton(new ItemAttributesRQ(longKey, longValue)));
 
-		Launch launch = new LaunchImpl(rpClient, parameters, standardLaunchRequest(parameters), executor) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch(parameters);
 
 		StartTestItemRQ suiteStartRq = standardStartSuiteRequest();
 		suiteStartRq.setAttributes(Collections.singleton(new ItemAttributesRQ(longKey, longValue)));
@@ -457,8 +397,7 @@ public class LaunchTest {
 		simulateStartTestItemResponse(rpClient);
 		simulateFinishTestItemResponse(rpClient);
 
-		StartLaunchRQ startRq = standardLaunchRequest(STANDARD_PARAMETERS);
-		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, startRq, executor);
+		Launch launch = createLaunch();
 		launch.start();
 		Maybe<String> id = launch.startTestItem(standardStartSuiteRequest());
 		launch.finishTestItem(id, positiveFinishRequest());
@@ -507,18 +446,7 @@ public class LaunchTest {
 	@Test
 	public void verify_launch_get_response() {
 		simulateStartLaunchResponse(rpClient);
-
-		Launch launch = new LaunchImpl(
-				rpClient,
-				STANDARD_PARAMETERS,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch();
 
 		Maybe<String> launchUuid = launch.start();
 		assertThat(launchUuid, notNullValue());
@@ -537,18 +465,7 @@ public class LaunchTest {
 		ListenerParameters parameters = standardParameters();
 		parameters.setPrintLaunchUuid(true);
 		parameters.setPrintLaunchUuidOutput(testStream);
-
-		Launch launch = new LaunchImpl(
-				rpClient,
-				parameters,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch(parameters);
 
 		String launchUuid = launch.start().blockingGet();
 		Awaitility.await("Wait for Launch UUID output").atMost(Duration.ofSeconds(10)).until(() -> {
@@ -557,5 +474,176 @@ public class LaunchTest {
 		});
 		String result = baos.toString(StandardCharsets.UTF_8.name());
 		assertThat(result, endsWith(launchUuid + System.lineSeparator()));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "FAILED", "SKIPPED" })
+	public void verify_external_issue_filling_logic(String itemStatus) {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateFinishTestItemResponse(rpClient);
+		ListenerParameters parameters = standardParameters();
+		parameters.setBtsUrl("https://example.com");
+		parameters.setBtsProjectId("example_project");
+		parameters.setBtsIssueUrl("https://example.com/{bts_project}/issue/{issue_id}");
+		Launch launch = createLaunch(parameters);
+
+		String launchUuid = launch.start().blockingGet();
+		StartTestItemRQ itemRq = standardStartStepRequest();
+		itemRq.setLaunchUuid(launchUuid);
+		Maybe<String> itemId = launch.startTestItem(itemRq);
+		FinishTestItemRQ finishRq = positiveFinishRequest();
+		finishRq.setStatus(itemStatus);
+		Issue issue = new Issue();
+		issue.setIssueType("pb001");
+		issue.setComment("issue_comment");
+		Issue.ExternalSystemIssue externalIssue = new Issue.ExternalSystemIssue();
+		externalIssue.setTicketId("RP-001");
+		issue.setExternalSystemIssues(Collections.singleton(externalIssue));
+		finishRq.setIssue(issue);
+		launch.finishTestItem(itemId, finishRq).blockingGet();
+
+		ArgumentCaptor<FinishTestItemRQ> captor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(rpClient).finishTestItem(eq(itemId.blockingGet()), captor.capture());
+
+		FinishTestItemRQ resultFinishRq = captor.getValue();
+		assertThat(resultFinishRq.getIssue().getExternalSystemIssues(), hasSize(1));
+		Issue.ExternalSystemIssue resultExternalIssue = resultFinishRq.getIssue().getExternalSystemIssues().iterator().next();
+		assertThat(resultExternalIssue.getTicketId(), equalTo("RP-001"));
+		assertThat(resultExternalIssue.getUrl(), equalTo("https://example.com/example_project/issue/RP-001"));
+		assertThat(resultExternalIssue.getBtsUrl(), equalTo("https://example.com"));
+		assertThat(resultExternalIssue.getBtsProject(), equalTo("example_project"));
+	}
+
+	@Test
+	public void verify_failing_item_with_issue_on_passed_test() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateFinishTestItemResponse(rpClient);
+		Launch launch = createLaunch();
+
+		String launchUuid = launch.start().blockingGet();
+		StartTestItemRQ itemRq = standardStartStepRequest();
+		itemRq.setLaunchUuid(launchUuid);
+		Maybe<String> itemId = launch.startTestItem(itemRq);
+		FinishTestItemRQ finishRq = positiveFinishRequest();
+		finishRq.setIssue(new Issue());
+		launch.finishTestItem(itemId, finishRq).blockingGet();
+
+		ArgumentCaptor<FinishTestItemRQ> captor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(rpClient).finishTestItem(eq(itemId.blockingGet()), captor.capture());
+		FinishTestItemRQ resultFinishRq = captor.getValue();
+
+		assertThat(resultFinishRq.getIssue(), notNullValue());
+		assertThat(resultFinishRq.getStatus(), equalTo(ItemStatus.FAILED.name()));
+		Issue issue = resultFinishRq.getIssue();
+		assertThat(issue.getIssueType(), equalTo(StaticStructuresUtils.REDUNDANT_ISSUE.getIssueType()));
+		assertThat(issue.getComment(), equalTo(StaticStructuresUtils.REDUNDANT_ISSUE.getComment()));
+		assertThat(issue.getExternalSystemIssues(), nullValue());
+	}
+
+	@Test
+	public void verify_not_failing_item_with_issue_on_passed_test_if_it_turned_off() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateFinishTestItemResponse(rpClient);
+		ListenerParameters parameters = standardParameters();
+		parameters.setBtsIssueFail(false);
+		Launch launch = createLaunch(parameters);
+
+		String launchUuid = launch.start().blockingGet();
+		StartTestItemRQ itemRq = standardStartStepRequest();
+		itemRq.setLaunchUuid(launchUuid);
+		Maybe<String> itemId = launch.startTestItem(itemRq);
+		FinishTestItemRQ finishRq = positiveFinishRequest();
+		finishRq.setIssue(new Issue());
+		launch.finishTestItem(itemId, finishRq).blockingGet();
+
+		ArgumentCaptor<FinishTestItemRQ> captor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(rpClient).finishTestItem(eq(itemId.blockingGet()), captor.capture());
+		FinishTestItemRQ resultFinishRq = captor.getValue();
+
+		assertThat(resultFinishRq.getIssue(), notNullValue());
+		Issue issue = resultFinishRq.getIssue();
+		assertThat(issue.getIssueType(), nullValue());
+		assertThat(issue.getComment(), nullValue());
+		assertThat(issue.getExternalSystemIssues(), nullValue());
+	}
+
+	@Test
+	public void verify_external_issue_no_override_if_set() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateFinishTestItemResponse(rpClient);
+		ListenerParameters parameters = standardParameters();
+		parameters.setBtsUrl("https://example.com");
+		parameters.setBtsProjectId("example_project");
+		parameters.setBtsIssueUrl("https://example.com/{bts_project}/issue/{issue_id}");
+		Launch launch = createLaunch(parameters);
+
+		String launchUuid = launch.start().blockingGet();
+		StartTestItemRQ itemRq = standardStartStepRequest();
+		itemRq.setLaunchUuid(launchUuid);
+		Maybe<String> itemId = launch.startTestItem(itemRq);
+		FinishTestItemRQ finishRq = positiveFinishRequest();
+		finishRq.setStatus(ItemStatus.FAILED.name());
+		Issue issue = new Issue();
+		issue.setIssueType("pb001");
+		issue.setComment("issue_comment");
+		Issue.ExternalSystemIssue externalIssue = new Issue.ExternalSystemIssue();
+		externalIssue.setTicketId("RP-001");
+		externalIssue.setBtsUrl("https://test.com");
+		externalIssue.setUrl("https://test.com/test_project/issue/RP-002");
+		externalIssue.setBtsProject("test_project");
+		issue.setExternalSystemIssues(Collections.singleton(externalIssue));
+		finishRq.setIssue(issue);
+		launch.finishTestItem(itemId, finishRq).blockingGet();
+
+		ArgumentCaptor<FinishTestItemRQ> captor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(rpClient).finishTestItem(eq(itemId.blockingGet()), captor.capture());
+
+		FinishTestItemRQ resultFinishRq = captor.getValue();
+		assertThat(resultFinishRq.getIssue().getExternalSystemIssues(), hasSize(1));
+		Issue.ExternalSystemIssue resultExternalIssue = resultFinishRq.getIssue().getExternalSystemIssues().iterator().next();
+		assertThat(resultExternalIssue.getTicketId(), equalTo("RP-001"));
+		assertThat(resultExternalIssue.getUrl(), equalTo("https://test.com/test_project/issue/RP-002"));
+		assertThat(resultExternalIssue.getBtsUrl(), equalTo("https://test.com"));
+		assertThat(resultExternalIssue.getBtsProject(), equalTo("test_project"));
+	}
+
+	@Test
+	public void verify_external_issue_url_is_used_for_project_and_ticket_ids() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateFinishTestItemResponse(rpClient);
+		ListenerParameters parameters = standardParameters();
+		parameters.setBtsUrl("https://example.com");
+		parameters.setBtsProjectId("example_project");
+		parameters.setBtsIssueUrl("https://example.com/{bts_project}/issue/{issue_id}");
+		Launch launch = createLaunch(parameters);
+
+		String launchUuid = launch.start().blockingGet();
+		StartTestItemRQ itemRq = standardStartStepRequest();
+		itemRq.setLaunchUuid(launchUuid);
+		Maybe<String> itemId = launch.startTestItem(itemRq);
+		FinishTestItemRQ finishRq = positiveFinishRequest();
+		finishRq.setStatus(ItemStatus.FAILED.name());
+		Issue issue = new Issue();
+		issue.setIssueType("pb001");
+		issue.setComment("issue_comment");
+		Issue.ExternalSystemIssue externalIssue = new Issue.ExternalSystemIssue();
+		externalIssue.setTicketId("RP-001");
+		externalIssue.setUrl("https://test.com/{bts_project}/issue/{issue_id}");
+		issue.setExternalSystemIssues(Collections.singleton(externalIssue));
+		finishRq.setIssue(issue);
+		launch.finishTestItem(itemId, finishRq).blockingGet();
+
+		ArgumentCaptor<FinishTestItemRQ> captor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(rpClient).finishTestItem(eq(itemId.blockingGet()), captor.capture());
+
+		FinishTestItemRQ resultFinishRq = captor.getValue();
+		assertThat(resultFinishRq.getIssue().getExternalSystemIssues(), hasSize(1));
+		Issue.ExternalSystemIssue resultExternalIssue = resultFinishRq.getIssue().getExternalSystemIssues().iterator().next();
+		assertThat(resultExternalIssue.getUrl(), equalTo("https://test.com/example_project/issue/RP-001"));
 	}
 }

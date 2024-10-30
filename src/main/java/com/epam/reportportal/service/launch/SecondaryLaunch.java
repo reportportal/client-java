@@ -54,40 +54,46 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 	}
 
 	private void waitForLaunchStart() {
-		new Waiter("Wait for Launch start").pollingEvery(1, TimeUnit.SECONDS).timeoutFail().till(new Callable<Boolean>() {
-			private volatile Boolean result = null;
-			private final Queue<Disposable> disposables = new ConcurrentLinkedQueue<>();
+		new Waiter("Wait for Launch start").pollingEvery(1, TimeUnit.SECONDS)
+				.duration(getParameters().getClientJoinLaunchTimeout(), TimeUnit.MILLISECONDS)
+				.timeoutFail()
+				.till(new Callable<Boolean>() {
+					private volatile Boolean result = null;
+					private final Queue<Disposable> disposables = new ConcurrentLinkedQueue<>();
 
-			@Override
-			public Boolean call() {
-				if (result == null) {
-					disposables.add(launch.subscribe(uuid -> {
-						Maybe<LaunchResource> maybeRs = client.getLaunchByUuid(uuid);
-						if (maybeRs != null) {
-							disposables.add(maybeRs.subscribe(
-									launchResource -> result = Boolean.TRUE,
-									throwable -> LOGGER.debug("Unable to get a Launch: " + throwable.getLocalizedMessage(), throwable)
-							));
+					@Override
+					public Boolean call() {
+						if (result == null) {
+							disposables.add(launch.subscribe(uuid -> {
+								Maybe<LaunchResource> maybeRs = client.getLaunchByUuid(uuid);
+								if (maybeRs != null) {
+									disposables.add(maybeRs.subscribe(launchResource -> result = Boolean.TRUE,
+											throwable -> LOGGER.debug("Unable to get a Launch: " + throwable.getLocalizedMessage(),
+													throwable
+											)
+									));
+								} else {
+									LOGGER.debug("RP Client returned 'null' response on get Launch by UUID call");
+								}
+							}));
 						} else {
-							LOGGER.debug("RP Client returned 'null' response on get Launch by UUID call");
+							Disposable disposable;
+							while ((disposable = disposables.poll()) != null) {
+								disposable.dispose();
+							}
 						}
-					}));
-				} else {
-					Disposable disposable;
-					while ((disposable = disposables.poll()) != null) {
-						disposable.dispose();
+						return result;
 					}
-				}
-				return result;
-			}
-		});
+				});
 	}
 
 	@Nonnull
 	@Override
 	public Maybe<String> start() {
-		waitForLaunchStart();
-		return super.start();
+		if (!getParameters().isAsyncReporting()) {
+			waitForLaunchStart();
+		}
+		return super.start(false);
 	}
 
 	@Override
