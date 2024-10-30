@@ -16,8 +16,8 @@
 package com.epam.reportportal.service.logs;
 
 import com.epam.reportportal.service.Launch;
-import com.epam.ta.reportportal.ws.reporting.EntryCreatedAsyncRS;
-import com.epam.ta.reportportal.ws.reporting.OperationCompletionRS;
+import com.epam.ta.reportportal.ws.model.EntryCreatedAsyncRS;
+import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import io.reactivex.functions.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -15,7 +15,7 @@
  */
 package com.epam.reportportal.service.logs;
 
-import com.epam.ta.reportportal.ws.reporting.BatchSaveOperatingRS;
+import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import io.reactivex.FlowableSubscriber;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;

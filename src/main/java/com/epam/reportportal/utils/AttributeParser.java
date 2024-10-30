@@ -16,7 +16,7 @@
 package com.epam.reportportal.utils;
 
 import com.epam.reportportal.annotations.attribute.*;
-import com.epam.ta.reportportal.ws.reporting.ItemAttributesRQ;
+import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;

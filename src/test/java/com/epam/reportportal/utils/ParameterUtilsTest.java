@@ -19,7 +19,7 @@ package com.epam.reportportal.utils;
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.utils.markdown.MarkdownUtilsTest;
-import com.epam.ta.reportportal.ws.reporting.ParameterResource;
+import com.epam.ta.reportportal.ws.model.ParameterResource;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

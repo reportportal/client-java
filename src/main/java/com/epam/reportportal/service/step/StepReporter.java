@@ -17,8 +17,8 @@
 package com.epam.reportportal.service.step;
 
 import com.epam.reportportal.listeners.ItemStatus;
-import com.epam.ta.reportportal.ws.reporting.FinishTestItemRQ;
-import com.epam.ta.reportportal.ws.reporting.StartTestItemRQ;
+import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
+import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 
 import javax.annotation.Nonnull;

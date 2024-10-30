@@ -15,7 +15,11 @@
  */
 package com.epam.reportportal.service;
 
-import com.epam.ta.reportportal.ws.reporting.*;
+import com.epam.ta.reportportal.ws.model.*;
+import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
+import com.epam.ta.reportportal.ws.model.launch.*;
+import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
+import com.epam.ta.reportportal.ws.model.project.config.ProjectSettingsResource;
 import io.reactivex.Maybe;
 import okhttp3.MultipartBody;
 import retrofit2.http.*;

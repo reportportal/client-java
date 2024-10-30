@@ -18,7 +18,7 @@ package com.epam.reportportal.service.logs;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
-import com.epam.ta.reportportal.ws.reporting.SaveLogRQ;
+import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Flowable;
 import io.reactivex.FlowableSubscriber;
 import io.reactivex.internal.fuseable.HasUpstreamPublisher;

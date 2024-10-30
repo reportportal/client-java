@@ -17,7 +17,7 @@
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.service.statistics.StatisticsService;
-import com.epam.ta.reportportal.ws.reporting.OperationCompletionRS;
+import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import io.reactivex.Maybe;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;

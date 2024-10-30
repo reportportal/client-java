@@ -21,8 +21,8 @@ import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.properties.ListenerProperty;
 import com.epam.reportportal.utils.properties.OutputTypes;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
-import com.epam.ta.reportportal.ws.reporting.ItemAttributesRQ;
-import com.epam.ta.reportportal.ws.reporting.Mode;
+import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
+import com.epam.ta.reportportal.ws.model.launch.Mode;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
