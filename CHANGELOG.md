@@ -7,6 +7,7 @@
 ### Changed
 - Disable Launch start wait for Secondary Launches if async reporting is enabled, by @HardNorth
 - Disable Statistics for Secondary Launches, by @HardNorth
+- `commons-model` dependency replaced with `commons-reporting` of version to `5.12.2`, by @HardNorth
 
 ## [5.2.15]
 ### Changed
