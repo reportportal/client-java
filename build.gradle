@@ -51,7 +51,6 @@ dependencies {
     api ("com.squareup.retrofit2:retrofit:${project.retrofit_version}") {
         exclude module: 'okhttp'
     }
-    implementation "org.apache.commons:commons-lang3:${project.lang3_version}"
     implementation "com.squareup.okhttp3:okhttp:${project.okhttp_version}"
     implementation "com.squareup.retrofit2:converter-scalars:${project.retrofit_version}"
     implementation ("com.squareup.retrofit2:converter-jackson:${project.retrofit_version}") {
