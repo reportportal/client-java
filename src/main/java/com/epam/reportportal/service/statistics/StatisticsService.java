@@ -55,7 +55,6 @@ public class StatisticsService implements Closeable {
 			StandardCharsets.UTF_8
 	).split(":");
 
-	public static final String DISABLE_PROPERTY = "AGENT_NO_ANALYTICS";
 	private static final String CLIENT_PROPERTIES_FILE = "client.properties";
 	public static final String START_LAUNCH_EVENT_ACTION = "start_launch";
 	public static final String CLIENT_NAME_PARAM = "client_name";
@@ -88,10 +87,7 @@ public class StatisticsService implements Closeable {
 
 	public StatisticsService(ListenerParameters listenerParameters) {
 		this(listenerParameters,
-				System.getenv(DISABLE_PROPERTY) != null ?
-						new DummyClient() :
-						new StatisticsClient(DECODED_CLIENT_INFO[0], DECODED_CLIENT_INFO[1], listenerParameters)
-		);
+				new StatisticsClient(DECODED_CLIENT_INFO[0], DECODED_CLIENT_INFO[1], listenerParameters));
 	}
 
 	protected Statistics getStatistics() {

@@ -141,7 +141,7 @@ public class ListenerParametersTest {
 		PropertiesLoader properties = PropertiesLoader.load("property-test/default-required.properties");
 		ListenerParameters listenerParameters = new ListenerParameters(properties);
 
-		assertEquals(ListenerParameters.DEFAULT_FILE_WAIT_TIMEOUT_MS, listenerParameters.getLockWaitTimeout());
+		assertEquals(ListenerParameters.DEFAULT_FILE_WAIT_TIMEOUT, listenerParameters.getLockWaitTimeout());
 	}
 
 	@Test

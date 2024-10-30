@@ -111,6 +111,13 @@ public enum ListenerProperty {
     CLIENT_JOIN_LOCK_TIMEOUT_VALUE("rp.client.join.lock.timeout.value", false),
     CLIENT_JOIN_LOCK_TIMEOUT_UNIT("rp.client.join.lock.timeout.unit", false),
 
+    /**
+     * Timeout of waiting for the Primary launch to start. If the primary launch does not start within this timeout, the secondary launch
+     * will exit.
+     */
+    CLIENT_JOIN_LAUNCH_TIMEOUT_VALUE("rp.client.join.launch.timeout.value", false),
+    CLIENT_JOIN_LAUNCH_TIMEOUT_UNIT("rp.client.join.launch.timeout.unit", false),
+
     RX_BUFFER_SIZE("rp.rx.buffer.size", false),
 
     TRUNCATE_FIELDS("rp.truncation.field", false),

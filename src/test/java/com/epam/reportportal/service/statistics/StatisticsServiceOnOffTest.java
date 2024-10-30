@@ -16,6 +16,8 @@
 
 package com.epam.reportportal.service.statistics;
 
+import com.epam.reportportal.service.LaunchImpl;
+import com.epam.reportportal.service.StatisticsRunnable;
 import com.epam.reportportal.util.test.ProcessUtils;
 import org.junit.jupiter.api.Test;
 
@@ -31,15 +33,16 @@ public class StatisticsServiceOnOffTest {
 		Process process = ProcessUtils.buildProcess(
 				true,
 				StatisticsRunnable.class,
-				Collections.singletonMap(StatisticsService.DISABLE_PROPERTY, "1"),
-				DummyClient.class.getCanonicalName()
+				Collections.singletonMap(LaunchImpl.DISABLE_PROPERTY, "1"),
+				"0"
 		);
 		assertThat("Exit code should be '0'", process.waitFor(), equalTo(0));
 	}
 
 	@Test
 	public void test_statistics_property_on() throws IOException, InterruptedException {
-		Process process = ProcessUtils.buildProcess(true, StatisticsRunnable.class, StatisticsClient.class.getCanonicalName());
+		Process process = ProcessUtils.buildProcess(true, StatisticsRunnable.class,
+				"1");
 		assertThat("Exit code should be '0'", process.waitFor(), equalTo(0));
 	}
 }

@@ -1,6 +1,16 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `rp.client.join.launch.timeout.value` and `rp.client.join.launch.timeout.unit` configuration properties to control SecondaryLaunch start timeout on client join, by @HardNorth
+- `rp.bts.project`, `rp.bts.url`, `rp.bts.issue.url`, `rp.bts.issue.fail` configuration properties to control manual issue set by Agents, by @HardNorth
+### Changed
+- Disable Launch start wait for Secondary Launches if async reporting is enabled, by @HardNorth
+- Disable Statistics for Secondary Launches, by @HardNorth
+
+## [5.2.15]
+### Changed
+- `commons-model` dependency version updated to `5.3.3`, by @HardNorth
 
 ## [5.2.14]
 ### Added
