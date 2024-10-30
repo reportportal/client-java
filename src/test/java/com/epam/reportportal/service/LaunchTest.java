@@ -43,6 +43,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
+import javax.annotation.Nonnull;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
@@ -56,6 +57,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.epam.reportportal.test.TestUtils.*;
+import static com.epam.reportportal.test.TestUtils.standardLaunchRequest;
 import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
@@ -106,23 +108,37 @@ public class LaunchTest {
 		shutdownExecutorService(executor);
 	}
 
-	@Test
-	public void launch_should_finish_all_items_even_if_one_of_finishes_failed() {
-		simulateStartLaunchResponse(rpClient);
-		simulateStartTestItemResponse(rpClient);
-		simulateStartChildTestItemResponse(rpClient);
-
-		Launch launch = new LaunchImpl(
-				rpClient,
-				STANDARD_PARAMETERS,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
+	@Nonnull
+	private Launch createLaunch(@Nonnull StartLaunchRQ startRq, @Nonnull ListenerParameters parameters) {
+		return new LaunchImpl(rpClient, parameters, startRq, executor) {
 			@Override
 			StatisticsService getStatisticsService() {
 				return statisticsService;
 			}
 		};
+	}
+
+	@Nonnull
+	private Launch createLaunch(@Nonnull StartLaunchRQ startRq) {
+		return createLaunch(startRq, standardParameters());
+	}
+
+	@Nonnull
+	private Launch createLaunch(@Nonnull ListenerParameters parameters) {
+		return createLaunch(standardLaunchRequest(parameters), parameters);
+	}
+
+	@Nonnull
+	private Launch createLaunch() {
+		return createLaunch(standardLaunchRequest(STANDARD_PARAMETERS));
+	}
+
+	@Test
+	public void launch_should_finish_all_items_even_if_one_of_finishes_failed() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateStartChildTestItemResponse(rpClient);
+		Launch launch = createLaunch();
 
 		Maybe<String> launchUuid = launch.start();
 		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
@@ -159,18 +175,7 @@ public class LaunchTest {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
-
-		Launch launch = new LaunchImpl(
-				rpClient,
-				STANDARD_PARAMETERS,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch();
 
 		Maybe<String> launchUuid = launch.start();
 		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
@@ -210,16 +215,7 @@ public class LaunchTest {
 
 		// Verify Launch set on creation
 		ExecutorService launchCreateExecutor = Executors.newSingleThreadExecutor();
-		Launch launchOnCreate = launchCreateExecutor.submit(() -> new LaunchImpl(rpClient,
-				STANDARD_PARAMETERS,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		}).get();
+		Launch launchOnCreate = launchCreateExecutor.submit(() -> this.createLaunch()).get();
 		Launch launchGet = launchCreateExecutor.submit(Launch::currentLaunch).get();
 		assertThat(launchGet, sameInstance(launchOnCreate));
 		shutdownExecutorService(launchCreateExecutor);
@@ -254,12 +250,7 @@ public class LaunchTest {
 		simulateFinishLaunchResponse(rpClient);
 
 		StartLaunchRQ startRq = standardLaunchRequest(STANDARD_PARAMETERS);
-		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, startRq, executor) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch(startRq);
 		launch.start();
 		launch.finish(standardLaunchFinishRequest());
 
@@ -315,18 +306,7 @@ public class LaunchTest {
 		simulateStartChildTestItemResponse(rpClient);
 		simulateFinishLaunchResponse(rpClient);
 		simulateBatchLogResponse(rpClient);
-
-		Launch launch = new LaunchImpl(
-				rpClient,
-				STANDARD_PARAMETERS,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch();
 
 		launch.start();
 		Maybe<String> suiteRs = launch.startTestItem(standardStartSuiteRequest());
@@ -361,18 +341,7 @@ public class LaunchTest {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
-
-		Launch launch = new LaunchImpl(
-				rpClient,
-				STANDARD_PARAMETERS,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch();
 
 		StartTestItemRQ suiteRq = standardStartSuiteRequest();
 		suiteRq.setName(suiteRq.getName() + RandomStringUtils.random(1025 - suiteRq.getName().length()));
@@ -414,12 +383,7 @@ public class LaunchTest {
 		String longValue = RandomStringUtils.randomAlphanumeric(129);
 		parameters.setAttributes(Collections.singleton(new ItemAttributesRQ(longKey, longValue)));
 
-		Launch launch = new LaunchImpl(rpClient, parameters, standardLaunchRequest(parameters), executor) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch(parameters);
 
 		StartTestItemRQ suiteStartRq = standardStartSuiteRequest();
 		suiteStartRq.setAttributes(Collections.singleton(new ItemAttributesRQ(longKey, longValue)));
@@ -462,8 +426,7 @@ public class LaunchTest {
 		simulateStartTestItemResponse(rpClient);
 		simulateFinishTestItemResponse(rpClient);
 
-		StartLaunchRQ startRq = standardLaunchRequest(STANDARD_PARAMETERS);
-		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, startRq, executor);
+		Launch launch = createLaunch();
 		launch.start();
 		Maybe<String> id = launch.startTestItem(standardStartSuiteRequest());
 		launch.finishTestItem(id, positiveFinishRequest());
@@ -512,18 +475,7 @@ public class LaunchTest {
 	@Test
 	public void verify_launch_get_response() {
 		simulateStartLaunchResponse(rpClient);
-
-		Launch launch = new LaunchImpl(
-				rpClient,
-				STANDARD_PARAMETERS,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch();
 
 		Maybe<String> launchUuid = launch.start();
 		assertThat(launchUuid, notNullValue());
@@ -542,18 +494,7 @@ public class LaunchTest {
 		ListenerParameters parameters = standardParameters();
 		parameters.setPrintLaunchUuid(true);
 		parameters.setPrintLaunchUuidOutput(testStream);
-
-		Launch launch = new LaunchImpl(
-				rpClient,
-				parameters,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch(parameters);
 
 		String launchUuid = launch.start().blockingGet();
 		Awaitility.await("Wait for Launch UUID output").atMost(Duration.ofSeconds(10)).until(() -> {
@@ -574,18 +515,7 @@ public class LaunchTest {
 		parameters.setBtsUrl("https://example.com");
 		parameters.setBtsProjectId("example_project");
 		parameters.setBtsIssueUrl("https://example.com/{bts_project}/issue/{issue_id}");
-
-		Launch launch = new LaunchImpl(
-				rpClient,
-				parameters,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch(parameters);
 
 		String launchUuid = launch.start().blockingGet();
 		StartTestItemRQ itemRq = standardStartStepRequest();
@@ -619,19 +549,7 @@ public class LaunchTest {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateFinishTestItemResponse(rpClient);
-		ListenerParameters parameters = standardParameters();
-
-		Launch launch = new LaunchImpl(
-				rpClient,
-				parameters,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch();
 
 		String launchUuid = launch.start().blockingGet();
 		StartTestItemRQ itemRq = standardStartStepRequest();
@@ -660,18 +578,7 @@ public class LaunchTest {
 		simulateFinishTestItemResponse(rpClient);
 		ListenerParameters parameters = standardParameters();
 		parameters.setBtsIssueFail(false);
-
-		Launch launch = new LaunchImpl(
-				rpClient,
-				parameters,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch(parameters);
 
 		String launchUuid = launch.start().blockingGet();
 		StartTestItemRQ itemRq = standardStartStepRequest();
@@ -701,18 +608,7 @@ public class LaunchTest {
 		parameters.setBtsUrl("https://example.com");
 		parameters.setBtsProjectId("example_project");
 		parameters.setBtsIssueUrl("https://example.com/{bts_project}/issue/{issue_id}");
-
-		Launch launch = new LaunchImpl(
-				rpClient,
-				parameters,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch(parameters);
 
 		String launchUuid = launch.start().blockingGet();
 		StartTestItemRQ itemRq = standardStartStepRequest();
@@ -753,18 +649,7 @@ public class LaunchTest {
 		parameters.setBtsUrl("https://example.com");
 		parameters.setBtsProjectId("example_project");
 		parameters.setBtsIssueUrl("https://example.com/{bts_project}/issue/{issue_id}");
-
-		Launch launch = new LaunchImpl(
-				rpClient,
-				parameters,
-				standardLaunchRequest(STANDARD_PARAMETERS),
-				executor
-		) {
-			@Override
-			StatisticsService getStatisticsService() {
-				return statisticsService;
-			}
-		};
+		Launch launch = createLaunch(parameters);
 
 		String launchUuid = launch.start().blockingGet();
 		StartTestItemRQ itemRq = standardStartStepRequest();
