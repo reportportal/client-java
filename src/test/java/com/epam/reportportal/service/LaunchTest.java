@@ -742,4 +742,51 @@ public class LaunchTest {
 		assertThat(resultExternalIssue.getBtsUrl(), equalTo("https://test.com"));
 		assertThat(resultExternalIssue.getBtsProject(), equalTo("test_project"));
 	}
+
+	@Test
+	public void verify_external_issue_url_is_used_for_project_and_ticket_ids() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateFinishTestItemResponse(rpClient);
+		ListenerParameters parameters = standardParameters();
+		parameters.setBtsUrl("https://example.com");
+		parameters.setBtsProjectId("example_project");
+		parameters.setBtsIssueUrl("https://example.com/{bts_project}/issue/{issue_id}");
+
+		Launch launch = new LaunchImpl(
+				rpClient,
+				parameters,
+				standardLaunchRequest(STANDARD_PARAMETERS),
+				executor
+		) {
+			@Override
+			StatisticsService getStatisticsService() {
+				return statisticsService;
+			}
+		};
+
+		String launchUuid = launch.start().blockingGet();
+		StartTestItemRQ itemRq = standardStartStepRequest();
+		itemRq.setLaunchUuid(launchUuid);
+		Maybe<String> itemId = launch.startTestItem(itemRq);
+		FinishTestItemRQ finishRq = positiveFinishRequest();
+		finishRq.setStatus(ItemStatus.FAILED.name());
+		Issue issue = new Issue();
+		issue.setIssueType("pb001");
+		issue.setComment("issue_comment");
+		Issue.ExternalSystemIssue externalIssue = new Issue.ExternalSystemIssue();
+		externalIssue.setTicketId("RP-001");
+		externalIssue.setUrl("https://test.com/{bts_project}/issue/{issue_id}");
+		issue.setExternalSystemIssues(Collections.singleton(externalIssue));
+		finishRq.setIssue(issue);
+		launch.finishTestItem(itemId, finishRq).blockingGet();
+
+		ArgumentCaptor<FinishTestItemRQ> captor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(rpClient).finishTestItem(eq(itemId.blockingGet()), captor.capture());
+
+		FinishTestItemRQ resultFinishRq = captor.getValue();
+		assertThat(resultFinishRq.getIssue().getExternalSystemIssues(), hasSize(1));
+		Issue.ExternalSystemIssue resultExternalIssue = resultFinishRq.getIssue().getExternalSystemIssues().iterator().next();
+		assertThat(resultExternalIssue.getUrl(), equalTo("https://test.com/example_project/issue/RP-001"));
+	}
 }

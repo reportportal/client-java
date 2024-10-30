@@ -394,24 +394,29 @@ public class LaunchImpl extends Launch {
 			return;
 		}
 		ListenerParameters params = getParameters();
-		Optional<String> btsUrl = ofNullable(params.getBtsUrl()).filter(url -> !url.trim().isEmpty());
-		Optional<String> btsProjectId = ofNullable(params.getBtsProjectId()).filter(id -> !id.trim().isEmpty());
-		Optional<String> btsIssueUrl = ofNullable(params.getBtsIssueUrl()).filter(url -> !url.trim().isEmpty());
+		Optional<String> btsUrl = ofNullable(params.getBtsUrl()).filter(StringUtils::isNotBlank);
+		Optional<String> btsProjectId = ofNullable(params.getBtsProjectId()).filter(StringUtils::isNotBlank);
+		Optional<String> btsIssueUrl = ofNullable(params.getBtsIssueUrl()).filter(StringUtils::isNotBlank);
 		issue.getExternalSystemIssues().stream().filter(Objects::nonNull).forEach(externalIssue -> {
-			if(externalIssue.getTicketId() == null || externalIssue.getTicketId().isEmpty()) {
+			if(StringUtils.isBlank(externalIssue.getTicketId())) {
 				return;
 			}
-			if (btsUrl.isPresent() && (externalIssue.getBtsUrl() == null || externalIssue.getBtsUrl().trim().isEmpty())) {
+			if (btsUrl.isPresent() && StringUtils.isBlank(externalIssue.getBtsUrl())) {
 				externalIssue.setBtsUrl(btsUrl.get());
 			}
-			if (btsProjectId.isPresent() && (externalIssue.getBtsProject() == null || externalIssue.getBtsProject().trim().isEmpty())) {
+			if (btsProjectId.isPresent() && StringUtils.isBlank(externalIssue.getBtsProject())) {
 				externalIssue.setBtsProject(btsProjectId.get());
 			}
-			if (btsIssueUrl.isPresent() && (externalIssue.getUrl() == null || externalIssue.getUrl().trim().isEmpty())) {
-				externalIssue.setUrl(
-						btsIssueUrl.get().replace("{issue_id}", externalIssue.getTicketId())
-								.replace("{bts_project}", externalIssue.getBtsProject())
-				);
+			if (btsIssueUrl.isPresent() && StringUtils.isBlank(externalIssue.getUrl())) {
+				externalIssue.setUrl(btsIssueUrl.get());
+			}
+			if (StringUtils.isNotBlank(externalIssue.getUrl())) {
+				if (StringUtils.isNotBlank(externalIssue.getTicketId())) {
+					externalIssue.setUrl(externalIssue.getUrl().replace("{issue_id}", externalIssue.getTicketId()));
+				}
+				if (StringUtils.isNotBlank(externalIssue.getBtsProject())) {
+					externalIssue.setUrl(externalIssue.getUrl().replace("{bts_project}", externalIssue.getBtsProject()));
+				}
 			}
 		});
 	}
