@@ -36,7 +36,6 @@ compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
 
 repositories {
-    mavenLocal()
     mavenCentral()
 }
 
@@ -52,6 +51,7 @@ dependencies {
     api ("com.squareup.retrofit2:retrofit:${project.retrofit_version}") {
         exclude module: 'okhttp'
     }
+    implementation "org.apache.commons:commons-lang3:${project.lang3_version}"
     implementation "com.squareup.okhttp3:okhttp:${project.okhttp_version}"
     implementation "com.squareup.retrofit2:converter-scalars:${project.retrofit_version}"
     implementation ("com.squareup.retrofit2:converter-jackson:${project.retrofit_version}") {
@@ -81,7 +81,7 @@ dependencies {
     testImplementation('org.awaitility:awaitility:4.0.2') {
         exclude group: 'org.hamcrest'
     }
-    testImplementation 'org.apache.commons:commons-io:1.3.2'
+    testImplementation 'commons-io:commons-io:2.17.0'
     testImplementation 'com.epam.reportportal:agent-java-test-utils:0.0.6'
 
 }
