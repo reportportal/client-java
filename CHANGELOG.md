@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.16]
 ### Added
 - `rp.client.join.launch.timeout.value` and `rp.client.join.launch.timeout.unit` configuration properties to control SecondaryLaunch start timeout on client join, by @HardNorth
 - `rp.bts.project`, `rp.bts.url`, `rp.bts.issue.url`, `rp.bts.issue.fail` configuration properties to control manual issue set by Agents, by @HardNorth
