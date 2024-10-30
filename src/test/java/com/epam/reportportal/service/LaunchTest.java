@@ -64,6 +64,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings({ "ReactiveStreamsUnusedPublisher", "ResultOfMethodCallIgnored" })
 public class LaunchTest {
 
 	private static final ErrorRS START_ERROR_RS;
