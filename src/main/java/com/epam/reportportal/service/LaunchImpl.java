@@ -68,17 +68,15 @@ public class LaunchImpl extends Launch {
 	private static final int ITEM_FINISH_RETRY_TIMEOUT = 10;
 
 	private static final Predicate<Throwable> INTERNAL_CLIENT_EXCEPTION_PREDICATE = throwable -> throwable instanceof InternalReportPortalClientException;
-	private static final Predicate<Throwable> TEST_ITEM_FINISH_RETRY_PREDICATE = throwable ->
-			(throwable instanceof ReportPortalException
-					&& ErrorType.FINISH_ITEM_NOT_ALLOWED.equals(((ReportPortalException) throwable).getError()
-					.getErrorType())) || INTERNAL_CLIENT_EXCEPTION_PREDICATE.test(throwable);
+	private static final Predicate<Throwable> TEST_ITEM_FINISH_RETRY_PREDICATE = throwable -> (throwable instanceof ReportPortalException
+			&& ErrorType.FINISH_ITEM_NOT_ALLOWED.equals(((ReportPortalException) throwable).getError().getErrorType()))
+			|| INTERNAL_CLIENT_EXCEPTION_PREDICATE.test(throwable);
 
 	private static final RetryWithDelay DEFAULT_REQUEST_RETRY = new RetryWithDelay(INTERNAL_CLIENT_EXCEPTION_PREDICATE,
 			DEFAULT_RETRY_COUNT,
 			TimeUnit.SECONDS.toMillis(DEFAULT_RETRY_TIMEOUT)
 	);
-	private static final RetryWithDelay TEST_ITEM_FINISH_REQUEST_RETRY = new RetryWithDelay(
-			TEST_ITEM_FINISH_RETRY_PREDICATE,
+	private static final RetryWithDelay TEST_ITEM_FINISH_REQUEST_RETRY = new RetryWithDelay(TEST_ITEM_FINISH_RETRY_PREDICATE,
 			ITEM_FINISH_MAX_RETRIES,
 			TimeUnit.SECONDS.toMillis(ITEM_FINISH_RETRY_TIMEOUT)
 	);
@@ -102,9 +100,8 @@ public class LaunchImpl extends Launch {
 	private StatisticsService statisticsService;
 	private final StartLaunchRQ startRq;
 
-	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient,
-			@Nonnull final ListenerParameters parameters, @Nonnull final StartLaunchRQ rq,
-			@Nonnull final ExecutorService executorService) {
+	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
+			@Nonnull final StartLaunchRQ rq, @Nonnull final ExecutorService executorService) {
 		super(reportPortalClient, parameters);
 		requireNonNull(parameters, "Parameters shouldn't be NULL");
 		executor = requireNonNull(executorService);
@@ -131,9 +128,8 @@ public class LaunchImpl extends Launch {
 		}).cache();
 	}
 
-	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient,
-			@Nonnull final ListenerParameters parameters, @Nonnull final Maybe<String> launchMaybe,
-			@Nonnull final ExecutorService executorService) {
+	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
+			@Nonnull final Maybe<String> launchMaybe, @Nonnull final ExecutorService executorService) {
 		super(reportPortalClient, parameters);
 		requireNonNull(parameters, "Parameters shouldn't be NULL");
 		executor = requireNonNull(executorService);
@@ -147,10 +143,7 @@ public class LaunchImpl extends Launch {
 
 	private static StartLaunchRQ emptyStartLaunchForStatistics() {
 		StartLaunchRQ result = new StartLaunchRQ();
-		result.setAttributes(Collections.singleton(new ItemAttributesRQ(DefaultProperties.AGENT.getName(),
-				CUSTOM_AGENT,
-				true
-		)));
+		result.setAttributes(Collections.singleton(new ItemAttributesRQ(DefaultProperties.AGENT.getName(), CUSTOM_AGENT, true)));
 		return result;
 	}
 
@@ -210,8 +203,7 @@ public class LaunchImpl extends Launch {
 			ItemAttributesRQ updated = attribute;
 			int keyLength = ofNullable(updated.getKey()).map(String::length).orElse(0);
 			if (keyLength > limit && keyLength > replacement.length()) {
-				updated = new ItemAttributesRQ(
-						updated.getKey().substring(0, limit - replacement.length()) + replacement,
+				updated = new ItemAttributesRQ(updated.getKey().substring(0, limit - replacement.length()) + replacement,
 						updated.getValue(),
 						updated.isSystem()
 				);
@@ -245,11 +237,11 @@ public class LaunchImpl extends Launch {
 	protected Maybe<String> start(boolean statistics) {
 		launch.subscribe(logMaybeResults("Launch start"));
 		ListenerParameters params = getParameters();
-		if(params.isPrintLaunchUuid()) {
+		if (params.isPrintLaunchUuid()) {
 			launch.subscribe(printLaunch(params));
 		}
 		LaunchLoggingContext.init(this.launch, getClient(), getScheduler(), getParameters());
-		if(statistics) {
+		if (statistics) {
 			getStatisticsService().sendEvent(launch, startRq);
 		}
 		return launch;
@@ -318,10 +310,7 @@ public class LaunchImpl extends Launch {
 
 		Maybe<String> item = launch.flatMap((Function<String, Maybe<String>>) launchId -> {
 			rq.setLaunchUuid(launchId);
-			return getClient().startTestItem(rq)
-					.retry(DEFAULT_REQUEST_RETRY)
-					.doOnSuccess(logCreated("item"))
-					.map(TO_ID);
+			return getClient().startTestItem(rq).retry(DEFAULT_REQUEST_RETRY).doOnSuccess(logCreated("item")).map(TO_ID);
 		}).cache();
 
 		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start test item"));
@@ -341,8 +330,7 @@ public class LaunchImpl extends Launch {
 	 * @return Test Item ID promise
 	 */
 	@Nonnull
-	public Maybe<String> startTestItem(final Maybe<String> parentId, final Maybe<String> retryOf,
-			final StartTestItemRQ rq) {
+	public Maybe<String> startTestItem(final Maybe<String> parentId, final Maybe<String> retryOf, final StartTestItemRQ rq) {
 		return retryOf.flatMap((Function<String, Maybe<String>>) s -> startTestItem(parentId, rq)).cache();
 	}
 
@@ -386,7 +374,7 @@ public class LaunchImpl extends Launch {
 	}
 
 	protected void completeBtsIssues(@Nullable Issue issue) {
-		if(!ofNullable(issue).map(Issue::getExternalSystemIssues).filter(issues -> !issues.isEmpty()).isPresent()) {
+		if (!ofNullable(issue).map(Issue::getExternalSystemIssues).filter(issues -> !issues.isEmpty()).isPresent()) {
 			return;
 		}
 		ListenerParameters params = getParameters();
@@ -394,7 +382,7 @@ public class LaunchImpl extends Launch {
 		Optional<String> btsProjectId = ofNullable(params.getBtsProjectId()).filter(StringUtils::isNotBlank);
 		Optional<String> btsIssueUrl = ofNullable(params.getBtsIssueUrl()).filter(StringUtils::isNotBlank);
 		issue.getExternalSystemIssues().stream().filter(Objects::nonNull).forEach(externalIssue -> {
-			if(StringUtils.isBlank(externalIssue.getTicketId())) {
+			if (StringUtils.isBlank(externalIssue.getTicketId())) {
 				return;
 			}
 			if (btsUrl.isPresent() && StringUtils.isBlank(externalIssue.getBtsUrl())) {
@@ -519,7 +507,7 @@ public class LaunchImpl extends Launch {
 		}
 	}
 
-	protected static class ComputationConcurrentHashMap extends ConcurrentHashMap<Maybe<String>, LaunchImpl.TreeItem>  {
+	protected static class ComputationConcurrentHashMap extends ConcurrentHashMap<Maybe<String>, LaunchImpl.TreeItem> {
 		public LaunchImpl.TreeItem getOrCompute(Maybe<String> key) {
 			return computeIfAbsent(key, k -> new LaunchImpl.TreeItem());
 		}

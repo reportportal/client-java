@@ -16,7 +16,7 @@
 
 package com.epam.reportportal.utils;
 
-import com.epam.ta.reportportal.ws.model.issue.Issue;
+import com.epam.ta.reportportal.ws.reporting.Issue;
 
 import java.util.Set;
 
