@@ -56,9 +56,8 @@ public class TemplateProcessing {
 	 * @param config     templating mechanism configuration
 	 * @return formatted string
 	 */
-	public static String processTemplate(@Nonnull String pattern, @Nullable Object object,
-			@Nullable Executable executable, @Nullable Map<String, Object> parameters,
-			@Nonnull TemplateConfiguration config) {
+	public static String processTemplate(@Nonnull String pattern, @Nullable Object object, @Nullable Executable executable,
+			@Nullable Map<String, Object> parameters, @Nonnull TemplateConfiguration config) {
 		HashMap<String, Object> myParams = ofNullable(parameters).map(HashMap::new).orElseGet(HashMap::new);
 		ofNullable(executable).ifPresent(e -> {
 			myParams.put(config.getMethodName(), e.getName());
@@ -72,9 +71,7 @@ public class TemplateProcessing {
 		while (matcher.find()) {
 			String templatePart = matcher.group(1);
 			String replacement = getReplacement(templatePart, myParams, config);
-			matcher.appendReplacement(stringBuffer,
-					Matcher.quoteReplacement(replacement != null ? replacement : matcher.group(0))
-			);
+			matcher.appendReplacement(stringBuffer, Matcher.quoteReplacement(replacement != null ? replacement : matcher.group(0)));
 		}
 		matcher.appendTail(stringBuffer);
 		return stringBuffer.toString();
@@ -131,14 +128,12 @@ public class TemplateProcessing {
 	 * @return {@link String} representation of object field(s) value(s).
 	 * @throws NoSuchFieldException if field not found
 	 */
-	public static String retrieveValue(TemplateConfiguration templateConfig, int index, String[] fields, Object object)
-			throws NoSuchFieldException {
-
-		if (object == null) {
-			return NULL_VALUE;
-		}
-
+	public static String retrieveValue(@Nonnull TemplateConfiguration templateConfig, int index, @Nonnull String[] fields,
+			@Nullable Object object) throws NoSuchFieldException {
 		for (int i = index; i < fields.length; i++) {
+			if (object == null) {
+				return NULL_VALUE;
+			}
 			if (object.getClass().isArray()) {
 				return parseArray(templateConfig, (Object[]) object, i, fields);
 			}
@@ -150,7 +145,6 @@ public class TemplateProcessing {
 			object = Accessible.on(object).field(fields[i]).getValue();
 
 		}
-
 		return parseDescendant(templateConfig, object);
 	}
 
@@ -184,8 +178,8 @@ public class TemplateProcessing {
 	 * @param fields         Fields of the template part
 	 * @return {@link String} representation of the parsed Collection
 	 */
-	private static String parseCollection(TemplateConfiguration templateConfig, Iterable<?> iterable, int index,
-			String[] fields) throws NoSuchFieldException {
+	private static String parseCollection(TemplateConfiguration templateConfig, Iterable<?> iterable, int index, String[] fields)
+			throws NoSuchFieldException {
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append(templateConfig.getIterableStart());
 
