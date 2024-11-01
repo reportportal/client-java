@@ -88,7 +88,7 @@ public class TemplateProcessing {
 	 * @throws NoSuchFieldException if field not found
 	 */
 	public static String retrieveValue(TemplateConfiguration templateConfig, int index, String[] fields, Object object)
-			throws NoSuchFieldException {
+			throws Throwable {
 		return com.epam.reportportal.utils.formatting.templating.TemplateProcessing.retrieveValue(templateConfig.getDelegate(),
 				index,
 				fields,

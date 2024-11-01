@@ -41,7 +41,7 @@ public class TemplateProcessingTest {
 
 	@ParameterizedTest
 	@MethodSource("data")
-	public void retrieveValue(String template, String expected) throws NoSuchMethodException, NoSuchFieldException {
+	public void retrieveValue(String template, String expected) throws Throwable {
 
 		Outer.Inner someObject = createInnerObject();
 
@@ -58,7 +58,8 @@ public class TemplateProcessingTest {
 				{"someObject.outers", "[OUTER]"},
 				{"someObject.outers.outerStrings", "[[{first, second, third}, {fourth, fifth, sixth}]]"},
 				{"someObject.outers.outerName", "[outer]"}, {"someObject.innerNullString", ParameterUtils.NULL_VALUE},
-				{"someObject.innerNullList", ParameterUtils.NULL_VALUE}};
+				{"someObject.innerNullList", ParameterUtils.NULL_VALUE}, {"someObject.toString()", "INNER"},
+				{"someObject.echo(\"test\")", "someObject.echo(\"test\")"}};
 	}
 
 	private Outer.Inner createInnerObject() {
@@ -121,6 +122,10 @@ public class TemplateProcessingTest {
 			@Override
 			public String toString() {
 				return "INNER";
+			}
+
+			public String echo(String param) {
+				return param;
 			}
 		}
 

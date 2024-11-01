@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Issue [#210](https://github.com/reportportal/client-java/issues/210) Ability to call methods without parameters in templates, by @HardNorth
 
 ## [5.2.17]
 ### Added

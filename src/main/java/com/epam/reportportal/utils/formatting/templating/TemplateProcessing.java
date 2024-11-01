@@ -24,11 +24,13 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Array;
 import java.lang.reflect.Executable;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
 
@@ -96,14 +98,14 @@ public class TemplateProcessing {
 		String[] fields = templatePart.split(Pattern.quote(templateConfig.getFieldDelimiter()));
 		String variableName = fields[0];
 		if (!parametersMap.containsKey(variableName)) {
-			LOGGER.error("Param - " + variableName + " was not found");
+			LOGGER.error("Param - {} was not found", variableName);
 			return null;
 		}
 		Object param = parametersMap.get(variableName);
 		try {
 			return retrieveValue(templateConfig, 1, fields, param);
-		} catch (NoSuchFieldException e) {
-			LOGGER.error("Unable to parse: " + templatePart);
+		} catch (Throwable e) {
+			LOGGER.error("Unable to parse: {}", templatePart);
 			return null;
 		}
 	}
@@ -129,7 +131,7 @@ public class TemplateProcessing {
 	 * @throws NoSuchFieldException if field not found
 	 */
 	public static String retrieveValue(@Nonnull TemplateConfiguration templateConfig, int index, @Nonnull String[] fields,
-			@Nullable Object object) throws NoSuchFieldException {
+			@Nullable Object object) throws Throwable {
 		for (int i = index; i < fields.length; i++) {
 			if (object == null) {
 				return NULL_VALUE;
@@ -142,7 +144,23 @@ public class TemplateProcessing {
 				return parseCollection(templateConfig, (Iterable<?>) object, i, fields);
 			}
 
-			object = Accessible.on(object).field(fields[i]).getValue();
+			String field = fields[i];
+			int methodCallStartIndex = field.indexOf(templateConfig.getMethodCallStart());
+			if (methodCallStartIndex > 0 && field.endsWith(templateConfig.getMethodCallEnd())) {
+				String method = field.substring(0, methodCallStartIndex);
+				String parameters = field.substring(methodCallStartIndex + 1, field.length() - 1);
+				if (!parameters.isEmpty()) {
+					LOGGER.warn(
+							"Method parameters are not supported. Method: {} Parameters: {}. Ignoring the call.",
+							method,
+							parameters
+					);
+					return Arrays.stream(fields).collect(Collectors.joining(templateConfig.getFieldDelimiter()));
+				}
+				object = Accessible.on(object).method(method).invoke();
+			} else {
+				object = Accessible.on(object).field(field).getValue();
+			}
 
 		}
 		return parseDescendant(templateConfig, object);
@@ -155,8 +173,7 @@ public class TemplateProcessing {
 	 * @param fields         Fields of the template part
 	 * @return {@link String} representation of the parsed Array
 	 */
-	private static String parseArray(TemplateConfiguration templateConfig, Object[] array, int index, String[] fields)
-			throws NoSuchFieldException {
+	private static String parseArray(TemplateConfiguration templateConfig, Object[] array, int index, String[] fields) throws Throwable {
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append(templateConfig.getArrayStart());
 
@@ -179,7 +196,7 @@ public class TemplateProcessing {
 	 * @return {@link String} representation of the parsed Collection
 	 */
 	private static String parseCollection(TemplateConfiguration templateConfig, Iterable<?> iterable, int index, String[] fields)
-			throws NoSuchFieldException {
+			throws Throwable {
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append(templateConfig.getIterableStart());
 
