@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.17]
 ### Added
 - `ExceptionUtils` class to unify exceptions format, by @HardNorth
 ### Changed
