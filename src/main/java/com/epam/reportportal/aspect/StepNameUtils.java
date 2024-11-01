@@ -17,8 +17,8 @@
 package com.epam.reportportal.aspect;
 
 import com.epam.reportportal.annotations.Step;
-import com.epam.reportportal.utils.templating.TemplateConfiguration;
-import com.epam.reportportal.utils.templating.TemplateProcessing;
+import com.epam.reportportal.utils.formatting.templating.TemplateConfiguration;
+import com.epam.reportportal.utils.formatting.templating.TemplateProcessing;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 

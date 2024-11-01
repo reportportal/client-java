@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- `MarkdownUtils`, `TemplateConfiguration` and `TemplateProcessing` was moved to `utils.formatting` package, by @HardNorth 
 
 ## [5.2.16]
 ### Added

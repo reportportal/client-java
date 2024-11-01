@@ -16,7 +16,7 @@
 
 package com.epam.reportportal.annotations;
 
-import com.epam.reportportal.utils.templating.TemplateConfiguration;
+import com.epam.reportportal.utils.formatting.templating.TemplateConfiguration;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

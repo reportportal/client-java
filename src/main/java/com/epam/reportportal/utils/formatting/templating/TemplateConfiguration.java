@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package com.epam.reportportal.utils.templating;
+package com.epam.reportportal.utils.formatting.templating;
 
 import com.epam.reportportal.annotations.TemplateConfig;
 
@@ -23,10 +23,7 @@ import java.util.Objects;
 /**
  * Template configuration holder class. With the help of {@link TemplateConfig} annotation one can configure every
  * aspect of template keywords and special characters.
- *
- * @deprecated use {@link com.epam.reportportal.utils.formatting.templating.TemplateConfiguration} annotation instead
  */
-@Deprecated
 public class TemplateConfiguration {
 	public static final String CLASS_SIMPLE_NAME_TEMPLATE = "class";
 	public static final String CLASS_FULL_NAME_TEMPLATE = "classRef";

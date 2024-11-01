@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package com.epam.reportportal.utils.templating;
+package com.epam.reportportal.utils.formatting.templating;
 
 import com.epam.reportportal.utils.reflect.Accessible;
 import org.slf4j.Logger;
@@ -34,10 +34,7 @@ import static java.util.Optional.ofNullable;
 
 /**
  * Class for processing simple string templates.
- *
- * @deprecated use {@link com.epam.reportportal.utils.formatting.templating.TemplateProcessing} instead
  */
-@Deprecated
 public class TemplateProcessing {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TemplateProcessing.class);
 
