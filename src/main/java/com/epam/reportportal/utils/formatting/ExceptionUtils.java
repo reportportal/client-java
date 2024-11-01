@@ -27,6 +27,10 @@ public class ExceptionUtils {
 	public static final String SKIP_TRACE_MARKER = "...";
 	public static final String LINE_DELIMITER = "\n";
 
+	private ExceptionUtils() {
+		throw new IllegalStateException("Static only class");
+	}
+
 	/***
 	 * Get stack trace of the throwable excluding the stack trace of the base throwable.
 	 *
