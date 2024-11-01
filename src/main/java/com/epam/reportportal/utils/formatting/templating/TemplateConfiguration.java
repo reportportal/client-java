@@ -14,17 +14,16 @@
  *  limitations under the License.
  */
 
-package com.epam.reportportal.utils.templating;
+package com.epam.reportportal.utils.formatting.templating;
 
 import com.epam.reportportal.annotations.TemplateConfig;
+
+import java.util.Objects;
 
 /**
  * Template configuration holder class. With the help of {@link TemplateConfig} annotation one can configure every
  * aspect of template keywords and special characters.
- *
- * @deprecated use {@link com.epam.reportportal.utils.formatting.templating.TemplateConfiguration} annotation instead
  */
-@Deprecated
 public class TemplateConfiguration {
 	public static final String CLASS_SIMPLE_NAME_TEMPLATE = "class";
 	public static final String CLASS_FULL_NAME_TEMPLATE = "classRef";
@@ -38,14 +37,30 @@ public class TemplateConfiguration {
 	public static final String ARRAY_END_PATTERN = "}";
 	public static final String ARRAY_ELEMENT_DELIMITER = ", ";
 
-	private final com.epam.reportportal.utils.formatting.templating.TemplateConfiguration delegate;
+	private String className;
+	private String classRef;
+	private String methodName;
+	private String selfName;
+	private String fieldDelimiter;
+	private String iterableStart;
+	private String iterableEnd;
+	private String iterableDelimiter;
+	private String arrayStart;
+	private String arrayEnd;
+	private String arrayDelimiter;
 
 	public TemplateConfiguration() {
-		delegate = new com.epam.reportportal.utils.formatting.templating.TemplateConfiguration();
-	}
-
-	public TemplateConfiguration(TemplateConfig config) {
-		delegate = new com.epam.reportportal.utils.formatting.templating.TemplateConfiguration(config);
+		className = CLASS_SIMPLE_NAME_TEMPLATE;
+		classRef = CLASS_FULL_NAME_TEMPLATE;
+		methodName = METHOD_NAME_TEMPLATE;
+		selfName = SELF_NAME_TEMPLATE;
+		fieldDelimiter = FIELD_REFERENCE_DELIMITER;
+		iterableStart = ITERABLE_START_PATTERN;
+		iterableEnd = ITERABLE_END_PATTERN;
+		iterableDelimiter = ITERABLE_ELEMENT_DELIMITER;
+		arrayStart = ARRAY_START_PATTERN;
+		arrayEnd = ARRAY_END_PATTERN;
+		arrayDelimiter = ARRAY_ELEMENT_DELIMITER;
 	}
 
 	@Override
@@ -53,118 +68,144 @@ public class TemplateConfiguration {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
+		if (!(o instanceof TemplateConfiguration)) {
 			return false;
 		}
 		TemplateConfiguration that = (TemplateConfiguration) o;
-		return delegate.equals(that.delegate);
+		return className.equals(that.className) && classRef.equals(that.classRef) && methodName.equals(that.methodName)
+				&& selfName.equals(that.selfName) && fieldDelimiter.equals(that.fieldDelimiter) && iterableStart.equals(
+				that.iterableStart) && iterableEnd.equals(that.iterableEnd)
+				&& iterableDelimiter.equals(that.iterableDelimiter) && arrayStart.equals(that.arrayStart)
+				&& arrayEnd.equals(that.arrayEnd) && arrayDelimiter.equals(that.arrayDelimiter);
 	}
 
 	@Override
 	public int hashCode() {
-		return delegate.hashCode();
+		return Objects.hash(
+				className,
+				classRef,
+				methodName,
+				selfName,
+				fieldDelimiter,
+				iterableStart,
+				iterableEnd,
+				iterableDelimiter,
+				arrayStart,
+				arrayEnd,
+				arrayDelimiter
+		);
+	}
+
+	public TemplateConfiguration(TemplateConfig config) {
+		className = config.classNameTemplate();
+		classRef = config.classRefTemplate();
+		methodName = config.methodNameTemplate();
+		selfName = config.selfNameTemplate();
+		fieldDelimiter = config.fieldDelimiter();
+		iterableStart = config.iterableStartSymbol();
+		iterableEnd = config.iterableEndSymbol();
+		iterableDelimiter = config.iterableElementDelimiter();
+		arrayStart = config.arrayStartSymbol();
+		arrayEnd = config.arrayEndSymbol();
+		arrayDelimiter = config.arrayElementDelimiter();
 	}
 
 	public String getClassName() {
-		return delegate.getClassName();
+		return className;
 	}
 
 	public TemplateConfiguration setClassName(String className) {
-		delegate.setClassName(className);
+		this.className = className;
 		return this;
 	}
 
 	public String getClassRef() {
-		return delegate.getClassRef();
+		return classRef;
 	}
 
 	public TemplateConfiguration setClassRef(String classRef) {
-		delegate.setClassRef(classRef);
+		this.classRef = classRef;
 		return this;
 	}
 
 	public String getMethodName() {
-		return delegate.getMethodName();
+		return methodName;
 	}
 
 	public TemplateConfiguration setMethodName(String methodName) {
-		delegate.setMethodName(methodName);
+		this.methodName = methodName;
 		return this;
 	}
 
 	public String getSelfName() {
-		return delegate.getSelfName();
+		return selfName;
 	}
 
 	public TemplateConfiguration setSelfName(String selfName) {
-		delegate.setSelfName(selfName);
+		this.selfName = selfName;
 		return this;
 	}
 
 	public String getFieldDelimiter() {
-		return delegate.getFieldDelimiter();
+		return fieldDelimiter;
 	}
 
 	public TemplateConfiguration setFieldDelimiter(String fieldDelimiter) {
-		delegate.setFieldDelimiter(fieldDelimiter);
+		this.fieldDelimiter = fieldDelimiter;
 		return this;
 	}
 
 	public String getIterableStart() {
-		return delegate.getIterableStart();
+		return iterableStart;
 	}
 
 	public TemplateConfiguration setIterableStart(String iterableStart) {
-		delegate.setIterableStart(iterableStart);
+		this.iterableStart = iterableStart;
 		return this;
 	}
 
 	public String getIterableEnd() {
-		return delegate.getIterableEnd();
+		return iterableEnd;
 	}
 
 	public TemplateConfiguration setIterableEnd(String iterableEnd) {
-		delegate.setIterableEnd(iterableEnd);
+		this.iterableEnd = iterableEnd;
 		return this;
 	}
 
 	public String getIterableDelimiter() {
-		return delegate.getIterableDelimiter();
+		return iterableDelimiter;
 	}
 
 	public TemplateConfiguration setIterableDelimiter(String iterableDelimiter) {
-		delegate.setIterableDelimiter(iterableDelimiter);
+		this.iterableDelimiter = iterableDelimiter;
 		return this;
 	}
 
 	public String getArrayStart() {
-		return delegate.getArrayStart();
+		return arrayStart;
 	}
 
 	public TemplateConfiguration setArrayStart(String arrayStart) {
-		delegate.setArrayStart(arrayStart);
+		this.arrayStart = arrayStart;
 		return this;
 	}
 
 	public String getArrayEnd() {
-		return delegate.getArrayEnd();
+		return arrayEnd;
 	}
 
 	public TemplateConfiguration setArrayEnd(String arrayEnd) {
-		delegate.setArrayEnd(arrayEnd);
+		this.arrayEnd = arrayEnd;
 		return this;
 	}
 
 	public String getArrayDelimiter() {
-		return delegate.getArrayDelimiter();
+		return arrayDelimiter;
 	}
 
 	public TemplateConfiguration setArrayDelimiter(String arrayDelimiter) {
-		this.delegate.setArrayDelimiter(arrayDelimiter);
+		this.arrayDelimiter = arrayDelimiter;
 		return this;
-	}
-
-	public com.epam.reportportal.utils.formatting.templating.TemplateConfiguration getDelegate() {
-		return delegate;
 	}
 }

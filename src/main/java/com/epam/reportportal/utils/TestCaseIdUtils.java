@@ -19,8 +19,8 @@ package com.epam.reportportal.utils;
 import com.epam.reportportal.annotations.TestCaseId;
 import com.epam.reportportal.annotations.TestCaseIdKey;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
-import com.epam.reportportal.utils.templating.TemplateConfiguration;
-import com.epam.reportportal.utils.templating.TemplateProcessing;
+import com.epam.reportportal.utils.formatting.templating.TemplateConfiguration;
+import com.epam.reportportal.utils.formatting.templating.TemplateProcessing;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

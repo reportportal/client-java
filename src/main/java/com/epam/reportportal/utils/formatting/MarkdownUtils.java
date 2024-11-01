@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.epam.reportportal.utils.markdown;
+package com.epam.reportportal.utils.formatting;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -26,11 +26,7 @@ import static java.util.Optional.ofNullable;
 
 /**
  * Set helpful of utility methods for reporting to ReportPortal
- *
- * @author Andrei Varabyeu
- * @deprecated Use {@link com.epam.reportportal.utils.formatting.MarkdownUtils} instead
  */
-@Deprecated
 public class MarkdownUtils {
 
 	public static final String MARKDOWN_MODE = "!!!MARKDOWN_MODE!!!";

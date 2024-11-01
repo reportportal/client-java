@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `ExceptionUtils` class to unify exceptions format, by @HardNorth
+### Changed
+- `MarkdownUtils`, `TemplateConfiguration` and `TemplateProcessing` was moved to `utils.formatting` package, by @HardNorth 
 
 ## [5.2.16]
 ### Added
