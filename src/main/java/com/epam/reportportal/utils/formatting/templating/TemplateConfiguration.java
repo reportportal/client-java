@@ -36,6 +36,8 @@ public class TemplateConfiguration {
 	public static final String ARRAY_START_PATTERN = "{";
 	public static final String ARRAY_END_PATTERN = "}";
 	public static final String ARRAY_ELEMENT_DELIMITER = ", ";
+	public static final String METHOD_CALL_START_PATTERN = "(";
+	public static final String METHOD_CALL_END_PATTERN = ")";
 
 	private String className;
 	private String classRef;
@@ -48,6 +50,8 @@ public class TemplateConfiguration {
 	private String arrayStart;
 	private String arrayEnd;
 	private String arrayDelimiter;
+	private String methodCallStart;
+	private String methodCallEnd;
 
 	public TemplateConfiguration() {
 		className = CLASS_SIMPLE_NAME_TEMPLATE;
@@ -61,6 +65,8 @@ public class TemplateConfiguration {
 		arrayStart = ARRAY_START_PATTERN;
 		arrayEnd = ARRAY_END_PATTERN;
 		arrayDelimiter = ARRAY_ELEMENT_DELIMITER;
+		methodCallStart = METHOD_CALL_START_PATTERN;
+		methodCallEnd = METHOD_CALL_END_PATTERN;
 	}
 
 	@Override
@@ -92,7 +98,9 @@ public class TemplateConfiguration {
 				iterableDelimiter,
 				arrayStart,
 				arrayEnd,
-				arrayDelimiter
+				arrayDelimiter,
+				methodCallStart,
+				methodCallEnd
 		);
 	}
 
@@ -108,6 +116,8 @@ public class TemplateConfiguration {
 		arrayStart = config.arrayStartSymbol();
 		arrayEnd = config.arrayEndSymbol();
 		arrayDelimiter = config.arrayElementDelimiter();
+		methodCallStart = config.methodCallStartSymbol();
+		methodCallEnd = config.methodCallEndSymbol();
 	}
 
 	public String getClassName() {
@@ -206,6 +216,24 @@ public class TemplateConfiguration {
 
 	public TemplateConfiguration setArrayDelimiter(String arrayDelimiter) {
 		this.arrayDelimiter = arrayDelimiter;
+		return this;
+	}
+
+	public String getMethodCallStart() {
+		return methodCallStart;
+	}
+
+	public TemplateConfiguration setMethodCallStart(String methodCallStart) {
+		this.methodCallStart = methodCallStart;
+		return this;
+	}
+
+	public String getMethodCallEnd() {
+		return methodCallEnd;
+	}
+
+	public TemplateConfiguration setMethodCallEnd(String methodCallEnd) {
+		this.methodCallEnd = methodCallEnd;
 		return this;
 	}
 }

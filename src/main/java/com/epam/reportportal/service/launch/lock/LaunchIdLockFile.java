@@ -54,7 +54,7 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 
 	public static final Charset LOCK_FILE_CHARSET = StandardCharsets.ISO_8859_1;
 	public static final String TIME_SEPARATOR = ":";
-	private static final String LINE_SEPARATOR = System.getProperty("line.separator");
+	private static final String LINE_SEPARATOR = System.lineSeparator();
 
 	private final File lockFile;
 	private final File syncFile;
@@ -178,7 +178,7 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 			return operation.execute(fileIo);
 		} catch (IOException e) {
 			// operations failed with IOException will be retried according to timeout and retries number
-			LOGGER.error("Unable to read/write a file after obtaining mainLock: " + e.getMessage(), e);
+			LOGGER.error("Unable to read/write a file after obtaining mainLock: {}", e.getMessage(), e);
 		}
 		return null;
 	}
@@ -247,8 +247,8 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 	/**
 	 * Returns a Launch UUID for many Clients launched on one machine.
 	 *
-	 * @param instanceUuid a Client instance UUID, which will be written to lock and sync files and, if it the first thread which managed to
-	 *                     obtain lock on '.lock' file, returned to every client instance.
+	 * @param instanceUuid a Client instance UUID, which will be written to lock and sync files and, if it is the first thread which managed
+	 *                     to obtain lock on '.lock' file, returned to every client instance.
 	 * @return either a Client instance UUID, either the first UUID which thread managed to place a lock on a '.lock' file.
 	 */
 	@Override
@@ -371,14 +371,14 @@ public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLo
 		Boolean isLast = executeBlockingOperation(uuidRemove, syncFile);
 		if (isLast != null && isLast) {
 			if (!syncFile.delete()) {
-				LOGGER.warn("Unable to delete synchronization file: " + syncFile.getPath());
+				LOGGER.warn("Unable to delete synchronization file: {}", syncFile.getPath());
 			}
 		}
 
 		if (mainLock != null && lockUuid.equals(instanceUuid)) {
 			reset();
 			if (!lockFile.delete()) {
-				LOGGER.warn("Unable to delete locking file: " + lockFile.getPath());
+				LOGGER.warn("Unable to delete locking file: {}", lockFile.getPath());
 			}
 		}
 	}

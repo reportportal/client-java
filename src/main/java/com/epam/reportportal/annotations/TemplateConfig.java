@@ -55,4 +55,8 @@ public @interface TemplateConfig {
 	String arrayEndSymbol() default TemplateConfiguration.ARRAY_END_PATTERN;
 
 	String arrayElementDelimiter() default TemplateConfiguration.ARRAY_ELEMENT_DELIMITER;
+
+	String methodCallStartSymbol() default TemplateConfiguration.METHOD_CALL_START_PATTERN;
+
+	String methodCallEndSymbol() default TemplateConfiguration.METHOD_CALL_END_PATTERN;
 }
