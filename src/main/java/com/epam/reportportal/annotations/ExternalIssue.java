@@ -52,7 +52,8 @@ public @interface ExternalIssue {
 
 	/**
 	 * Optional, use custom Bug Tracking System Issue URL pattern instead of one which is set in `reportportal.properties` file. Use
-	 * <code>{issue_id}</code> mark to put it into the result URL.
+	 * <code>{issue_id}</code> mark to put issue ID into the result URL. Use <code>{bts_project}</code> mark to put project name into the
+	 * result.
 	 *
 	 * @return Bug Tracking System Issue URL pattern
 	 */
