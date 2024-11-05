@@ -41,6 +41,10 @@ public class MarkdownUtils {
 	public static final int MIN_COL_SIZE = 3;
 	public static final String LOGICAL_SEPARATOR = "---";
 
+	private MarkdownUtils() {
+		throw new IllegalStateException("Static only class");
+	}
+
 	/**
 	 * Adds special prefix to make log message being processed as markdown
 	 *

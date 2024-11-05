@@ -15,7 +15,6 @@
  */
 package com.epam.reportportal.utils.formatting;
 
-import com.epam.reportportal.utils.formatting.MarkdownUtils;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;

@@ -41,6 +41,7 @@ public class ParameterUtils {
 	public static final String NULL_VALUE = "NULL";
 
 	private ParameterUtils() {
+		throw new IllegalStateException("Static only class");
 	}
 
 	/**

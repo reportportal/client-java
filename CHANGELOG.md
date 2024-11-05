@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `IssueUtils` class, common code to process `@Issue` and `@Issues` annotations, by @HardNorth
 
 ## [5.2.18]
 ### Added
