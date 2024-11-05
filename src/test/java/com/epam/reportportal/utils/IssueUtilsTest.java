@@ -163,12 +163,42 @@ public class IssueUtilsTest {
 
 	@com.epam.reportportal.annotations.Issue(value = "ISSUE-2", filter = {
 			@com.epam.reportportal.annotations.TestFilter(param = @com.epam.reportportal.annotations.TestParamFilter(valueContains = "amVal")) })
-	public void method_with_contains_filter_issue_annotation() {
+	public void method_with_value_contains_filter_issue_annotation() {
 	}
 
 	@com.epam.reportportal.annotations.Issue(value = "ISSUE-2", filter = {
 			@com.epam.reportportal.annotations.TestFilter(param = @com.epam.reportportal.annotations.TestParamFilter(paramIndex = 0, valueContains = "amVal")) })
 	public void method_with_param_index_and_contains_filter_issue_annotation() {
+	}
+
+	@com.epam.reportportal.annotations.Issue(value = "ISSUE-2", filter = {
+			@com.epam.reportportal.annotations.TestFilter(param = @com.epam.reportportal.annotations.TestParamFilter(nameStartsWith = "param")) })
+	public void method_with_param_name_starts_filter_issue_annotation() {
+	}
+
+	@com.epam.reportportal.annotations.Issue(value = "ISSUE-2", filter = {
+			@com.epam.reportportal.annotations.TestFilter(param = @com.epam.reportportal.annotations.TestParamFilter(nameEndsWith = "Key")) })
+	public void method_with_param_name_ends_filter_issue_annotation() {
+	}
+
+	@com.epam.reportportal.annotations.Issue(value = "ISSUE-2", filter = {
+			@com.epam.reportportal.annotations.TestFilter(param = @com.epam.reportportal.annotations.TestParamFilter(nameStartsWith = "param", nameEndsWith = "Key")) })
+	public void method_with_param_name_starts_ends_filter_issue_annotation() {
+	}
+
+	@com.epam.reportportal.annotations.Issue(value = "ISSUE-2", filter = {
+			@com.epam.reportportal.annotations.TestFilter(param = @com.epam.reportportal.annotations.TestParamFilter(nameContains = "amKe")) })
+	public void method_with_param_name_contains_filter_issue_annotation() {
+	}
+
+	@com.epam.reportportal.annotations.Issue(value = "ISSUE-2", filter = {
+			@com.epam.reportportal.annotations.TestFilter(param = @com.epam.reportportal.annotations.TestParamFilter(paramIndex = 1, valueStartsWith = "param")) })
+	public void method_with_param_index_and_value_starts_filter_issue_annotation() {
+	}
+
+	@com.epam.reportportal.annotations.Issue(value = "ISSUE-2", filter = {
+			@com.epam.reportportal.annotations.TestFilter(param = @com.epam.reportportal.annotations.TestParamFilter(valueStartsWith = "param")) })
+	public void method_with_value_starts_filter_issue_annotation() {
 	}
 
 	private static ParameterResource simpleParameter() {
@@ -192,8 +222,16 @@ public class IssueUtilsTest {
 		return param;
 	}
 
+	private static ParameterResource fullUniqueParameter() {
+		ParameterResource param = new ParameterResource();
+		param.setKey("uniqueName");
+		param.setValue("uniqueRate");
+		return param;
+	}
+
 	public static Iterable<Object[]> filterIssueAnnotation() throws NoSuchMethodException {
 		return Arrays.asList(
+				// Positive cases
 				new Object[] {
 						IssueUtilsTest.class.getMethod("method_with_name_starts_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
 						"testName", Collections.emptyList(), true },
@@ -216,8 +254,28 @@ public class IssueUtilsTest {
 						IssueUtilsTest.class.getMethod("method_with_param_index_and_contains_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
 						"testName", Collections.singletonList(simpleParameter()), true },
 				new Object[] {
-						IssueUtilsTest.class.getMethod("method_with_contains_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						IssueUtilsTest.class.getMethod("method_with_value_contains_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
 						"testName", Arrays.asList(uniqueParameter(), simpleParameter()), true },
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_param_name_starts_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						"testName", Arrays.asList(uniqueParameter(), simpleParameter()), true },
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_param_name_ends_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						"testName", Arrays.asList(uniqueParameter(), simpleParameter()), true },
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_param_name_starts_ends_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						"testName", Arrays.asList(uniqueParameter(), simpleParameter()), true },
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_param_name_contains_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						"testName", Arrays.asList(uniqueParameter(), simpleParameter()), true },
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_param_index_and_value_starts_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						"testName", Arrays.asList(uniqueParameter(), simpleParameter()), true },
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_value_starts_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						"testName", Arrays.asList(uniqueParameter(), simpleParameter()), true },
+
+				// Negative cases
 				new Object[] {
 						IssueUtilsTest.class.getMethod("method_with_name_starts_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
 						"nameTest", Collections.emptyList(), false },
@@ -243,11 +301,30 @@ public class IssueUtilsTest {
 						IssueUtilsTest.class.getMethod("method_with_param_index_and_contains_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
 						"testName", Collections.singletonList(uniqueParameter()), false },
 				new Object[] {
-						IssueUtilsTest.class.getMethod("method_with_contains_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						IssueUtilsTest.class.getMethod("method_with_value_contains_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
 						"testName", Arrays.asList(uniqueParameter(), longerParameter()), false },
 				new Object[] {
 						IssueUtilsTest.class.getMethod("method_with_param_index_and_contains_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
-						"testName", Arrays.asList(uniqueParameter(), simpleParameter()), false }
+						"testName", Arrays.asList(uniqueParameter(), simpleParameter()), false },
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_param_name_starts_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						"testName", Arrays.asList(uniqueParameter(), fullUniqueParameter()), false },
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_param_name_ends_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						"testName", Collections.singletonList(fullUniqueParameter()), false },
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_param_name_starts_ends_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						"testName", Arrays.asList(uniqueParameter(), fullUniqueParameter()), false },
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_param_name_contains_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						"testName", Arrays.asList(uniqueParameter(), fullUniqueParameter()), false },
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_param_index_and_value_starts_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						"testName", Arrays.asList(simpleParameter(), fullUniqueParameter()), false },
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_param_index_and_value_starts_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						"testName", Arrays.asList(uniqueParameter(), fullUniqueParameter()), false }
+
 		);
 	}
 
