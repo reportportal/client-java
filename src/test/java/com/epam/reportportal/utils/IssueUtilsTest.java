@@ -16,6 +16,7 @@
 
 package com.epam.reportportal.utils;
 
+import com.epam.reportportal.annotations.ExternalIssue;
 import com.epam.reportportal.annotations.Issues;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
@@ -201,6 +202,11 @@ public class IssueUtilsTest {
 	public void method_with_value_starts_filter_issue_annotation() {
 	}
 
+	@com.epam.reportportal.annotations.Issue(value = "ISSUE-2", filter = {
+			@com.epam.reportportal.annotations.TestFilter(param = @com.epam.reportportal.annotations.TestParamFilter(valueEndsWith = "Value")) })
+	public void method_with_value_ends_filter_issue_annotation() {
+	}
+
 	private static ParameterResource simpleParameter() {
 		ParameterResource param = new ParameterResource();
 		param.setKey("paramKey");
@@ -274,6 +280,9 @@ public class IssueUtilsTest {
 				new Object[] {
 						IssueUtilsTest.class.getMethod("method_with_value_starts_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
 						"testName", Arrays.asList(uniqueParameter(), simpleParameter()), true },
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_value_ends_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						"testName", Arrays.asList(uniqueParameter(), simpleParameter()), true },
 
 				// Negative cases
 				new Object[] {
@@ -323,7 +332,10 @@ public class IssueUtilsTest {
 						"testName", Arrays.asList(simpleParameter(), fullUniqueParameter()), false },
 				new Object[] {
 						IssueUtilsTest.class.getMethod("method_with_param_index_and_value_starts_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
-						"testName", Arrays.asList(uniqueParameter(), fullUniqueParameter()), false }
+						"testName", Arrays.asList(uniqueParameter(), fullUniqueParameter()), false },
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_value_ends_filter_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						"testName", Collections.singletonList(fullUniqueParameter()), false }
 
 		);
 	}
@@ -336,8 +348,61 @@ public class IssueUtilsTest {
 		if (expected) {
 			assertThat(issue, notNullValue());
 			assertThat(issue.getIssueType(), equalTo("ISSUE-2"));
+			assertThat(issue.getComment(), nullValue());
+			assertThat(issue.getExternalSystemIssues(), nullValue());
 		} else {
 			assertThat(issue, nullValue());
 		}
+	}
+
+	@com.epam.reportportal.annotations.Issue(value = "ISSUE-3", external = { @ExternalIssue("JIRA-123") })
+	public void method_with_simple_external_issue_annotation() {
+	}
+
+	@com.epam.reportportal.annotations.Issue(value = "ISSUE-3", external = {
+			@ExternalIssue(value = "JIRA-123", btsUrl = "https://example.com") })
+	public void method_with_external_issue_bts_url_annotation() {
+	}
+
+	@com.epam.reportportal.annotations.Issue(value = "ISSUE-3", external = { @ExternalIssue(value = "JIRA-123", btsProject = "RPP") })
+	public void method_with_external_issue_bts_project_annotation() {
+	}
+
+	@com.epam.reportportal.annotations.Issue(value = "ISSUE-3", external = {
+			@ExternalIssue(value = "JIRA-123", urlPattern = "https://example.com/{bts_project}/{issue_id}") })
+	public void method_with_external_issue_url_pattern_annotation() {
+	}
+
+	@com.epam.reportportal.annotations.Issue(value = "ISSUE-3", external = {
+			@ExternalIssue(value = "JIRA-123", btsUrl = "https://example.com", btsProject = "RPP") })
+	public void method_with_external_issue_bts_url_project_annotation() {
+	}
+
+	public static Iterable<Object[]> externalIssueAnnotation() throws NoSuchMethodException {
+		return Arrays.asList(
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_simple_external_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class), null, null, null },
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_external_issue_bts_url_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class), "https://example.com", null, null },
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_external_issue_bts_project_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class), null, "RPP", null },
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_external_issue_url_pattern_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class), null, null, "https://example.com/{bts_project}/{issue_id}" },
+				new Object[] {
+						IssueUtilsTest.class.getMethod("method_with_external_issue_bts_url_project_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class), "https://example.com", "RPP", null }
+		);
+	}
+
+	@ParameterizedTest
+	@MethodSource("externalIssueAnnotation")
+	public void test_create_issue_with_filter_annotation(com.epam.reportportal.annotations.Issue issueAnnotation, String btsUrl, String btsProject, String urlPattern) {
+		Issue issue = IssueUtils.createIssue(issueAnnotation, "testName", Collections.emptyList());
+		assertThat(issue, notNullValue());
+		assertThat(issue.getExternalSystemIssues(), allOf(notNullValue(), hasSize(1)));
+		Issue.ExternalSystemIssue externalIssue = issue.getExternalSystemIssues().iterator().next();
+		assertThat(externalIssue.getTicketId(), equalTo("JIRA-123"));
+		assertThat(externalIssue.getBtsUrl(), equalTo(btsUrl));
+		assertThat(externalIssue.getBtsProject(), equalTo(btsProject));
+		assertThat(externalIssue.getUrl(), equalTo(urlPattern));
 	}
 }
