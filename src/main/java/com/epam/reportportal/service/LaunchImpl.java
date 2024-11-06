@@ -446,13 +446,21 @@ public class LaunchImpl extends Launch {
 		getStepReporter().finishPreviousStep(ofNullable(rq.getStatus()).map(ItemStatus::valueOf).orElse(null));
 
 		ItemStatus status = ofNullable(rq.getStatus()).map(ItemStatus::valueOf).orElse(null);
-		if (status == ItemStatus.FAILED || (status == ItemStatus.SKIPPED && getParameters().getSkippedAnIssue())) {
-			completeBtsIssues(rq.getIssue());
-		} else if (status == ItemStatus.SKIPPED && !getParameters().getSkippedAnIssue()) {
-			rq.setIssue(Launch.NOT_ISSUE);
-		} else if (status == ItemStatus.PASSED && rq.getIssue() != null && getParameters().isBtsIssueFail()) {
-			rq.setStatus(ItemStatus.FAILED.name());
-			rq.setIssue(StaticStructuresUtils.REDUNDANT_ISSUE);
+		if (rq.getIssue() == null) {
+			if (status == ItemStatus.SKIPPED && !getParameters().getSkippedAnIssue()) {
+				rq.setIssue(Launch.NOT_ISSUE);
+			}
+		} else {
+			if (status == ItemStatus.FAILED || (status == ItemStatus.SKIPPED && getParameters().getSkippedAnIssue())) {
+				completeBtsIssues(rq.getIssue());
+			} else if (status == ItemStatus.PASSED) {
+				if (getParameters().isBtsIssueFail()) {
+					rq.setStatus(ItemStatus.FAILED.name());
+					rq.setIssue(StaticStructuresUtils.REDUNDANT_ISSUE);
+				} else {
+					rq.setIssue(null);
+				}
+			}
 		}
 
 		QUEUE.getOrCompute(launch).addToQueue(LoggingContext.complete());
