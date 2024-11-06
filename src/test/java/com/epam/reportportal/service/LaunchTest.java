@@ -563,11 +563,7 @@ public class LaunchTest {
 		verify(rpClient).finishTestItem(eq(itemId.blockingGet()), captor.capture());
 		FinishTestItemRQ resultFinishRq = captor.getValue();
 
-		assertThat(resultFinishRq.getIssue(), notNullValue());
-		Issue issue = resultFinishRq.getIssue();
-		assertThat(issue.getIssueType(), nullValue());
-		assertThat(issue.getComment(), nullValue());
-		assertThat(issue.getExternalSystemIssues(), nullValue());
+		assertThat(resultFinishRq.getIssue(), nullValue());
 	}
 
 	@Test
