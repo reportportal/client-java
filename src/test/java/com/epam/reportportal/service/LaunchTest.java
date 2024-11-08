@@ -60,6 +60,7 @@ import static com.epam.reportportal.test.TestUtils.*;
 import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -641,5 +642,113 @@ public class LaunchTest {
 		assertThat(resultFinishRq.getIssue().getExternalSystemIssues(), hasSize(1));
 		Issue.ExternalSystemIssue resultExternalIssue = resultFinishRq.getIssue().getExternalSystemIssues().iterator().next();
 		assertThat(resultExternalIssue.getUrl(), equalTo("https://test.com/example_project/issue/RP-001"));
+	}
+
+	@Test
+	public void verify_issue_type_lookup_by_locator() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateFinishTestItemResponse(rpClient);
+		when(rpClient.getProjectSettings()).thenReturn(Maybe.just(standardProjectSettings()));
+
+		Launch launch = createLaunch(standardParameters());
+		String launchUuid = launch.start().blockingGet();
+		StartTestItemRQ itemRq = standardStartStepRequest();
+		itemRq.setLaunchUuid(launchUuid);
+		Maybe<String> itemId = launch.startTestItem(itemRq);
+		FinishTestItemRQ finishRq = positiveFinishRequest();
+		finishRq.setStatus(ItemStatus.FAILED.name());
+		Issue issue = new Issue();
+		issue.setIssueType("pb001");
+		finishRq.setIssue(issue);
+		launch.finishTestItem(itemId, finishRq).blockingGet();
+
+		ArgumentCaptor<FinishTestItemRQ> captor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(rpClient).finishTestItem(eq(itemId.blockingGet()), captor.capture());
+
+		FinishTestItemRQ resultFinishRq = captor.getValue();
+		assertThat(resultFinishRq.getIssue(), notNullValue());
+		assertThat(resultFinishRq.getIssue().getIssueType(), equalTo("pb001"));
+	}
+
+	@Test
+	public void verify_issue_type_lookup_by_short_name() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateFinishTestItemResponse(rpClient);
+		when(rpClient.getProjectSettings()).thenReturn(Maybe.just(standardProjectSettings()));
+
+		Launch launch = createLaunch(standardParameters());
+		String launchUuid = launch.start().blockingGet();
+		StartTestItemRQ itemRq = standardStartStepRequest();
+		itemRq.setLaunchUuid(launchUuid);
+		Maybe<String> itemId = launch.startTestItem(itemRq);
+		FinishTestItemRQ finishRq = positiveFinishRequest();
+		finishRq.setStatus(ItemStatus.FAILED.name());
+		Issue issue = new Issue();
+		issue.setIssueType("ab");
+		finishRq.setIssue(issue);
+		launch.finishTestItem(itemId, finishRq).blockingGet();
+
+		ArgumentCaptor<FinishTestItemRQ> captor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(rpClient).finishTestItem(eq(itemId.blockingGet()), captor.capture());
+
+		FinishTestItemRQ resultFinishRq = captor.getValue();
+		assertThat(resultFinishRq.getIssue(), notNullValue());
+		assertThat(resultFinishRq.getIssue().getIssueType(), equalTo("ab001"));
+	}
+
+	@Test
+	public void verify_issue_type_lookup_by_long_name() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateFinishTestItemResponse(rpClient);
+		when(rpClient.getProjectSettings()).thenReturn(Maybe.just(standardProjectSettings()));
+
+		Launch launch = createLaunch(standardParameters());
+		String launchUuid = launch.start().blockingGet();
+		StartTestItemRQ itemRq = standardStartStepRequest();
+		itemRq.setLaunchUuid(launchUuid);
+		Maybe<String> itemId = launch.startTestItem(itemRq);
+		FinishTestItemRQ finishRq = positiveFinishRequest();
+		finishRq.setStatus(ItemStatus.FAILED.name());
+		Issue issue = new Issue();
+		issue.setIssueType("system issue");
+		finishRq.setIssue(issue);
+		launch.finishTestItem(itemId, finishRq).blockingGet();
+
+		ArgumentCaptor<FinishTestItemRQ> captor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(rpClient).finishTestItem(eq(itemId.blockingGet()), captor.capture());
+
+		FinishTestItemRQ resultFinishRq = captor.getValue();
+		assertThat(resultFinishRq.getIssue(), notNullValue());
+		assertThat(resultFinishRq.getIssue().getIssueType(), equalTo("si001"));
+	}
+
+	@Test
+	public void verify_issue_type_lookup_by_type_reference() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateFinishTestItemResponse(rpClient);
+		when(rpClient.getProjectSettings()).thenReturn(Maybe.just(standardProjectSettings()));
+
+		Launch launch = createLaunch(standardParameters());
+		String launchUuid = launch.start().blockingGet();
+		StartTestItemRQ itemRq = standardStartStepRequest();
+		itemRq.setLaunchUuid(launchUuid);
+		Maybe<String> itemId = launch.startTestItem(itemRq);
+		FinishTestItemRQ finishRq = positiveFinishRequest();
+		finishRq.setStatus(ItemStatus.FAILED.name());
+		Issue issue = new Issue();
+		issue.setIssueType("NO_DEFECT");
+		finishRq.setIssue(issue);
+		launch.finishTestItem(itemId, finishRq).blockingGet();
+
+		ArgumentCaptor<FinishTestItemRQ> captor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(rpClient).finishTestItem(eq(itemId.blockingGet()), captor.capture());
+
+		FinishTestItemRQ resultFinishRq = captor.getValue();
+		assertThat(resultFinishRq.getIssue(), notNullValue());
+		assertThat(resultFinishRq.getIssue().getIssueType(), equalTo("nd001"));
 	}
 }

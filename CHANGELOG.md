@@ -3,6 +3,8 @@
 ## [Unreleased]
 ### Fixed
 - `@Issue` and `@Issues` annotations handling in certain cases, by @HardNorth
+### Added
+- Issue Locator lookup by value in `@Issue` annotation, by @HardNorth
 
 ## [5.2.19]
 ### Added

@@ -24,6 +24,8 @@ import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
+import com.epam.ta.reportportal.ws.model.project.config.IssueSubTypeResource;
+import com.epam.ta.reportportal.ws.model.project.config.ProjectSettingsResource;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.reactivex.Maybe;
 import okhttp3.MultipartBody;
@@ -59,6 +61,59 @@ public class TestUtils {
 		result.setProjectName("unit-test");
 		result.setEnable(true);
 		return result;
+	}
+
+	public static ProjectSettingsResource standardProjectSettings() {
+		ProjectSettingsResource settings = new ProjectSettingsResource();
+		settings.setProjectId(2L);
+		HashMap<String, List<IssueSubTypeResource>> subTypes = new HashMap<>();
+		settings.setSubTypes(subTypes);
+		IssueSubTypeResource subType = new IssueSubTypeResource();
+		subType.setId(1L);
+		subType.setLocator("ti001");
+		subType.setTypeRef("TO_INVESTIGATE");
+		subType.setLongName("To Investigate");
+		subType.setShortName("TI");
+		subType.setColor("#00829b");
+		subTypes.computeIfAbsent(subType.getTypeRef(), k -> new ArrayList<>()).add(subType);
+
+		subType = new IssueSubTypeResource();
+		subType.setId(2L);
+		subType.setLocator("ab001");
+		subType.setTypeRef("AUTOMATION_BUG");
+		subType.setLongName("Automation Bug");
+		subType.setShortName("AB");
+		subType.setColor("#ffc208");
+		subTypes.computeIfAbsent(subType.getTypeRef(), k -> new ArrayList<>()).add(subType);
+
+		subType = new IssueSubTypeResource();
+		subType.setId(3L);
+		subType.setLocator("pb001");
+		subType.setTypeRef("PRODUCT_BUG");
+		subType.setLongName("Product Bug");
+		subType.setShortName("PB");
+		subType.setColor("#d32f2f");
+		subTypes.computeIfAbsent(subType.getTypeRef(), k -> new ArrayList<>()).add(subType);
+
+		subType = new IssueSubTypeResource();
+		subType.setId(4L);
+		subType.setLocator("nd001");
+		subType.setTypeRef("NO_DEFECT");
+		subType.setLongName("No Defect");
+		subType.setShortName("ND");
+		subType.setColor("#76839b");
+		subTypes.computeIfAbsent(subType.getTypeRef(), k -> new ArrayList<>()).add(subType);
+
+		subType = new IssueSubTypeResource();
+		subType.setId(5L);
+		subType.setLocator("si001");
+		subType.setTypeRef("SYSTEM_ISSUE");
+		subType.setLongName("System Issue");
+		subType.setShortName("SI");
+		subType.setColor("#3e7be6");
+		subTypes.computeIfAbsent(subType.getTypeRef(), k -> new ArrayList<>()).add(subType);
+
+		return settings;
 	}
 
 	public static Maybe<StartLaunchRS> startLaunchResponse(String id) {
