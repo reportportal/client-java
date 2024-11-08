@@ -12,7 +12,7 @@
 [![Build with Love](https://img.shields.io/badge/build%20with-❤%EF%B8%8F%E2%80%8D-lightgrey.svg)](http://reportportal.io?style=flat)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-The latest version: 5.2.19. Please use `Maven Central` link above to get the client.
+The latest version: 5.2.20. Please use `Maven Central` link above to get the client.
 
 ## JVM-based clients configuration
 
@@ -155,15 +155,6 @@ etc.
 | rp.truncation.replacement      | String   | Default: `...`<br> Replacement pattern for truncated fields                          |
 | rp.truncation.item.name.limit  | Integer  | Default: `1024`<br> Maximum item names length before truncation.                     |
 | rp.truncation.attribute.limit  | Integer  | Default: `128`<br> Maximum attribute key and value limit (counts separately)         |
-
-### Bug Tracking System parameters
-
-| **Property name** | **Type** | **Description**                                                                                                                                                                                 | 
-|-------------------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| rp.bts.project    | String   | Bug Tracking System Project name to use along with `@ExternalIssue` annotation. Should be the same as in corresponding integration.                                                             |
-| rp.bts.url        | String   | Bug Tracking System base URL. Should be the same as in corresponding integration.                                                                                                               |
-| rp.bts.issue.url  | String   | Bug Tracking System URL Pattern for Issues. Use <code>{issue_id}</code> and <code>{bts_project}</code> placeholders to mark a place where to put Issue ID and Bug Tracking System Project name. |
-| rp.bts.issue.fail | Boolean  | Default: `true`<br> Fail tests marked with `@Issue` annotation if they passed. Designed to not miss the moment when the issue got fixed but test is still marked by annotation.                 |
 
 ## Proxy configuration
 
