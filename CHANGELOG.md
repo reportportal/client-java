@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.20]
 ### Fixed
 - `@Issue` and `@Issues` annotations handling in certain cases, by @HardNorth
 ### Added
