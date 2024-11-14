@@ -71,6 +71,7 @@ public class ListenerParameters implements Cloneable {
 	// Due to shortcoming of payload calculation mechanism this value is set to 65 million of bytes rather than 65 megabytes
 	public static final long DEFAULT_BATCH_PAYLOAD_LIMIT = 65 * 1000 * 1000;
 
+	public static final boolean DEFAULT_LAUNCH_CREATION_SKIP = true;
 	public static final boolean DEFAULT_LAUNCH_UUID_PRINT = false;
 	public static final String DEFAULT_LAUNCH_UUID_OUTPUT = "stdout";
 
@@ -122,6 +123,7 @@ public class ListenerParameters implements Cloneable {
 	private String truncateReplacement;
 	private int attributeLengthLimit;
 
+	private boolean isLaunchUuidCreationSkip;
 	private boolean printLaunchUuid;
 	private PrintStream printLaunchUuidOutput;
 
@@ -155,10 +157,12 @@ public class ListenerParameters implements Cloneable {
 	@Nullable
 	private static Duration getDurationProperty(@Nonnull PropertiesLoader properties, @Nonnull ListenerProperty value,
 			@Nonnull ListenerProperty unit) {
-		return ofNullable(properties.getProperty(value)).map(Long::parseLong).map(t -> Duration.of(t,
-				ofNullable(properties.getProperty(unit)).map(u -> toChronoUnit(TimeUnit.valueOf(u)))
-						.orElse(ChronoUnit.MILLIS)
-		)).orElse(null);
+		return ofNullable(properties.getProperty(value)).map(Long::parseLong)
+				.map(t -> Duration.of(
+						t,
+						ofNullable(properties.getProperty(unit)).map(u -> toChronoUnit(TimeUnit.valueOf(u))).orElse(ChronoUnit.MILLIS)
+				))
+				.orElse(null);
 	}
 
 	/**
@@ -200,8 +204,8 @@ public class ListenerParameters implements Cloneable {
 		this.attributeLengthLimit = DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT;
 
 		this.printLaunchUuid = DEFAULT_LAUNCH_UUID_PRINT;
-		this.printLaunchUuidOutput =
-				OutputTypes.valueOf(DEFAULT_LAUNCH_UUID_OUTPUT.toUpperCase(Locale.ROOT)).getOutput();
+		this.printLaunchUuidOutput = OutputTypes.valueOf(DEFAULT_LAUNCH_UUID_OUTPUT.toUpperCase(Locale.ROOT)).getOutput();
+		this.isLaunchUuidCreationSkip = DEFAULT_LAUNCH_CREATION_SKIP;
 
 		this.btsIssueFail = DEFAULT_BTS_ISSUE_FAIL;
 	}
@@ -213,8 +217,7 @@ public class ListenerParameters implements Cloneable {
 	 */
 	public ListenerParameters(PropertiesLoader properties) {
 		this.description = properties.getProperty(DESCRIPTION);
-		this.apiKey = ofNullable(properties.getProperty(API_KEY, properties.getProperty(UUID))).map(String::trim)
-				.orElse(null);
+		this.apiKey = ofNullable(properties.getProperty(API_KEY, properties.getProperty(UUID))).map(String::trim).orElse(null);
 		this.baseUrl = properties.getProperty(BASE_URL) != null ? properties.getProperty(BASE_URL).trim() : null;
 		this.proxyUrl = properties.getProperty(HTTP_PROXY_URL);
 		this.proxyUser = properties.getProperty(HTTP_PROXY_USER);
@@ -222,19 +225,14 @@ public class ListenerParameters implements Cloneable {
 		this.httpLogging = properties.getPropertyAsBoolean(HTTP_LOGGING, DEFAULT_HTTP_LOGGING);
 
 		this.httpCallTimeout = getDurationProperty(properties, HTTP_CALL_TIMEOUT_VALUE, HTTP_CALL_TIMEOUT_UNIT);
-		this.httpConnectTimeout = getDurationProperty(properties,
-				HTTP_CONNECT_TIMEOUT_VALUE,
-				HTTP_CONNECT_TIMEOUT_UNIT
-		);
+		this.httpConnectTimeout = getDurationProperty(properties, HTTP_CONNECT_TIMEOUT_VALUE, HTTP_CONNECT_TIMEOUT_UNIT);
 		this.httpReadTimeout = getDurationProperty(properties, HTTP_READ_TIMEOUT_VALUE, HTTP_READ_TIMEOUT_UNIT);
 		this.httpWriteTimeout = getDurationProperty(properties, HTTP_WRITE_TIMEOUT_VALUE, HTTP_WRITE_TIMEOUT_UNIT);
 
-		this.projectName =
-				properties.getProperty(PROJECT_NAME) != null ? properties.getProperty(PROJECT_NAME).trim() : null;
+		this.projectName = properties.getProperty(PROJECT_NAME) != null ? properties.getProperty(PROJECT_NAME).trim() : null;
 		this.launchName = properties.getProperty(LAUNCH_NAME);
 		this.launchUuid = properties.getProperty(LAUNCH_UUID);
-		this.attributes = Collections.unmodifiableSet(AttributeParser.parseAsSet(properties.getProperty(
-				LAUNCH_ATTRIBUTES)));
+		this.attributes = Collections.unmodifiableSet(AttributeParser.parseAsSet(properties.getProperty(LAUNCH_ATTRIBUTES)));
 		this.launchRunningMode = parseLaunchMode(properties.getProperty(MODE));
 		this.enable = properties.getPropertyAsBoolean(ENABLE, DEFAULT_ENABLE);
 		this.isSkippedAnIssue = properties.getPropertyAsBoolean(SKIPPED_AS_ISSUE, DEFAULT_SKIP_ISSUE);
@@ -250,32 +248,25 @@ public class ListenerParameters implements Cloneable {
 		this.rerunOf = properties.getProperty(RERUN_OF);
 
 		this.asyncReporting = properties.getPropertyAsBoolean(ASYNC_REPORTING, DEFAULT_ASYNC_REPORTING);
-		this.callbackReportingEnabled = properties.getPropertyAsBoolean(CALLBACK_REPORTING_ENABLED,
-				DEFAULT_CALLBACK_REPORTING_ENABLED
-		);
+		this.callbackReportingEnabled = properties.getPropertyAsBoolean(CALLBACK_REPORTING_ENABLED, DEFAULT_CALLBACK_REPORTING_ENABLED);
 
 		this.ioPoolSize = properties.getPropertyAsInt(IO_POOL_SIZE, DEFAULT_IO_POOL_SIZE);
 
 		// client join parameters
 		clientJoin = properties.getPropertyAsBoolean(CLIENT_JOIN_MODE, DEFAULT_CLIENT_JOIN);
-		clientJoinMode = LaunchIdLockMode.valueOf(properties.getProperty(CLIENT_JOIN_MODE_VALUE,
-				DEFAULT_CLIENT_JOIN_MODE
-		));
+		clientJoinMode = LaunchIdLockMode.valueOf(properties.getProperty(CLIENT_JOIN_MODE_VALUE, DEFAULT_CLIENT_JOIN_MODE));
 		lockPortNumber = properties.getPropertyAsInt(CLIENT_JOIN_LOCK_PORT, DEFAULT_CLIENT_JOIN_LOCK_PORT);
 		lockFileName = properties.getProperty(FILE_LOCK_NAME, DEFAULT_LOCK_FILE_NAME);
 		syncFileName = properties.getProperty(FILE_SYNC_NAME, DEFAULT_SYNC_FILE_NAME);
-		clientJoinTimeout = ofNullable(properties.getProperty(CLIENT_JOIN_TIMEOUT_VALUE))
-				.map(t -> TimeUnit.valueOf(properties.getProperty(CLIENT_JOIN_TIMEOUT_UNIT,
+		clientJoinTimeout = ofNullable(properties.getProperty(CLIENT_JOIN_TIMEOUT_VALUE)).map(t -> TimeUnit.valueOf(properties.getProperty(CLIENT_JOIN_TIMEOUT_UNIT,
 						DEFAULT_CLIENT_JOIN_TIMEOUT_UNIT
 				)).toMillis(Long.parseLong(t)))
 				.orElse(DEFAULT_CLIENT_JOIN_TIMEOUT);
-		lockWaitTimeout = ofNullable(properties.getProperty(CLIENT_JOIN_LOCK_TIMEOUT_VALUE))
-				.map(t -> TimeUnit.valueOf(properties.getProperty(CLIENT_JOIN_LOCK_TIMEOUT_UNIT,
+		lockWaitTimeout = ofNullable(properties.getProperty(CLIENT_JOIN_LOCK_TIMEOUT_VALUE)).map(t -> TimeUnit.valueOf(properties.getProperty(CLIENT_JOIN_LOCK_TIMEOUT_UNIT,
 						DEFAULT_CLIENT_JOIN_LOCK_TIMEOUT_UNIT
 				)).toMillis(Long.parseLong(t)))
 				.orElse(DEFAULT_FILE_WAIT_TIMEOUT);
-		clientJoinLaunchTimeout = ofNullable(properties.getProperty(CLIENT_JOIN_LAUNCH_TIMEOUT_VALUE))
-				.map(t -> TimeUnit.valueOf(properties.getProperty(CLIENT_JOIN_LAUNCH_TIMEOUT_UNIT,
+		clientJoinLaunchTimeout = ofNullable(properties.getProperty(CLIENT_JOIN_LAUNCH_TIMEOUT_VALUE)).map(t -> TimeUnit.valueOf(properties.getProperty(CLIENT_JOIN_LAUNCH_TIMEOUT_UNIT,
 						DEFAULT_CLIENT_JOIN_LAUNCH_TIMEOUT_UNIT
 				)).toMillis(Long.parseLong(t)))
 				.orElse(DEFAULT_CLIENT_JOIN_LAUNCH_TIMEOUT);
@@ -283,19 +274,13 @@ public class ListenerParameters implements Cloneable {
 		this.rxBufferSize = properties.getPropertyAsInt(RX_BUFFER_SIZE, DEFAULT_RX_BUFFER_SIZE);
 
 		this.truncateFields = properties.getPropertyAsBoolean(TRUNCATE_FIELDS, DEFAULT_TRUNCATE);
-		this.truncateItemNamesLimit = properties.getPropertyAsInt(TRUNCATE_ITEM_NAME_LIMIT,
-				DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT);
+		this.truncateItemNamesLimit = properties.getPropertyAsInt(TRUNCATE_ITEM_NAME_LIMIT, DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT);
 		this.truncateReplacement = properties.getProperty(TRUNCATE_REPLACEMENT, DEFAULT_TRUNCATE_REPLACEMENT);
-		this.attributeLengthLimit = properties.getPropertyAsInt(TRUNCATE_ATTRIBUTE_LIMIT,
-				DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT);
+		this.attributeLengthLimit = properties.getPropertyAsInt(TRUNCATE_ATTRIBUTE_LIMIT, DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT);
 
 		this.printLaunchUuid = properties.getPropertyAsBoolean(LAUNCH_UUID_PRINT, DEFAULT_LAUNCH_UUID_PRINT);
-		this.printLaunchUuidOutput =
-				OutputTypes.valueOf(
-						properties
-								.getProperty(LAUNCH_UUID_PRINT_OUTPUT, DEFAULT_LAUNCH_UUID_OUTPUT)
-								.toUpperCase(Locale.ROOT)
-				).getOutput();
+		this.printLaunchUuidOutput = OutputTypes.valueOf(properties.getProperty(LAUNCH_UUID_PRINT_OUTPUT, DEFAULT_LAUNCH_UUID_OUTPUT)
+				.toUpperCase(Locale.ROOT)).getOutput();
 
 		this.btsProjectId = properties.getProperty(BTS_PROJECT);
 		this.btsUrl = properties.getProperty(BTS_URL);
@@ -378,6 +363,14 @@ public class ListenerParameters implements Cloneable {
 
 	public void setLaunchUuid(@Nullable String launchUuid) {
 		this.launchUuid = launchUuid;
+	}
+
+	public boolean isLaunchUuidCreationSkip() {
+		return isLaunchUuidCreationSkip;
+	}
+
+	public void setLaunchUuidCreationSkip(boolean launchUuidCreationSkip) {
+		isLaunchUuidCreationSkip = launchUuidCreationSkip;
 	}
 
 	public boolean isPrintLaunchUuid() {
@@ -590,9 +583,7 @@ public class ListenerParameters implements Cloneable {
 	}
 
 	public int getRxBufferSize() {
-		return ofNullable(System.getProperty("rx2.buffer-size")).map(Integer::valueOf)
-				.map(s -> Math.max(1, s))
-				.orElse(rxBufferSize);
+		return ofNullable(System.getProperty("rx2.buffer-size")).map(Integer::valueOf).map(s -> Math.max(1, s)).orElse(rxBufferSize);
 	}
 
 	public void setRxBufferSize(int size) {
@@ -743,6 +734,7 @@ public class ListenerParameters implements Cloneable {
 		sb.append(", projectName='").append(projectName).append('\'');
 		sb.append(", launchName='").append(launchName).append('\'');
 		sb.append(", launchUuid='").append(launchUuid).append('\'');
+		sb.append(", launchUuidCreationSkip='").append(isLaunchUuidCreationSkip).append('\'');
 		sb.append(", printLaunchUuid='").append(printLaunchUuid).append('\'');
 		sb.append(", printLaunchUuidOutput='").append(printLaunchUuidOutput).append('\'');
 		sb.append(", launchRunningMode=").append(launchRunningMode);

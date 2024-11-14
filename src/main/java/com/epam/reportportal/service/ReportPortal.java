@@ -55,7 +55,10 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
@@ -118,34 +121,42 @@ public class ReportPortal {
 			return Launch.NOOP_LAUNCH;
 		}
 
-		if (StringUtils.isNotBlank(parameters.getLaunchUuid())) {
-			// a Launch UUID specified, use it and do not start a new Launch
-			return new LaunchImpl(rpClient, parameters, Maybe.just(parameters.getLaunchUuid()), executor);
+		StartLaunchRQ rqCopy = clonePojo(rq, StartLaunchRQ.class);
+		String launchUuid = parameters.getLaunchUuid();
+		boolean launchUuidSet = StringUtils.isNotBlank(launchUuid);
+		if (launchUuidSet) {
+			if (parameters.isLaunchUuidCreationSkip()) {
+				// a Launch UUID specified, but we should skip its creation
+				return new LaunchImpl(rpClient, parameters, Maybe.just(launchUuid), executor);
+			} else {
+				// a Launch UUID specified, but we should create a new Launch with it
+				rqCopy.setUuid(launchUuid);
+			}
 		}
 
 		if (launchIdLock == null) {
 			// do not use multi-client mode
-			return new LaunchImpl(rpClient, parameters, rq, executor);
+			return new LaunchImpl(rpClient, parameters, rqCopy, executor);
 		}
 
 		final String instanceUuid = UUID.randomUUID().toString();
 		final String uuid = launchIdLock.obtainLaunchUuid(instanceUuid);
 		if (uuid == null) {
 			// timeout locking on file or interrupted, anyway it should be logged already
-			// we continue to operate normally, since this flag is set by default and we shouldn't fail launches because of it
-			return new LaunchImpl(rpClient, parameters, rq, executor);
+			// we continue to operate normally, since this flag is set by default, and we shouldn't fail launches because of it
+			return new LaunchImpl(rpClient, parameters, rqCopy, executor);
 		}
 
 		if (instanceUuid.equals(uuid)) {
-			// We got our own UUID as launch UUID, that means we are primary launch.
-			StartLaunchRQ rqCopy = clonePojo(rq, StartLaunchRQ.class);
-			rqCopy.setUuid(uuid);
+			// We got our own instance UUID, that means we are primary launch.
+			if (!launchUuidSet) {
+				// If we got Launch UUID from parameters, we should use it, otherwise we should use instance UUID as Launch UUID
+				rqCopy.setUuid(instanceUuid);
+			}
 			return new PrimaryLaunch(rpClient, parameters, rqCopy, executor, launchIdLock, instanceUuid);
 		} else {
-			Maybe<String> launch = Maybe.create(emitter -> {
-				emitter.onSuccess(uuid);
-				emitter.onComplete();
-			});
+			// If we got Launch UUID from parameters, we should use it, otherwise we should use obtained UUID as a Secondary Launch
+			Maybe<String> launch = launchUuidSet ? Maybe.just(launchUuid) : Maybe.just(uuid);
 			return new SecondaryLaunch(rpClient, parameters, launch, executor, launchIdLock, instanceUuid);
 		}
 	}
@@ -495,12 +506,10 @@ public class ReportPortal {
 				builder.baseUrl(baseUrl);
 			} catch (NoSuchMethodError e) {
 				throw new InternalReportPortalClientException(
-						"Unable to initialize OkHttp client. "
-								+ "ReportPortal client supports OkHttp version 3.11.0 as minimum.\n"
+						"Unable to initialize OkHttp client. ReportPortal client supports OkHttp version 3.11.0 as minimum.\n"
 								+ "Please update OkHttp dependency.\n"
 								+ "Besides this usually happens due to old selenium-java version (it overrides our dependency), "
-								+ "please use selenium-java 3.141.0 as minimum.",
-						e
+								+ "please use selenium-java 3.141.0 as minimum.", e
 				);
 			}
 			return builder.addCallAdapterFactory(RxJava2CallAdapterFactory.createWithScheduler(Schedulers.from(executor)))

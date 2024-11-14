@@ -58,9 +58,13 @@ public enum ListenerProperty {
     PROJECT_NAME("rp.project", true),
     LAUNCH_NAME("rp.launch", true),
     /**
-     * Do not create new launch and use predefined Launch UUID.
+     * Use predefined Launch UUID.
      */
     LAUNCH_UUID("rp.launch.uuid", false),
+    /**
+     * Do not create new launch and report to predefined Launch UUID.
+     */
+    LAUNCH_UUID_CREATION_SKIP("rp.launch.uuid.creation.skip", false),
     /**
      * Print Launch UUID after start in a format: `ReportPortal Launch UUID: {UUID}`.
      */

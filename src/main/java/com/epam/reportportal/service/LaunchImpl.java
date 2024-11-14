@@ -77,11 +77,13 @@ public class LaunchImpl extends Launch {
 			&& ErrorType.FINISH_ITEM_NOT_ALLOWED.equals(((ReportPortalException) throwable).getError().getErrorType()))
 			|| INTERNAL_CLIENT_EXCEPTION_PREDICATE.test(throwable);
 
-	private static final RetryWithDelay DEFAULT_REQUEST_RETRY = new RetryWithDelay(INTERNAL_CLIENT_EXCEPTION_PREDICATE,
+	private static final RetryWithDelay DEFAULT_REQUEST_RETRY = new RetryWithDelay(
+			INTERNAL_CLIENT_EXCEPTION_PREDICATE,
 			DEFAULT_RETRY_COUNT,
 			TimeUnit.SECONDS.toMillis(DEFAULT_RETRY_TIMEOUT)
 	);
-	private static final RetryWithDelay TEST_ITEM_FINISH_REQUEST_RETRY = new RetryWithDelay(TEST_ITEM_FINISH_RETRY_PREDICATE,
+	private static final RetryWithDelay TEST_ITEM_FINISH_REQUEST_RETRY = new RetryWithDelay(
+			TEST_ITEM_FINISH_RETRY_PREDICATE,
 			ITEM_FINISH_MAX_RETRIES,
 			TimeUnit.SECONDS.toMillis(ITEM_FINISH_RETRY_TIMEOUT)
 	);
@@ -127,10 +129,12 @@ public class LaunchImpl extends Launch {
 			}).subscribeOn(getScheduler()).cache();
 
 			//noinspection ResultOfMethodCallIgnored
-			launchPromise.subscribe(rs -> emitter.onSuccess(rs.getId()), t -> {
-				LOG_ERROR.accept(t);
-				emitter.onComplete();
-			});
+			launchPromise.subscribe(
+					rs -> emitter.onSuccess(rs.getId()), t -> {
+						LOG_ERROR.accept(t);
+						emitter.onComplete();
+					}
+			);
 		}).cache();
 		projectSettings = ofNullable(getClient().getProjectSettings()).map(settings -> settings.subscribeOn(getScheduler()).cache())
 				.orElse(Maybe.empty());
@@ -213,14 +217,16 @@ public class LaunchImpl extends Launch {
 			ItemAttributesRQ updated = attribute;
 			int keyLength = ofNullable(updated.getKey()).map(String::length).orElse(0);
 			if (keyLength > limit && keyLength > replacement.length()) {
-				updated = new ItemAttributesRQ(updated.getKey().substring(0, limit - replacement.length()) + replacement,
+				updated = new ItemAttributesRQ(
+						updated.getKey().substring(0, limit - replacement.length()) + replacement,
 						updated.getValue(),
 						updated.isSystem()
 				);
 			}
 			int valueLength = ofNullable(updated.getValue()).map(String::length).orElse(0);
 			if (valueLength > limit && valueLength > replacement.length()) {
-				updated = new ItemAttributesRQ(updated.getKey(),
+				updated = new ItemAttributesRQ(
+						updated.getKey(),
 						updated.getValue().substring(0, limit - replacement.length()) + replacement,
 						updated.isSystem()
 				);
@@ -275,7 +281,7 @@ public class LaunchImpl extends Launch {
 	public void finish(final FinishExecutionRQ request) {
 		QUEUE.getOrCompute(launch).addToQueue(LaunchLoggingContext.complete());
 		Completable finish = Completable.concat(QUEUE.getOrCompute(launch).getChildren());
-		if (StringUtils.isBlank(getParameters().getLaunchUuid())) {
+		if (StringUtils.isBlank(getParameters().getLaunchUuid()) || !getParameters().isLaunchUuidCreationSkip()) {
 			FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
 			truncateAttributes(rq);
 			finish = finish.andThen(launch.map(id -> getClient().finishLaunch(id, rq)
