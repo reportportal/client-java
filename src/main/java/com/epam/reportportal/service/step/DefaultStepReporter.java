@@ -193,20 +193,23 @@ public class DefaultStepReporter implements StepReporter {
 	 * @param status finish status
 	 */
 	@Override
-	public void finishPreviousStep(@Nullable ItemStatus status) {
-		finishPreviousStepInternal(status).ifPresent(e -> {
+	@Nonnull
+	public Maybe<String> finishPreviousStep(@Nullable ItemStatus status) {
+		return finishPreviousStepInternal(status).map(e -> {
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
 				failParents();
 			}
-		});
+			return e.getItemId();
+		}).orElse(Maybe.empty());
 	}
 
 	/**
 	 * Finish current step started by any of <code>#sendStep</code> methods.
 	 */
 	@Override
-	public void finishPreviousStep() {
-		finishPreviousStep(null);
+	@Nonnull
+	public Maybe<String>  finishPreviousStep() {
+		return finishPreviousStep(null);
 	}
 
 	@Override

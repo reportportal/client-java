@@ -162,7 +162,8 @@ public class ManualNestedStepTest {
 		sr.sendStep(ItemStatus.FAILED, stepName);
 
 		verify(client, timeout(1000)).startTestItem(eq(testMethodUuid), any());
-		sr.finishPreviousStep();
+		//noinspection ResultOfMethodCallIgnored
+		sr.finishPreviousStep().blockingGet();
 
 		ArgumentCaptor<FinishTestItemRQ> finishStepCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
 		verify(client, timeout(1000)).finishTestItem(eq(nestedSteps.get(0)), finishStepCaptor.capture());
@@ -182,7 +183,8 @@ public class ManualNestedStepTest {
 		sr.sendStep(stepName);
 
 		verify(client, timeout(1000)).startTestItem(eq(testMethodUuid), any());
-		sr.finishPreviousStep(ItemStatus.FAILED);
+		//noinspection ResultOfMethodCallIgnored
+		sr.finishPreviousStep(ItemStatus.FAILED).blockingGet();
 
 		ArgumentCaptor<FinishTestItemRQ> finishStepCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
 		verify(client, timeout(1000)).finishTestItem(eq(nestedSteps.get(0)), finishStepCaptor.capture());
@@ -364,7 +366,8 @@ public class ManualNestedStepTest {
 		String logMessage = "Test message";
 		sr.sendStep(stepName, logMessage);
 		sr.setStepStatus(ItemStatus.FAILED);
-		sr.finishPreviousStep();
+		//noinspection ResultOfMethodCallIgnored
+		sr.finishPreviousStep().blockingGet();
 
 		verify(client, timeout(1000)).startTestItem(eq(testMethodUuid), any(StartTestItemRQ.class));
 		ArgumentCaptor<FinishTestItemRQ> finishStepCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
@@ -386,7 +389,8 @@ public class ManualNestedStepTest {
 		String logMessage = "Test message";
 		sr.sendStep(ItemStatus.PASSED, stepName, logMessage);
 		sr.setStepStatus(ItemStatus.PASSED);
-		sr.finishPreviousStep(ItemStatus.FAILED);
+		//noinspection ResultOfMethodCallIgnored
+		sr.finishPreviousStep(ItemStatus.FAILED).blockingGet();
 
 		verify(client, timeout(1000)).startTestItem(eq(testMethodUuid), any(StartTestItemRQ.class));
 		ArgumentCaptor<FinishTestItemRQ> finishStepCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
