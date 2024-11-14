@@ -111,11 +111,13 @@ public class ReportPortalTest {
 		assertThat(client, notNullValue());
 		Exception error = null;
 		try {
-			SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(server,
+			SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(
+					server,
 					Collections.emptyMap(),
 					"files/simple_response.txt"
 			);
-			Pair<List<String>, Response> result = SocketUtils.executeServerCallable(serverCallable,
+			Pair<List<String>, Response> result = SocketUtils.executeServerCallable(
+					serverCallable,
 					() -> client.newCall(new Request.Builder().url(baseUrl).build()).execute()
 			);
 			assertThat(result.getValue().code(), equalTo(200));
@@ -147,11 +149,13 @@ public class ReportPortalTest {
 		assertThat(client, notNullValue());
 		Exception error = null;
 		try {
-			SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(server,
+			SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(
+					server,
 					Collections.emptyMap(),
 					Arrays.asList("files/proxy_auth_response.txt", "files/simple_response.txt")
 			);
-			Pair<List<String>, Response> proxyAuth = SocketUtils.executeServerCallable(serverCallable,
+			Pair<List<String>, Response> proxyAuth = SocketUtils.executeServerCallable(
+					serverCallable,
 					() -> client.newCall(new Request.Builder().url(baseUrl).build()).execute()
 			);
 			assertThat(proxyAuth.getValue().code(), equalTo(200));
@@ -198,7 +202,8 @@ public class ReportPortalTest {
 
 	private static Pair<List<String>, StartLaunchRS> executeWithClosing(ExecutorService clientExecutor, ServerSocket ss,
 			SocketUtils.ServerCallable serverCallable, Callable<StartLaunchRS> clientCallable) throws Exception {
-		Pair<List<String>, StartLaunchRS> result = executeWithClosingOnException(clientExecutor,
+		Pair<List<String>, StartLaunchRS> result = executeWithClosingOnException(
+				clientExecutor,
 				ss,
 				() -> SocketUtils.executeServerCallable(serverCallable, clientCallable)
 		);
@@ -259,7 +264,8 @@ public class ReportPortalTest {
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
 		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
 
-		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss,
+		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(
+				ss,
 				Collections.emptyMap(),
 				Collections.singletonList("files/simple_response.txt")
 		);
@@ -334,20 +340,63 @@ public class ReportPortalTest {
 			Maybe<String> launchMaybe = launch.start();
 			assertThat(launchMaybe.blockingGet(), equalTo(launchUuid));
 
-			//noinspection ReactiveStreamsUnusedPublisher
-			launch.startTestItem(TestUtils.standardStartSuiteRequest());
+			//noinspection ResultOfMethodCallIgnored
+			launch.startTestItem(TestUtils.standardStartSuiteRequest()).blockingGet();
 
-			verify(rpClient, timeout(1000).times(0)).startLaunch(any(StartLaunchRQ.class));
+			verify(rpClient, after(1000).times(0)).startLaunch(any(StartLaunchRQ.class));
 
 			ArgumentCaptor<StartTestItemRQ> startCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
-			verify(rpClient, timeout(1000)).startTestItem(startCaptor.capture());
+			verify(rpClient).startTestItem(startCaptor.capture());
 
 			StartTestItemRQ startItem = startCaptor.getValue();
 			assertThat(startItem.getLaunchUuid(), equalTo(launchUuid));
 
 			launch.finish(TestUtils.standardLaunchFinishRequest());
 
-			verify(rpClient, timeout(1000).times(0)).finishLaunch(anyString(), any(FinishExecutionRQ.class));
+			verify(rpClient, after(1000).times(0)).finishLaunch(anyString(), any(FinishExecutionRQ.class));
+		} catch (RuntimeException e) {
+			error = e;
+		}
+		CommonUtils.shutdownExecutorService(executor);
+		if (error != null) {
+			throw error;
+		}
+	}
+
+	@Test
+	public void verify_launch_uuid_creation_skip_parameter_handling() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+
+		String launchUuid = "test-launch-uuid";
+		ListenerParameters listenerParameters = TestUtils.standardParameters();
+		listenerParameters.setLaunchUuid(launchUuid);
+		listenerParameters.setLaunchUuidCreationSkip(false);
+
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		RuntimeException error = null;
+
+		try {
+			ReportPortal rp = ReportPortal.create(rpClient, listenerParameters, executor);
+
+			Launch launch = rp.newLaunch(standardLaunchRequest(listenerParameters));
+			Maybe<String> launchMaybe = launch.start();
+			assertThat(launchMaybe.blockingGet(), equalTo(launchUuid));
+
+			//noinspection ResultOfMethodCallIgnored
+			launch.startTestItem(TestUtils.standardStartSuiteRequest()).blockingGet();
+
+			verify(rpClient, timeout(1000).times(1)).startLaunch(any(StartLaunchRQ.class));
+
+			ArgumentCaptor<StartTestItemRQ> startCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+			verify(rpClient).startTestItem(startCaptor.capture());
+
+			StartTestItemRQ startItem = startCaptor.getValue();
+			assertThat(startItem.getLaunchUuid(), equalTo(launchUuid));
+
+			launch.finish(TestUtils.standardLaunchFinishRequest());
+
+			verify(rpClient, timeout(1000).times(1)).finishLaunch(eq(launchUuid), any(FinishExecutionRQ.class));
 		} catch (RuntimeException e) {
 			error = e;
 		}

@@ -90,7 +90,6 @@ public class ListenerParameters implements Cloneable {
 	private Duration httpWriteTimeout;
 	private String projectName;
 	private String launchName;
-	private String launchUuid;
 	private Mode launchRunningMode;
 	private Set<ItemAttributesRQ> attributes;
 	private Boolean enable;
@@ -123,6 +122,7 @@ public class ListenerParameters implements Cloneable {
 	private String truncateReplacement;
 	private int attributeLengthLimit;
 
+	private String launchUuid;
 	private boolean isLaunchUuidCreationSkip;
 	private boolean printLaunchUuid;
 	private PrintStream printLaunchUuidOutput;
@@ -231,7 +231,6 @@ public class ListenerParameters implements Cloneable {
 
 		this.projectName = properties.getProperty(PROJECT_NAME) != null ? properties.getProperty(PROJECT_NAME).trim() : null;
 		this.launchName = properties.getProperty(LAUNCH_NAME);
-		this.launchUuid = properties.getProperty(LAUNCH_UUID);
 		this.attributes = Collections.unmodifiableSet(AttributeParser.parseAsSet(properties.getProperty(LAUNCH_ATTRIBUTES)));
 		this.launchRunningMode = parseLaunchMode(properties.getProperty(MODE));
 		this.enable = properties.getPropertyAsBoolean(ENABLE, DEFAULT_ENABLE);
@@ -278,6 +277,8 @@ public class ListenerParameters implements Cloneable {
 		this.truncateReplacement = properties.getProperty(TRUNCATE_REPLACEMENT, DEFAULT_TRUNCATE_REPLACEMENT);
 		this.attributeLengthLimit = properties.getPropertyAsInt(TRUNCATE_ATTRIBUTE_LIMIT, DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT);
 
+		this.launchUuid = properties.getProperty(LAUNCH_UUID);
+		this.isLaunchUuidCreationSkip = properties.getPropertyAsBoolean(LAUNCH_UUID_CREATION_SKIP, DEFAULT_LAUNCH_CREATION_SKIP);
 		this.printLaunchUuid = properties.getPropertyAsBoolean(LAUNCH_UUID_PRINT, DEFAULT_LAUNCH_UUID_PRINT);
 		this.printLaunchUuidOutput = OutputTypes.valueOf(properties.getProperty(LAUNCH_UUID_PRINT_OUTPUT, DEFAULT_LAUNCH_UUID_OUTPUT)
 				.toUpperCase(Locale.ROOT)).getOutput();
