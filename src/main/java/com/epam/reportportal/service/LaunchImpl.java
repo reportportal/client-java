@@ -470,6 +470,7 @@ public class LaunchImpl extends Launch {
 		FinishTestItemRQ rq = clonePojo(request, FinishTestItemRQ.class);
 		truncateAttributes(rq);
 
+		//noinspection ReactiveStreamsUnusedPublisher
 		getStepReporter().finishPreviousStep(ofNullable(rq.getStatus()).map(ItemStatus::valueOf).orElse(null));
 
 		ItemStatus status = ofNullable(rq.getStatus()).map(ItemStatus::valueOf).orElse(null);
