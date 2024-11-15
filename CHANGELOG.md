@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.21]
 ### Added
 - `rp.launch.uuid.creation.skip` configuration properties to control Launch start on provided UUID, by @HardNorth
 
