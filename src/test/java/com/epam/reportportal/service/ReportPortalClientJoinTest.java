@@ -30,10 +30,7 @@ import com.epam.ta.reportportal.ws.model.launch.LaunchResource;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
 import io.reactivex.Scheduler;
-import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
 import okhttp3.OkHttpClient;
-import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -110,34 +107,8 @@ public class ReportPortalClientJoinTest {
 	}
 
 	private static void simulateGetLaunchResponse(final ReportPortalClient client) {
-		when(client.getLaunchByUuid(anyString())).then((Answer<Maybe<LaunchResource>>) invocation -> getLaunchResponse(
-				invocation.getArgument(0).toString()));
-	}
-
-	private static class StringConsumer implements Consumer<String> {
-		private volatile String result;
-
-		@Override
-		public void accept(String s) {
-			result = s;
-		}
-
-		public String getResult() {
-			return result;
-		}
-	}
-
-	private static String getId(Maybe<String> stringMaybe) {
-		final StringConsumer consumer = new StringConsumer();
-		Disposable disposable = stringMaybe.subscribe(consumer);
-		try {
-			return Awaitility.await("Waiting for reactivex consumer")
-					.pollInterval(2, TimeUnit.MILLISECONDS)
-					.atMost(10, TimeUnit.SECONDS)
-					.until(consumer::getResult, Matchers.notNullValue());
-		} finally {
-			disposable.dispose();
-		}
+		when(client.getLaunchByUuid(anyString())).then((Answer<Maybe<LaunchResource>>) invocation -> getLaunchResponse(invocation.getArgument(
+				0).toString()));
 	}
 
 	private static List<Launch> createLaunchesNoStart(int num, ReportPortalClient rpClient, ListenerParameters params,
@@ -151,15 +122,14 @@ public class ReportPortalClientJoinTest {
 		return result;
 	}
 
-	private static List<Launch> createLaunchesNoGetLaunch(int num, ReportPortalClient rpClient,
-			ListenerParameters params, LaunchIdLock launchIdLock, ExecutorService executor) {
+	private static List<Launch> createLaunchesNoGetLaunch(int num, ReportPortalClient rpClient, ListenerParameters params,
+			LaunchIdLock launchIdLock, ExecutorService executor) {
 		simulateStartLaunchResponse(rpClient);
 		return createLaunchesNoStart(num, rpClient, params, launchIdLock, executor);
 	}
 
-	private static List<Launch> createLaunches(@SuppressWarnings("SameParameterValue") int num,
-			ReportPortalClient rpClient, ListenerParameters params, LaunchIdLock launchIdLock,
-			ExecutorService executor) {
+	private static List<Launch> createLaunches(@SuppressWarnings("SameParameterValue") int num, ReportPortalClient rpClient,
+			ListenerParameters params, LaunchIdLock launchIdLock, ExecutorService executor) {
 		simulateGetLaunchResponse(rpClient);
 		return createLaunchesNoGetLaunch(num, rpClient, params, launchIdLock, executor);
 	}
@@ -168,30 +138,26 @@ public class ReportPortalClientJoinTest {
 	public void test_two_launches_have_correct_class_names() {
 		List<Launch> launches = createLaunchesNoStart(2, rpClient, paramSupplier.get(), launchIdLock, executor);
 
-		assertThat(
-				launches.get(0).getClass().getCanonicalName(),
-				Matchers.equalTo(PrimaryLaunch.class.getCanonicalName())
-		);
-		assertThat(
-				launches.get(1).getClass().getCanonicalName(),
-				Matchers.equalTo(SecondaryLaunch.class.getCanonicalName())
-		);
+		assertThat(launches.get(0).getClass().getCanonicalName(), Matchers.equalTo(PrimaryLaunch.class.getCanonicalName()));
+		assertThat(launches.get(1).getClass().getCanonicalName(), Matchers.equalTo(SecondaryLaunch.class.getCanonicalName()));
 	}
 
 	@Test
+	@SuppressWarnings("ResultOfMethodCallIgnored")
 	public void test_two_launches_call_start_launch_only_once() {
 		List<Launch> launches = createLaunches(2, rpClient, paramSupplier.get(), launchIdLock, executor);
-		launches.get(0).start();
-		launches.get(1).start();
+		launches.get(0).start().blockingGet();
+		launches.get(1).start().blockingGet();
 
 		verify(launchIdLock, times(2)).obtainLaunchUuid(ArgumentMatchers.anyString());
-		verify(rpClient, after(WAIT_TIMEOUT).times(1)).startLaunch(any(StartLaunchRQ.class));
+		verify(rpClient, times(1)).startLaunch(any(StartLaunchRQ.class));
 	}
 
 	@Test
 	public void test_primary_launch_start_launch_request() {
 		List<Launch> launches = createLaunchesNoGetLaunch(1, rpClient, paramSupplier.get(), launchIdLock, executor);
-		launches.get(0).start();
+		//noinspection ResultOfMethodCallIgnored
+		launches.get(0).start().blockingGet();
 
 		ArgumentCaptor<String> passedUuid = ArgumentCaptor.forClass(String.class);
 		verify(launchIdLock, timeout(WAIT_TIMEOUT).times(1)).obtainLaunchUuid(passedUuid.capture());
@@ -208,10 +174,10 @@ public class ReportPortalClientJoinTest {
 	public void test_two_launches_have_same_uuid() {
 		List<Launch> launches = createLaunches(2, rpClient, paramSupplier.get(), launchIdLock, executor);
 
-		String firstUuid = getId(launches.get(0).start());
-		String secondUuid = getId(launches.get(1).start());
+		String firstStart = launches.get(0).start().blockingGet();
+		String secondStart = launches.get(1).start().blockingGet();
 
-		assertThat(firstUuid, equalTo(secondUuid));
+		assertThat(secondStart, equalTo(firstStart));
 	}
 
 	private static FinishExecutionRQ standardLaunchFinish() {
@@ -222,15 +188,13 @@ public class ReportPortalClientJoinTest {
 	}
 
 	@Test
+	@SuppressWarnings("ReactiveStreamsUnusedPublisher")
 	public void test_only_primary_launch_finish_launch_on_rp() {
 		List<Launch> launches = createLaunches(2, rpClient, paramSupplier.get(), launchIdLock, executor);
 		launches.get(0).start();
 		launches.get(1).start();
 
-		when(rpClient.finishLaunch(
-				any(),
-				any(FinishExecutionRQ.class)
-		)).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishLaunch(any(), any(FinishExecutionRQ.class))).thenReturn(Maybe.just(new OperationCompletionRS()));
 
 		launches.get(0).finish(standardLaunchFinish());
 		launches.get(1).finish(standardLaunchFinish());
@@ -288,30 +252,31 @@ public class ReportPortalClientJoinTest {
 	}
 
 	@Test
+	@SuppressWarnings({ "ResultOfMethodCallIgnored" })
 	public void test_rp_client_sends_correct_start_item_for_secondary_launch() {
 		List<Launch> launches = createLaunches(2, rpClient, paramSupplier.get(), launchIdLock, executor);
-		launches.get(0).start();
-		launches.get(1).start();
+		launches.get(0).start().blockingGet();
+		launches.get(1).start().blockingGet();
 
 		String itemUuid = UUID.randomUUID().toString();
 		simulateStartItemResponse(rpClient, itemUuid);
 		Maybe<String> rs = launches.get(1).startTestItem(standardItemRequest());
-		String testItemId = getId(rs);
 
-		assertThat(testItemId, equalTo(itemUuid));
+		assertThat(rs.blockingGet(), equalTo(itemUuid));
 	}
 
 	@Test
 	public void test_secondary_launch_call_get_launch_by_uuid() {
 		List<Launch> launches = createLaunchesNoStart(2, rpClient, paramSupplier.get(), launchIdLock, executor);
 		simulateGetLaunchResponse(rpClient);
-		launches.get(1).start();
+		//noinspection ResultOfMethodCallIgnored
+		launches.get(1).start().blockingGet();
 
 		ArgumentCaptor<String> obtainUuids = ArgumentCaptor.forClass(String.class);
 		verify(launchIdLock, timeout(WAIT_TIMEOUT).times(2)).obtainLaunchUuid(obtainUuids.capture());
 
 		ArgumentCaptor<String> sentUuid = ArgumentCaptor.forClass(String.class);
-		verify(rpClient, after(WAIT_TIMEOUT * 2).times(1)).getLaunchByUuid(sentUuid.capture());
+		verify(rpClient, times(1)).getLaunchByUuid(sentUuid.capture());
 
 		assertThat(sentUuid.getValue(), equalTo(obtainUuids.getAllValues().get(0)));
 	}
@@ -320,19 +285,18 @@ public class ReportPortalClientJoinTest {
 		return Maybe.error(new ReportPortalException(404, "Launch not found", new ErrorRS()));
 	}
 
-	private static void simulateGetLaunchByUuidResponse(ReportPortalClient client) {
+	private static void simulateGetLaunchErrorResponse(ReportPortalClient client) {
 		Answer<Maybe<LaunchResource>> errorAnswer = invocation -> getLaunchErrorResponse();
 		when(client.getLaunchByUuid(anyString())).then(errorAnswer)
 				.then(errorAnswer)
-				.then((Answer<Maybe<LaunchResource>>) invocation -> getLaunchResponse(invocation.getArgument(0)
-						.toString()));
+				.then((Answer<Maybe<LaunchResource>>) invocation -> getLaunchResponse(invocation.getArgument(0).toString()));
 	}
 
 	@Test
 	public void test_secondary_launch_awaits_get_launch_by_uuid_correct_response_for_v1() {
 		int num = 2;
 		simulateObtainLaunchUuidResponse(launchIdLock);
-		simulateGetLaunchByUuidResponse(rpClient);
+		simulateGetLaunchErrorResponse(rpClient);
 		ListenerParameters p = paramSupplier.get();
 		p.setAsyncReporting(false);
 		List<Launch> launches = new ArrayList<>(num);
@@ -340,6 +304,7 @@ public class ReportPortalClientJoinTest {
 			ReportPortal rp = new ReportPortal(rpClient, executor, p, launchIdLock);
 			launches.add(rp.newLaunch(standardLaunchRequest(p)));
 		}
+		//noinspection ReactiveStreamsUnusedPublisher
 		launches.get(1).start();
 
 		verify(launchIdLock, timeout(WAIT_TIMEOUT).times(2)).obtainLaunchUuid(anyString());
@@ -357,10 +322,11 @@ public class ReportPortalClientJoinTest {
 			ReportPortal rp = new ReportPortal(rpClient, executor, p, launchIdLock);
 			launches.add(rp.newLaunch(standardLaunchRequest(p)));
 		}
-		launches.get(1).start();
+		//noinspection ResultOfMethodCallIgnored
+		launches.get(1).start().blockingGet();
 
 		verify(launchIdLock, timeout(WAIT_TIMEOUT).times(2)).obtainLaunchUuid(anyString());
-		verify(rpClient, after(WAIT_TIMEOUT * 3).times(0)).getLaunchByUuid(anyString());
+		verify(rpClient, times(0)).getLaunchByUuid(anyString());
 	}
 
 	@Test
@@ -415,19 +381,11 @@ public class ReportPortalClientJoinTest {
 	public void test_primary_launch_waits_for_secondary_finish() {
 		String secondaryLaunchUuid = UUID.randomUUID().toString();
 
-		Launch primaryLaunch = createLaunchesNoGetLaunch(
-				1,
-				rpClient,
-				paramSupplier.get(),
-				launchIdLock,
-				executor
-		).iterator().next();
+		Launch primaryLaunch = createLaunchesNoGetLaunch(1, rpClient, paramSupplier.get(), launchIdLock, executor).iterator().next();
 		assertThat(primaryLaunch, notNullValue());
 		when(launchIdLock.getLiveInstanceUuids()).thenReturn(Collections.singletonList(secondaryLaunchUuid));
-		when(rpClient.finishLaunch(
-				any(),
-				any(FinishExecutionRQ.class)
-		)).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(rpClient.finishLaunch(any(), any(FinishExecutionRQ.class))).thenReturn(Maybe.just(new OperationCompletionRS()));
+		//noinspection ReactiveStreamsUnusedPublisher
 		primaryLaunch.start();
 
 		Thread finishThread = new Thread(() -> primaryLaunch.finish(standardLaunchFinish()));
@@ -441,5 +399,27 @@ public class ReportPortalClientJoinTest {
 		verify(rpClient, after(1100)).finishLaunch(anyString(), any(FinishExecutionRQ.class));
 		verify(launchIdLock, atLeast(1)).getLiveInstanceUuids();
 		assertThat(finishThread.isAlive(), equalTo(Boolean.FALSE));
+	}
+
+	@Test
+	@SuppressWarnings("ResultOfMethodCallIgnored")
+	public void test_launches_uses_passed_launch_uuid() {
+		String launchUuid = UUID.randomUUID().toString();
+		ListenerParameters params = paramSupplier.get();
+		params.setLaunchUuid(launchUuid);
+		params.setLaunchUuidCreationSkip(false);
+		List<Launch> launches = createLaunchesNoStart(2, rpClient, params, launchIdLock, executor);
+		simulateStartLaunchResponse(rpClient);
+		simulateGetLaunchResponse(rpClient);
+		launches.get(0).start().blockingGet();
+		launches.get(1).start().blockingGet();
+
+		ArgumentCaptor<StartLaunchRQ> launchStart = ArgumentCaptor.forClass(StartLaunchRQ.class);
+		verify(rpClient, times(1)).startLaunch(launchStart.capture());
+		assertThat(launchStart.getValue().getUuid(), equalTo(launchUuid));
+
+		ArgumentCaptor<String> secondaryUuid = ArgumentCaptor.forClass(String.class);
+		verify(rpClient, times(1)).getLaunchByUuid(secondaryUuid.capture());
+		assertThat(secondaryUuid.getValue(), equalTo(launchUuid));
 	}
 }

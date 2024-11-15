@@ -66,9 +66,11 @@ public interface StepReporter {
 
 	void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable Throwable throwable, @Nullable File... files);
 
-	void finishPreviousStep(@Nullable ItemStatus status);
+	@Nonnull
+	Maybe<String> finishPreviousStep(@Nullable ItemStatus status);
 
-	void finishPreviousStep();
+	@Nonnull
+	Maybe<String> finishPreviousStep();
 
 	@Nonnull
 	Maybe<String> startNestedStep(@Nonnull StartTestItemRQ startStepRequest);
@@ -134,15 +136,13 @@ public interface StepReporter {
 		private final Date timestamp;
 		private final FinishTestItemRQ finishTestItemRQ;
 
-		public StepEntry(@Nonnull Maybe<String> itemId, @Nonnull Date stepStartTime,
-		                 @Nonnull FinishTestItemRQ finishTestItemRQ) {
+		public StepEntry(@Nonnull Maybe<String> itemId, @Nonnull Date stepStartTime, @Nonnull FinishTestItemRQ finishTestItemRQ) {
 			this.itemId = itemId;
 			this.timestamp = stepStartTime;
 			this.finishTestItemRQ = finishTestItemRQ;
 		}
 
-		public StepEntry(@Nonnull Maybe<String> itemId,
-				@Nonnull FinishTestItemRQ finishTestItemRQ) {
+		public StepEntry(@Nonnull Maybe<String> itemId, @Nonnull FinishTestItemRQ finishTestItemRQ) {
 			this(itemId, Calendar.getInstance().getTime(), finishTestItemRQ);
 		}
 
@@ -193,9 +193,11 @@ public interface StepReporter {
 		@Override
 		public void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable Throwable throwable, @Nullable File... files) {}
 		@Override
-		public void finishPreviousStep(@Nullable ItemStatus status) {}
+		@Nonnull
+		public Maybe<String> finishPreviousStep(@Nullable ItemStatus status) {return Maybe.empty();}
 		@Override
-		public void finishPreviousStep() {}
+		@Nonnull
+		public Maybe<String> finishPreviousStep() {return Maybe.empty();}
 		@Override
 		@Nonnull
 		public Maybe<String> startNestedStep(@Nonnull StartTestItemRQ startStepRequest) {return Maybe.empty();}

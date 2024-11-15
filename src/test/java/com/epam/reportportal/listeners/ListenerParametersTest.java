@@ -210,4 +210,13 @@ public class ListenerParametersTest {
 		assertThat(listenerParameters.isPrintLaunchUuid(), equalTo(expectedEnabled));
 		assertThat(listenerParameters.getPrintLaunchUuidOutput(), sameInstance(expectedPrintStream));
 	}
+
+	@Test
+	public void verify_launch_uuid_with_creation() {
+		PropertiesLoader properties = PropertiesLoader.load("property-test/launch-uuid-create.properties");
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		assertEquals("test-uuid", listenerParameters.getLaunchUuid());
+		assertFalse(listenerParameters.isLaunchUuidCreationSkip());
+	}
 }
