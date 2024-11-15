@@ -252,11 +252,11 @@ public class ReportPortalClientJoinTest {
 	}
 
 	@Test
-	@SuppressWarnings("ReactiveStreamsUnusedPublisher")
+	@SuppressWarnings({ "ResultOfMethodCallIgnored" })
 	public void test_rp_client_sends_correct_start_item_for_secondary_launch() {
 		List<Launch> launches = createLaunches(2, rpClient, paramSupplier.get(), launchIdLock, executor);
-		launches.get(0).start();
-		launches.get(1).start();
+		launches.get(0).start().blockingGet();
+		launches.get(1).start().blockingGet();
 
 		String itemUuid = UUID.randomUUID().toString();
 		simulateStartItemResponse(rpClient, itemUuid);
