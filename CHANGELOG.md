@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.22]
 ### Changed
 - `Retrofit` version updated on version [2.11.0](https://github.com/square/retrofit/releases/tag/2.11.0), by @HardNorth
 
