@@ -23,8 +23,13 @@ import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.epam.reportportal.utils.files.ByteSource;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import org.slf4j.Logger;
@@ -43,13 +48,15 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 public class HttpRequestUtils {
 	private static final Logger LOGGER = LoggerFactory.getLogger(HttpRequestUtils.class);
 	public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
-	public static final ObjectMapper MAPPER;
-
-	static {
-		MAPPER = new ObjectMapper();
-		MAPPER.setDateFormat(new SimpleDateFormat(DEFAULT_DATE_FORMAT));
-		MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-	}
+	public static final ObjectMapper MAPPER = JsonMapper.builder()
+      .addModule(new JavaTimeModule())
+      .annotationIntrospector(new JacksonAnnotationIntrospector())
+      .configure(MapperFeature.DEFAULT_VIEW_INCLUSION, true)
+      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+      .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+      .configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
+      .addModule(new JavaTimeModule())
+      .build();
 
 	private static final String DEFAULT_TYPE = "application/octet-stream";
 
