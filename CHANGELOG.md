@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Some new types to `ContentType` class, by @HardNorth
 
 ## [5.2.22]
 ### Changed
