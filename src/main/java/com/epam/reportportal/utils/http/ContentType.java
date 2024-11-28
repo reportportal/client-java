@@ -74,6 +74,8 @@ public class ContentType {
 	public static final String TEXT_PLAIN = "text/plain";
 	public static final String TEXT_HTML = "text/html";
 	public static final String TEXT_XML = "text/xml";
+	public static final String TEXT_JSON = "text/json";
+	public static final String RP_JSON = "x-reportportal-entity-v2+json";
 
 	// Form types
 	public static final String APPLICATION_FORM_URLENCODED = "application/x-www-form-urlencoded";
