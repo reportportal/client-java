@@ -31,7 +31,7 @@ import static java.util.Optional.ofNullable;
 public class MarkdownUtils {
 
 	public static final String MARKDOWN_MODE = "!!!MARKDOWN_MODE!!!";
-	private static final char NEW_LINE = '\n';
+	private static final String NEW_LINE = "\n";
 	public static final String ONE_SPACE = "\u00A0";
 	public static final String TABLE_INDENT = "\u00A0\u00A0\u00A0\u00A0";
 	public static final String TABLE_COLUMN_SEPARATOR = "|";
