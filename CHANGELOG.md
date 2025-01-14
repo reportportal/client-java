@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- `MarkdownUtils.asTwoParts` now correctly joins two document parts with separation line, by @HardNorth
 
 ## [5.2.23]
 ### Added

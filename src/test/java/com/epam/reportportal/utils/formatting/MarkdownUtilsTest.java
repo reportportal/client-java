@@ -157,7 +157,7 @@ public class MarkdownUtilsTest {
 
 	public static final String TEXT_PART_ONE = "This is a text";
 	public static final String TEXT_PART_TWO = "This is another text";
-	public static final String EXPECTED_TWO_PARTS = TEXT_PART_ONE + "\n---\n" + TEXT_PART_TWO;
+	public static final String EXPECTED_TWO_PARTS = TEXT_PART_ONE + "\n\n---\n\n" + TEXT_PART_TWO;
 
 	@Test
 	public void test_format_two_parts() {

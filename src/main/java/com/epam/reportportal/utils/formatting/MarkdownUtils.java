@@ -18,6 +18,7 @@ package com.epam.reportportal.utils.formatting;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -30,7 +31,7 @@ import static java.util.Optional.ofNullable;
 public class MarkdownUtils {
 
 	public static final String MARKDOWN_MODE = "!!!MARKDOWN_MODE!!!";
-	private static final char NEW_LINE = '\n';
+	private static final String NEW_LINE = "\n";
 	public static final String ONE_SPACE = "\u00A0";
 	public static final String TABLE_INDENT = "\u00A0\u00A0\u00A0\u00A0";
 	public static final String TABLE_COLUMN_SEPARATOR = "|";
@@ -39,7 +40,7 @@ public class MarkdownUtils {
 	public static final int PADDING_SPACES_NUM = 2;
 	public static final int MAX_TABLE_SIZE = 83;
 	public static final int MIN_COL_SIZE = 3;
-	public static final String LOGICAL_SEPARATOR = "---";
+	public static final String LOGICAL_SEPARATOR = NEW_LINE + NEW_LINE + "---" + NEW_LINE + NEW_LINE;
 
 	private MarkdownUtils() {
 		throw new IllegalStateException("Static only class");
@@ -51,7 +52,8 @@ public class MarkdownUtils {
 	 * @param message Message
 	 * @return Message with markdown marker
 	 */
-	public static String asMarkdown(String message) {
+	@Nonnull
+	public static String asMarkdown(@Nonnull String message) {
 		return MARKDOWN_MODE.concat(message);
 	}
 
@@ -62,7 +64,8 @@ public class MarkdownUtils {
 	 * @param script   Script
 	 * @return Message to be sent to ReportPortal
 	 */
-	public static String asCode(String language, String script) {
+	@Nonnull
+	public static String asCode(@Nullable String language, @Nullable String script) {
 		return asMarkdown("```" + ofNullable(language).orElse("") + NEW_LINE + script + NEW_LINE + "```");
 	}
 
@@ -202,7 +205,8 @@ public class MarkdownUtils {
 		return formatDataTable(toFormat);
 	}
 
+	@Nonnull
 	public static String asTwoParts(@Nonnull String firstPart, @Nonnull String secondPart) {
-		return firstPart + NEW_LINE + LOGICAL_SEPARATOR + NEW_LINE + secondPart;
+		return firstPart + LOGICAL_SEPARATOR + secondPart;
 	}
 }
