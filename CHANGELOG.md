@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- `StepReporter.step(java.lang.String)` method now returns `Maybe<String>` with Step ID, by @HardNorth
 
 ## [5.2.24]
 ### Fixed
