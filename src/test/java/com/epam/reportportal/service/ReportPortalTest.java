@@ -405,4 +405,19 @@ public class ReportPortalTest {
 			throw error;
 		}
 	}
+
+	@Test
+	public void verify_https_parameters_work_with_self_signed_certificate() {
+		// TODO: put here the test for https and keystore parameters `keystore` and `keystorePassword`
+	}
+
+	@Test
+	public void verify_invalid_keystore_path() {
+		// TODO: put here the test for invalid `keystore` path
+	}
+
+	@Test
+	public void verify_invalid_keystore_password() {
+		// TODO: put here the test for invalid `keystorePassword`
+	}
 }
