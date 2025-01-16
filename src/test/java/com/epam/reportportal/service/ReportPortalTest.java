@@ -67,7 +67,7 @@ public class ReportPortalTest {
 
 	static {
 		System.setProperty("jsse.enableSNIExtension", "false");
-		System.setProperty("javax.net.ssl.trustStrore", TRUSTSTORE_PATH);
+		System.setProperty("javax.net.ssl.trustStore", TRUSTSTORE_PATH);
 		System.setProperty("javax.net.ssl.trustStorePassword", TRUSTSTORE_PASSWORD);
 		SLF4JBridgeHandler.removeHandlersForRootLogger();
 		SLF4JBridgeHandler.install();
