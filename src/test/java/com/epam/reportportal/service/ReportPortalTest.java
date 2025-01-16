@@ -63,12 +63,12 @@ import static org.mockito.Mockito.*;
 
 public class ReportPortalTest {
 	private static final String TRUSTSTORE_PATH = "files/certificates/truststore.jks";
-	private static final String TRUSTSTORE_PASSWORD = "truststorePassword";
+	private static final String TRUSTSTORE_PASSWORD = "changeit";
 
 	static {
-		System.setProperty("jsse.enableSNIExtension", "false");
-		System.setProperty("javax.net.ssl.trustStore", TRUSTSTORE_PATH);
-		System.setProperty("javax.net.ssl.trustStorePassword", TRUSTSTORE_PASSWORD);
+//		System.setProperty("jsse.enableSNIExtension", "false");
+//		System.setProperty("javax.net.ssl.trustStore", TRUSTSTORE_PATH);
+//		System.setProperty("javax.net.ssl.trustStorePassword", TRUSTSTORE_PASSWORD);
 		SLF4JBridgeHandler.removeHandlersForRootLogger();
 		SLF4JBridgeHandler.install();
 	}
