@@ -35,6 +35,8 @@ import okhttp3.Response;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.slf4j.LoggerFactory;
@@ -496,12 +498,21 @@ public class ReportPortalTest {
 		);
 	}
 
-	@Test
-	public void verify_invalid_keystore_password() {
+
+	public static Iterable<Object[]> invalid_keystore_passwords() {
+		return Arrays.asList(
+				new Object[] { INVALID_KEYSTORE_PASSWORD },
+				new Object[] { null }
+		);
+	}
+
+	@ParameterizedTest
+	@MethodSource("invalid_keystore_passwords")
+	public void verify_invalid_keystore_password(String password) {
 		ListenerParameters parameters = TestUtils.standardParameters();
 		parameters.setBaseUrl("https://localhost:8443");
 		parameters.setKeystore(KEYSTORE_PATH);
-		parameters.setKeystorePassword(INVALID_KEYSTORE_PASSWORD);
+		parameters.setKeystorePassword(password);
 
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
 		assertThrows(
