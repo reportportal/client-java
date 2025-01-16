@@ -63,7 +63,13 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
 public class ReportPortalTest {
+	private static final String TRUSTSTORE_PATH = "files/certificates/truststore.jks";
+	private static final String TRUSTSTORE_PASSWORD = "changeit";
+
 	static {
+		System.setProperty("jsse.enableSNIExtension", "false");
+		System.setProperty("javax.net.ssl.trustStore", TRUSTSTORE_PATH);
+		System.setProperty("javax.net.ssl.trustStorePassword", TRUSTSTORE_PASSWORD);
 		SLF4JBridgeHandler.removeHandlersForRootLogger();
 		SLF4JBridgeHandler.install();
 	}
@@ -73,8 +79,7 @@ public class ReportPortalTest {
 
 	private static final String KEYSTORE_PATH = "files/certificates/keystore.jks";
 	private static final String KEYSTORE_PASSWORD = "keystorePassword";
-	private static final String TRUSTSTORE_PASSWORD = "truststorePassword";
-	private static final String TRUSTSTORE_PATH = "files/certificates/truststore.jks";
+
 	private static final String INVALID_KEYSTORE_PATH = "invalid/path/to/keystore.jks";
 	private static final String INVALID_KEYSTORE_PASSWORD = "invalidPassword";
 
@@ -445,7 +450,7 @@ public class ReportPortalTest {
 	}
 
 	@Test
-	@Disabled("FIXME: Unable to generate self-signed certificate or setup SSL correctly")
+	@Disabled("FIXME: Unable to generate self-signed certificate or setup SSL correctly: SSLHandshakeException: no cipher suites in common")
 	public void verify_https_parameters_work_with_self_signed_certificate() throws Exception {
 		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
 		int port = ss.getLocalPort();
