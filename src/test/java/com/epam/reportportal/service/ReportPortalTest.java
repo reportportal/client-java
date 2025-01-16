@@ -19,6 +19,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
@@ -32,14 +33,18 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
+import javax.net.ssl.*;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyStore;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.*;
@@ -53,6 +58,7 @@ import static com.epam.reportportal.test.TestUtils.*;
 import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
@@ -64,6 +70,13 @@ public class ReportPortalTest {
 
 	private static final String COOKIE = "AWSALB=P7cqG8g/K70xHAKOUPrWrG0XgmhG8GJNinj8lDnKVyITyubAen2lBr+fSa/e2JAoGksQphtImp49rZxc41qdqUGvAc67SdZHY1BMFIHKzc8kyWc1oQjq6oI+s39U";
 	private static final String OVERRIDING_COOKIE = "AWSALB=4CKP4Er0pg17+DfkR2ItBJbL8bdo2pBpP1SvLyiPwllSai6sawCn2blRepEX9nwdc8Aj4itewNUZdSONcTEgXfJFN2NAWuSl5CMQ3+vKuCO0cZrCxw02hXSXPir5";
+
+	private static final String KEYSTORE_PATH = "files/certificates/keystore.jks";
+	private static final String KEYSTORE_PASSWORD = "keystorePassword";
+	private static final String TRUSTSTORE_PASSWORD = "truststorePassword";
+	private static final String TRUSTSTORE_PATH = "files/certificates/truststore.jks";
+	private static final String INVALID_KEYSTORE_PATH = "invalid/path/to/keystore.jks";
+	private static final String INVALID_KEYSTORE_PASSWORD = "invalidPassword";
 
 	@Mock
 	private ReportPortalClient rpClient;
@@ -210,6 +223,31 @@ public class ReportPortalTest {
 		ss.close();
 		shutdownExecutorService(clientExecutor);
 		return result;
+	}
+
+	private SSLServerSocket createSSLServerSocket(int port) throws Exception {
+		System.setProperty("javax.net.debug", "ssl,handshake");
+
+		KeyStore keyStore = KeyStore.getInstance("JKS");
+		keyStore.load(getClass().getResourceAsStream(KEYSTORE_PATH), KEYSTORE_PASSWORD.toCharArray());
+
+		KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+				.getAlgorithm());
+		kmf.init(keyStore, KEYSTORE_PASSWORD.toCharArray());
+
+		SSLContext sslContext = SSLContext.getInstance("TLS");
+		sslContext.init(kmf.getKeyManagers(), null, null);
+
+		SSLServerSocketFactory sslServerSocketFactory = sslContext.getServerSocketFactory();
+		String[] enabledCipherSuites = sslServerSocketFactory.getSupportedCipherSuites();
+		SSLServerSocket sslServerSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket(
+				port,
+				0,
+				InetAddress.getByName("localhost")
+		);
+		sslServerSocket.setEnabledProtocols(new String[] { "TLSv1.2" });
+		sslServerSocket.setEnabledCipherSuites(enabledCipherSuites);
+		return sslServerSocket;
 	}
 
 	@Test
@@ -404,5 +442,66 @@ public class ReportPortalTest {
 		if (error != null) {
 			throw error;
 		}
+	}
+
+	@Test
+	@Disabled("FIXME: Unable to generate self-signed certificate or setup SSL correctly")
+	public void verify_https_parameters_work_with_self_signed_certificate() throws Exception {
+		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
+		int port = ss.getLocalPort();
+		ss.close();
+		String baseUrl = "https://localhost:" + port;
+
+		SSLServerSocket sslServerSocket = createSSLServerSocket(port);
+
+		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(
+				sslServerSocket,
+				Collections.emptyMap(),
+				"files/socket_response.txt"
+		);
+
+		ListenerParameters parameters = TestUtils.standardParameters();
+		parameters.setBaseUrl(baseUrl);
+		parameters.setKeystore(KEYSTORE_PATH);
+		parameters.setKeystorePassword(KEYSTORE_PASSWORD);
+
+		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
+		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
+
+		Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ())
+				.timeout(20, TimeUnit.SECONDS)
+				.blockingGet();
+		Pair<List<String>, StartLaunchRS> result = executeWithClosing(clientExecutor, sslServerSocket, serverCallable, clientCallable);
+		assertThat(result.getValue(), notNullValue());
+		StartLaunchRS startLaunchRS = result.getValue();
+		assertThat(startLaunchRS.getId(), notNullValue());
+	}
+
+	@Test
+	public void verify_invalid_keystore_path() {
+		ListenerParameters parameters = TestUtils.standardParameters();
+		parameters.setBaseUrl("https://localhost:8443");
+		parameters.setKeystore(INVALID_KEYSTORE_PATH);
+		parameters.setKeystorePassword(KEYSTORE_PASSWORD);
+
+		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
+		assertThrows(
+				InternalReportPortalClientException.class,
+				() -> ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor)
+		);
+	}
+
+	@Test
+	public void verify_invalid_keystore_password() {
+		ListenerParameters parameters = TestUtils.standardParameters();
+		parameters.setBaseUrl("https://localhost:8443");
+		parameters.setKeystore(KEYSTORE_PATH);
+		parameters.setKeystorePassword(INVALID_KEYSTORE_PASSWORD);
+
+		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
+		assertThrows(
+				InternalReportPortalClientException.class,
+				() -> ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor)
+		);
 	}
 }
