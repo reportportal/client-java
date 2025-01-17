@@ -44,7 +44,7 @@ dependencies {
         exclude module: 'jackson-databind'
         exclude module: 'guava'
     }
-    api 'com.fasterxml.jackson.core:jackson-databind:2.18.2' // Access is needed by HTTP loggers to format JSON
+    api 'com.fasterxml.jackson.core:jackson-databind:2.15.4' // Access is needed by HTTP loggers to format JSON
     api 'io.reactivex.rxjava2:rxjava:2.2.10'
     api 'com.google.code.findbugs:jsr305:3.0.2'
 
