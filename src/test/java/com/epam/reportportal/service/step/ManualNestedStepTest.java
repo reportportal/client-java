@@ -257,11 +257,12 @@ public class ManualNestedStepTest {
 		launch.finish(standardLaunchFinishRequest());
 	}
 
+	@SuppressWarnings("ResultOfMethodCallIgnored")
 	@Test
 	public void verify_name_and_status_nested_step() {
 		mockNestedSteps(client, nestedStepPairs.get(0));
 		String stepName = "verify_name_and_status_nested_step";
-		sr.step(ItemStatus.SKIPPED, stepName);
+		sr.step(ItemStatus.SKIPPED, stepName).blockingGet();
 
 		ArgumentCaptor<StartTestItemRQ> startStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
 		verify(client, timeout(1000)).startTestItem(eq(testMethodUuid), startStepCaptor.capture());
@@ -276,8 +277,8 @@ public class ManualNestedStepTest {
 		assertThat(nestedStepFinish.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
 		assertThat(nestedStepFinish.getEndTime(), notNullValue());
 
-		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest());
-		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest());
+		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest()).blockingGet();
+		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest()).blockingGet();
 		launch.finish(standardLaunchFinishRequest());
 	}
 

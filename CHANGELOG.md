@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- `StepReporter.step(java.lang.String)` method now returns `Maybe<String>` with Step ID, by @HardNorth
+- `jackson-databind` version updated on 2.15.4, by @HardNorth
 
 ## [5.2.24]
 ### Fixed

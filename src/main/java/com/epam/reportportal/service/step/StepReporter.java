@@ -18,6 +18,7 @@ package com.epam.reportportal.service.step;
 
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
+import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
 
@@ -75,28 +76,30 @@ public interface StepReporter {
 	@Nonnull
 	Maybe<String> startNestedStep(@Nonnull StartTestItemRQ startStepRequest);
 
-	void finishNestedStep(@Nonnull ItemStatus status);
+	Maybe<OperationCompletionRS> finishNestedStep(@Nonnull ItemStatus status);
 
 	void finishNestedStep();
 
 	void finishNestedStep(@Nullable Throwable throwable);
 
-	void finishNestedStep(@Nonnull FinishTestItemRQ finishStepRequest);
+	Maybe<OperationCompletionRS> finishNestedStep(@Nonnull FinishTestItemRQ finishStepRequest);
 
 	/**
 	 * Report a step with specified name.
 	 *
 	 * @param name step name
+	 * @return step ID
 	 */
-	void step(@Nonnull String name);
+	Maybe<String> step(@Nonnull String name);
 
 	/**
 	 * Report a step with specified status and name.
 	 *
 	 * @param status step status
 	 * @param name   step name
+	 * @return step ID
 	 */
-	void step(@Nonnull ItemStatus status, @Nonnull String name);
+	Maybe<String> step(@Nonnull ItemStatus status, @Nonnull String name);
 
 	/**
 	 * Wrap passed actions as a separate step and report it.
@@ -202,17 +205,21 @@ public interface StepReporter {
 		@Nonnull
 		public Maybe<String> startNestedStep(@Nonnull StartTestItemRQ startStepRequest) {return Maybe.empty();}
 		@Override
-		public void finishNestedStep(@Nonnull ItemStatus status) {}
+		public Maybe<OperationCompletionRS> finishNestedStep(@Nonnull ItemStatus status) {return null;}
 		@Override
 		public void finishNestedStep() {}
 		@Override
 		public void finishNestedStep(@Nullable Throwable throwable) {}
 		@Override
-		public void finishNestedStep(@Nonnull FinishTestItemRQ finishStepRequest) {}
+		public Maybe<OperationCompletionRS> finishNestedStep(@Nonnull FinishTestItemRQ finishStepRequest) {return null;}
 		@Override
-		public void step(@Nonnull String name) {}
+		public Maybe<String> step(@Nonnull String name) {
+			return Maybe.empty();
+		}
 		@Override
-		public void step(@Nonnull ItemStatus status, @Nonnull String name) {}
+		public Maybe<String> step(@Nonnull ItemStatus status, @Nonnull String name) {
+			return Maybe.empty();
+		}
 		@Override
 		@Nullable
 		public <T> T step(@Nonnull ItemStatus stepSuccessStatus, @Nonnull String name, @Nonnull Supplier<T> actions) {return null;}
