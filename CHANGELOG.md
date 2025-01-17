@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- `StepReporter.sendStep` methods now returns `Maybe<String>` with Step ID, by @HardNorth
 
 ## [5.2.25]
 ### Changed
