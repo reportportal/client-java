@@ -105,7 +105,7 @@ public class DefaultStepReporter implements StepReporter {
 		return false;
 	}
 
-	protected void sendStep(@Nonnull final ItemStatus status, @Nonnull final String name, @Nullable final Runnable actions) {
+	protected Maybe<String> sendStep(@Nonnull final ItemStatus status, @Nonnull final String name, @Nullable final Runnable actions) {
 		StartTestItemRQ rq = buildStartStepRequest(name);
 		Maybe<String> stepId = startStepRequest(rq);
 		imperativeSteps.add(stepId);
@@ -117,58 +117,56 @@ public class DefaultStepReporter implements StepReporter {
 			}
 		}
 		addStepEntry(stepId, status, rq.getStartTime());
+		return stepId;
 	}
 
 	@Override
-	public void sendStep(@Nonnull final String name) {
-		sendStep(
-				ItemStatus.PASSED, name, () -> {
-				}
-		);
-	}
-
-	@Override
-	public void sendStep(@Nonnull final String name, final String... logs) {
-		sendStep(ItemStatus.PASSED, name, logs);
-	}
-
-	@Override
-	public void sendStep(@Nonnull final ItemStatus status, @Nonnull final String name) {
-		sendStep(
+	public Maybe<String> sendStep(@Nonnull final ItemStatus status, @Nonnull final String name) {
+		return sendStep(
 				status, name, () -> {
 				}
 		);
 	}
 
 	@Override
-	public void sendStep(@Nonnull final ItemStatus status, @Nonnull final String name, final String... logs) {
+	public Maybe<String> sendStep(@Nonnull final String name) {
+		return sendStep(ItemStatus.PASSED, name);
+	}
+
+	@Override
+	public Maybe<String> sendStep(@Nonnull final ItemStatus status, @Nonnull final String name, final String... logs) {
 		Runnable actions = ofNullable(logs).map(l -> (Runnable) () -> Arrays.stream(l)
 				.forEach(log -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, log, LogLevel.INFO)))).orElse(null);
 
-		sendStep(status, name, actions);
+		return sendStep(status, name, actions);
 	}
 
 	@Override
-	public void sendStep(final @Nonnull ItemStatus status, @Nonnull final String name, final Throwable throwable) {
-		sendStep(status, name, () -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, throwable)));
+	public Maybe<String> sendStep(@Nonnull final String name, final String... logs) {
+		return sendStep(ItemStatus.PASSED, name, logs);
 	}
 
 	@Override
-	public void sendStep(@Nonnull final String name, final File... files) {
-		sendStep(ItemStatus.PASSED, name, files);
+	public Maybe<String> sendStep(final @Nonnull ItemStatus status, @Nonnull final String name, final Throwable throwable) {
+		return sendStep(status, name, () -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, throwable)));
 	}
 
 	@Override
-	public void sendStep(final @Nonnull ItemStatus status, @Nonnull final String name, final File... files) {
+	public Maybe<String> sendStep(final @Nonnull ItemStatus status, @Nonnull final String name, final File... files) {
 		Runnable actions = ofNullable(files).map(f -> (Runnable) () -> Arrays.stream(f)
 				.forEach(file -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, "", LogLevel.INFO, file)))).orElse(null);
 
-		sendStep(status, name, actions);
+		return sendStep(status, name, actions);
 	}
 
 	@Override
-	public void sendStep(final @Nonnull ItemStatus status, @Nonnull final String name, final Throwable throwable, final File... files) {
-		sendStep(
+	public Maybe<String> sendStep(@Nonnull final String name, final File... files) {
+		return sendStep(ItemStatus.PASSED, name, files);
+	}
+
+	@Override
+	public Maybe<String> sendStep(final @Nonnull ItemStatus status, @Nonnull final String name, final Throwable throwable, final File... files) {
+		return sendStep(
 				status, name, () -> {
 					for (final File file : files) {
 						ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, throwable, file));

@@ -51,21 +51,21 @@ public interface StepReporter {
 
 	boolean isFailed(@Nullable Maybe<String> parentId);
 
-	void sendStep(@Nonnull String name);
+	Maybe<String> sendStep(@Nonnull String name);
 
-	void sendStep(@Nonnull String name, @Nullable String... logs);
+	Maybe<String> sendStep(@Nonnull String name, @Nullable String... logs);
 
-	void sendStep(@Nonnull ItemStatus status, @Nonnull String name);
+	Maybe<String> sendStep(@Nonnull ItemStatus status, @Nonnull String name);
 
-	void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable String... logs);
+	Maybe<String> sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable String... logs);
 
-	void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable Throwable throwable);
+	Maybe<String> sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable Throwable throwable);
 
-	void sendStep(@Nonnull String name, @Nullable File... files);
+	Maybe<String> sendStep(@Nonnull String name, @Nullable File... files);
 
-	void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable File... files);
+	Maybe<String> sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable File... files);
 
-	void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable Throwable throwable, @Nullable File... files);
+	Maybe<String> sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable Throwable throwable, @Nullable File... files);
 
 	@Nonnull
 	Maybe<String> finishPreviousStep(@Nullable ItemStatus status);
@@ -180,21 +180,37 @@ public interface StepReporter {
 		@Override
 		public boolean isFailed(@Nullable Maybe<String> parentId) {return false;}
 		@Override
-		public void sendStep(@Nonnull String name) {}
+		public Maybe<String> sendStep(@Nonnull String name) {
+			return Maybe.empty();
+		}
 		@Override
-		public void sendStep(@Nonnull String name, @Nullable String... logs) {}
+		public Maybe<String> sendStep(@Nonnull String name, @Nullable String... logs) {
+			return Maybe.empty();
+		}
 		@Override
-		public void sendStep(@Nonnull ItemStatus status, @Nonnull String name) {}
+		public Maybe<String> sendStep(@Nonnull ItemStatus status, @Nonnull String name) {
+			return Maybe.empty();
+		}
 		@Override
-		public void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable String... logs) {}
+		public Maybe<String> sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable String... logs) {
+			return Maybe.empty();
+		}
 		@Override
-		public void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable Throwable throwable) {}
+		public Maybe<String> sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable Throwable throwable) {
+			return Maybe.empty();
+		}
 		@Override
-		public void sendStep(@Nonnull String name, @Nullable File... files) {}
+		public Maybe<String> sendStep(@Nonnull String name, @Nullable File... files) {
+			return Maybe.empty();
+		}
 		@Override
-		public void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable File... files) {}
+		public Maybe<String> sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable File... files) {
+			return Maybe.empty();
+		}
 		@Override
-		public void sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable Throwable throwable, @Nullable File... files) {}
+		public Maybe<String> sendStep(@Nonnull ItemStatus status, @Nonnull String name, @Nullable Throwable throwable, @Nullable File... files) {
+			return Maybe.empty();
+		}
 		@Override
 		@Nonnull
 		public Maybe<String> finishPreviousStep(@Nullable ItemStatus status) {return Maybe.empty();}
