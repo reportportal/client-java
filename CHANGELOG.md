@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Changed
 - `StepReporter.sendStep` methods now returns `Maybe<String>` with Step ID, by @HardNorth
+- `rxjava` version updated on 2.2.21, by @HardNorth
 
 ## [5.2.25]
 ### Changed
