@@ -105,6 +105,7 @@ public class DefaultStepReporter implements StepReporter {
 		return false;
 	}
 
+	@Nonnull
 	protected Maybe<String> sendStep(@Nonnull final ItemStatus status, @Nonnull final String name, @Nullable final Runnable actions) {
 		StartTestItemRQ rq = buildStartStepRequest(name);
 		Maybe<String> stepId = startStepRequest(rq);
@@ -121,6 +122,7 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	@Override
+	@Nonnull
 	public Maybe<String> sendStep(@Nonnull final ItemStatus status, @Nonnull final String name) {
 		return sendStep(
 				status, name, () -> {
@@ -129,11 +131,13 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	@Override
+	@Nonnull
 	public Maybe<String> sendStep(@Nonnull final String name) {
 		return sendStep(ItemStatus.PASSED, name);
 	}
 
 	@Override
+	@Nonnull
 	public Maybe<String> sendStep(@Nonnull final ItemStatus status, @Nonnull final String name, final String... logs) {
 		Runnable actions = ofNullable(logs).map(l -> (Runnable) () -> Arrays.stream(l)
 				.forEach(log -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, log, LogLevel.INFO)))).orElse(null);
@@ -142,16 +146,19 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	@Override
+	@Nonnull
 	public Maybe<String> sendStep(@Nonnull final String name, final String... logs) {
 		return sendStep(ItemStatus.PASSED, name, logs);
 	}
 
 	@Override
+	@Nonnull
 	public Maybe<String> sendStep(final @Nonnull ItemStatus status, @Nonnull final String name, final Throwable throwable) {
 		return sendStep(status, name, () -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, throwable)));
 	}
 
 	@Override
+	@Nonnull
 	public Maybe<String> sendStep(final @Nonnull ItemStatus status, @Nonnull final String name, final File... files) {
 		Runnable actions = ofNullable(files).map(f -> (Runnable) () -> Arrays.stream(f)
 				.forEach(file -> ReportPortal.emitLog(itemId -> buildSaveLogRequest(itemId, "", LogLevel.INFO, file)))).orElse(null);
@@ -160,11 +167,13 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	@Override
+	@Nonnull
 	public Maybe<String> sendStep(@Nonnull final String name, final File... files) {
 		return sendStep(ItemStatus.PASSED, name, files);
 	}
 
 	@Override
+	@Nonnull
 	public Maybe<String> sendStep(final @Nonnull ItemStatus status, @Nonnull final String name, final Throwable throwable, final File... files) {
 		return sendStep(
 				status, name, () -> {
@@ -231,11 +240,12 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	@Override
+	@Nonnull
 	public Maybe<OperationCompletionRS> finishNestedStep(@Nonnull FinishTestItemRQ finishStepRequest) {
 		Maybe<String> stepId = getParent();
 		if (stepId == null) {
 			LOGGER.warn("Unable to find item ID, skipping step a finish step");
-			return null;
+			return Maybe.empty();
 		}
 		StepEntry manualRequest = steps.remove(stepId);
 		String manualStatus = ofNullable(manualRequest).map(StepEntry::getFinishTestItemRQ).map(FinishTestItemRQ::getStatus).orElse(null);
@@ -255,29 +265,34 @@ public class DefaultStepReporter implements StepReporter {
 	}
 
 	@Override
+	@Nonnull
 	public Maybe<OperationCompletionRS> finishNestedStep(@Nonnull ItemStatus status) {
 		FinishTestItemRQ finishStepRequest = buildFinishTestItemRequest(status);
 		return finishNestedStep(finishStepRequest);
 	}
 
 	@Override
-	public void finishNestedStep() {
-		finishNestedStep(ItemStatus.PASSED);
+	@Nonnull
+	public Maybe<OperationCompletionRS> finishNestedStep() {
+		return finishNestedStep(ItemStatus.PASSED);
 	}
 
 	@Override
-	public void finishNestedStep(@Nullable Throwable throwable) {
+	@Nonnull
+	public Maybe<OperationCompletionRS> finishNestedStep(@Nullable Throwable throwable) {
 		ReportPortal.emitLog(itemUuid -> buildSaveLogRequest(itemUuid, throwable));
-		finishNestedStep(ItemStatus.FAILED);
+		return finishNestedStep(ItemStatus.FAILED);
 	}
 
 	@Override
+	@Nonnull
 	public Maybe<String> step(@Nonnull ItemStatus status, @Nonnull String name) {
 		Maybe<String> itemId = startNestedStep(buildStartStepRequest(name));
 		return finishNestedStep(status).flatMap(finishRs -> itemId);
 	}
 
 	@Override
+	@Nonnull
 	public Maybe<String> step(@Nonnull String name) {
 		return step(ItemStatus.PASSED, name);
 	}
@@ -302,6 +317,7 @@ public class DefaultStepReporter implements StepReporter {
 		return step(ItemStatus.PASSED, name, actions);
 	}
 
+	@Nonnull
 	private Maybe<String> startStepRequest(final StartTestItemRQ startTestItemRQ) {
 		finishPreviousStepInternal(null).ifPresent(e -> {
 			Date previousDate = e.getTimestamp();
