@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.26]
 ### Changed
 - `StepReporter.sendStep` methods now returns `Maybe<String>` with Step ID, by @HardNorth
 - `StepReporter.finishNestedStep` methods now returns `Maybe<OperationCompletionRS>`, by @HardNorth
