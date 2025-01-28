@@ -78,7 +78,8 @@ public class MimeTypeDetectorTest {
 		return Arrays.asList(
 				new Object[] { Paths.get("src/test/resources/pug/lucky.jpg").toFile(), "image/jpeg" },
 				new Object[] { Paths.get("src/test/resources/pug/unlucky.jpg").toFile(), "image/jpeg" },
-				new Object[] { Paths.get("src/test/resources/files/image.png").toFile(), "image/png" }
+				new Object[] { Paths.get("src/test/resources/files/image.png").toFile(), "image/png" },
+				new Object[] { Paths.get("src/test/resources/files/owl.bmp").toFile(), "image/bmp" }
 		);
 	}
 
@@ -103,6 +104,7 @@ public class MimeTypeDetectorTest {
 				new Object[] { Paths.get("src/test/resources/files/test.jar").toFile(), true },
 				new Object[] { Paths.get("src/test/resources/files/test.pdf").toFile(), true },
 				new Object[] { Paths.get("src/test/resources/files/test.bin").toFile(), true },
+				new Object[] { Paths.get("src/test/resources/files/owl.bmp").toFile(), true },
 				new Object[] { Paths.get("src/test/resources/files/proxy_auth_response.txt").toFile(), false }
 		);
 	}
@@ -110,6 +112,6 @@ public class MimeTypeDetectorTest {
 	@ParameterizedTest
 	@MethodSource("binaryFiles")
 	public void test_is_binary(File file, boolean expected) throws IOException {
-		Assertions.assertEquals(MimeTypeDetector.isBinary(Utils.getFileAsByteSource(file).openStream()), expected);
+		Assertions.assertEquals(expected, MimeTypeDetector.isBinary(Utils.getFileAsByteSource(file).openStream()));
 	}
 }
