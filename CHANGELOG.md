@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `rp.truncation.exception` configuration property to control exception logging, by @HardNorth
 
 ## [5.2.26]
 ### Changed
