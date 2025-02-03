@@ -69,7 +69,7 @@ public class MimeTypeDetector {
 	static boolean isBinary(@Nonnull InputStream is) throws IOException {
 		int[] bytes = readDetectionBytes(is);
 		for (int b : bytes) {
-			if (b == 0) {
+			if (b == 0x00 || b == 0xff) {
 				return true;
 			}
 		}

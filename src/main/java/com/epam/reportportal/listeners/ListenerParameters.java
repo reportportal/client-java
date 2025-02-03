@@ -68,6 +68,8 @@ public class ListenerParameters implements Cloneable {
 	private static final int DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT = 128;
 	private static final String DEFAULT_TRUNCATE_REPLACEMENT = "...";
 
+	public static final boolean DEFAULT_EXCEPTION_TRUNCATE = true;
+
 	// Due to shortcoming of payload calculation mechanism this value is set to 65 million of bytes rather than 65 megabytes
 	public static final long DEFAULT_BATCH_PAYLOAD_LIMIT = 65 * 1000 * 1000;
 
@@ -121,6 +123,8 @@ public class ListenerParameters implements Cloneable {
 	private int truncateItemNamesLimit;
 	private String truncateReplacement;
 	private int attributeLengthLimit;
+
+	private boolean exceptionTruncate;
 
 	private String launchUuid;
 	private boolean isLaunchUuidCreationSkip;
@@ -208,6 +212,8 @@ public class ListenerParameters implements Cloneable {
 		this.isLaunchUuidCreationSkip = DEFAULT_LAUNCH_CREATION_SKIP;
 
 		this.btsIssueFail = DEFAULT_BTS_ISSUE_FAIL;
+
+		this.exceptionTruncate = DEFAULT_EXCEPTION_TRUNCATE;
 	}
 
 	/**
@@ -276,6 +282,8 @@ public class ListenerParameters implements Cloneable {
 		this.truncateItemNamesLimit = properties.getPropertyAsInt(TRUNCATE_ITEM_NAME_LIMIT, DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT);
 		this.truncateReplacement = properties.getProperty(TRUNCATE_REPLACEMENT, DEFAULT_TRUNCATE_REPLACEMENT);
 		this.attributeLengthLimit = properties.getPropertyAsInt(TRUNCATE_ATTRIBUTE_LIMIT, DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT);
+
+		this.exceptionTruncate = properties.getPropertyAsBoolean(EXCEPTION_TRUNCATE, DEFAULT_EXCEPTION_TRUNCATE);
 
 		this.launchUuid = properties.getProperty(LAUNCH_UUID);
 		this.isLaunchUuidCreationSkip = properties.getPropertyAsBoolean(LAUNCH_UUID_CREATION_SKIP, DEFAULT_LAUNCH_CREATION_SKIP);
@@ -623,6 +631,14 @@ public class ListenerParameters implements Cloneable {
 		this.attributeLengthLimit = attributeLengthLimit;
 	}
 
+	public boolean isExceptionTruncate() {
+		return exceptionTruncate;
+	}
+
+	public void setExceptionTruncate(boolean exceptionTruncate) {
+		this.exceptionTruncate = exceptionTruncate;
+	}
+
 	public void setHttpCallTimeout(@Nullable Duration httpCallTimeout) {
 		this.httpCallTimeout = httpCallTimeout;
 	}
@@ -761,6 +777,8 @@ public class ListenerParameters implements Cloneable {
 		sb.append(", lockWaitTimeout=").append(lockWaitTimeout);
 		sb.append(", lockPortNumber=").append(lockPortNumber);
 		sb.append(", rxBufferSize=").append(rxBufferSize);
+		sb.append(", truncateFields=").append(truncateFields);
+		sb.append(", exceptionTruncate=").append(exceptionTruncate);
 		sb.append(", btsProjectId=").append(btsProjectId);
 		sb.append(", btsUrl=").append(btsUrl);
 		sb.append(", btsIssueUrl=").append(btsIssueUrl);
