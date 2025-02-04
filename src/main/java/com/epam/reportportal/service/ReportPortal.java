@@ -368,7 +368,22 @@ public class ReportPortal {
 		});
 	}
 
-	private static void fillSaveLogRQ(final SaveLogRQ rq, final String level, final Date time, final ReportPortalMessage message) {
+	/**
+	 * Converts {@link ReportPortalMessage} to {@link SaveLogRQ}.
+	 *
+	 * @param launchUuid a UUID of the launch
+	 * @param itemUuid a UUID of the test item
+	 * @param level message level
+	 * @param time timestamp of the message
+	 * @param message an object to convert
+	 * @return converted object
+	 */
+	@Nonnull
+	public static SaveLogRQ toSaveLogRQ(@Nullable String launchUuid, @Nullable String itemUuid, @Nonnull String level, @Nonnull Date time,
+			@Nonnull ReportPortalMessage message) {
+		SaveLogRQ rq = new SaveLogRQ();
+		rq.setItemUuid(itemUuid);
+		rq.setLaunchUuid(launchUuid);
 		rq.setLevel(level);
 		rq.setLogTime(time);
 		rq.setMessage(message.getMessage());
@@ -380,29 +395,35 @@ public class ReportPortal {
 			file.setContentType(data.getMediaType());
 			file.setName(UUID.randomUUID().toString());
 			rq.setFile(file);
-
 		} catch (Exception e) {
-			// seems like there is some problem. Do not report an file
+			// seems like there is some problem. Do not report a file
 			LOGGER.error("Cannot send file to ReportPortal", e);
 		}
+		return rq;
 	}
 
+	/**
+	 * Emit log message to the current test item.
+	 *
+	 * @param message an instance of the message
+	 * @param level message level
+	 * @param time timestamp of the message
+	 * @return true if log has been emitted otherwise false
+	 */
 	public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLog(itemUuid -> {
-			SaveLogRQ rq = new SaveLogRQ();
-			rq.setItemUuid(itemUuid);
-			fillSaveLogRQ(rq, level, time, message);
-			return rq;
-		});
+		return emitLog(itemUuid -> toSaveLogRQ(null, itemUuid, level, time, message));
 	}
 
+	/**
+	 * Emit log message to the current Launch.
+	 *
+	 * @param message an instance of the message
+	 * @param level message level
+	 * @param time timestamp of the message
+	 * @return true if log has been emitted otherwise false
+	 */
 	public static boolean emitLaunchLog(final ReportPortalMessage message, final String level, final Date time) {
-		return emitLaunchLog(launchUuid -> {
-			SaveLogRQ rq = new SaveLogRQ();
-			rq.setLaunchUuid(launchUuid);
-			fillSaveLogRQ(rq, level, time, message);
-			return rq;
-		});
+		return emitLaunchLog(launchUuid -> toSaveLogRQ(launchUuid, null, level, time, message));
 	}
 
 	/**
