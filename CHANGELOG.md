@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.28]
 ### Added
 - `ReportPortal.toSaveLogRQ` public method, by @HardNorth
 
