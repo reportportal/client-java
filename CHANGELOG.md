@@ -1,6 +1,16 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- `NullPointerException` in case of no binary data in `ReportPortal.toSaveLogRQ` method, by @HardNorth
+
+## [5.2.28]
+### Added
+- `ReportPortal.toSaveLogRQ` public method, by @HardNorth
+
+## [5.2.27]
+### Added
+- `rp.truncation.exception` configuration property to control exception logging, by @HardNorth
 
 ## [5.2.26]
 ### Changed

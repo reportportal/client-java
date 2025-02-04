@@ -129,6 +129,11 @@ public enum ListenerProperty {
     TRUNCATE_ITEM_NAME_LIMIT("rp.truncation.item.name.limit", false),
     TRUNCATE_ATTRIBUTE_LIMIT("rp.truncation.attribute.limit", false),
 
+    /**
+     * Enable/Disable the feature to truncate Stack Traces of exceptions that being logged to ReportPortal. Default value: <code>true</code>.
+     */
+    EXCEPTION_TRUNCATE("rp.truncation.exception", false),
+
     // Issue reporting properties
     /**
      * Bug Tracking System Project name to use along with {@link ExternalIssue} annotation. Should be the same as in corresponding
