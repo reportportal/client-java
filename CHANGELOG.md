@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- `NullPointerException` in case of no binary data in `ReportPortal.toSaveLogRQ` method, by @HardNorth
 
 ## [5.2.28]
 ### Added

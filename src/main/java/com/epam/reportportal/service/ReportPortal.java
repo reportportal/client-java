@@ -387,17 +387,17 @@ public class ReportPortal {
 		rq.setLevel(level);
 		rq.setLogTime(time);
 		rq.setMessage(message.getMessage());
-		try {
-			final TypeAwareByteSource data = message.getData();
-			SaveLogRQ.File file = new SaveLogRQ.File();
-			file.setContent(data.read());
-
-			file.setContentType(data.getMediaType());
-			file.setName(UUID.randomUUID().toString());
-			rq.setFile(file);
-		} catch (Exception e) {
-			// seems like there is some problem. Do not report a file
-			LOGGER.error("Cannot send file to ReportPortal", e);
+		final TypeAwareByteSource data = message.getData();
+		if (data != null) {
+			try {
+				SaveLogRQ.File file = new SaveLogRQ.File();
+				file.setContent(data.read());
+				file.setContentType(data.getMediaType());
+				file.setName(UUID.randomUUID().toString());
+				rq.setFile(file);
+			} catch (IOException e) {
+				LOGGER.error("Cannot send file to ReportPortal", e);
+			}
 		}
 		return rq;
 	}
