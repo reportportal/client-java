@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- `LaunchLoggingContext.completed` is now public, by @HardNorth
 
 ## [5.2.29]
 ### Fixed
