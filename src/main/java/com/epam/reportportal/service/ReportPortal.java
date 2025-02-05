@@ -38,6 +38,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit2.Retrofit;
@@ -64,8 +65,8 @@ import java.util.function.Function;
 
 import static com.epam.reportportal.service.LaunchLoggingContext.DEFAULT_LAUNCH_KEY;
 import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
+import static com.epam.reportportal.utils.formatting.ExceptionUtils.getStackTrace;
 import static java.util.Optional.ofNullable;
-import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 
 /**
  * Default ReportPortal Reporter implementation. Uses
@@ -313,69 +314,14 @@ public class ReportPortal {
 		});
 	}
 
-	private static void fillSaveLogRQ(final SaveLogRQ rq, final String message, final String level, final Date time, final File file) {
-		rq.setMessage(message);
-		rq.setLevel(level);
-		rq.setLogTime(time);
-
-		try {
-			SaveLogRQ.File f = new SaveLogRQ.File();
-			TypeAwareByteSource typedSource = Utils.getFile(file);
-			f.setContentType(typedSource.getMediaType());
-			f.setContent(typedSource.read());
-
-			f.setName(UUID.randomUUID().toString());
-			rq.setFile(f);
-		} catch (IOException e) {
-			// seems like there is some problem. Do not report a file
-			LOGGER.error("Cannot send file to ReportPortal", e);
-		}
-	}
-
-	/**
-	 * Emits log message if there is any active context attached to the current thread
-	 *
-	 * @param message Log message
-	 * @param level   Log level
-	 * @param time    Log time
-	 * @param file    a file to attach to the log message
-	 * @return true if log has been emitted
-	 */
-	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
-		return emitLog(itemUuid -> {
-			SaveLogRQ rq = new SaveLogRQ();
-			rq.setItemUuid(itemUuid);
-			fillSaveLogRQ(rq, message, level, time, file);
-			return rq;
-		});
-	}
-
-	/**
-	 * Emits log message on Launch level if there is any active context attached to the current thread
-	 *
-	 * @param message Log message
-	 * @param level   Log level
-	 * @param time    Log time
-	 * @param file    a file to attach to the log message
-	 * @return true if log has been emitted
-	 */
-	public static boolean emitLaunchLog(final String message, final String level, final Date time, final File file) {
-		return emitLaunchLog(launchUuid -> {
-			SaveLogRQ rq = new SaveLogRQ();
-			rq.setLaunchUuid(launchUuid);
-			fillSaveLogRQ(rq, message, level, time, file);
-			return rq;
-		});
-	}
-
 	/**
 	 * Converts {@link ReportPortalMessage} to {@link SaveLogRQ}.
 	 *
 	 * @param launchUuid a UUID of the launch
-	 * @param itemUuid a UUID of the test item
-	 * @param level message level
-	 * @param time timestamp of the message
-	 * @param message an object to convert
+	 * @param itemUuid   a UUID of the test item
+	 * @param level      message level
+	 * @param time       timestamp of the message
+	 * @param message    an object to convert
 	 * @return converted object
 	 */
 	@Nonnull
@@ -403,11 +349,53 @@ public class ReportPortal {
 	}
 
 	/**
+	 * Emits log message if there is any active context attached to the current thread
+	 *
+	 * @param message Log message
+	 * @param level   Log level
+	 * @param time    Log time
+	 * @param file    a file to attach to the log message
+	 * @return true if log has been emitted
+	 */
+	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
+		return emitLog(itemUuid -> {
+			try {
+				TypeAwareByteSource byteSource = Utils.getFile(file);
+				return toSaveLogRQ(null, itemUuid, level, time, new ReportPortalMessage(byteSource, message));
+			} catch (IOException e) {
+				LOGGER.error("Cannot read file", e);
+				return toSaveLogRQ(null, itemUuid, level, time, new ReportPortalMessage(message));
+			}
+		});
+	}
+
+	/**
+	 * Emits log message on Launch level if there is any active context attached to the current thread
+	 *
+	 * @param message Log message
+	 * @param level   Log level
+	 * @param time    Log time
+	 * @param file    a file to attach to the log message
+	 * @return true if log has been emitted
+	 */
+	public static boolean emitLaunchLog(final String message, final String level, final Date time, final File file) {
+		return emitLaunchLog(launchUuid -> {
+			try {
+				TypeAwareByteSource byteSource = Utils.getFile(file);
+				return toSaveLogRQ(launchUuid, null, level, time, new ReportPortalMessage(byteSource, message));
+			} catch (IOException e) {
+				LOGGER.error("Cannot read file", e);
+				return toSaveLogRQ(launchUuid, null, level, time, new ReportPortalMessage(message));
+			}
+		});
+	}
+
+	/**
 	 * Emit log message to the current test item.
 	 *
 	 * @param message an instance of the message
-	 * @param level message level
-	 * @param time timestamp of the message
+	 * @param level   message level
+	 * @param time    timestamp of the message
 	 * @return true if log has been emitted otherwise false
 	 */
 	public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
@@ -418,8 +406,8 @@ public class ReportPortal {
 	 * Emit log message to the current Launch.
 	 *
 	 * @param message an instance of the message
-	 * @param level message level
-	 * @param time timestamp of the message
+	 * @param level   message level
+	 * @param time    timestamp of the message
 	 * @return true if log has been emitted otherwise false
 	 */
 	public static boolean emitLaunchLog(final ReportPortalMessage message, final String level, final Date time) {
@@ -432,13 +420,18 @@ public class ReportPortal {
 	 * @param cause a {@link Throwable}
 	 */
 	public static void sendStackTraceToRP(final Throwable cause) {
+		ListenerParameters myParameters = ofNullable(Launch.currentLaunch()).map(Launch::getParameters).orElseGet(ListenerParameters::new);
 		ReportPortal.emitLog(itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			rq.setLevel("ERROR");
 			rq.setLogTime(Calendar.getInstance().getTime());
 			if (cause != null) {
-				rq.setMessage(getStackTrace(cause));
+				if (myParameters.isExceptionTruncate()) {
+					rq.setMessage(getStackTrace(cause, new Throwable()));
+				} else {
+					rq.setMessage(ExceptionUtils.getStackTrace(cause));
+				}
 			} else {
 				rq.setMessage("Test has failed without exception");
 			}
