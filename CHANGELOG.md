@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `rp.truststore.resource` and `rp.truststore.password` configuration parameters, by @HardNorth
+### Fixed
+- Manual SSL configuration for `OkHttpClient`, by @HardNorth
 ### Changed
 - `LaunchLoggingContext.completed` is now public, by @HardNorth
 
