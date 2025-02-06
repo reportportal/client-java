@@ -607,6 +607,7 @@ public class ReportPortal {
 					throw new InternalReportPortalClientException(error, e);
 				}
 			}
+
 			ClientUtils.setupProxy(builder, parameters);
 			builder.addInterceptor(new BearerAuthInterceptor(parameters.getApiKey()));
 			builder.addInterceptor(new PathParamInterceptor("projectName", parameters.getProjectName()));
