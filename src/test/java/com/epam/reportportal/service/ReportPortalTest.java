@@ -33,7 +33,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -43,10 +42,12 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import javax.net.ssl.*;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
+import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.*;
@@ -65,13 +66,8 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 
 public class ReportPortalTest {
-	private static final String TRUSTSTORE_PATH = "files/certificates/truststore.jks";
-	private static final String TRUSTSTORE_PASSWORD = "changeit";
-
 	static {
-		System.setProperty("jsse.enableSNIExtension", "false");
-		System.setProperty("javax.net.ssl.trustStore", TRUSTSTORE_PATH);
-		System.setProperty("javax.net.ssl.trustStorePassword", TRUSTSTORE_PASSWORD);
+		System.setProperty("javax.net.debug", "ssl:handshake");
 		SLF4JBridgeHandler.removeHandlersForRootLogger();
 		SLF4JBridgeHandler.install();
 	}
@@ -81,6 +77,8 @@ public class ReportPortalTest {
 
 	private static final String KEYSTORE_PATH = "files/certificates/keystore.jks";
 	private static final String KEYSTORE_PASSWORD = "keystorePassword";
+	private static final String TRUSTSTORE_PATH = "files/certificates/truststore.jks";
+	private static final String TRUSTSTORE_PASSWORD = "changeit";
 
 	private static final String INVALID_KEYSTORE_PATH = "invalid/path/to/keystore.jks";
 	private static final String INVALID_KEYSTORE_PASSWORD = "invalidPassword";
@@ -235,15 +233,22 @@ public class ReportPortalTest {
 	private SSLServerSocket createSSLServerSocket(int port) throws Exception {
 		System.setProperty("javax.net.debug", "ssl,handshake");
 
-		KeyStore keyStore = KeyStore.getInstance("JKS");
-		keyStore.load(getClass().getResourceAsStream(KEYSTORE_PATH), KEYSTORE_PASSWORD.toCharArray());
+		KeyStore ks = KeyStore.getInstance("JKS");
+		InputStream ksis = Thread.currentThread().getContextClassLoader().getResourceAsStream(KEYSTORE_PATH);
+		ks.load(ksis, KEYSTORE_PASSWORD.toCharArray());
 
-		KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+		KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
 				.getAlgorithm());
-		kmf.init(keyStore, KEYSTORE_PASSWORD.toCharArray());
+		kmf.init(ks, KEYSTORE_PASSWORD.toCharArray());
+
+		KeyStore ts = KeyStore.getInstance("JKS");
+		InputStream tsis = Thread.currentThread().getContextClassLoader().getResourceAsStream(TRUSTSTORE_PATH);
+		ts.load(tsis, TRUSTSTORE_PASSWORD.toCharArray());
+		TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+		tmf.init(ts);
 
 		SSLContext sslContext = SSLContext.getInstance("TLS");
-		sslContext.init(kmf.getKeyManagers(), null, null);
+		sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
 
 		SSLServerSocketFactory sslServerSocketFactory = sslContext.getServerSocketFactory();
 		String[] enabledCipherSuites = sslServerSocketFactory.getSupportedCipherSuites();
@@ -452,7 +457,6 @@ public class ReportPortalTest {
 	}
 
 	@Test
-	@Disabled("FIXME: Unable to generate self-signed certificate or setup SSL correctly: SSLHandshakeException: no cipher suites in common")
 	public void verify_https_parameters_work_with_self_signed_certificate() throws Exception {
 		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
 		int port = ss.getLocalPort();
@@ -471,6 +475,8 @@ public class ReportPortalTest {
 		parameters.setBaseUrl(baseUrl);
 		parameters.setKeystore(KEYSTORE_PATH);
 		parameters.setKeystorePassword(KEYSTORE_PASSWORD);
+		parameters.setTruststore(TRUSTSTORE_PATH);
+		parameters.setTruststorePassword(TRUSTSTORE_PASSWORD);
 
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
 		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
@@ -498,12 +504,8 @@ public class ReportPortalTest {
 		);
 	}
 
-
 	public static Iterable<Object[]> invalid_keystore_passwords() {
-		return Arrays.asList(
-				new Object[] { INVALID_KEYSTORE_PASSWORD },
-				new Object[] { null }
-		);
+		return Arrays.asList(new Object[] { INVALID_KEYSTORE_PASSWORD }, new Object[] { null });
 	}
 
 	@ParameterizedTest

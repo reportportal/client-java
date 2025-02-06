@@ -82,6 +82,8 @@ public enum ListenerProperty {
     IS_CONVERT_IMAGE("rp.convertimage", false),
     KEYSTORE_RESOURCE("rp.keystore.resource", false),
     KEYSTORE_PASSWORD("rp.keystore.password", false),
+    TRUSTSTORE_RESOURCE("rp.truststore.resource", false),
+    TRUSTSTORE_PASSWORD("rp.truststore.password", false),
     REPORTING_TIMEOUT("rp.reporting.timeout", false),
     MODE("rp.mode", false),
     ENABLE("rp.enable", false),

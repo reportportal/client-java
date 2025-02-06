@@ -25,7 +25,6 @@ import com.epam.reportportal.utils.SslUtils;
 import com.epam.reportportal.utils.files.Utils;
 import com.epam.reportportal.utils.http.ClientUtils;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
-import com.epam.reportportal.utils.properties.ListenerProperty;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
@@ -52,9 +51,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -103,7 +100,7 @@ public class ReportPortal {
 	 * @param parameters Listener Parameters
 	 */
 	ReportPortal(@Nullable ReportPortalClient rpClient, @Nonnull ExecutorService executor, @Nonnull ListenerParameters parameters,
-			@Nullable LaunchIdLock launchIdLock) {
+				 @Nullable LaunchIdLock launchIdLock) {
 		this.rpClient = rpClient;
 		this.executor = executor;
 		this.parameters = Objects.requireNonNull(parameters);
@@ -225,7 +222,7 @@ public class ReportPortal {
 	 */
 	@Nonnull
 	public static ReportPortal create(@Nonnull final ReportPortalClient client, @Nonnull final ListenerParameters params,
-			@Nonnull final ExecutorService executor) {
+									  @Nonnull final ExecutorService executor) {
 		return new ReportPortal(client, executor, params, getLaunchLock(params));
 	}
 
@@ -326,7 +323,7 @@ public class ReportPortal {
 	 */
 	@Nonnull
 	public static SaveLogRQ toSaveLogRQ(@Nullable String launchUuid, @Nullable String itemUuid, @Nonnull String level, @Nonnull Date time,
-			@Nonnull ReportPortalMessage message) {
+										@Nonnull ReportPortalMessage message) {
 		SaveLogRQ rq = new SaveLogRQ();
 		rq.setItemUuid(itemUuid);
 		rq.setLaunchUuid(launchUuid);
@@ -490,7 +487,7 @@ public class ReportPortal {
 		 * @return a ReportPortal Client instance
 		 */
 		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType, @Nonnull final ListenerParameters params,
-				@Nonnull final ExecutorService executor) {
+															@Nonnull final ExecutorService executor) {
 			OkHttpClient client = ofNullable(this.httpClient).map(c -> c.addInterceptor(new BearerAuthInterceptor(params.getApiKey()))
 					.build()).orElseGet(() -> defaultClient(params));
 
@@ -513,7 +510,7 @@ public class ReportPortal {
 		 * @return a ReportPortal endpoint description class
 		 */
 		protected Retrofit buildRestEndpoint(@Nonnull final ListenerParameters parameters, @Nonnull final OkHttpClient client,
-				@Nonnull final ExecutorService executor) {
+											 @Nonnull final ExecutorService executor) {
 			String baseUrl = (parameters.getBaseUrl().endsWith("/") ? parameters.getBaseUrl() : parameters.getBaseUrl() + "/") + API_PATH;
 			Retrofit.Builder builder = new Retrofit.Builder().client(client);
 			try {
@@ -549,35 +546,93 @@ public class ReportPortal {
 
 			String keyStore = parameters.getKeystore();
 			String keyStorePassword = parameters.getKeystorePassword();
+			String trustStore = parameters.getTruststore();
+			String trustStorePassword = parameters.getTruststorePassword();
 
 			OkHttpClient.Builder builder = new OkHttpClient.Builder();
 
-			if (HTTPS.equals(baseUrl.getProtocol()) && keyStore != null) {
-				if (null == keyStorePassword) {
-					String error = "You should provide keystore password parameter [" + ListenerProperty.KEYSTORE_PASSWORD
-							+ "] if you use HTTPS protocol";
-					LOGGER.error(error);
-					throw new InternalReportPortalClientException(error);
+			if (HTTPS.equals(baseUrl.getProtocol())) {
+				KeyManager[] keyManagers = null;
+				if (keyStore != null) {
+					try {
+						KeyStore ks = SslUtils.loadKeyStore(keyStore, keyStorePassword);
+						KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+						kmf.init(ks, keyStorePassword.toCharArray());
+						keyManagers = kmf.getKeyManagers();
+					} catch (KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
+						String error = "Unable to load trust store";
+						LOGGER.error(error, e);
+						throw new InternalReportPortalClientException(error, e);
+					}
 				}
 
-				try {
-					TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-					trustManagerFactory.init(SslUtils.loadKeyStore(keyStore, keyStorePassword));
-					TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
-					X509TrustManager trustManager = (X509TrustManager) ofNullable(trustManagers).flatMap(managers -> Arrays.stream(managers)
-									.filter(m -> m instanceof X509TrustManager)
-									.findAny())
-							.orElseThrow(() -> new InternalReportPortalClientException(
-									"Unable to find X509 trust manager, managers:" + Arrays.toString(trustManagers)));
+				final TrustManager[] trustManagers;
+				if (trustStore != null) {
+					try {
+						KeyStore ts = SslUtils.loadKeyStore(trustStore, trustStorePassword);
+						TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+						tmf.init(ts);
+						trustManagers = tmf.getTrustManagers();
+					} catch (KeyStoreException | NoSuchAlgorithmException e) {
+						String error = "Unable to load trust store";
+						LOGGER.error(error, e);
+						throw new InternalReportPortalClientException(error, e);
+					}
+				} else {
+					trustManagers = null;
+				}
 
-					SSLContext sslContext = SSLContext.getInstance("TLS");
-					sslContext.init(null, new TrustManager[] { trustManager }, null);
-					SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
-					builder.sslSocketFactory(sslSocketFactory, trustManager);
-				} catch (KeyStoreException | NoSuchAlgorithmException | KeyManagementException e) {
-					String error = "Unable to load trust store";
-					LOGGER.error(error, e);
-					throw new InternalReportPortalClientException(error, e);
+				if (keyManagers != null && trustManagers != null) {
+					try {
+						SSLContext sslContext = SSLContext.getInstance("TLS");
+						sslContext.init(keyManagers, trustManagers, new SecureRandom());
+						X509TrustManager trustManager = Arrays.stream(trustManagers)
+								.filter(m -> m instanceof X509TrustManager)
+								.map(m -> (X509TrustManager) m)
+								.findAny()
+								.orElseThrow(() -> new InternalReportPortalClientException(
+										"Unable to find X509 trust manager, managers:" + Arrays.toString(trustManagers)));
+						builder.sslSocketFactory(sslContext.getSocketFactory(), trustManager);
+					} catch (NoSuchAlgorithmException | KeyManagementException e) {
+						String error = "Unable to initialize SSL context";
+						LOGGER.error(error, e);
+						throw new InternalReportPortalClientException(error, e);
+					}
+				} else if (keyManagers != null) {
+					try {
+						TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+						trustManagerFactory.init((KeyStore) null);
+						TrustManager[] defaultTrustManagers = trustManagerFactory.getTrustManagers();
+						X509TrustManager trustManager = Arrays.stream(defaultTrustManagers)
+								.filter(m -> m instanceof X509TrustManager)
+								.map(m -> (X509TrustManager) m)
+								.findAny()
+								.orElseThrow(() -> new InternalReportPortalClientException(
+										"Unable to find X509 trust manager, managers:" + Arrays.toString(defaultTrustManagers)));
+						SSLContext sslContext = SSLContext.getInstance("TLS");
+						sslContext.init(null, new TrustManager[]{trustManager}, null);
+						builder.sslSocketFactory(sslContext.getSocketFactory(), trustManager);
+					} catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
+						String error = "Unable to load trust store";
+						LOGGER.error(error, e);
+						throw new InternalReportPortalClientException(error, e);
+					}
+				} else if (trustManagers != null) {
+					try {
+						SSLContext sslContext = SSLContext.getInstance("TLS");
+						sslContext.init(null, trustManagers, new SecureRandom());
+						X509TrustManager trustManager = Arrays.stream(trustManagers)
+								.filter(m -> m instanceof X509TrustManager)
+								.map(m -> (X509TrustManager) m)
+								.findAny()
+								.orElseThrow(() -> new InternalReportPortalClientException(
+										"Unable to find X509 trust manager, managers:" + Arrays.toString(trustManagers)));
+						builder.sslSocketFactory(sslContext.getSocketFactory(), trustManager);
+					} catch (NoSuchAlgorithmException | KeyManagementException e) {
+						String error = "Unable to initialize SSL context";
+						LOGGER.error(error, e);
+						throw new InternalReportPortalClientException(error, e);
+					}
 				}
 			}
 			ClientUtils.setupProxy(builder, parameters);
