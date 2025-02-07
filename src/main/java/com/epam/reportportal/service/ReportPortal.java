@@ -551,13 +551,13 @@ public class ReportPortal {
 
 			OkHttpClient.Builder builder = new OkHttpClient.Builder();
 
-			if (HTTPS.equals(baseUrl.getProtocol())) {
+			if (HTTPS.equals(baseUrl.getProtocol()) && (keyStore != null || trustStore != null)) {
 				KeyManager[] keyManagers = null;
 				if (keyStore != null) {
+					KeyStore ks = SslUtils.loadKeyStore(keyStore, keyStorePassword);
 					try {
-						KeyStore ks = SslUtils.loadKeyStore(keyStore, keyStorePassword);
 						KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-						kmf.init(ks, keyStorePassword.toCharArray());
+						kmf.init(ks, ofNullable(keyStorePassword).map(String::toCharArray).orElse(null));
 						keyManagers = kmf.getKeyManagers();
 					} catch (KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
 						String error = "Unable to load key store";
@@ -568,8 +568,8 @@ public class ReportPortal {
 
 				TrustManager[] trustManagers = null;
 				if (trustStore != null) {
+					KeyStore ts = SslUtils.loadKeyStore(trustStore, trustStorePassword);
 					try {
-						KeyStore ts = SslUtils.loadKeyStore(trustStore, trustStorePassword);
 						TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 						tmf.init(ts);
 						trustManagers = tmf.getTrustManagers();
@@ -582,9 +582,9 @@ public class ReportPortal {
 
 				if (trustManagers == null) {
 					try {
-						TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-						trustManagerFactory.init((KeyStore) null);
-						trustManagers = trustManagerFactory.getTrustManagers();
+						TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+						tmf.init((KeyStore) null);
+						trustManagers = tmf.getTrustManagers();
 					} catch (NoSuchAlgorithmException | KeyStoreException e) {
 						String trustStoreError = "Unable to load default trust store";
 						LOGGER.error(trustStoreError, e);

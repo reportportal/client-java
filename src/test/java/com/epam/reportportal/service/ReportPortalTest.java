@@ -67,7 +67,6 @@ import static org.mockito.Mockito.*;
 
 public class ReportPortalTest {
 	static {
-		System.setProperty("javax.net.debug", "ssl:handshake");
 		SLF4JBridgeHandler.removeHandlersForRootLogger();
 		SLF4JBridgeHandler.install();
 	}
@@ -77,8 +76,10 @@ public class ReportPortalTest {
 
 	private static final String KEYSTORE_PATH = "files/certificates/keystore.jks";
 	private static final String KEYSTORE_PASSWORD = "keystorePassword";
-	private static final String TRUSTSTORE_PATH = "files/certificates/truststore.jks";
-	private static final String TRUSTSTORE_PASSWORD = "changeit";
+	private static final String TRUSTSTORE_DEFAULT_PASSWORD_PATH = "files/certificates/truststore.jks";
+	private static final String TRUSTSTORE_PATH = "files/certificates/truststore_password.jks";
+	private static final String TRUSTSTORE_DEFAULT_PASSWORD = "changeit";
+	private static final String TRUSTSTORE_PASSWORD = "truststorePassword";
 
 	private static final String INVALID_KEYSTORE_PATH = "invalid/path/to/keystore.jks";
 	private static final String INVALID_KEYSTORE_PASSWORD = "invalidPassword";
@@ -242,8 +243,8 @@ public class ReportPortalTest {
 		kmf.init(ks, KEYSTORE_PASSWORD.toCharArray());
 
 		KeyStore ts = KeyStore.getInstance("JKS");
-		InputStream tsis = Thread.currentThread().getContextClassLoader().getResourceAsStream(TRUSTSTORE_PATH);
-		ts.load(tsis, TRUSTSTORE_PASSWORD.toCharArray());
+		InputStream tsis = Thread.currentThread().getContextClassLoader().getResourceAsStream(TRUSTSTORE_DEFAULT_PASSWORD_PATH);
+		ts.load(tsis, TRUSTSTORE_DEFAULT_PASSWORD.toCharArray());
 		TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 		tmf.init(ts);
 
@@ -417,6 +418,7 @@ public class ReportPortalTest {
 	public void verify_launch_uuid_creation_skip_parameter_handling() {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
+		simulateFinishLaunchResponse(rpClient);
 
 		String launchUuid = "test-launch-uuid";
 		ListenerParameters listenerParameters = TestUtils.standardParameters();
@@ -456,8 +458,21 @@ public class ReportPortalTest {
 		}
 	}
 
-	@Test
-	public void verify_https_parameters_work_with_self_signed_certificate() throws Exception {
+	public static Iterable<Object[]> keystore_values() {
+		return Arrays.asList(
+				new Object[] { KEYSTORE_PATH, KEYSTORE_PASSWORD, TRUSTSTORE_DEFAULT_PASSWORD_PATH, TRUSTSTORE_DEFAULT_PASSWORD },
+				new Object[] { null, null, TRUSTSTORE_DEFAULT_PASSWORD_PATH, TRUSTSTORE_DEFAULT_PASSWORD },
+				new Object[] { KEYSTORE_PATH, KEYSTORE_PASSWORD, TRUSTSTORE_DEFAULT_PASSWORD_PATH, null },
+				new Object[] { KEYSTORE_PATH, KEYSTORE_PASSWORD, TRUSTSTORE_DEFAULT_PASSWORD_PATH, TRUSTSTORE_DEFAULT_PASSWORD },
+				new Object[] { KEYSTORE_PATH, KEYSTORE_PASSWORD, TRUSTSTORE_PATH, null },
+				new Object[] { KEYSTORE_PATH, KEYSTORE_PASSWORD, TRUSTSTORE_PATH, TRUSTSTORE_PASSWORD }
+		);
+	}
+
+	@ParameterizedTest
+	@MethodSource("keystore_values")
+	public void verify_https_parameters_work_with_self_signed_certificate(String keystorePath, String keystorePassword,
+			String truststorePath, String truststorePassword) throws Exception {
 		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
 		int port = ss.getLocalPort();
 		ss.close();
@@ -473,10 +488,10 @@ public class ReportPortalTest {
 
 		ListenerParameters parameters = TestUtils.standardParameters();
 		parameters.setBaseUrl(baseUrl);
-		parameters.setKeystore(KEYSTORE_PATH);
-		parameters.setKeystorePassword(KEYSTORE_PASSWORD);
-		parameters.setTruststore(TRUSTSTORE_PATH);
-		parameters.setTruststorePassword(TRUSTSTORE_PASSWORD);
+		parameters.setKeystore(keystorePath);
+		parameters.setKeystorePassword(keystorePassword);
+		parameters.setTruststore(truststorePath);
+		parameters.setTruststorePassword(truststorePassword);
 
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
 		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
@@ -504,6 +519,20 @@ public class ReportPortalTest {
 		);
 	}
 
+	@Test
+	public void verify_invalid_truststore_path() {
+		ListenerParameters parameters = TestUtils.standardParameters();
+		parameters.setBaseUrl("https://localhost:8443");
+		parameters.setTruststore(INVALID_KEYSTORE_PATH);
+		parameters.setTruststorePassword(TRUSTSTORE_DEFAULT_PASSWORD);
+
+		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
+		assertThrows(
+				InternalReportPortalClientException.class,
+				() -> ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor)
+		);
+	}
+
 	public static Iterable<Object[]> invalid_keystore_passwords() {
 		return Arrays.asList(new Object[] { INVALID_KEYSTORE_PASSWORD }, new Object[] { null });
 	}
@@ -515,6 +544,20 @@ public class ReportPortalTest {
 		parameters.setBaseUrl("https://localhost:8443");
 		parameters.setKeystore(KEYSTORE_PATH);
 		parameters.setKeystorePassword(password);
+
+		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
+		assertThrows(
+				InternalReportPortalClientException.class,
+				() -> ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor)
+		);
+	}
+
+	@Test
+	public void verify_invalid_truststore_password() {
+		ListenerParameters parameters = TestUtils.standardParameters();
+		parameters.setBaseUrl("https://localhost:8443");
+		parameters.setTruststore(TRUSTSTORE_DEFAULT_PASSWORD_PATH);
+		parameters.setTruststorePassword(INVALID_KEYSTORE_PASSWORD);
 
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
 		assertThrows(
