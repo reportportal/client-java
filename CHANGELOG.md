@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.2.30]
 ### Added
 - `rp.truststore.resource` and `rp.truststore.password` configuration parameters, by @HardNorth
 ### Fixed
