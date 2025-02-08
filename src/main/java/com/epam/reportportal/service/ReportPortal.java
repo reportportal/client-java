@@ -432,7 +432,6 @@ public class ReportPortal {
 			} else {
 				rq.setMessage("Test has failed without exception");
 			}
-			rq.setLogTime(Calendar.getInstance().getTime());
 			return rq;
 		});
 	}
