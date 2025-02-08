@@ -292,9 +292,13 @@ public class LaunchImpl extends Launch {
 		}
 		finish = finish.cache();
 
-		Throwable error = finish.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
-		if (error != null) {
-			LOGGER.error("Unable to finish launch in ReportPortal", error);
+		try {
+			boolean result = finish.blockingAwait(getParameters().getReportingTimeout(), TimeUnit.SECONDS);
+			if (!result) {
+				LOGGER.error("Unable to finish launch in ReportPortal. Timeout exceeded. The data may be lost.");
+			}
+		} catch (Exception e) {
+			LOGGER.error("Unable to finish launch in ReportPortal", e);
 		}
 		getStatisticsService().close();
 		statisticsService = new StatisticsService(getParameters());
