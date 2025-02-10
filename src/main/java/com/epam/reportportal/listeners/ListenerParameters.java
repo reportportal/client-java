@@ -34,6 +34,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.*;
+import static com.epam.reportportal.utils.properties.ListenerProperty.TRUSTSTORE_PASSWORD;
 import static java.util.Optional.ofNullable;
 
 /**
@@ -100,8 +101,12 @@ public class ListenerParameters implements Cloneable {
 	private Long batchPayloadLimit;
 	private boolean convertImage;
 	private Integer reportingTimeout;
+
 	private String keystore;
 	private String keystorePassword;
+	private String truststore;
+	private String truststorePassword;
+
 	private boolean rerun;
 	private String rerunOf;
 	private boolean asyncReporting;
@@ -249,6 +254,9 @@ public class ListenerParameters implements Cloneable {
 
 		this.keystore = properties.getProperty(KEYSTORE_RESOURCE);
 		this.keystorePassword = properties.getProperty(KEYSTORE_PASSWORD);
+		this.truststore = properties.getProperty(TRUSTSTORE_RESOURCE);
+		this.truststorePassword = properties.getProperty(TRUSTSTORE_PASSWORD);
+
 		this.rerun = properties.getPropertyAsBoolean(RERUN, DEFAULT_RETURN);
 		this.rerunOf = properties.getProperty(RERUN_OF);
 
@@ -459,6 +467,10 @@ public class ListenerParameters implements Cloneable {
 		return reportingTimeout;
 	}
 
+	public void setReportingTimeout(Integer reportingTimeout) {
+		this.reportingTimeout = reportingTimeout;
+	}
+
 	public String getKeystore() {
 		return keystore;
 	}
@@ -467,16 +479,28 @@ public class ListenerParameters implements Cloneable {
 		this.keystore = keystore;
 	}
 
-	public void setReportingTimeout(Integer reportingTimeout) {
-		this.reportingTimeout = reportingTimeout;
-	}
-
 	public String getKeystorePassword() {
 		return keystorePassword;
 	}
 
 	public void setKeystorePassword(String keystorePassword) {
 		this.keystorePassword = keystorePassword;
+	}
+
+	public String getTruststore() {
+		return truststore;
+	}
+
+	public void setTruststore(String truststore) {
+		this.truststore = truststore;
+	}
+
+	public String getTruststorePassword() {
+		return truststorePassword;
+	}
+
+	public void setTruststorePassword(String truststorePassword) {
+		this.truststorePassword = truststorePassword;
 	}
 
 	public boolean isRerun() {

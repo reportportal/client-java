@@ -19,11 +19,18 @@ import com.epam.reportportal.exception.InternalReportPortalClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 
 import static com.epam.reportportal.utils.files.Utils.getFile;
+import static java.util.Optional.ofNullable;
 
 /**
  * @author Andrei Varabyeu
@@ -38,13 +45,14 @@ public class SslUtils {
 	 * @param password keystore password
 	 * @return JKD keystore representation
 	 */
-	public static KeyStore loadKeyStore(String keyStore, String password) {
+	@Nonnull
+	public static KeyStore loadKeyStore(@Nonnull String keyStore, @Nullable String password) {
 		try (InputStream is = getFile(new File(keyStore)).openStream()) {
 			KeyStore trustStore = KeyStore.getInstance("JKS");
-			trustStore.load(is, password.toCharArray());
+			trustStore.load(is, ofNullable(password).map(String::toCharArray).orElse(null));
 			return trustStore;
-		} catch (Exception e) {
-			String error = "Unable to load trust store";
+		} catch (IOException | KeyStoreException | CertificateException | NoSuchAlgorithmException e) {
+			String error = "Unable to load key store";
 			LOGGER.error(error, e);
 			throw new InternalReportPortalClientException(error, e);
 		}

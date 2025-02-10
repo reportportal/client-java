@@ -185,7 +185,7 @@ public class LaunchLoggingContext {
 	 *
 	 * @return {@link Completable}
 	 */
-	private Completable completed() {
+	public Completable completed() {
 		emitter.onComplete();
 		return emitter.ignoreElements();
 	}

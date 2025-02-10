@@ -28,6 +28,7 @@ import com.epam.ta.reportportal.ws.model.project.config.IssueSubTypeResource;
 import com.epam.ta.reportportal.ws.model.project.config.ProjectSettingsResource;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.reactivex.Maybe;
+import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okio.Buffer;
 import org.apache.commons.lang3.tuple.Pair;
@@ -252,6 +253,23 @@ public class TestUtils {
 					}
 				})
 				.flatMap(Collection::stream)
+				.collect(Collectors.toList());
+	}
+
+	public static List<Pair<String, byte[]>> extractBinaryParts(List<MultipartBody.Part> parts) {
+		return parts.stream()
+				.filter(p -> ofNullable(p.headers()).map(headers -> headers.get("Content-Disposition"))
+						.map(h -> h.contains(Constants.LOG_REQUEST_BINARY_PART))
+						.orElse(false))
+				.map(p-> Pair.of(ofNullable(p.body().contentType()).map(MediaType::toString).orElse(null), p.body()))
+				.map(b -> {
+					Buffer buf = new Buffer();
+					try {
+						b.getValue().writeTo(buf);
+					} catch (IOException ignore) {
+					}
+					return Pair.of(b.getKey(), buf.readByteArray());
+				})
 				.collect(Collectors.toList());
 	}
 

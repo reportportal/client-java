@@ -55,7 +55,8 @@ public class WaiterTest {
 
 	@Test
 	public void test_waiter_fail_description() {
-		InternalReportPortalClientException exc = assertThrows(InternalReportPortalClientException.class,
+		InternalReportPortalClientException exc = assertThrows(
+				InternalReportPortalClientException.class,
 				() -> waiter.timeoutFail().till((Callable<Boolean>) () -> null)
 		);
 		assertThat(exc.getMessage(), equalTo(description + " timed out"));
@@ -64,7 +65,8 @@ public class WaiterTest {
 	@Test
 	public void test_waiter_fails_on_unknown_exception() {
 		final String errorMessage = "Just a dummy message";
-		InternalReportPortalClientException exc = assertThrows(InternalReportPortalClientException.class,
+		InternalReportPortalClientException exc = assertThrows(
+				InternalReportPortalClientException.class,
 				() -> waiter.ignore(IllegalAccessException.class).till((Callable<Boolean>) () -> {
 					throw new IllegalArgumentException(errorMessage);
 				})
