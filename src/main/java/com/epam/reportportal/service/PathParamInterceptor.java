@@ -21,6 +21,7 @@ import okhttp3.Interceptor;
 import okhttp3.Request;
 import okhttp3.Response;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -38,6 +39,7 @@ public class PathParamInterceptor implements Interceptor {
 	}
 
 	@Override
+	@Nonnull
 	public Response intercept(Chain chain) throws IOException {
 		Request originalRequest = chain.request();
 
