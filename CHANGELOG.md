@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [5.2.31]
+### Added
+- `rp.keystore.type` and `rp.truststore.type` configuration parameters, by @HardNorth
+
 ## [5.2.30]
 ### Added
 - `rp.truststore.resource` and `rp.truststore.password` configuration parameters, by @HardNorth

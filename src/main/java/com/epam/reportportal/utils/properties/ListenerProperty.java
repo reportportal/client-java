@@ -80,10 +80,6 @@ public enum ListenerProperty {
     LAUNCH_ATTRIBUTES("rp.attributes", false),
     DESCRIPTION("rp.description", false),
     IS_CONVERT_IMAGE("rp.convertimage", false),
-    KEYSTORE_RESOURCE("rp.keystore.resource", false),
-    KEYSTORE_PASSWORD("rp.keystore.password", false),
-    TRUSTSTORE_RESOURCE("rp.truststore.resource", false),
-    TRUSTSTORE_PASSWORD("rp.truststore.password", false),
     REPORTING_TIMEOUT("rp.reporting.timeout", false),
     MODE("rp.mode", false),
     ENABLE("rp.enable", false),
@@ -93,6 +89,16 @@ public enum ListenerProperty {
     CALLBACK_REPORTING_ENABLED("rp.reporting.callback", false),
     SKIPPED_AS_ISSUE("rp.skipped.issue", false),
     IO_POOL_SIZE("rp.io.pool.size", false),
+
+    /**
+     * SSL keystore and truststore configuration properties.
+     */
+    KEYSTORE_RESOURCE("rp.keystore.resource", false),
+    KEYSTORE_PASSWORD("rp.keystore.password", false),
+    KEYSTORE_TYPE("rp.keystore.type", false),
+    TRUSTSTORE_RESOURCE("rp.truststore.resource", false),
+    TRUSTSTORE_PASSWORD("rp.truststore.password", false),
+    TRUSTSTORE_TYPE("rp.truststore.type", false),
 
     /**
      * Run ReportPortal client in multiple client mode. In such mode RC client will share one launch ID between all

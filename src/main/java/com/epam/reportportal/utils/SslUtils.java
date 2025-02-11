@@ -46,9 +46,9 @@ public class SslUtils {
 	 * @return JKD keystore representation
 	 */
 	@Nonnull
-	public static KeyStore loadKeyStore(@Nonnull String keyStore, @Nullable String password) {
+	public static KeyStore loadKeyStore(@Nonnull String keyStore, @Nullable String password, @Nonnull String type) {
 		try (InputStream is = getFile(new File(keyStore)).openStream()) {
-			KeyStore trustStore = KeyStore.getInstance("JKS");
+			KeyStore trustStore = KeyStore.getInstance(type);
 			trustStore.load(is, ofNullable(password).map(String::toCharArray).orElse(null));
 			return trustStore;
 		} catch (IOException | KeyStoreException | CertificateException | NoSuchAlgorithmException e) {
