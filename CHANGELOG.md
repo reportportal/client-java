@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `rp.keystore.type` and `rp.truststore.type` configuration parameters, by @HardNorth
 
 ## [5.2.30]
 ### Added

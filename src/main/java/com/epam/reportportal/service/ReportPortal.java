@@ -554,7 +554,7 @@ public class ReportPortal {
 			if (HTTPS.equals(baseUrl.getProtocol()) && (keyStore != null || trustStore != null)) {
 				KeyManager[] keyManagers = null;
 				if (keyStore != null) {
-					KeyStore ks = SslUtils.loadKeyStore(keyStore, keyStorePassword);
+					KeyStore ks = SslUtils.loadKeyStore(keyStore, keyStorePassword, parameters.getKeystoreType());
 					try {
 						KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
 						kmf.init(ks, ofNullable(keyStorePassword).map(String::toCharArray).orElse(null));
@@ -568,7 +568,7 @@ public class ReportPortal {
 
 				TrustManager[] trustManagers = null;
 				if (trustStore != null) {
-					KeyStore ts = SslUtils.loadKeyStore(trustStore, trustStorePassword);
+					KeyStore ts = SslUtils.loadKeyStore(trustStore, trustStorePassword, parameters.getTruststoreType());
 					try {
 						TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 						tmf.init(ts);

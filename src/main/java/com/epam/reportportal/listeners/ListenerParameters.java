@@ -51,6 +51,7 @@ public class ListenerParameters implements Cloneable {
 	private static final boolean DEFAULT_CALLBACK_REPORTING_ENABLED = false;
 	private static final boolean DEFAULT_HTTP_LOGGING = false;
 	private static final int DEFAULT_RX_BUFFER_SIZE = 128;
+	private static final String DEFAULT_KEYSTORE_TYPE = "JKS";
 
 	private static final boolean DEFAULT_CLIENT_JOIN = true;
 	private static final String DEFAULT_CLIENT_JOIN_MODE = "FILE";
@@ -104,8 +105,10 @@ public class ListenerParameters implements Cloneable {
 
 	private String keystore;
 	private String keystorePassword;
+	private String keystoreType;
 	private String truststore;
 	private String truststorePassword;
+	private String truststoreType;
 
 	private boolean rerun;
 	private String rerunOf;
@@ -187,6 +190,9 @@ public class ListenerParameters implements Cloneable {
 		this.reportingTimeout = DEFAULT_REPORTING_TIMEOUT;
 		this.httpLogging = DEFAULT_HTTP_LOGGING;
 
+		this.keystoreType = DEFAULT_KEYSTORE_TYPE;
+		this.truststoreType = DEFAULT_KEYSTORE_TYPE;
+
 		this.attributes = Collections.emptySet();
 
 		this.rerun = DEFAULT_RETURN;
@@ -254,8 +260,10 @@ public class ListenerParameters implements Cloneable {
 
 		this.keystore = properties.getProperty(KEYSTORE_RESOURCE);
 		this.keystorePassword = properties.getProperty(KEYSTORE_PASSWORD);
+		this.keystoreType = properties.getProperty(KEYSTORE_TYPE, DEFAULT_KEYSTORE_TYPE);
 		this.truststore = properties.getProperty(TRUSTSTORE_RESOURCE);
 		this.truststorePassword = properties.getProperty(TRUSTSTORE_PASSWORD);
+		this.truststoreType = properties.getProperty(TRUSTSTORE_TYPE, DEFAULT_KEYSTORE_TYPE);
 
 		this.rerun = properties.getPropertyAsBoolean(RERUN, DEFAULT_RETURN);
 		this.rerunOf = properties.getProperty(RERUN_OF);
@@ -487,6 +495,15 @@ public class ListenerParameters implements Cloneable {
 		this.keystorePassword = keystorePassword;
 	}
 
+	public void setKeystoreType(@Nonnull String keystoreType) {
+		this.keystoreType = keystoreType;
+	}
+
+	@Nonnull
+	public String getKeystoreType() {
+		return keystoreType;
+	}
+
 	public String getTruststore() {
 		return truststore;
 	}
@@ -501,6 +518,15 @@ public class ListenerParameters implements Cloneable {
 
 	public void setTruststorePassword(String truststorePassword) {
 		this.truststorePassword = truststorePassword;
+	}
+
+	public void setTruststoreType(@Nonnull String truststoreType) {
+		this.truststoreType = truststoreType;
+	}
+
+	@Nonnull
+	public String getTruststoreType() {
+		return truststoreType;
 	}
 
 	public boolean isRerun() {
