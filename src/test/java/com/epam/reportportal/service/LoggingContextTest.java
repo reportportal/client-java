@@ -36,8 +36,8 @@ import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
 import static com.epam.reportportal.utils.http.HttpRequestUtils.TYPICAL_FILE_PART_HEADER;
@@ -103,6 +103,7 @@ public class LoggingContextTest {
 				Schedulers.from(Executors.newSingleThreadExecutor())
 		);
 
+		//noinspection ReactiveStreamsUnusedPublisher
 		LoggingContext.complete();
 		assertThat(LoggingContext.context(), anyOf(nullValue(), not(sameInstance(context))));
 	}
@@ -150,6 +151,7 @@ public class LoggingContextTest {
 		);
 
 		emitLogs(context, LoggingContext.DEFAULT_LOG_BATCH_SIZE - 1);
+		//noinspection ReactiveStreamsUnusedPublisher
 		context.completed();
 
 		verify(client, timeout(10000)).log(any(List.class));
@@ -173,7 +175,7 @@ public class LoggingContextTest {
 						.length();
 		int attachmentSize = (int) ListenerParameters.DEFAULT_BATCH_PAYLOAD_LIMIT - headersSize - 1024;
 		byte[] randomByteArray = new byte[attachmentSize];
-		new Random().nextBytes(randomByteArray);
+		ThreadLocalRandom.current().nextBytes(randomByteArray);
 
 		SaveLogRQ request = new SaveLogRQ();
 		SaveLogRQ.File file = new SaveLogRQ.File();
@@ -207,7 +209,7 @@ public class LoggingContextTest {
 		);
 
 		byte[] randomByteArray = new byte[(int) ListenerParameters.DEFAULT_BATCH_PAYLOAD_LIMIT];
-		new Random().nextBytes(randomByteArray);
+		ThreadLocalRandom.current().nextBytes(randomByteArray);
 
 		SaveLogRQ request = new SaveLogRQ();
 		SaveLogRQ.File file = new SaveLogRQ.File();
@@ -248,7 +250,7 @@ public class LoggingContextTest {
 		verify(client, timeout(100).times(0)).log(any(List.class));
 
 		byte[] randomByteArray = new byte[(int) ListenerParameters.DEFAULT_BATCH_PAYLOAD_LIMIT];
-		new Random().nextBytes(randomByteArray);
+		ThreadLocalRandom.current().nextBytes(randomByteArray);
 
 		SaveLogRQ request = new SaveLogRQ();
 		SaveLogRQ.File file = new SaveLogRQ.File();

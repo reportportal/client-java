@@ -20,6 +20,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 import static com.epam.reportportal.service.launch.lock.LockTestUtil.WELCOME_MESSAGE;
 
@@ -36,7 +37,7 @@ public class LockSocketRunner {
 		ListenerParameters params = new ListenerParameters();
 		LaunchIdLockSocket lock = new LaunchIdLockSocket(params);
 		System.out.println(WELCOME_MESSAGE);
-		InputStreamReader isr = new InputStreamReader(System.in);
+		InputStreamReader isr = new InputStreamReader(System.in, StandardCharsets.UTF_8);
 		//noinspection ResultOfMethodCallIgnored
 		isr.read(new char[3]);
 		System.out.println(lock.obtainLaunchUuid(instanceUuid));

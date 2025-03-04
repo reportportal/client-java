@@ -462,7 +462,7 @@ public class LaunchTest {
 		simulateStartLaunchResponse(rpClient);
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		PrintStream testStream = new PrintStream(baos);
+		PrintStream testStream = new PrintStream(baos, false, StandardCharsets.UTF_8.name());
 		ListenerParameters parameters = standardParameters();
 		parameters.setPrintLaunchUuid(true);
 		parameters.setPrintLaunchUuidOutput(testStream);
