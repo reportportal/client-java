@@ -65,6 +65,8 @@ public class ManualNestedStepTest {
 
 	private ReportPortalClient client;
 	private Launch launch;
+	@SuppressWarnings({"FieldCanBeLocal", "unused"})
+	private Maybe<String> launchUuid;
 	private Maybe<String> testClassUuidMaybe;
 	private Maybe<String> testMethodUuidMaybe;
 	private StepReporter sr;
@@ -76,6 +78,7 @@ public class ManualNestedStepTest {
 
 		ReportPortal rp = ReportPortal.create(client, TestUtils.STANDARD_PARAMETERS, executor);
 		launch = rp.newLaunch(TestUtils.standardLaunchRequest(TestUtils.standardParameters()));
+		launchUuid = launch.start();
 		testClassUuidMaybe = launch.startTestItem(TestUtils.standardStartTestRequest());
 		testMethodUuidMaybe = launch.startTestItem(testClassUuidMaybe, TestUtils.standardStartStepRequest());
 		sr = launch.getStepReporter();
@@ -91,6 +94,7 @@ public class ManualNestedStepTest {
 	public void test_sent_step_creates_nested_step() {
 		mockNestedSteps(client, nestedStepPairs.get(0));
 		String stepName = "test_sent_step_creates_nested_step";
+		testMethodUuidMaybe.blockingGet();
 		sr.sendStep(stepName).blockingGet();
 
 		ArgumentCaptor<StartTestItemRQ> stepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
@@ -141,6 +145,7 @@ public class ManualNestedStepTest {
 	public void verify_failed_nested_step_marks_parent_test_as_failed_parent_finish() {
 		mockNestedSteps(client, nestedStepPairs.get(0));
 		String stepName = "verify_failed_nested_step_marks_parent_test_as_failed_parent_finish";
+		testClassUuidMaybe.blockingGet();
 		sr.sendStep(ItemStatus.FAILED, stepName).blockingGet();
 
 		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest()).blockingGet();
@@ -163,6 +168,7 @@ public class ManualNestedStepTest {
 	public void verify_failed_nested_step_marks_parent_test_as_failed_nested_finish() {
 		mockNestedSteps(client, nestedStepPairs.get(0));
 		String stepName = "verify_failed_nested_step_marks_parent_test_as_failed_nested_finish";
+		testMethodUuidMaybe.blockingGet();
 		sr.sendStep(ItemStatus.FAILED, stepName).blockingGet();
 
 		verify(client, timeout(1000)).startTestItem(eq(testMethodUuid), any());
