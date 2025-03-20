@@ -58,9 +58,6 @@ public class LoggingContext {
 
 	public static final int DEFAULT_LOG_BATCH_SIZE = 10;
 
-	@Deprecated
-	public static final int DEFAULT_BUFFER_SIZE = DEFAULT_LOG_BATCH_SIZE;
-
 	private static final ThreadLocal<Pair<Long, Deque<LoggingContext>>> CONTEXT_THREAD_LOCAL = new InheritableThreadLocal<>();
 
 	private static final Set<Long> THREAD_IDS = Collections.newSetFromMap(new ConcurrentHashMap<>());

@@ -625,16 +625,6 @@ public class ReportPortal {
 			return builder.build();
 		}
 
-		/**
-		 * @param parameters ReportPortal parameters
-		 * @return Launch lock instance
-		 * @deprecated use {@link #buildLaunchLock(ListenerParameters)}
-		 */
-		@Deprecated
-		protected LaunchIdLock buildLockFile(ListenerParameters parameters) {
-			return buildLaunchLock(parameters);
-		}
-
 		protected LaunchIdLock buildLaunchLock(ListenerParameters parameters) {
 			return getLaunchLock(parameters);
 		}
