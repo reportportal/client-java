@@ -24,6 +24,7 @@ import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
+import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,56 +64,82 @@ public abstract class Launch {
 		client = requireNonNull(reportPortalClient, "ReportPortalClient shouldn't be NULL");
 	}
 
+	/**
+	 * Starts new launch in ReportPortal asynchronously (non-blocking).
+	 *
+	 * @return Launch ID promise.
+	 */
 	@Nonnull
 	abstract public Maybe<String> start();
 
 	/**
-	 * Finishes launch in ReportPortal. Blocks until all items are reported correctly
+	 * Finishes launch in ReportPortal. Blocks until all items are reported correctly.
 	 *
-	 * @param rq Finish RQ
+	 * @param rq Launch finish request.
 	 */
 	abstract public void finish(final FinishExecutionRQ rq);
 
 	/**
-	 * Starts new test item in ReportPortal asynchronously (non-blocking)
+	 * Starts new root test item in ReportPortal asynchronously (non-blocking).
 	 *
-	 * @param rq Start RQ
-	 * @return Test Item ID promise
+	 * @param rq Item start request.
+	 * @return Test Item ID promise.
 	 */
 	@Nonnull
 	abstract public Maybe<String> startTestItem(final StartTestItemRQ rq);
 
 	/**
-	 * Starts new test item in ReportPortal asynchronously (non-blocking)
+	 * Starts new test item in ReportPortal asynchronously (non-blocking).
 	 *
-	 * @param rq       Start RQ
-	 * @param parentId Parent ID
+	 * @param parentId Promise of parent item ID.
+	 * @param rq       Item start request.
 	 * @return Test Item ID promise
 	 */
 	@Nonnull
 	abstract public Maybe<String> startTestItem(final Maybe<String> parentId, final StartTestItemRQ rq);
 
 	/**
-	 * Starts new test item in ReportPortal in respect of provided retry item ID.
+	 * Starts new test item in ReportPortal asynchronously (non-blocking), ensure provided retry item ID starts first. Also sets flags
+	 * <code>retry: true</code> and <code>retryOf: {retryOf argument value}</code>.
 	 *
-	 * @param parentId promise of ID of parent
-	 * @param retryOf  previous item ID promise
-	 * @param rq       promise of ID of request
-	 * @return Promise of Test Item ID
+	 * @param parentId Promise of parent item ID.
+	 * @param retryOf  Previous item ID promise, which is retried.
+	 * @param rq       Item start request.
+	 * @return Promise of Test Item ID.
 	 */
 	@Nonnull
 	abstract public Maybe<String> startTestItem(final Maybe<String> parentId, final Maybe<String> retryOf, final StartTestItemRQ rq);
 
 	/**
-	 * Finishes Test Item in ReportPortal. Non-blocking. Schedules finish after success of all child items
+	 * Logs message to the ReportPortal Launch, root item.
 	 *
-	 * @param itemId Item ID promise
-	 * @param rq     Finish request
-	 * @return Promise of Test Item finish response
+	 * @param rq Log request.
+	 */
+	abstract void log(final SaveLogRQ rq);
+
+	/**
+	 * Logs message to the ReportPortal Launch, specified item.
+	 *
+	 * @param parentId Promise of parent item ID.
+	 * @param rq       Log request.
+	 */
+	abstract void log(final Maybe<String> parentId, final SaveLogRQ rq);
+
+	/**
+	 * Finishes Test Item in ReportPortal asynchronously (non-blocking). Schedules finish after success of all child items.
+	 *
+	 * @param itemId Item ID promise.
+	 * @param rq     Item finish request.
+	 * @return Promise of Test Item finish response.
 	 */
 	@Nonnull
 	abstract public Maybe<OperationCompletionRS> finishTestItem(Maybe<String> itemId, final FinishTestItemRQ rq);
 
+	/**
+	 * Returns reporting parameters of the current launch.
+	 *
+	 * @return parameters instance.
+	 */
 	@Nonnull
 	public ListenerParameters getParameters() {
 		// Sticking any thread which makes this call to the current Launch to be able to use Step Reporter and other methods
@@ -123,7 +150,7 @@ public abstract class Launch {
 	/**
 	 * Returns a current launch in a link to the current thread.
 	 *
-	 * @return launch instance
+	 * @return launch instance.
 	 */
 	@Nullable
 	public static Launch currentLaunch() {
@@ -133,7 +160,7 @@ public abstract class Launch {
 	/**
 	 * Returns Nested Step reporter for the current launch.
 	 *
-	 * @return a {@link StepReporter} instance
+	 * @return a {@link StepReporter} instance.
 	 */
 	@Nonnull
 	public StepReporter getStepReporter() {
@@ -143,7 +170,7 @@ public abstract class Launch {
 	/**
 	 * Returns ReportPortal client for the launch.
 	 *
-	 * @return a {@link ReportPortalClient} instance
+	 * @return a {@link ReportPortalClient} instance.
 	 */
 	@Nonnull
 	public ReportPortalClient getClient() {
@@ -151,20 +178,22 @@ public abstract class Launch {
 	}
 
 	/**
-	 * Returns current launch UUID {@link Maybe}, empty if the launch is not started.
+	 * Returns current launch UUID promise as {@link Maybe}, empty if the launch is not started.
 	 *
-	 * @return Launch UUID promise
+	 * @return Launch UUID promise.
 	 */
 	@Nonnull
 	public abstract Maybe<String> getLaunch();
 
 	/**
-	 * Implementation for disabled Reporting
+	 * Launch implementation for disabled Reporting, every method does nothing.
 	 */
-	public static final Launch NOOP_LAUNCH = new Launch((ReportPortalClient) Proxy.newProxyInstance(Launch.class.getClassLoader(),
-			new Class[] { ReportPortalClient.class },
-			new DummyReportPortalClientHandler()
-	),
+	public static final Launch NOOP_LAUNCH = new Launch(
+			(ReportPortalClient) Proxy.newProxyInstance(
+					Launch.class.getClassLoader(),
+					new Class[] { ReportPortalClient.class },
+					new DummyReportPortalClientHandler()
+			),
 			new ListenerParameters(),
 			StepReporter.NOOP_STEP_REPORTER
 	) {
@@ -176,7 +205,6 @@ public abstract class Launch {
 
 		@Override
 		public void finish(FinishExecutionRQ rq) {
-
 		}
 
 		@Override
@@ -195,6 +223,14 @@ public abstract class Launch {
 		@Nonnull
 		public Maybe<String> startTestItem(Maybe<String> parentId, Maybe<String> retryOf, StartTestItemRQ rq) {
 			return Maybe.empty();
+		}
+
+		@Override
+		void log(SaveLogRQ rq) {
+		}
+
+		@Override
+		void log(Maybe<String> parentId, SaveLogRQ rq) {
 		}
 
 		@Override

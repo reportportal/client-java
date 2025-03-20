@@ -29,6 +29,7 @@ import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
+import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.epam.ta.reportportal.ws.model.project.config.ProjectSettingsResource;
 import io.reactivex.*;
 import io.reactivex.functions.Consumer;
@@ -53,9 +54,13 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
 /**
- * A basic Launch object implementation which does straight requests to ReportPortal.
+ * Asynchronous Launch object implementation, which uses reactive framework to handle launch events. It accepts and returns promises of
+ * items' IDs and launch ID, and handle actual requests to ReportPortal under the hood.
  */
 public class LaunchImpl extends Launch {
+	/**
+	 * Environment variable name to disable analytics
+	 */
 	public static final String DISABLE_PROPERTY = "AGENT_NO_ANALYTICS";
 
 	private static final Map<ExecutorService, Scheduler> SCHEDULERS = new ConcurrentHashMap<>();
@@ -89,11 +94,8 @@ public class LaunchImpl extends Launch {
 	);
 
 	/**
-	 * @deprecated use {@link Launch#NOT_ISSUE}
+	 * Default Agent name for cases where real name is not known.
 	 */
-	@Deprecated
-	public static final String NOT_ISSUE = "NOT_ISSUE";
-
 	public static final String CUSTOM_AGENT = "CUSTOM";
 
 	/**
@@ -183,6 +185,11 @@ public class LaunchImpl extends Launch {
 		return scheduler;
 	}
 
+	/**
+	 * Returns current launch UUID promise as {@link Maybe}, empty if the launch is not started.
+	 *
+	 * @return Launch UUID promise.
+	 */
 	@Override
 	@Nonnull
 	public Maybe<String> getLaunch() {
@@ -244,10 +251,10 @@ public class LaunchImpl extends Launch {
 	}
 
 	/**
-	 * Starts launch in ReportPortal. Does NOT start the same launch twice
+	 * Starts launch in ReportPortal. Does NOT start the same launch twice.
 	 *
-	 * @param statistics Send or not Launch statistics
-	 * @return Launch ID promise
+	 * @param statistics Send or not Launch statistics.
+	 * @return Launch ID promise.
 	 */
 	@Nonnull
 	protected Maybe<String> start(boolean statistics) {
@@ -264,9 +271,9 @@ public class LaunchImpl extends Launch {
 	}
 
 	/**
-	 * Starts launch in ReportPortal. Does NOT start the same launch twice
+	 * Starts new launch in ReportPortal asynchronously (non-blocking). Does NOT start the same launch twice.
 	 *
-	 * @return Launch ID promise
+	 * @return Launch ID promise.
 	 */
 	@Nonnull
 	public Maybe<String> start() {
@@ -274,9 +281,9 @@ public class LaunchImpl extends Launch {
 	}
 
 	/**
-	 * Finishes launch in ReportPortal. Blocks until all items are reported correctly
+	 * Finishes launch in ReportPortal. Blocks until all items are reported correctly.
 	 *
-	 * @param request Finish RQ
+	 * @param request Launch finish request.
 	 */
 	public void finish(final FinishExecutionRQ request) {
 		QUEUE.getOrCompute(launch).addToQueue(LaunchLoggingContext.complete());
@@ -310,10 +317,10 @@ public class LaunchImpl extends Launch {
 	}
 
 	/**
-	 * Starts new test item in ReportPortal asynchronously (non-blocking)
+	 * Starts new root test item in ReportPortal asynchronously (non-blocking).
 	 *
-	 * @param request Start RQ
-	 * @return Test Item ID promise
+	 * @param request Item start request.
+	 * @return Test Item ID promise.
 	 */
 	@Nonnull
 	public Maybe<String> startTestItem(final StartTestItemRQ request) {
@@ -342,23 +349,29 @@ public class LaunchImpl extends Launch {
 	}
 
 	/**
-	 * Starts new test item in ReportPortal in respect of provided retry item ID.
+	 * Starts new test item in ReportPortal asynchronously (non-blocking), ensure provided retry item ID starts first. Also sets flags
+	 * <code>retry: true</code> and <code>retryOf: {retryOf argument value}</code>.
 	 *
-	 * @param parentId Parent item ID promise
-	 * @param retryOf  previous item ID promise
-	 * @param rq       Start RQ
-	 * @return Test Item ID promise
+	 * @param parentId Promise of parent item ID.
+	 * @param retryOf  Previous item ID promise, which is retried.
+	 * @param rq       Item start request.
+	 * @return Promise of Test Item ID.
 	 */
 	@Nonnull
 	public Maybe<String> startTestItem(final Maybe<String> parentId, final Maybe<String> retryOf, final StartTestItemRQ rq) {
-		return retryOf.flatMap((Function<String, Maybe<String>>) s -> startTestItem(parentId, rq)).cache();
+		return retryOf.flatMap((Function<String, Maybe<String>>) s -> {
+			StartTestItemRQ myRq = clonePojo(rq, StartTestItemRQ.class);
+			myRq.setRetry(true);
+			myRq.setRetryOf(s);
+			return startTestItem(parentId, myRq);
+		}).cache();
 	}
 
 	/**
-	 * Starts new test item in ReportPortal asynchronously (non-blocking)
+	 * Starts new test item in ReportPortal asynchronously (non-blocking).
 	 *
-	 * @param parentId Parent item ID promise
-	 * @param request  Start RQ
+	 * @param parentId Promise of parent item ID.
+	 * @param request  Item start request.
 	 * @return Test Item ID promise
 	 */
 	@Nonnull
@@ -379,7 +392,7 @@ public class LaunchImpl extends Launch {
 
 		final Maybe<String> item = launch.flatMap((Function<String, Maybe<String>>) lId -> parentId.flatMap((Function<String, MaybeSource<String>>) pId -> {
 			rq.setLaunchUuid(lId);
-			LOGGER.debug("Starting test item..." + Thread.currentThread().getName());
+			LOGGER.trace("Starting test item in thread: {}", Thread.currentThread().getName());
 			Maybe<ItemCreatedRS> result = getClient().startTestItem(pId, rq);
 			result = result.retry(DEFAULT_REQUEST_RETRY);
 			result = result.doOnSuccess(logCreated("item"));
@@ -453,11 +466,11 @@ public class LaunchImpl extends Launch {
 	}
 
 	/**
-	 * Finishes Test Item in ReportPortal. Non-blocking. Schedules finish after success of all child items
+	 * Finishes Test Item in ReportPortal asynchronously (non-blocking). Schedules finish after success of all child items.
 	 *
-	 * @param item    Item UUID promise
-	 * @param request Finish request
-	 * @return a Finish Item response promise
+	 * @param item    Item ID promise.
+	 * @param request Item finish request.
+	 * @return Promise of Test Item finish response.
 	 */
 	@Nonnull
 	public Maybe<OperationCompletionRS> finishTestItem(final Maybe<String> item, final FinishTestItemRQ request) {
@@ -534,6 +547,25 @@ public class LaunchImpl extends Launch {
 
 		getStepReporter().removeParent(item);
 		return finishResponse;
+	}
+
+	/**
+	 * Logs message to the ReportPortal Launch, root item.
+	 *
+	 * @param rq Log request.
+	 */
+	public void log(final SaveLogRQ rq) {
+		// TODO: implement
+	}
+
+	/**
+	 * Logs message to the ReportPortal Launch, specified item.
+	 *
+	 * @param parentId Promise of parent item ID.
+	 * @param rq       Log request.
+	 */
+	public void log(final Maybe<String> parentId, final SaveLogRQ rq) {
+		// TODO: implement
 	}
 
 	/**
