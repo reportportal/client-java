@@ -19,9 +19,14 @@ import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.message.TypeAwareByteSource;
+import com.epam.reportportal.service.logs.LogBatchingFlowable;
+import com.epam.reportportal.service.logs.LoggingSubscriber;
 import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.utils.RetryWithDelay;
 import com.epam.reportportal.utils.StaticStructuresUtils;
+import com.epam.reportportal.utils.files.ByteSource;
+import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
@@ -35,11 +40,16 @@ import io.reactivex.*;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
+import io.reactivex.internal.operators.flowable.FlowableFromObservable;
+import io.reactivex.plugins.RxJavaPlugins;
 import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subjects.PublishSubject;
 import org.apache.commons.lang3.StringUtils;
+import org.reactivestreams.Publisher;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -50,6 +60,8 @@ import java.util.stream.Collectors;
 import static com.epam.reportportal.service.logs.LaunchLoggingCallback.*;
 import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
 import static com.epam.reportportal.utils.SubscriptionUtils.*;
+import static com.epam.reportportal.utils.files.ImageConverter.convert;
+import static com.epam.reportportal.utils.files.ImageConverter.isImage;
 import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
@@ -106,9 +118,30 @@ public class LaunchImpl extends Launch {
 	protected final Maybe<String> launch;
 	protected final StartLaunchRQ startRq;
 	protected final Maybe<ProjectSettingsResource> projectSettings;
+	private final PublishSubject<Maybe<SaveLogRQ>> emitter;
 	private final ExecutorService executor;
 	private final Scheduler scheduler;
 	private StatisticsService statisticsService;
+
+	private static Maybe<ProjectSettingsResource> getProjectSettings(@Nonnull final ReportPortalClient client,
+			@Nonnull final Scheduler scheduler) {
+		return ofNullable(client.getProjectSettings()).map(settings -> settings.subscribeOn(scheduler).cache()).orElse(Maybe.empty());
+	}
+
+	private static PublishSubject<Maybe<SaveLogRQ>> getLogEmitter(@Nonnull final ReportPortalClient client,
+			@Nonnull final ListenerParameters parameters, @Nonnull final Scheduler scheduler) {
+		PublishSubject<Maybe<SaveLogRQ>> emitter = PublishSubject.create();
+		RxJavaPlugins.onAssembly(new LogBatchingFlowable(
+						new FlowableFromObservable<>(emitter).flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable),
+						parameters
+				))
+				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
+						rqs)).toFlowable())
+				.observeOn(scheduler)
+				.onBackpressureBuffer(parameters.getRxBufferSize(), false, true)
+				.subscribe(new LoggingSubscriber());
+		return emitter;
+	}
 
 	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
 			@Nonnull final StartLaunchRQ rq, @Nonnull final ExecutorService executorService) {
@@ -138,8 +171,8 @@ public class LaunchImpl extends Launch {
 					}
 			);
 		}).cache();
-		projectSettings = ofNullable(getClient().getProjectSettings()).map(settings -> settings.subscribeOn(getScheduler()).cache())
-				.orElse(Maybe.empty());
+		emitter = getLogEmitter(getClient(), getParameters(), getScheduler());
+		projectSettings = getProjectSettings(getClient(), getScheduler());
 	}
 
 	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
@@ -153,8 +186,8 @@ public class LaunchImpl extends Launch {
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 		launch = launchMaybe.cache();
-		projectSettings = ofNullable(getClient().getProjectSettings()).map(settings -> settings.subscribeOn(getScheduler()).cache())
-				.orElse(Maybe.empty());
+		emitter = getLogEmitter(getClient(), getParameters(), getScheduler());
+		projectSettings = getProjectSettings(getClient(), getScheduler());
 	}
 
 	private static StartLaunchRQ emptyStartLaunchForStatistics() {
@@ -549,23 +582,24 @@ public class LaunchImpl extends Launch {
 		return finishResponse;
 	}
 
+	private SaveLogRQ prepareRequest(@Nonnull final String launchId, @Nonnull final SaveLogRQ rq) throws IOException {
+		rq.setLaunchUuid(launchId);
+		SaveLogRQ.File file = rq.getFile();
+		if (getParameters().isConvertImage() && null != file && isImage(file.getContentType())) {
+			final TypeAwareByteSource source = convert(ByteSource.wrap(file.getContent()));
+			file.setContent(source.read());
+			file.setContentType(source.getMediaType());
+		}
+		return rq;
+	}
+
 	/**
-	 * Logs message to the ReportPortal Launch, root item.
+	 * Logs message to the ReportPortal Launch.
 	 *
 	 * @param rq Log request.
 	 */
 	public void log(final SaveLogRQ rq) {
-		// TODO: implement
-	}
-
-	/**
-	 * Logs message to the ReportPortal Launch, specified item.
-	 *
-	 * @param parentId Promise of parent item ID.
-	 * @param rq       Log request.
-	 */
-	public void log(final Maybe<String> parentId, final SaveLogRQ rq) {
-		// TODO: implement
+		emitter.onNext(getLaunch().map(launchUuid -> prepareRequest(launchUuid, rq)));
 	}
 
 	/**

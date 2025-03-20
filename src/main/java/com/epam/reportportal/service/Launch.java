@@ -118,14 +118,6 @@ public abstract class Launch {
 	abstract void log(final SaveLogRQ rq);
 
 	/**
-	 * Logs message to the ReportPortal Launch, specified item.
-	 *
-	 * @param parentId Promise of parent item ID.
-	 * @param rq       Log request.
-	 */
-	abstract void log(final Maybe<String> parentId, final SaveLogRQ rq);
-
-	/**
 	 * Finishes Test Item in ReportPortal asynchronously (non-blocking). Schedules finish after success of all child items.
 	 *
 	 * @param itemId Item ID promise.
@@ -227,10 +219,6 @@ public abstract class Launch {
 
 		@Override
 		void log(SaveLogRQ rq) {
-		}
-
-		@Override
-		void log(Maybe<String> parentId, SaveLogRQ rq) {
 		}
 
 		@Override
