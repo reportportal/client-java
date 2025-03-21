@@ -60,7 +60,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
-import static com.epam.reportportal.service.LaunchLoggingContext.DEFAULT_LAUNCH_KEY;
 import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
 import static com.epam.reportportal.utils.formatting.ExceptionUtils.getStackTrace;
 import static java.util.Optional.ofNullable;
@@ -248,9 +247,9 @@ public class ReportPortal {
 	 * @return true if log has been emitted
 	 */
 	public static boolean emitLaunchLog(final Function<String, SaveLogRQ> logSupplier) {
-		final LaunchLoggingContext launchLoggingContext = LaunchLoggingContext.context(DEFAULT_LAUNCH_KEY);
-		if (null != launchLoggingContext) {
-			launchLoggingContext.emit(logSupplier);
+		final Launch launch = Launch.currentLaunch();
+		if (launch != null && launch != Launch.NOOP_LAUNCH) {
+			launch.log(logSupplier);
 			return true;
 		}
 		return false;

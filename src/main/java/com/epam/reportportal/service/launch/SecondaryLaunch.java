@@ -19,7 +19,6 @@ package com.epam.reportportal.service.launch;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.LaunchIdLock;
-import com.epam.reportportal.service.LaunchLoggingContext;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.utils.Waiter;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
@@ -98,7 +97,7 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 
 	@Override
 	public void finish(final FinishExecutionRQ request) {
-		QUEUE.getOrCompute(launch).addToQueue(LaunchLoggingContext.complete());
+		QUEUE.getOrCompute(launch).addToQueue(completeLogEmitter());
 		Throwable throwable = Completable.concat(QUEUE.getOrCompute(this.launch).getChildren())
 				.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS)
 				.blockingGet();

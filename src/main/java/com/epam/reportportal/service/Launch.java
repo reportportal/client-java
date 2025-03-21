@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Proxy;
+import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
@@ -115,7 +116,14 @@ public abstract class Launch {
 	 *
 	 * @param rq Log request.
 	 */
-	abstract void log(final SaveLogRQ rq);
+	abstract public void log(@Nonnull final SaveLogRQ rq);
+
+	/**
+	 * Logs message to the ReportPortal Launch.
+	 *
+	 * @param logSupplier Log Message Factory. Argument of the function will be actual launch UUID.
+	 */
+	abstract public void log(@Nonnull final Function<String, SaveLogRQ> logSupplier);
 
 	/**
 	 * Finishes Test Item in ReportPortal asynchronously (non-blocking). Schedules finish after success of all child items.
@@ -218,7 +226,11 @@ public abstract class Launch {
 		}
 
 		@Override
-		void log(SaveLogRQ rq) {
+		public void log(@Nonnull SaveLogRQ rq) {
+		}
+
+		@Override
+		public void log(@Nonnull final Function<String, SaveLogRQ> logSupplier) {
 		}
 
 		@Override

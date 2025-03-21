@@ -208,15 +208,17 @@ public class ReportPortalLoggingTest {
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
 	public void verify_emitLaunchLog_simple_message() {
-		TestUtils.mockBatchLogging(rpClient);
 		String launchUuid = "launchUuid2";
+		TestUtils.mockStartLaunch(rpClient, launchUuid);
+		TestUtils.mockBatchLogging(rpClient);
 		String logLevel = "INFO";
 		String message = "message";
-		LaunchLoggingContext context = LaunchLoggingContext.init(Maybe.just(launchUuid), rpClient, Schedulers.from(executor));
+		ListenerParameters parameters = TestUtils.standardParameters();
+		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
 		Date logDate = Calendar.getInstance().getTime();
 
 		assertThat("Log wasn't logged", ReportPortal.emitLaunchLog(message, logLevel, logDate));
-		Throwable result = context.completed().blockingGet();
+		Throwable result = launch.completeLogEmitter().blockingGet();
 		assertThat(result, nullValue());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -234,17 +236,19 @@ public class ReportPortalLoggingTest {
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
 	public void verify_emitLaunchLog_message_with_file() throws IOException {
-		TestUtils.mockBatchLogging(rpClient);
 		String launchUuid = "launchUuid3";
+		TestUtils.mockStartLaunch(rpClient, launchUuid);
+		TestUtils.mockBatchLogging(rpClient);
 		String logLevel = "INFO";
 		String message = "message";
 		Date logDate = Calendar.getInstance().getTime();
 		String filePath = "pug/unlucky.jpg";
 		File file = new File(filePath);
 
-		LaunchLoggingContext context = LaunchLoggingContext.init(Maybe.just(launchUuid), rpClient, Schedulers.from(executor));
+		ListenerParameters parameters = TestUtils.standardParameters();
+		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
 		assertThat("Log wasn't logged", ReportPortal.emitLaunchLog(message, logLevel, logDate, file));
-		Throwable result = context.completed().blockingGet();
+		Throwable result = launch.completeLogEmitter().blockingGet();
 		assertThat(result, nullValue());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -357,17 +361,19 @@ public class ReportPortalLoggingTest {
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
 	public void verify_emitLaunchLog_method_with_ReportPortalMessage() throws IOException {
-		TestUtils.mockBatchLogging(rpClient);
 		String launchUuid = "launchUuid6";
+		TestUtils.mockStartLaunch(rpClient, launchUuid);
+		TestUtils.mockBatchLogging(rpClient);
 		String logLevel = "INFO";
 		String message = "message";
 		Date logDate = Calendar.getInstance().getTime();
 		String filePath = "pug/unlucky.jpg";
 		File file = new File(filePath);
 
-		LaunchLoggingContext context = LaunchLoggingContext.init(Maybe.just(launchUuid), rpClient, Schedulers.from(executor));
+		ListenerParameters parameters = TestUtils.standardParameters();
+		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
 		assertThat("Log wasn't logged", ReportPortal.emitLaunchLog(new ReportPortalMessage(file, message), logLevel, logDate));
-		Throwable result = context.completed().blockingGet();
+		Throwable result = launch.completeLogEmitter().blockingGet();
 		assertThat(result, nullValue());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -399,15 +405,17 @@ public class ReportPortalLoggingTest {
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
 	public void verify_emitLaunchLog_method_with_ReportPortalMessage_no_file() {
-		TestUtils.mockBatchLogging(rpClient);
 		String launchUuid = "launchUuid7";
+		TestUtils.mockStartLaunch(rpClient, launchUuid);
+		TestUtils.mockBatchLogging(rpClient);
 		String logLevel = "INFO";
 		String message = "message";
 		Date logDate = Calendar.getInstance().getTime();
 
-		LaunchLoggingContext context = LaunchLoggingContext.init(Maybe.just(launchUuid), rpClient, Schedulers.from(executor));
+		ListenerParameters parameters = TestUtils.standardParameters();
+		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
 		assertThat("Log wasn't logged", ReportPortal.emitLaunchLog(new ReportPortalMessage(message), logLevel, logDate));
-		Throwable result = context.completed().blockingGet();
+		Throwable result = launch.completeLogEmitter().blockingGet();
 		assertThat(result, nullValue());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);

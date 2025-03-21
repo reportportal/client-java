@@ -118,7 +118,7 @@ public class LaunchImpl extends Launch {
 	protected final Maybe<String> launch;
 	protected final StartLaunchRQ startRq;
 	protected final Maybe<ProjectSettingsResource> projectSettings;
-	private final PublishSubject<Maybe<SaveLogRQ>> emitter;
+	private final PublishSubject<Maybe<SaveLogRQ>> logEmitter;
 	private final ExecutorService executor;
 	private final Scheduler scheduler;
 	private StatisticsService statisticsService;
@@ -171,7 +171,7 @@ public class LaunchImpl extends Launch {
 					}
 			);
 		}).cache();
-		emitter = getLogEmitter(getClient(), getParameters(), getScheduler());
+		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler());
 		projectSettings = getProjectSettings(getClient(), getScheduler());
 	}
 
@@ -186,7 +186,7 @@ public class LaunchImpl extends Launch {
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 		launch = launchMaybe.cache();
-		emitter = getLogEmitter(getClient(), getParameters(), getScheduler());
+		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler());
 		projectSettings = getProjectSettings(getClient(), getScheduler());
 	}
 
@@ -284,6 +284,16 @@ public class LaunchImpl extends Launch {
 	}
 
 	/**
+	 * Marks flow as completed
+	 *
+	 * @return {@link Completable}
+	 */
+	public Completable completeLogEmitter() {
+		logEmitter.onComplete();
+		return logEmitter.ignoreElements();
+	}
+
+	/**
 	 * Starts launch in ReportPortal. Does NOT start the same launch twice.
 	 *
 	 * @param statistics Send or not Launch statistics.
@@ -296,7 +306,6 @@ public class LaunchImpl extends Launch {
 		if (params.isPrintLaunchUuid()) {
 			launch.subscribe(printLaunch(params));
 		}
-		LaunchLoggingContext.init(this.launch, getClient(), getScheduler(), getParameters());
 		if (statistics) {
 			getStatisticsService().sendEvent(launch, startRq);
 		}
@@ -319,7 +328,7 @@ public class LaunchImpl extends Launch {
 	 * @param request Launch finish request.
 	 */
 	public void finish(final FinishExecutionRQ request) {
-		QUEUE.getOrCompute(launch).addToQueue(LaunchLoggingContext.complete());
+		QUEUE.getOrCompute(launch).addToQueue(completeLogEmitter());
 		Completable finish = Completable.concat(QUEUE.getOrCompute(launch).getChildren());
 		if (StringUtils.isBlank(getParameters().getLaunchUuid()) || !getParameters().isLaunchUuidCreationSkip()) {
 			FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
@@ -582,8 +591,7 @@ public class LaunchImpl extends Launch {
 		return finishResponse;
 	}
 
-	private SaveLogRQ prepareRequest(@Nonnull final String launchId, @Nonnull final SaveLogRQ rq) throws IOException {
-		rq.setLaunchUuid(launchId);
+	private SaveLogRQ prepareRequest(@Nonnull final SaveLogRQ rq) throws IOException {
 		SaveLogRQ.File file = rq.getFile();
 		if (getParameters().isConvertImage() && null != file && isImage(file.getContentType())) {
 			final TypeAwareByteSource source = convert(ByteSource.wrap(file.getContent()));
@@ -593,13 +601,27 @@ public class LaunchImpl extends Launch {
 		return rq;
 	}
 
+	private SaveLogRQ prepareRequest(@Nonnull final String launchId, @Nonnull final SaveLogRQ rq) throws IOException {
+		rq.setLaunchUuid(launchId);
+		return prepareRequest(rq);
+	}
+
 	/**
 	 * Logs message to the ReportPortal Launch.
 	 *
 	 * @param rq Log request.
 	 */
-	public void log(final SaveLogRQ rq) {
-		emitter.onNext(getLaunch().map(launchUuid -> prepareRequest(launchUuid, rq)));
+	public void log(@Nonnull final SaveLogRQ rq) {
+		logEmitter.onNext(getLaunch().map(launchUuid -> prepareRequest(launchUuid, rq)));
+	}
+
+	/**
+	 * Logs message to the ReportPortal Launch.
+	 *
+	 * @param logSupplier Log Message Factory. Argument of the function will be actual launch UUID.
+	 */
+	public void log(@Nonnull final java.util.function.Function<String, SaveLogRQ> logSupplier) {
+		logEmitter.onNext(getLaunch().map(launchUuid -> prepareRequest(logSupplier.apply(launchUuid))));
 	}
 
 	/**
