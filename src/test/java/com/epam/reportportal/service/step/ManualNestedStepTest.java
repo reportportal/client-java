@@ -17,8 +17,10 @@
 package com.epam.reportportal.service.step;
 
 import com.epam.reportportal.listeners.ItemStatus;
+import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.LogLevel;
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.service.LaunchImpl;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
@@ -33,6 +35,7 @@ import org.junit.jupiter.api.*;
 import org.mockito.ArgumentCaptor;
 import org.opentest4j.AssertionFailedError;
 
+import javax.annotation.Nonnull;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.List;
@@ -53,6 +56,17 @@ import static org.mockito.Mockito.*;
 
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class ManualNestedStepTest {
+	private static class MyLaunch extends LaunchImpl {
+		public MyLaunch(ReportPortalClient client, ListenerParameters parameters, ExecutorService executor) {
+			super(client, parameters, TestUtils.standardLaunchRequest(parameters), executor);
+		}
+
+		@Nonnull
+		@Override
+		public Maybe<String> start() {
+			return super.start(false);
+		}
+	}
 
 	private final String testLaunchUuid = CommonUtils.namedId("launch_");
 	private final String testClassUuid = CommonUtils.namedId("class_");
@@ -65,7 +79,7 @@ public class ManualNestedStepTest {
 
 	private ReportPortalClient client;
 	private Launch launch;
-	@SuppressWarnings({"FieldCanBeLocal", "unused"})
+	@SuppressWarnings({ "FieldCanBeLocal", "unused" })
 	private Maybe<String> launchUuid;
 	private Maybe<String> testClassUuidMaybe;
 	private Maybe<String> testMethodUuidMaybe;
@@ -76,8 +90,8 @@ public class ManualNestedStepTest {
 		client = mock(ReportPortalClient.class);
 		mockLaunch(client, testLaunchUuid, testClassUuid, testMethodUuid);
 
-		ReportPortal rp = ReportPortal.create(client, TestUtils.STANDARD_PARAMETERS, executor);
-		launch = rp.newLaunch(TestUtils.standardLaunchRequest(TestUtils.standardParameters()));
+		ListenerParameters parameters = standardParameters();
+		launch = new MyLaunch(client, parameters, executor);
 		launchUuid = launch.start();
 		testClassUuidMaybe = launch.startTestItem(TestUtils.standardStartTestRequest());
 		testMethodUuidMaybe = launch.startTestItem(testClassUuidMaybe, TestUtils.standardStartStepRequest());
@@ -208,9 +222,8 @@ public class ManualNestedStepTest {
 		launch.finish(standardLaunchFinishRequest());
 	}
 
-
 	@Test
-	@SuppressWarnings({"unchecked", "ResultOfMethodCallIgnored"})
+	@SuppressWarnings({ "unchecked", "ResultOfMethodCallIgnored" })
 	public void verify_nested_step_with_a_batch_of_logs() {
 		mockNestedSteps(client, nestedStepPairs.get(0));
 		mockBatchLogging(client);
@@ -235,8 +248,9 @@ public class ManualNestedStepTest {
 				.map(e -> Pair.of(e.getLevel(), e.getMessage()))
 				.collect(Collectors.toList());
 
-		Collection<Matcher<? super Pair<String, String>>> expectedItems =
-				IntStream.range(0, logNumber).mapToObj(i -> equalTo(Pair.of("INFO", logs[i]))).collect(Collectors.toList());
+		Collection<Matcher<? super Pair<String, String>>> expectedItems = IntStream.range(0, logNumber)
+				.mapToObj(i -> equalTo(Pair.of("INFO", logs[i])))
+				.collect(Collectors.toList());
 
 		assertThat(logRequests, containsInAnyOrder(expectedItems));
 
@@ -296,17 +310,19 @@ public class ManualNestedStepTest {
 	}
 
 	@Test
-	@SuppressWarnings({"unchecked", "ResultOfMethodCallIgnored"})
+	@SuppressWarnings({ "unchecked", "ResultOfMethodCallIgnored" })
 	public void verify_passed_actions_nested_step() {
 		mockNestedSteps(client, nestedStepPairs.get(0));
 		mockBatchLogging(client);
 		String stepName = "verify_passed_actions_nested_step";
 		String returnValue = "return value";
 		String logMessage = "Test message";
-		String result = sr.step(stepName, () -> {
-			ReportPortal.emitLog(logMessage, LogLevel.DEBUG.name(), Calendar.getInstance().getTime());
-			return returnValue;
-		});
+		String result = sr.step(
+				stepName, () -> {
+					ReportPortal.emitLog(logMessage, LogLevel.DEBUG.name(), Calendar.getInstance().getTime());
+					return returnValue;
+				}
+		);
 		assertThat(result, equalTo(returnValue));
 
 		ArgumentCaptor<StartTestItemRQ> startStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
@@ -340,16 +356,20 @@ public class ManualNestedStepTest {
 	}
 
 	@Test
-	@SuppressWarnings({"unchecked", "ResultOfMethodCallIgnored"})
+	@SuppressWarnings({ "unchecked", "ResultOfMethodCallIgnored" })
 	public void verify_passed_actions_nested_step_failure() {
 		mockNestedSteps(client, nestedStepPairs.get(0));
 		String stepName = "verify_passed_actions_nested_step_failure";
 		String returnValue = "return value";
 		String logMessage = "Test message";
-		AssertionFailedError result = Assertions.assertThrows(AssertionFailedError.class, () -> sr.step(stepName, () -> {
-			Assertions.fail(logMessage);
-			return returnValue;
-		}));
+		AssertionFailedError result = Assertions.assertThrows(
+				AssertionFailedError.class, () -> sr.step(
+						stepName, () -> {
+							Assertions.fail(logMessage);
+							return returnValue;
+						}
+				)
+		);
 		assertThat(result.getMessage(), equalTo(logMessage));
 
 		ArgumentCaptor<StartTestItemRQ> startStepCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
@@ -427,11 +447,15 @@ public class ManualNestedStepTest {
 		String stepName = "verify_nested_step_manual_failure_set_overrides_any_other_status_for_passed_actions";
 		String returnValue = "return value";
 		String logMessage = "Test message";
-		AssertionFailedError result = Assertions.assertThrows(AssertionFailedError.class, () -> sr.step(stepName, () -> {
-			sr.setStepStatus(ItemStatus.PASSED);
-			Assertions.fail(logMessage);
-			return returnValue;
-		}));
+		AssertionFailedError result = Assertions.assertThrows(
+				AssertionFailedError.class, () -> sr.step(
+						stepName, () -> {
+							sr.setStepStatus(ItemStatus.PASSED);
+							Assertions.fail(logMessage);
+							return returnValue;
+						}
+				)
+		);
 		assertThat(result.getMessage(), equalTo(logMessage));
 
 		verify(client, timeout(1000)).startTestItem(eq(testMethodUuid), any(StartTestItemRQ.class));
@@ -452,10 +476,12 @@ public class ManualNestedStepTest {
 		mockNestedSteps(client, nestedStepPairs.get(0));
 		String stepName = "verify_manually_set_nested_step_status_marks_parent_test_as_failed";
 		String returnValue = "return value";
-		String result = sr.step(stepName, () -> {
-			sr.setStepStatus(ItemStatus.FAILED);
-			return returnValue;
-		});
+		String result = sr.step(
+				stepName, () -> {
+					sr.setStepStatus(ItemStatus.FAILED);
+					return returnValue;
+				}
+		);
 		assertThat(result, equalTo(returnValue));
 
 		verify(client, timeout(1000)).startTestItem(eq(testMethodUuid), any());
