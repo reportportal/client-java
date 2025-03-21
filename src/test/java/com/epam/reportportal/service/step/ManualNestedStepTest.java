@@ -19,7 +19,6 @@ package com.epam.reportportal.service.step;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.LogLevel;
-import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.LaunchImpl;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
@@ -42,6 +41,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -78,7 +78,7 @@ public class ManualNestedStepTest {
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
 	private ReportPortalClient client;
-	private Launch launch;
+	private MyLaunch launch;
 	@SuppressWarnings({ "FieldCanBeLocal", "unused" })
 	private Maybe<String> launchUuid;
 	private Maybe<String> testClassUuidMaybe;
@@ -338,6 +338,7 @@ public class ManualNestedStepTest {
 		assertThat(nestedStepFinish.getStatus(), equalTo(ItemStatus.PASSED.name()));
 		assertThat(nestedStepFinish.getEndTime(), notNullValue());
 
+		launch.completeLogEmitter().blockingAwait(10, TimeUnit.SECONDS);
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, timeout(1000).atLeastOnce()).log(logCaptor.capture());
 		List<Pair<String, String>> logRequests = logCaptor.getAllValues()
