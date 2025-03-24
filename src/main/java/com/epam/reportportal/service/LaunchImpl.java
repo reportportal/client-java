@@ -329,7 +329,6 @@ public class LaunchImpl extends Launch {
 	 * @param request Launch finish request.
 	 */
 	public void finish(final FinishExecutionRQ request) {
-		QUEUE.getOrCompute(launch).addToQueue(completeLogEmitter());
 		Completable finish = Completable.concat(QUEUE.getOrCompute(launch).getChildren());
 		if (StringUtils.isBlank(getParameters().getLaunchUuid()) || !getParameters().isLaunchUuidCreationSkip()) {
 			FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
@@ -346,6 +345,10 @@ public class LaunchImpl extends Launch {
 			boolean result = finish.blockingAwait(getParameters().getReportingTimeout(), TimeUnit.SECONDS);
 			if (!result) {
 				LOGGER.error("Unable to finish launch in ReportPortal. Timeout exceeded. The data may be lost.");
+			}
+			result = completeLogEmitter().blockingAwait(getParameters().getReportingTimeout(), TimeUnit.SECONDS);
+			if (!result) {
+				LOGGER.error("Unable to log residual log items on ReportPortal. Timeout exceeded. The data may be lost.");
 			}
 		} catch (Exception e) {
 			LOGGER.error("Unable to finish launch in ReportPortal", e);
