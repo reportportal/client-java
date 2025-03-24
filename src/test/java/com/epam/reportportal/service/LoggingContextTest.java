@@ -23,8 +23,6 @@ import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.FlowableSubscriber;
 import io.reactivex.Maybe;
-import io.reactivex.Scheduler;
-import io.reactivex.schedulers.Schedulers;
 import okhttp3.MultipartBody;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -36,7 +34,6 @@ import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
@@ -45,8 +42,8 @@ import static com.epam.reportportal.utils.http.HttpRequestUtils.TYPICAL_MULTIPAR
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class LoggingContextTest {
@@ -59,25 +56,15 @@ public class LoggingContextTest {
 
 	@Test
 	public void test_logging_context_init() {
-		LoggingContext context = LoggingContext.init(Maybe.just("launch_id"),
-				Maybe.just("item_id"),
-				mock(ReportPortalClient.class),
-				Schedulers.from(Executors.newSingleThreadExecutor())
-		);
-
+		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
 		assertThat(LoggingContext.context(), sameInstance(context));
 	}
 
 	@Test
 	public void test_second_logging_context_init_appends_instance_to_deque() {
-		Scheduler scheduler = Schedulers.from(Executors.newSingleThreadExecutor());
-		LoggingContext.init(Maybe.just("launch_id"), Maybe.just("item_id"), mock(ReportPortalClient.class), scheduler);
+		LoggingContext.init(Maybe.just("item_id"));
 
-		LoggingContext context2 = LoggingContext.init(Maybe.just("launch_id"),
-				Maybe.just("item_id2"),
-				mock(ReportPortalClient.class),
-				scheduler
-		);
+		LoggingContext context2 = LoggingContext.init(Maybe.just("item_id2"));
 
 		assertThat(LoggingContext.context(), sameInstance(context2));
 	}
@@ -97,11 +84,7 @@ public class LoggingContextTest {
 
 	@Test
 	public void test_complete_method_removes_context() {
-		LoggingContext context = LoggingContext.init(Maybe.just("launch_id"),
-				Maybe.just("item_id"),
-				mock(ReportPortalClient.class),
-				Schedulers.from(Executors.newSingleThreadExecutor())
-		);
+		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
 
 		//noinspection ReactiveStreamsUnusedPublisher
 		LoggingContext.complete();
@@ -113,11 +96,7 @@ public class LoggingContextTest {
 	public void test_log_batch_send_by_length() {
 		ReportPortalClient client = mock(ReportPortalClient.class);
 		TestUtils.mockBatchLogging(client);
-		LoggingContext context = LoggingContext.init(Maybe.just("launch_id"),
-				Maybe.just("item_id"),
-				client,
-				Schedulers.from(Executors.newSingleThreadExecutor())
-		);
+		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
 
 		emitLogs(context, ListenerParameters.DEFAULT_LOG_BATCH_SIZE);
 
@@ -128,11 +107,7 @@ public class LoggingContextTest {
 	@SuppressWarnings("unchecked")
 	public void test_log_batch_not_send_by_length() {
 		ReportPortalClient client = mock(ReportPortalClient.class);
-		LoggingContext context = LoggingContext.init(Maybe.just("launch_id"),
-				Maybe.just("item_id"),
-				client,
-				Schedulers.from(Executors.newSingleThreadExecutor())
-		);
+		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
 
 		emitLogs(context, ListenerParameters.DEFAULT_LOG_BATCH_SIZE - 1);
 
@@ -144,11 +119,7 @@ public class LoggingContextTest {
 	public void test_log_batch_send_by_stop() {
 		ReportPortalClient client = mock(ReportPortalClient.class);
 		TestUtils.mockBatchLogging(client);
-		LoggingContext context = LoggingContext.init(Maybe.just("launch_id"),
-				Maybe.just("item_id"),
-				client,
-				Schedulers.from(Executors.newSingleThreadExecutor())
-		);
+		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
 
 		emitLogs(context, ListenerParameters.DEFAULT_LOG_BATCH_SIZE - 1);
 		//noinspection ReactiveStreamsUnusedPublisher
@@ -164,11 +135,7 @@ public class LoggingContextTest {
 	@SuppressWarnings("unchecked")
 	public void test_log_batch_not_send_by_size() {
 		ReportPortalClient client = mock(ReportPortalClient.class);
-		LoggingContext context = LoggingContext.init(Maybe.just("launch_id"),
-				Maybe.just("item_id"),
-				client,
-				Schedulers.from(Executors.newSingleThreadExecutor())
-		);
+		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
 
 		int headersSize =
 				TYPICAL_MULTIPART_FOOTER_LENGTH - String.format(TYPICAL_FILE_PART_HEADER, TEST_ATTACHMENT_NAME, TEST_ATTACHMENT_TYPE)
@@ -202,11 +169,7 @@ public class LoggingContextTest {
 	public void test_log_batch_send_by_size() throws IOException {
 		ReportPortalClient client = mock(ReportPortalClient.class);
 		TestUtils.mockBatchLogging(client);
-		LoggingContext context = LoggingContext.init(Maybe.just("launch_id"),
-				Maybe.just("item_id"),
-				client,
-				Schedulers.from(Executors.newSingleThreadExecutor())
-		);
+		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
 
 		byte[] randomByteArray = new byte[(int) ListenerParameters.DEFAULT_BATCH_PAYLOAD_LIMIT];
 		ThreadLocalRandom.current().nextBytes(randomByteArray);
@@ -240,11 +203,7 @@ public class LoggingContextTest {
 	public void test_log_batch_triggers_previous_request_to_send() {
 		ReportPortalClient client = mock(ReportPortalClient.class);
 		TestUtils.mockBatchLogging(client);
-		LoggingContext context = LoggingContext.init(Maybe.just("launch_id"),
-				Maybe.just("item_id"),
-				client,
-				Schedulers.from(Executors.newSingleThreadExecutor())
-		);
+		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
 
 		emitLogs(context, 1);
 		verify(client, timeout(100).times(0)).log(any(List.class));
@@ -281,13 +240,7 @@ public class LoggingContextTest {
 		RuntimeException exc = new IllegalStateException("test");
 		when(client.log(any(List.class))).thenThrow(exc);
 		FlowableSubscriber<BatchSaveOperatingRS> subscriber = mock(FlowableSubscriber.class);
-		LoggingContext context = LoggingContext.init(Maybe.just("launch_id"),
-				Maybe.just("item_id"),
-				client,
-				Schedulers.from(Executors.newSingleThreadExecutor()),
-				new ListenerParameters(),
-				subscriber
-		);
+		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
 
 		emitLogs(context, 10);
 		verify(client, timeout(10000)).log(any(List.class));

@@ -20,7 +20,6 @@ import com.epam.reportportal.message.ReportPortalMessage;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
-import io.reactivex.schedulers.Schedulers;
 import okhttp3.MultipartBody;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -138,16 +137,21 @@ public class ReportPortalLoggingTest {
 	@Order(Integer.MAX_VALUE)
 	@SuppressWarnings("unchecked")
 	public void verify_emitLog_simple_message() {
-		TestUtils.mockBatchLogging(rpClient);
 		String launchUuid = "launchUuid";
+		TestUtils.mockStartLaunch(rpClient, launchUuid);
+		TestUtils.mockBatchLogging(rpClient);
 		String testUuid = "testUuid";
 		String logLevel = "INFO";
 		String message = "message";
-		LoggingContext context = LoggingContext.init(Maybe.just(launchUuid), Maybe.just(testUuid), rpClient, Schedulers.from(executor));
+		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
 		Date logDate = Calendar.getInstance().getTime();
 
+		ListenerParameters parameters = TestUtils.standardParameters();
+		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
 		assertThat("Log wasn't logged", ReportPortal.emitLog(message, logLevel, logDate));
 		Throwable result = context.completed().blockingGet();
+		assertThat(result, nullValue());
+		result = launch.completeLogEmitter().blockingGet();
 		assertThat(result, nullValue());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -165,8 +169,9 @@ public class ReportPortalLoggingTest {
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
 	public void verify_emitLog_message_with_file() throws IOException {
-		TestUtils.mockBatchLogging(rpClient);
 		String launchUuid = "launchUuid1";
+		TestUtils.mockStartLaunch(rpClient, launchUuid);
+		TestUtils.mockBatchLogging(rpClient);
 		String testUuid = "testUuid1";
 		String logLevel = "INFO";
 		String message = "message";
@@ -174,9 +179,13 @@ public class ReportPortalLoggingTest {
 		String filePath = "pug/lucky.jpg";
 		File file = new File(filePath);
 
-		LoggingContext context = LoggingContext.init(Maybe.just(launchUuid), Maybe.just(testUuid), rpClient, Schedulers.from(executor));
+		ListenerParameters parameters = TestUtils.standardParameters();
+		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
+		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
 		assertThat("Log wasn't logged", ReportPortal.emitLog(message, logLevel, logDate, file));
 		Throwable result = context.completed().blockingGet();
+		assertThat(result, nullValue());
+		result = launch.completeLogEmitter().blockingGet();
 		assertThat(result, nullValue());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -280,8 +289,9 @@ public class ReportPortalLoggingTest {
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
 	public void verify_emitLog_method_with_ReportPortalMessage() throws IOException {
-		TestUtils.mockBatchLogging(rpClient);
 		String launchUuid = "launchUuid4";
+		TestUtils.mockStartLaunch(rpClient, launchUuid);
+		TestUtils.mockBatchLogging(rpClient);
 		String testUuid = "testUuid4";
 		String logLevel = "INFO";
 		String message = "message";
@@ -289,9 +299,13 @@ public class ReportPortalLoggingTest {
 		String filePath = "pug/unlucky.jpg";
 		File file = new File(filePath);
 
-		LoggingContext context = LoggingContext.init(Maybe.just(launchUuid), Maybe.just(testUuid), rpClient, Schedulers.from(executor));
+		ListenerParameters parameters = TestUtils.standardParameters();
+		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
+		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
 		assertThat("Log wasn't logged", ReportPortal.emitLog(new ReportPortalMessage(file, message), logLevel, logDate));
 		Throwable result = context.completed().blockingGet();
+		assertThat(result, nullValue());
+		result = launch.completeLogEmitter().blockingGet();
 		assertThat(result, nullValue());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -323,16 +337,21 @@ public class ReportPortalLoggingTest {
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
 	public void verify_emitLog_method_with_ReportPortalMessage_no_file() {
-		TestUtils.mockBatchLogging(rpClient);
 		String launchUuid = "launchUuid5";
+		TestUtils.mockStartLaunch(rpClient, launchUuid);
+		TestUtils.mockBatchLogging(rpClient);
 		String testUuid = "testUuid5";
 		String logLevel = "INFO";
 		String message = "message";
 		Date logDate = Calendar.getInstance().getTime();
 
-		LoggingContext context = LoggingContext.init(Maybe.just(launchUuid), Maybe.just(testUuid), rpClient, Schedulers.from(executor));
+		ListenerParameters parameters = TestUtils.standardParameters();
+		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
+		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
 		assertThat("Log wasn't logged", ReportPortal.emitLog(new ReportPortalMessage(message), logLevel, logDate));
 		Throwable result = context.completed().blockingGet();
+		assertThat(result, nullValue());
+		result = launch.completeLogEmitter().blockingGet();
 		assertThat(result, nullValue());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -444,15 +463,18 @@ public class ReportPortalLoggingTest {
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
 	public void verify_emitLog_method_with_specified_id() {
-		TestUtils.mockBatchLogging(rpClient);
 		String launchUuid = "launchUuid8";
+		TestUtils.mockStartLaunch(rpClient, launchUuid);
+		TestUtils.mockBatchLogging(rpClient);
 		String testUuid = "testUuid8";
 		String customUuid = "testUuid9";
 		String logLevel = "INFO";
 		String message = "message";
 		Date logDate = Calendar.getInstance().getTime();
 
-		LoggingContext context = LoggingContext.init(Maybe.just(launchUuid), Maybe.just(testUuid), rpClient, Schedulers.from(executor));
+		ListenerParameters parameters = TestUtils.standardParameters();
+		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
+		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
 		assertThat(
 				"Log wasn't logged", ReportPortal.emitLog(
 						Maybe.just(customUuid),
@@ -460,6 +482,8 @@ public class ReportPortalLoggingTest {
 				)
 		);
 		Throwable result = context.completed().blockingGet();
+		assertThat(result, nullValue());
+		result = launch.completeLogEmitter().blockingGet();
 		assertThat(result, nullValue());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -477,15 +501,20 @@ public class ReportPortalLoggingTest {
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
 	public void verify_sendStackTraceToRP_method() {
-		TestUtils.mockBatchLogging(rpClient);
 		String launchUuid = "launchUuid10";
+		TestUtils.mockStartLaunch(rpClient, launchUuid);
+		TestUtils.mockBatchLogging(rpClient);
 		String testUuid = "testUuid10";
 		String logLevel = "ERROR";
-		String message = "java.lang.Throwable\n...";
+		String message = "java.lang.Throwable\n\tat com.epam.reportportal.service.ReportPortalLoggingTest.verify_sendStackTraceToRP_method(ReportPortalLoggingTest.java:514)\n...";
 
-		LoggingContext context = LoggingContext.init(Maybe.just(launchUuid), Maybe.just(testUuid), rpClient, Schedulers.from(executor));
+		ListenerParameters parameters = TestUtils.standardParameters();
+		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
+		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
 		ReportPortal.sendStackTraceToRP(new Throwable());
 		Throwable result = context.completed().blockingGet();
+		assertThat(result, nullValue());
+		result = launch.completeLogEmitter().blockingGet();
 		assertThat(result, nullValue());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -503,15 +532,20 @@ public class ReportPortalLoggingTest {
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
 	public void verify_sendStackTraceToRP_method_null_value() {
-		TestUtils.mockBatchLogging(rpClient);
 		String launchUuid = "launchUuid11";
+		TestUtils.mockStartLaunch(rpClient, launchUuid);
+		TestUtils.mockBatchLogging(rpClient);
 		String testUuid = "testUuid11";
 		String logLevel = "ERROR";
 		String message = "Test has failed without exception";
 
-		LoggingContext context = LoggingContext.init(Maybe.just(launchUuid), Maybe.just(testUuid), rpClient, Schedulers.from(executor));
+		ListenerParameters parameters = TestUtils.standardParameters();
+		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
+		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
 		ReportPortal.sendStackTraceToRP(null);
 		Throwable result = context.completed().blockingGet();
+		assertThat(result, nullValue());
+		result = launch.completeLogEmitter().blockingGet();
 		assertThat(result, nullValue());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -539,7 +573,7 @@ public class ReportPortalLoggingTest {
 		String logLevel = "ERROR";
 		String message = "java.lang.Throwable\n\tat com.epam";
 
-		LoggingContext context = LoggingContext.init(Maybe.just(launchUuid), Maybe.just(testUuid), rpClient, Schedulers.from(executor));
+		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
 		ReportPortal.sendStackTraceToRP(new Throwable());
 		Throwable result = context.completed().blockingGet();
 		assertThat(result, nullValue());
