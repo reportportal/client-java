@@ -119,7 +119,7 @@ public class LoggingContextTest {
 				Schedulers.from(Executors.newSingleThreadExecutor())
 		);
 
-		emitLogs(context, LoggingContext.DEFAULT_LOG_BATCH_SIZE);
+		emitLogs(context, ListenerParameters.DEFAULT_LOG_BATCH_SIZE);
 
 		verify(client, timeout(10000)).log(any(List.class));
 	}
@@ -134,7 +134,7 @@ public class LoggingContextTest {
 				Schedulers.from(Executors.newSingleThreadExecutor())
 		);
 
-		emitLogs(context, LoggingContext.DEFAULT_LOG_BATCH_SIZE - 1);
+		emitLogs(context, ListenerParameters.DEFAULT_LOG_BATCH_SIZE - 1);
 
 		verify(client, timeout(100).times(0)).log(any(List.class));
 	}
@@ -150,7 +150,7 @@ public class LoggingContextTest {
 				Schedulers.from(Executors.newSingleThreadExecutor())
 		);
 
-		emitLogs(context, LoggingContext.DEFAULT_LOG_BATCH_SIZE - 1);
+		emitLogs(context, ListenerParameters.DEFAULT_LOG_BATCH_SIZE - 1);
 		//noinspection ReactiveStreamsUnusedPublisher
 		context.completed();
 
