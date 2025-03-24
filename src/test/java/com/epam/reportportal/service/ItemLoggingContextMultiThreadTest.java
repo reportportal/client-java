@@ -153,7 +153,7 @@ public class ItemLoggingContextMultiThreadTest {
 	}
 
 	@SuppressWarnings("unchecked")
-	public void performTest(List<TestNgTest> tests) throws InterruptedException {
+	private void performTest(List<TestNgTest> tests) throws InterruptedException {
 		final List<Future<String>> results = testExecutorService.invokeAll(tests);
 
 		Awaitility.await("Wait until test finish")
@@ -177,7 +177,8 @@ public class ItemLoggingContextMultiThreadTest {
 	/**
 	 * TestNG and other frameworks executes the very first startTestItem call from main thread (start root suite).
 	 * Since all other threads are children of the main thread it leads to a situation when all threads share one LoggingContext.
-	 * This test is here to ensure that will never happen again: https://github.com/reportportal/agent-java-testNG/issues/76
+	 * This test is here to ensure that the following issue will never happen again:
+	 * <a href="https://github.com/reportportal/agent-java-testNG/issues/76">#76</a>
 	 * The test is failing if there is a {@link InheritableThreadLocal} is used in {@link LoggingContext} class.
 	 */
 	@Test

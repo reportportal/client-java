@@ -149,10 +149,9 @@ public class ReportPortalLoggingTest {
 		ListenerParameters parameters = TestUtils.standardParameters();
 		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
 		assertThat("Log wasn't logged", ReportPortal.emitLog(message, logLevel, logDate));
-		Throwable result = context.completed().blockingGet();
+		Throwable result = launch.completeLogEmitter().blockingGet();
 		assertThat(result, nullValue());
-		result = launch.completeLogEmitter().blockingGet();
-		assertThat(result, nullValue());
+		context.disposed();
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
@@ -183,10 +182,9 @@ public class ReportPortalLoggingTest {
 		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
 		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
 		assertThat("Log wasn't logged", ReportPortal.emitLog(message, logLevel, logDate, file));
-		Throwable result = context.completed().blockingGet();
+		Throwable result = launch.completeLogEmitter().blockingGet();
 		assertThat(result, nullValue());
-		result = launch.completeLogEmitter().blockingGet();
-		assertThat(result, nullValue());
+		context.disposed();
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
@@ -303,10 +301,9 @@ public class ReportPortalLoggingTest {
 		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
 		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
 		assertThat("Log wasn't logged", ReportPortal.emitLog(new ReportPortalMessage(file, message), logLevel, logDate));
-		Throwable result = context.completed().blockingGet();
+		Throwable result = launch.completeLogEmitter().blockingGet();
 		assertThat(result, nullValue());
-		result = launch.completeLogEmitter().blockingGet();
-		assertThat(result, nullValue());
+		context.disposed();
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
@@ -349,10 +346,9 @@ public class ReportPortalLoggingTest {
 		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
 		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
 		assertThat("Log wasn't logged", ReportPortal.emitLog(new ReportPortalMessage(message), logLevel, logDate));
-		Throwable result = context.completed().blockingGet();
+		Throwable result = launch.completeLogEmitter().blockingGet();
 		assertThat(result, nullValue());
-		result = launch.completeLogEmitter().blockingGet();
-		assertThat(result, nullValue());
+		context.disposed();
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
@@ -481,10 +477,9 @@ public class ReportPortalLoggingTest {
 						itemUuid -> ReportPortal.toSaveLogRQ(launchUuid, itemUuid, logLevel, logDate, new ReportPortalMessage(message))
 				)
 		);
-		Throwable result = context.completed().blockingGet();
+		Throwable result = launch.completeLogEmitter().blockingGet();
 		assertThat(result, nullValue());
-		result = launch.completeLogEmitter().blockingGet();
-		assertThat(result, nullValue());
+		context.disposed();
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
@@ -506,16 +501,15 @@ public class ReportPortalLoggingTest {
 		TestUtils.mockBatchLogging(rpClient);
 		String testUuid = "testUuid10";
 		String logLevel = "ERROR";
-		String message = "java.lang.Throwable\n\tat com.epam.reportportal.service.ReportPortalLoggingTest.verify_sendStackTraceToRP_method(ReportPortalLoggingTest.java:514)\n...";
+		String message = "java.lang.Throwable\n...";
 
 		ListenerParameters parameters = TestUtils.standardParameters();
 		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
 		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
 		ReportPortal.sendStackTraceToRP(new Throwable());
-		Throwable result = context.completed().blockingGet();
+		Throwable result = launch.completeLogEmitter().blockingGet();
 		assertThat(result, nullValue());
-		result = launch.completeLogEmitter().blockingGet();
-		assertThat(result, nullValue());
+		context.disposed();
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
@@ -543,10 +537,9 @@ public class ReportPortalLoggingTest {
 		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
 		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
 		ReportPortal.sendStackTraceToRP(null);
-		Throwable result = context.completed().blockingGet();
+		Throwable result = launch.completeLogEmitter().blockingGet();
 		assertThat(result, nullValue());
-		result = launch.completeLogEmitter().blockingGet();
-		assertThat(result, nullValue());
+		context.disposed();
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
@@ -575,11 +568,10 @@ public class ReportPortalLoggingTest {
 
 		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
 		ReportPortal.sendStackTraceToRP(new Throwable());
-		Throwable result = context.completed().blockingGet();
-		assertThat(result, nullValue());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
+		context.disposed();
 
 		// Verify basic fields
 		List<SaveLogRQ> logRequests = logCaptor.getAllValues()

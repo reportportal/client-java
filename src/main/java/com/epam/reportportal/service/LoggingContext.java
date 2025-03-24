@@ -16,9 +16,9 @@
 package com.epam.reportportal.service;
 
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
+import io.reactivex.disposables.Disposable;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
@@ -89,24 +89,16 @@ public class LoggingContext {
 	}
 
 	/**
-	 * Completes context attached to the current thread
-	 *
-	 * @return Waiting queue to be able to track request sending completion
+	 * Disposes current logging context
 	 */
-	@Nonnull
-	public static Completable complete() {
-		final LoggingContext loggingContext = ofNullable(getContext()).map(Deque::poll).orElse(null);
-		if (null != loggingContext) {
-			return loggingContext.completed();
-		} else {
-			return Maybe.empty().ignoreElement();
-		}
+	public static void dispose() {
+		ofNullable(getContext()).map(Deque::poll).ifPresent(LoggingContext::disposed);
 	}
 
 	/**
 	 * Messages queue to track items execution order
 	 */
-	private final Queue<Completable> queue = new ConcurrentLinkedQueue<>();
+	private final Queue<Disposable> disposables = new ConcurrentLinkedQueue<>();
 	/* a UUID of TestItem in ReportPortal to report into */
 	private final Maybe<String> itemUuid;
 
@@ -124,10 +116,7 @@ public class LoggingContext {
 		if (launch == null) {
 			return;
 		}
-		queue.add(itemUuid.map(itemUuid -> {
-			launch.log(logSupplier.apply(itemUuid));
-			return true;
-		}).ignoreElement());
+		disposables.add(itemUuid.subscribe(itemUuid -> launch.log(logSupplier.apply(itemUuid))));
 	}
 
 	/**
@@ -141,20 +130,13 @@ public class LoggingContext {
 		if (launch == null) {
 			return;
 		}
-		queue.add(logItemUuid.map(itemUuid -> {
-			launch.log(logSupplier.apply(itemUuid));
-			return true;
-		}).ignoreElement());
+		disposables.add(logItemUuid.subscribe(itemUuid -> launch.log(logSupplier.apply(itemUuid))));
 	}
 
 	/**
-	 * Marks flow as completed
-	 *
-	 * @return {@link Completable}
+	 * Dispose context
 	 */
-	@Nonnull
-	public Completable completed() {
-		return Completable.concat(queue);
+	public void disposed() {
+		disposables.forEach(Disposable::dispose);
 	}
-
 }

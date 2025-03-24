@@ -86,9 +86,8 @@ public class LoggingContextTest {
 	public void test_complete_method_removes_context() {
 		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
 
-		//noinspection ReactiveStreamsUnusedPublisher
-		LoggingContext.complete();
 		assertThat(LoggingContext.context(), anyOf(nullValue(), not(sameInstance(context))));
+		context.disposed();
 	}
 
 	@Test
@@ -122,8 +121,6 @@ public class LoggingContextTest {
 		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
 
 		emitLogs(context, ListenerParameters.DEFAULT_LOG_BATCH_SIZE - 1);
-		//noinspection ReactiveStreamsUnusedPublisher
-		context.completed();
 
 		verify(client, timeout(10000)).log(any(List.class));
 	}

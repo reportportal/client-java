@@ -329,6 +329,7 @@ public class LaunchImpl extends Launch {
 	 * @param request Launch finish request.
 	 */
 	public void finish(final FinishExecutionRQ request) {
+		LoggingContext.dispose();
 		Completable finish = Completable.concat(QUEUE.getOrCompute(launch).getChildren());
 		if (StringUtils.isBlank(getParameters().getLaunchUuid()) || !getParameters().isLaunchUuidCreationSkip()) {
 			FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
@@ -553,8 +554,6 @@ public class LaunchImpl extends Launch {
 				}
 			}
 		}
-
-		QUEUE.getOrCompute(launch).addToQueue(LoggingContext.complete());
 
 		LaunchImpl.TreeItem treeItem = QUEUE.get(item);
 		if (null == treeItem) {
