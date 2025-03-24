@@ -329,7 +329,6 @@ public class LaunchImpl extends Launch {
 	 * @param request Launch finish request.
 	 */
 	public void finish(final FinishExecutionRQ request) {
-		LoggingContext.dispose();
 		Completable finish = Completable.concat(QUEUE.getOrCompute(launch).getChildren());
 		if (StringUtils.isBlank(getParameters().getLaunchUuid()) || !getParameters().isLaunchUuidCreationSkip()) {
 			FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
@@ -356,6 +355,7 @@ public class LaunchImpl extends Launch {
 		}
 		getStatisticsService().close();
 		statisticsService = new StatisticsService(getParameters());
+		LoggingContext.dispose();
 	}
 
 	private static <T> Maybe<T> createErrorResponse(Throwable cause) {
