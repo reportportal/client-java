@@ -19,21 +19,21 @@ package com.epam.reportportal.service;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.LogLevel;
 import com.epam.reportportal.test.TestUtils;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.FlowableSubscriber;
 import io.reactivex.Maybe;
 import okhttp3.MultipartBody;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
@@ -47,6 +47,21 @@ import static org.mockito.Mockito.any;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class LoggingContextTest {
+
+	private ExecutorService executor;
+	private ListenerParameters parameters;
+
+	@BeforeEach
+	public void setUp() {
+		parameters = TestUtils.standardParameters();
+		parameters.setBatchLogsSize(2);
+		executor = Executors.newSingleThreadExecutor();
+	}
+
+	@AfterEach
+	public void tearDown() {
+		CommonUtils.shutdownExecutorService(executor);
+	}
 
 	@Test
 	@Order(1)
@@ -85,7 +100,7 @@ public class LoggingContextTest {
 	@Test
 	public void test_dispose_method_removes_context() {
 		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
-		context.disposed();
+		LoggingContext.dispose();
 		assertThat(LoggingContext.context(), anyOf(nullValue(), not(sameInstance(context))));
 	}
 
@@ -93,7 +108,10 @@ public class LoggingContextTest {
 	@SuppressWarnings("unchecked")
 	public void test_log_batch_send_by_length() {
 		ReportPortalClient client = mock(ReportPortalClient.class);
+		TestUtils.mockStartLaunch(client, "launchUuid");
 		TestUtils.mockBatchLogging(client);
+		ListenerParameters myParameters = new ListenerParameters();
+		new LaunchImpl(client, myParameters, TestUtils.standardLaunchRequest(myParameters), executor);
 		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
 
 		emitLogs(context, ListenerParameters.DEFAULT_LOG_BATCH_SIZE);
@@ -116,10 +134,14 @@ public class LoggingContextTest {
 	@SuppressWarnings("unchecked")
 	public void test_log_batch_send_by_stop() {
 		ReportPortalClient client = mock(ReportPortalClient.class);
+		TestUtils.mockLaunch(client, "launchUuid");
 		TestUtils.mockBatchLogging(client);
+		ListenerParameters myParameters = new ListenerParameters();
+		Launch launch = new LaunchImpl(client, myParameters, TestUtils.standardLaunchRequest(myParameters), executor);
 		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
 
 		emitLogs(context, ListenerParameters.DEFAULT_LOG_BATCH_SIZE - 1);
+		launch.finish(TestUtils.positiveFinishRequest());
 
 		verify(client, timeout(10000)).log(any(List.class));
 	}
@@ -164,7 +186,9 @@ public class LoggingContextTest {
 	@SuppressWarnings("unchecked")
 	public void test_log_batch_send_by_size() throws IOException {
 		ReportPortalClient client = mock(ReportPortalClient.class);
+		TestUtils.mockStartLaunch(client, "launchUuid");
 		TestUtils.mockBatchLogging(client);
+		new LaunchImpl(client, parameters, TestUtils.standardLaunchRequest(parameters), executor);
 		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
 
 		byte[] randomByteArray = new byte[(int) ListenerParameters.DEFAULT_BATCH_PAYLOAD_LIMIT];
@@ -198,7 +222,9 @@ public class LoggingContextTest {
 	@SuppressWarnings("unchecked")
 	public void test_log_batch_triggers_previous_request_to_send() {
 		ReportPortalClient client = mock(ReportPortalClient.class);
+		TestUtils.mockStartLaunch(client, "launchUuid");
 		TestUtils.mockBatchLogging(client);
+		new LaunchImpl(client, parameters, TestUtils.standardLaunchRequest(parameters), executor);
 		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
 
 		emitLogs(context, 1);
@@ -233,9 +259,12 @@ public class LoggingContextTest {
 	@SuppressWarnings("unchecked")
 	public void test_log_batch_failure_logging() {
 		ReportPortalClient client = mock(ReportPortalClient.class);
+		TestUtils.mockStartLaunch(client, "launchUuid");
 		RuntimeException exc = new IllegalStateException("test");
 		when(client.log(any(List.class))).thenThrow(exc);
 		FlowableSubscriber<BatchSaveOperatingRS> subscriber = mock(FlowableSubscriber.class);
+		ListenerParameters myParameters = TestUtils.standardParameters();
+		new LaunchImpl(client, myParameters, TestUtils.standardLaunchRequest(myParameters), executor, subscriber);
 		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
 
 		emitLogs(context, 10);

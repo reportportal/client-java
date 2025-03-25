@@ -130,7 +130,7 @@ public class LaunchImpl extends Launch {
 	}
 
 	private static PublishSubject<Maybe<SaveLogRQ>> getLogEmitter(@Nonnull final ReportPortalClient client,
-			@Nonnull final ListenerParameters parameters, @Nonnull final Scheduler scheduler) {
+			@Nonnull final ListenerParameters parameters, @Nonnull final Scheduler scheduler, @Nonnull final FlowableSubscriber<BatchSaveOperatingRS> loggingSubscriber) {
 		PublishSubject<Maybe<SaveLogRQ>> emitter = PublishSubject.create();
 		RxJavaPlugins.onAssembly(new LogBatchingFlowable(
 						new FlowableFromObservable<>(emitter).flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable),
@@ -140,12 +140,13 @@ public class LaunchImpl extends Launch {
 						rqs)).toFlowable())
 				.observeOn(scheduler)
 				.onBackpressureBuffer(parameters.getRxBufferSize(), false, true)
-				.subscribe(new LoggingSubscriber());
+				.subscribe(loggingSubscriber);
 		return emitter;
 	}
 
 	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
-			@Nonnull final StartLaunchRQ rq, @Nonnull final ExecutorService executorService) {
+			@Nonnull final StartLaunchRQ rq, @Nonnull final ExecutorService executorService,
+			@Nonnull final FlowableSubscriber<BatchSaveOperatingRS> loggingSubscriber) {
 		super(reportPortalClient, parameters);
 		requireNonNull(parameters, "Parameters shouldn't be NULL");
 		executor = requireNonNull(executorService);
@@ -172,8 +173,13 @@ public class LaunchImpl extends Launch {
 					}
 			);
 		}).cache();
-		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler());
+		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
 		projectSettings = getProjectSettings(getClient(), getScheduler());
+	}
+
+	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
+			@Nonnull final StartLaunchRQ rq, @Nonnull final ExecutorService executorService) {
+		this(reportPortalClient, parameters, rq, executorService, new LoggingSubscriber());
 	}
 
 	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
@@ -187,7 +193,7 @@ public class LaunchImpl extends Launch {
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 		launch = launchMaybe.cache();
-		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler());
+		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler(), new LoggingSubscriber());
 		projectSettings = getProjectSettings(getClient(), getScheduler());
 	}
 
