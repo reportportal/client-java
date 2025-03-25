@@ -76,9 +76,9 @@ public class LoggingContextTest {
 	}
 
 	@Test
-	public void test_dispose_method_removes_context() {
+	public void test_complete_method_removes_context() {
 		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
-		LoggingContext.dispose();
+		LoggingContext.complete();
 		assertThat(LoggingContext.context(), anyOf(nullValue(), not(sameInstance(context))));
 	}
 

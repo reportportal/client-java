@@ -597,6 +597,7 @@ public class LaunchImpl extends Launch {
 		}
 
 		getStepReporter().removeParent(item);
+		LoggingContext.complete();
 		return finishResponse;
 	}
 

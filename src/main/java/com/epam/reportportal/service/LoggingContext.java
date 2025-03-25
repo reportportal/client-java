@@ -42,6 +42,7 @@ import static java.util.Optional.ofNullable;
  * @see LoggingContext#init(Maybe)
  */
 public class LoggingContext {
+	private static final Queue<LoggingContext> USED_CONTEXTS = new ConcurrentLinkedQueue<>();
 	private static final ThreadLocal<Pair<Long, Deque<LoggingContext>>> CONTEXT_THREAD_LOCAL = new InheritableThreadLocal<>();
 
 	private static final Set<Long> THREAD_IDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -91,8 +92,18 @@ public class LoggingContext {
 	/**
 	 * Disposes current logging context
 	 */
+	public static void complete() {
+		ofNullable(getContext()).map(Deque::poll).ifPresent(USED_CONTEXTS::add);
+	}
+
+	/**
+	 * Disposes current logging context
+	 */
 	public static void dispose() {
-		ofNullable(getContext()).map(Deque::poll).ifPresent(LoggingContext::disposed);
+		USED_CONTEXTS.removeIf(c -> {
+			c.disposed();
+			return true;
+		});
 	}
 
 	/**
@@ -137,6 +148,9 @@ public class LoggingContext {
 	 * Dispose context
 	 */
 	public void disposed() {
-		disposables.forEach(Disposable::dispose);
+		disposables.removeIf(d -> {
+			d.dispose();
+			return true;
+		});
 	}
 }
