@@ -38,6 +38,7 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.epam.ta.reportportal.ws.model.project.config.ProjectSettingsResource;
 import io.reactivex.*;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
@@ -52,10 +53,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.service.logs.LaunchLoggingCallback.*;
@@ -114,7 +112,17 @@ public class LaunchImpl extends Launch {
 	/**
 	 * Messages queue to track items execution order
 	 */
-	protected final ComputationConcurrentHashMap QUEUE = new ComputationConcurrentHashMap();
+	protected final ComputationConcurrentHashMap queue = new ComputationConcurrentHashMap();
+
+	/**
+	 * Mapping between virtual item Maybes and their emitters
+	 */
+	protected final ConcurrentHashMap<Maybe<String>, PublishSubject<String>> virtualItems = new ConcurrentHashMap<>();
+
+	/**
+	 * Collection of disposables from virtual item subscriptions
+	 */
+	protected final ConcurrentLinkedQueue<Disposable> virtualItemDisposables = new ConcurrentLinkedQueue<>();
 
 	protected final Maybe<String> launch;
 	protected final StartLaunchRQ startRq;
@@ -130,7 +138,8 @@ public class LaunchImpl extends Launch {
 	}
 
 	private static PublishSubject<Maybe<SaveLogRQ>> getLogEmitter(@Nonnull final ReportPortalClient client,
-			@Nonnull final ListenerParameters parameters, @Nonnull final Scheduler scheduler, @Nonnull final FlowableSubscriber<BatchSaveOperatingRS> loggingSubscriber) {
+			@Nonnull final ListenerParameters parameters, @Nonnull final Scheduler scheduler,
+			@Nonnull final FlowableSubscriber<BatchSaveOperatingRS> loggingSubscriber) {
 		PublishSubject<Maybe<SaveLogRQ>> emitter = PublishSubject.create();
 		RxJavaPlugins.onAssembly(new LogBatchingFlowable(
 						new FlowableFromObservable<>(emitter).flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable),
@@ -335,7 +344,8 @@ public class LaunchImpl extends Launch {
 	 * @param request Launch finish request.
 	 */
 	public void finish(final FinishExecutionRQ request) {
-		Completable finish = Completable.concat(QUEUE.getOrCompute(launch).getChildren());
+		// Collect all items to be reported
+		Completable finish = Completable.concat(queue.getOrCompute(launch).getChildren());
 		if (StringUtils.isBlank(getParameters().getLaunchUuid()) || !getParameters().isLaunchUuidCreationSkip()) {
 			FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
 			truncateAttributes(rq);
@@ -347,6 +357,7 @@ public class LaunchImpl extends Launch {
 		}
 		finish = finish.cache();
 
+		// Wait for all items to be reported
 		try {
 			boolean result = finish.blockingAwait(getParameters().getReportingTimeout(), TimeUnit.SECONDS);
 			if (!result) {
@@ -359,14 +370,70 @@ public class LaunchImpl extends Launch {
 		} catch (Exception e) {
 			LOGGER.error("Unable to finish launch in ReportPortal", e);
 		}
+
+		// Close and re-create statistics service
 		getStatisticsService().close();
 		statisticsService = new StatisticsService(getParameters());
+
+		// Dispose all collected virtual item disposables
+		virtualItemDisposables.removeIf(d -> {
+			d.dispose();
+			return true;
+		});
+		// Dispose all logged items
 		LoggingContext.dispose();
 	}
 
 	private static <T> Maybe<T> createErrorResponse(Throwable cause) {
 		LOGGER.error(cause.getMessage(), cause);
 		return Maybe.error(cause);
+	}
+
+	/**
+	 * Starts a virtual test item in ReportPortal asynchronously (non-blocking).
+	 * Virtual items are used as temporary placeholders until they are populated with real item IDs.
+	 * This is useful for scenarios where item creation order needs to be decoupled from test execution order.
+	 *
+	 * @return Virtual test item ID promise that will be populated with a real ID later
+	 */
+	@Nonnull
+	public Maybe<String> startVirtualItem() {
+		PublishSubject<String> emitter = PublishSubject.create();
+		Maybe<String> virtualItem = RxJavaPlugins.onAssembly(emitter.singleElement().cache()).subscribeOn(scheduler);
+		virtualItems.put(virtualItem, emitter);
+		LoggingContext.init(virtualItem);
+		return virtualItem;
+	}
+
+	/**
+	 * Populates a virtual item with a real ID, triggering all subscribers waiting for this ID.
+	 *
+	 * @param virtualItem Virtual item ID promise.
+	 * @param realId      Real ID to populate the virtual item with.
+	 */
+	private void populateVirtualItem(@Nonnull final Maybe<String> virtualItem, @Nonnull final String realId) {
+		PublishSubject<String> emitter = virtualItems.remove(virtualItem);
+		if (emitter != null) {
+			emitter.onNext(realId);
+			emitter.onComplete();
+		} else {
+			LOGGER.error("Unable to populate virtual item with ID: {}. No emitter found.", realId);
+		}
+	}
+
+	/**
+	 * Populates a virtual item with an error, triggering all subscribers waiting with the error.
+	 *
+	 * @param virtualItem Virtual item ID promise.
+	 * @param cause       Error to populate the virtual item with.
+	 */
+	private void populateVirtualItem(@Nonnull final Maybe<String> virtualItem, @Nonnull final Throwable cause) {
+		PublishSubject<String> emitter = virtualItems.remove(virtualItem);
+		if (emitter != null) {
+			emitter.onError(cause);
+		} else {
+			LOGGER.error("Unable to populate virtual item with error. No emitter found.", cause);
+		}
 	}
 
 	/**
@@ -394,7 +461,7 @@ public class LaunchImpl extends Launch {
 		}).cache();
 
 		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start test item"));
-		QUEUE.getOrCompute(item).addToQueue(item.ignoreElement().onErrorComplete());
+		queue.getOrCompute(item).addToQueue(item.ignoreElement().onErrorComplete());
 		LoggingContext.init(item);
 
 		getStepReporter().setParent(item);
@@ -452,10 +519,90 @@ public class LaunchImpl extends Launch {
 			return result.map(TO_ID);
 		})).cache();
 		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start test item"));
-		QUEUE.getOrCompute(item).withParent(parentId).addToQueue(item.ignoreElement().onErrorComplete());
+		queue.getOrCompute(item).withParent(parentId).addToQueue(item.ignoreElement().onErrorComplete());
 		LoggingContext.init(item);
 
 		getStepReporter().setParent(item);
+		return item;
+	}
+
+	/**
+	 * Handles errors for virtual test items, populating the virtual item with the error.
+	 *
+	 * @param virtualItem Virtual item ID promise.
+	 * @param request     Item start request.
+	 * @return Error response as Maybe.
+	 */
+	private Maybe<String> handleVirtualItemError(final Maybe<String> virtualItem, final StartTestItemRQ request) {
+		if (virtualItem == null) {
+			return createErrorResponse(new NullPointerException("VirtualItem should not be null"));
+		} else if (request == null) {
+			Maybe<String> error = createErrorResponse(new NullPointerException("StartTestItemRQ should not be null"));
+			Disposable errorDisposable = error.subscribe(
+					id -> {
+					}, e -> populateVirtualItem(virtualItem, e)
+			);
+			virtualItemDisposables.add(errorDisposable);
+			return error;
+		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * Creates a subscription to handle the item creation process for a virtual item.
+	 * When the real item is created successfully, the virtual item is populated with the real ID.
+	 * If there's an error creating the real item, the error is propagated to the virtual item.
+	 * In both cases, the disposable is added to the virtualItemDisposables collection for later cleanup.
+	 *
+	 * @param virtualItem Virtual item ID promise to be populated with the real ID or error
+	 * @param item        Real Test Item ID promise from the item creation request
+	 */
+	private void handleVirtualItemSubscription(Maybe<String> virtualItem, Maybe<String> item) {
+		Disposable disposable = item.subscribe(
+				id -> populateVirtualItem(virtualItem, id), e -> {
+					LOGGER.error("Unable to start test item.", e);
+					populateVirtualItem(virtualItem, e);
+				}
+		);
+		virtualItemDisposables.add(disposable);
+	}
+
+	/**
+	 * Starts new test item in ReportPortal asynchronously (non-blocking) and populates the provided virtual item with the real item ID.
+	 *
+	 * @param virtualItem Virtual item ID promise to populate with real ID.
+	 * @param rq          Item start rq.
+	 * @return Real Test Item ID promise.
+	 */
+	@Nonnull
+	public Maybe<String> startVirtualTestItem(final Maybe<String> virtualItem, final StartTestItemRQ rq) {
+		Maybe<String> error = handleVirtualItemError(virtualItem, rq);
+		if (error != null) {
+			return error;
+		}
+		Maybe<String> item = startTestItem(rq);
+		handleVirtualItemSubscription(virtualItem, item);
+		return item;
+	}
+
+	/**
+	 * Starts new test item in ReportPortal asynchronously (non-blocking) and populates the provided virtual item with the real item ID.
+	 *
+	 * @param parentId    Promise of parent item ID.
+	 * @param virtualItem Virtual item ID promise to populate with real ID.
+	 * @param rq          Item start request.
+	 * @return Real Test Item ID promise.
+	 */
+	@Nonnull
+	public Maybe<String> startVirtualTestItem(final Maybe<String> parentId, final Maybe<String> virtualItem, final StartTestItemRQ rq) {
+		Maybe<String> error = handleVirtualItemError(virtualItem, rq);
+		if (error != null) {
+			return error;
+		}
+
+		Maybe<String> item = startTestItem(parentId, rq);
+		handleVirtualItemSubscription(virtualItem, item);
 		return item;
 	}
 
@@ -561,7 +708,7 @@ public class LaunchImpl extends Launch {
 			}
 		}
 
-		LaunchImpl.TreeItem treeItem = QUEUE.get(item);
+		LaunchImpl.TreeItem treeItem = queue.get(item);
 		if (null == treeItem) {
 			treeItem = new LaunchImpl.TreeItem();
 			LOGGER.error("Item {} not found in the cache", item);
@@ -583,17 +730,17 @@ public class LaunchImpl extends Launch {
 
 		Completable finishCompletion = Completable.concat(treeItem.getChildren())
 				.andThen(finishResponse)
-				.doAfterTerminate(() -> QUEUE.remove(item)) //cleanup children
+				.doAfterTerminate(() -> queue.remove(item)) //cleanup children
 				.ignoreElement()
 				.cache();
 		finishCompletion.subscribeOn(getScheduler()).subscribe(logCompletableResults("Finish test item"));
 		//find parent and add to its queue
 		final Maybe<String> parent = treeItem.getParent();
 		if (null != parent) {
-			QUEUE.getOrCompute(parent).addToQueue(finishCompletion.onErrorComplete());
+			queue.getOrCompute(parent).addToQueue(finishCompletion.onErrorComplete());
 		} else {
 			//seems like this is root item
-			QUEUE.getOrCompute(this.launch).addToQueue(finishCompletion.onErrorComplete());
+			queue.getOrCompute(this.launch).addToQueue(finishCompletion.onErrorComplete());
 		}
 
 		getStepReporter().removeParent(item);
@@ -667,3 +814,4 @@ public class LaunchImpl extends Launch {
 		}
 	}
 }
+
