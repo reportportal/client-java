@@ -263,9 +263,9 @@ public class LaunchLoggingTest {
 		//noinspection ReactiveStreamsUnusedPublisher
 		launch.start(false);
 
-		// Start virtual item
+		// Create virtual item
 		//noinspection ReactiveStreamsUnusedPublisher
-		launch.startVirtualItem();
+		launch.createVirtualItem();
 
 		// Log to the virtual item
 		ReportPortal.emitLog(itemUuid -> {
@@ -296,8 +296,8 @@ public class LaunchLoggingTest {
 		//noinspection ReactiveStreamsUnusedPublisher
 		launch.start(false);
 
-		// Start virtual item
-		Maybe<String> virtualItem = launch.startVirtualItem();
+		// Create virtual item
+		Maybe<String> virtualItem = launch.createVirtualItem();
 
 		// Log to the virtual item
 		String logMessage = "Test virtual item log after population";
@@ -357,8 +357,8 @@ public class LaunchLoggingTest {
 		// Start root item
 		Maybe<String> rootItem = launch.startTestItem(TestUtils.standardStartTestRequest());
 
-		// Start virtual item
-		Maybe<String> virtualItem = launch.startVirtualItem();
+		// Create virtual item
+		Maybe<String> virtualItem = launch.createVirtualItem();
 
 		// Log to the virtual item
 		String logMessage = "Test virtual item with parent log message";
@@ -415,8 +415,8 @@ public class LaunchLoggingTest {
 		//noinspection ReactiveStreamsUnusedPublisher
 		launch.start(false);
 
-		// Start virtual parent item
-		Maybe<String> virtualParentItem = launch.startVirtualItem();
+		// Create virtual parent item
+		Maybe<String> virtualParentItem = launch.createVirtualItem();
 
 		// Start child item with virtual parent
 		Maybe<String> childItem = launch.startTestItem(virtualParentItem, TestUtils.standardStartStepRequest());
@@ -458,8 +458,8 @@ public class LaunchLoggingTest {
 		//noinspection ReactiveStreamsUnusedPublisher
 		launch.start(false);
 
-		// Start virtual parent item
-		Maybe<String> virtualParentItem = launch.startVirtualItem();
+		// Create virtual parent item
+		Maybe<String> virtualParentItem = launch.createVirtualItem();
 
 		// Start child item with virtual parent
 		Maybe<String> childItem = launch.startTestItem(virtualParentItem, TestUtils.standardStartStepRequest());

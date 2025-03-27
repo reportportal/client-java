@@ -390,14 +390,14 @@ public class LaunchImpl extends Launch {
 	}
 
 	/**
-	 * Starts a virtual test item in ReportPortal.
+	 * Creates a virtual test item in ReportPortal.
 	 * Virtual items are used as temporary placeholders until they are populated with real item IDs.
 	 * This is useful for scenarios where item creation order needs to be decoupled from test execution order.
 	 *
 	 * @return Virtual test item ID promise that will be populated with a real ID later
 	 */
 	@Nonnull
-	public Maybe<String> startVirtualItem() {
+	public Maybe<String> createVirtualItem() {
 		PublishSubject<String> emitter = PublishSubject.create();
 		Maybe<String> virtualItem = RxJavaPlugins.onAssembly(emitter.singleElement().cache()).subscribeOn(scheduler);
 		virtualItems.put(virtualItem, emitter);

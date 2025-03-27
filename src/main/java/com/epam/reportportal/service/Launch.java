@@ -89,7 +89,7 @@ public abstract class Launch {
 	 * @return Virtual test item ID promise that will be populated with a real ID later
 	 */
 	@Nonnull
-	abstract public Maybe<String> startVirtualItem();
+	abstract public Maybe<String> createVirtualItem();
 
 	/**
 	 * Starts new root test item in ReportPortal asynchronously (non-blocking).
@@ -241,7 +241,7 @@ public abstract class Launch {
 
 		@NotNull
 		@Override
-		public Maybe<String> startVirtualItem() {
+		public Maybe<String> createVirtualItem() {
 			return Maybe.empty();
 		}
 
