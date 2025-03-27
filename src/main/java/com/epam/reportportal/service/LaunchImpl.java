@@ -460,7 +460,8 @@ public class LaunchImpl extends Launch {
 			return getClient().startTestItem(rq).retry(DEFAULT_REQUEST_RETRY).doOnSuccess(logCreated("item")).map(TO_ID);
 		}).cache();
 
-		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start test item"));
+		String itemDescription = String.format("Start root test item [%s] '%s'", rq.getType(), rq.getName());
+		item.subscribeOn(getScheduler()).subscribe(logMaybeResults(itemDescription));
 		queue.getOrCompute(item).addToQueue(item.ignoreElement().onErrorComplete());
 		LoggingContext.init(item);
 
@@ -518,7 +519,8 @@ public class LaunchImpl extends Launch {
 			result = result.doOnSuccess(logCreated("item"));
 			return result.map(TO_ID);
 		})).cache();
-		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start test item"));
+		String itemDescription = String.format("Start child test item [%s] '%s'", rq.getType(), rq.getName());
+		item.subscribeOn(getScheduler()).subscribe(logMaybeResults(itemDescription));
 		queue.getOrCompute(item).withParent(parentId).addToQueue(item.ignoreElement().onErrorComplete());
 		LoggingContext.init(item);
 
