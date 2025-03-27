@@ -88,7 +88,9 @@ public class ManualNestedStepTest {
 	@BeforeEach
 	public void initMocks() {
 		client = mock(ReportPortalClient.class);
-		mockLaunch(client, testLaunchUuid, testClassUuid, testMethodUuid);
+		mockStartLaunch(client, testLaunchUuid);
+		mockStartTestItem(client, testClassUuid);
+		mockStartTestItem(client, testClassUuid, testMethodUuid);
 
 		ListenerParameters parameters = standardParameters();
 		launch = new MyLaunch(client, parameters, executor);
@@ -118,9 +120,7 @@ public class ManualNestedStepTest {
 		StartTestItemRQ nestedStep = stepCaptor.getValue();
 		assertThat(nestedStep.getName(), equalTo(stepName));
 		assertThat(nestedStep.isHasStats(), equalTo(Boolean.FALSE));
-		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finish(standardLaunchFinishRequest());
+		sr.finishNestedStep().blockingGet();
 	}
 
 	@SuppressWarnings("ResultOfMethodCallIgnored")
@@ -149,14 +149,14 @@ public class ManualNestedStepTest {
 
 		FinishTestItemRQ finishRq = finishStepCaptor.getValue();
 		assertThat(finishRq.getStatus(), equalTo(ItemStatus.PASSED.name()));
-		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finish(standardLaunchFinishRequest());
+
+		sr.finishNestedStep().blockingGet();
 	}
 
 	@SuppressWarnings("ResultOfMethodCallIgnored")
 	@Test
 	public void verify_failed_nested_step_marks_parent_test_as_failed_parent_finish() {
+		mockFinishTestItem(client, testMethodUuid);
 		mockNestedSteps(client, nestedStepPairs.get(0));
 		String stepName = "verify_failed_nested_step_marks_parent_test_as_failed_parent_finish";
 		testClassUuidMaybe.blockingGet();
@@ -173,8 +173,6 @@ public class ManualNestedStepTest {
 				finishStepCaptor.getValue().getStatus(),
 				equalTo(ItemStatus.FAILED.name())
 		);
-		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finish(standardLaunchFinishRequest());
 	}
 
 	@SuppressWarnings("ResultOfMethodCallIgnored")
@@ -195,9 +193,6 @@ public class ManualNestedStepTest {
 		assertThat(finishStepCaptor.getValue().getStatus(), equalTo(ItemStatus.FAILED.name()));
 		assertThat("StepReporter should save parent failures", sr.isFailed(testClassUuidMaybe), equalTo(Boolean.TRUE));
 		assertThat("StepReporter should save parent failures", sr.isFailed(testMethodUuidMaybe), equalTo(Boolean.TRUE));
-		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finish(standardLaunchFinishRequest());
 	}
 
 	@SuppressWarnings("ResultOfMethodCallIgnored")
@@ -217,9 +212,6 @@ public class ManualNestedStepTest {
 		assertThat(finishStepCaptor.getValue().getStatus(), equalTo(ItemStatus.FAILED.name()));
 		assertThat("StepReporter should save parent failures", sr.isFailed(testClassUuidMaybe), equalTo(Boolean.TRUE));
 		assertThat("StepReporter should save parent failures", sr.isFailed(testMethodUuidMaybe), equalTo(Boolean.TRUE));
-		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finish(standardLaunchFinishRequest());
 	}
 
 	@Test
@@ -253,10 +245,7 @@ public class ManualNestedStepTest {
 				.collect(Collectors.toList());
 
 		assertThat(logRequests, containsInAnyOrder(expectedItems));
-
-		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finish(standardLaunchFinishRequest());
+		sr.finishNestedStep().blockingGet();
 	}
 
 	@SuppressWarnings("ResultOfMethodCallIgnored")
@@ -278,10 +267,6 @@ public class ManualNestedStepTest {
 		FinishTestItemRQ nestedStepFinish = finishStepCaptor.getValue();
 		assertThat(nestedStepFinish.getStatus(), equalTo(ItemStatus.PASSED.name()));
 		assertThat(nestedStepFinish.getEndTime(), notNullValue());
-
-		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finish(standardLaunchFinishRequest());
 	}
 
 	@SuppressWarnings("ResultOfMethodCallIgnored")
@@ -303,10 +288,6 @@ public class ManualNestedStepTest {
 		FinishTestItemRQ nestedStepFinish = finishStepCaptor.getValue();
 		assertThat(nestedStepFinish.getStatus(), equalTo(ItemStatus.SKIPPED.name()));
 		assertThat(nestedStepFinish.getEndTime(), notNullValue());
-
-		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finish(standardLaunchFinishRequest());
 	}
 
 	@Test
@@ -350,14 +331,10 @@ public class ManualNestedStepTest {
 		Pair<String, String> log = logRequests.get(0);
 		assertThat(log.getKey(), equalTo(LogLevel.DEBUG.name()));
 		assertThat(log.getValue(), equalTo(logMessage));
-
-		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finish(standardLaunchFinishRequest());
 	}
 
 	@Test
-	@SuppressWarnings({ "unchecked", "ResultOfMethodCallIgnored" })
+	@SuppressWarnings("unchecked")
 	public void verify_passed_actions_nested_step_failure() {
 		mockNestedSteps(client, nestedStepPairs.get(0));
 		String stepName = "verify_passed_actions_nested_step_failure";
@@ -387,10 +364,6 @@ public class ManualNestedStepTest {
 		assertThat(nestedStepFinish.getEndTime(), notNullValue());
 
 		verify(client, times(0)).log(any(List.class)); // All exceptions should be logged on step level
-
-		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finish(standardLaunchFinishRequest());
 	}
 
 	@SuppressWarnings("ResultOfMethodCallIgnored")
@@ -411,10 +384,6 @@ public class ManualNestedStepTest {
 
 		FinishTestItemRQ nestedStepFinish = finishStepCaptor.getValue();
 		assertThat(nestedStepFinish.getStatus(), equalTo(ItemStatus.FAILED.name()));
-
-		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finish(standardLaunchFinishRequest());
 	}
 
 	@SuppressWarnings("ResultOfMethodCallIgnored")
@@ -435,13 +404,8 @@ public class ManualNestedStepTest {
 
 		FinishTestItemRQ nestedStepFinish = finishStepCaptor.getValue();
 		assertThat(nestedStepFinish.getStatus(), equalTo(ItemStatus.FAILED.name()));
-
-		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finish(standardLaunchFinishRequest());
 	}
 
-	@SuppressWarnings("ResultOfMethodCallIgnored")
 	@Test
 	public void verify_nested_step_manual_failure_set_overrides_any_other_status_for_passed_actions() {
 		mockNestedSteps(client, nestedStepPairs.get(0));
@@ -465,15 +429,13 @@ public class ManualNestedStepTest {
 
 		FinishTestItemRQ nestedStepFinish = finishStepCaptor.getValue();
 		assertThat(nestedStepFinish.getStatus(), equalTo(ItemStatus.PASSED.name()));
-
-		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finish(standardLaunchFinishRequest());
 	}
 
 	@SuppressWarnings("ResultOfMethodCallIgnored")
 	@Test
 	public void verify_manually_set_nested_step_status_marks_parent_test_as_failed() {
+		mockFinishTestItem(client, testMethodUuid);
+		mockFinishTestItem(client, testClassUuid);
 		mockNestedSteps(client, nestedStepPairs.get(0));
 		String stepName = "verify_manually_set_nested_step_status_marks_parent_test_as_failed";
 		String returnValue = "return value";
@@ -495,7 +457,6 @@ public class ManualNestedStepTest {
 
 		launch.finishTestItem(testMethodUuidMaybe, positiveFinishRequest()).blockingGet();
 		launch.finishTestItem(testClassUuidMaybe, positiveFinishRequest()).blockingGet();
-		launch.finish(standardLaunchFinishRequest());
 		ArgumentCaptor<FinishTestItemRQ> finishTestCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
 		verify(client, timeout(1000)).finishTestItem(eq(testClassUuid), finishTestCaptor.capture());
 
