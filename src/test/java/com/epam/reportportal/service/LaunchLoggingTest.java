@@ -333,4 +333,176 @@ public class LaunchLoggingTest {
 		assertThat(logRq.getLevel(), equalTo(LogLevel.INFO.name()));
 		assertThat(logRq.getLaunchUuid(), equalTo(launchUuid));
 	}
+
+	@Test
+	@Timeout(value = 10, unit = TimeUnit.SECONDS)
+	@SuppressWarnings("unchecked")
+	public void test_virtual_child_item_with_parent() {
+		// Mock client 
+		ReportPortalClient client = mock(ReportPortalClient.class);
+		String launchUuid = "launchUuid";
+		TestUtils.mockStartLaunch(client, launchUuid);
+		String rootItemUuid = "rootItemUuid";
+		TestUtils.mockStartTestItem(client, rootItemUuid);
+		String virtualItemUuid = "virtualItemUuid";
+		TestUtils.mockStartTestItem(client, rootItemUuid, virtualItemUuid);
+		TestUtils.mockBatchLogging(client);
+
+		// Create launch
+		ListenerParameters myParameters = TestUtils.standardParameters();
+		LaunchImpl launch = new LaunchImpl(client, myParameters, TestUtils.standardLaunchRequest(myParameters), executor);
+		//noinspection ReactiveStreamsUnusedPublisher
+		launch.start(false);
+
+		// Start root item
+		Maybe<String> rootItem = launch.startTestItem(TestUtils.standardStartTestRequest());
+
+		// Start virtual item
+		Maybe<String> virtualItem = launch.startVirtualItem();
+
+		// Log to the virtual item
+		String logMessage = "Test virtual item with parent log message";
+		Date time = Calendar.getInstance().getTime();
+		ReportPortal.emitLog(uuid -> {
+			SaveLogRQ logRQ = new SaveLogRQ();
+			logRQ.setItemUuid(uuid);
+			logRQ.setLevel(LogLevel.INFO.name());
+			logRQ.setMessage(logMessage);
+			logRQ.setLogTime(time);
+			return logRQ;
+		});
+
+		// Verify no calls to client.log()
+		verify(client, after(1000).times(0)).log(any(List.class));
+
+		// Populate virtual item with a real ID
+		Maybe<String> realVirtualItemUuid = launch.startVirtualTestItem(rootItem, virtualItem, TestUtils.standardStartStepRequest());
+		assertThat(realVirtualItemUuid.blockingGet(), equalTo(virtualItemUuid));
+
+		// Verify calls after population
+		verify(client, timeout(1000)).startTestItem(any());
+		verify(client, timeout(1000)).startTestItem(eq(rootItemUuid), any());
+
+		// Verify call to client.log()
+		ArgumentCaptor<List<MultipartBody.Part>> captor = ArgumentCaptor.forClass(List.class);
+		verify(client, timeout(1000)).log(captor.capture());
+
+		List<MultipartBody.Part> parts = captor.getValue();
+		List<SaveLogRQ> logRequest = TestUtils.extractJsonParts(parts);
+
+		assertThat(logRequest, notNullValue());
+		assertThat(logRequest, hasSize(1));
+		SaveLogRQ logRq = logRequest.get(0);
+		assertThat(logRq.getMessage(), equalTo(logMessage));
+		assertThat(logRq.getItemUuid(), equalTo(realVirtualItemUuid.blockingGet()));
+		assertThat(logRq.getLogTime(), equalTo(time));
+		assertThat(logRq.getLevel(), equalTo(LogLevel.INFO.name()));
+		assertThat(logRq.getLaunchUuid(), equalTo(launchUuid));
+	}
+
+	@Test
+	@Timeout(value = 10, unit = TimeUnit.SECONDS)
+	@SuppressWarnings("unchecked")
+	public void test_child_item_with_virtual_parent_no_calls() {
+		// Mock client
+		ReportPortalClient client = mock(ReportPortalClient.class);
+		String launchUuid = "launchUuid";
+		TestUtils.mockStartLaunch(client, launchUuid);
+
+		// Create launch
+		ListenerParameters myParameters = TestUtils.standardParameters();
+		LaunchImpl launch = new LaunchImpl(client, myParameters, TestUtils.standardLaunchRequest(myParameters), executor);
+		//noinspection ReactiveStreamsUnusedPublisher
+		launch.start(false);
+
+		// Start virtual parent item
+		Maybe<String> virtualParentItem = launch.startVirtualItem();
+
+		// Start child item with virtual parent
+		Maybe<String> childItem = launch.startTestItem(virtualParentItem, TestUtils.standardStartStepRequest());
+
+		// Log to the child item
+		ReportPortal.emitLog(
+				childItem, uuid -> {
+					SaveLogRQ logRQ = new SaveLogRQ();
+					logRQ.setItemUuid(uuid);
+					logRQ.setLevel(LogLevel.INFO.name());
+					logRQ.setMessage("Test child item with virtual parent log");
+					logRQ.setLogTime(Calendar.getInstance().getTime());
+					return logRQ;
+				}
+		);
+
+		// Verify no calls to client.startTestItem() or client.log()
+		verify(client, after(1000).times(0)).startTestItem(any(), any());
+		verify(client, after(1000).times(0)).log(any(List.class));
+	}
+
+	@Test
+	@Timeout(value = 10, unit = TimeUnit.SECONDS)
+	@SuppressWarnings("unchecked")
+	public void test_child_item_with_virtual_parent_after_population() {
+		// Mock client
+		ReportPortalClient client = mock(ReportPortalClient.class);
+		String launchUuid = "launchUuid";
+		TestUtils.mockStartLaunch(client, launchUuid);
+		String parentItemUuid = "parentItemUuid";
+		TestUtils.mockStartTestItem(client, parentItemUuid);
+		String childItemUuid = "childItemUuid";
+		TestUtils.mockStartTestItem(client, parentItemUuid, childItemUuid);
+		TestUtils.mockBatchLogging(client);
+
+		// Create launch
+		ListenerParameters myParameters = TestUtils.standardParameters();
+		LaunchImpl launch = new LaunchImpl(client, myParameters, TestUtils.standardLaunchRequest(myParameters), executor);
+		//noinspection ReactiveStreamsUnusedPublisher
+		launch.start(false);
+
+		// Start virtual parent item
+		Maybe<String> virtualParentItem = launch.startVirtualItem();
+
+		// Start child item with virtual parent
+		Maybe<String> childItem = launch.startTestItem(virtualParentItem, TestUtils.standardStartStepRequest());
+
+		// Log to the child item
+		String logMessage = "Test child item with virtual parent log";
+		Date time = Calendar.getInstance().getTime();
+		ReportPortal.emitLog(
+				childItem, uuid -> {
+					SaveLogRQ logRQ = new SaveLogRQ();
+					logRQ.setItemUuid(uuid);
+					logRQ.setLevel(LogLevel.INFO.name());
+					logRQ.setMessage(logMessage);
+					logRQ.setLogTime(time);
+					return logRQ;
+				}
+		);
+
+		// Verify no calls before population
+		verify(client, after(1000).times(0)).startTestItem(any(), any());
+		verify(client, after(1000).times(0)).log(any(List.class));
+
+		// Populate the virtual parent item
+		Maybe<String> realParentItemUuid = launch.startVirtualTestItem(virtualParentItem, TestUtils.standardStartTestRequest());
+		assertThat(realParentItemUuid.blockingGet(), equalTo(parentItemUuid));
+
+		// Verify calls after population
+		verify(client, timeout(1000)).startTestItem(any());
+		verify(client, timeout(1000)).startTestItem(eq(parentItemUuid), any());
+
+		ArgumentCaptor<List<MultipartBody.Part>> captor = ArgumentCaptor.forClass(List.class);
+		verify(client, timeout(1000)).log(captor.capture());
+
+		List<MultipartBody.Part> parts = captor.getValue();
+		List<SaveLogRQ> logRequest = TestUtils.extractJsonParts(parts);
+
+		assertThat(logRequest, notNullValue());
+		assertThat(logRequest, hasSize(1));
+		SaveLogRQ logRq = logRequest.get(0);
+		assertThat(logRq.getMessage(), equalTo(logMessage));
+		assertThat(logRq.getLogTime(), equalTo(time));
+		assertThat(logRq.getLevel(), equalTo(LogLevel.INFO.name()));
+		assertThat(logRq.getItemUuid(), equalTo(childItemUuid));
+		assertThat(logRq.getLaunchUuid(), equalTo(launchUuid));
+	}
 }
