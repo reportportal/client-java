@@ -23,10 +23,12 @@ import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.FlowableSubscriber;
+import io.reactivex.Maybe;
 import okhttp3.MultipartBody;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
@@ -36,6 +38,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import static com.epam.reportportal.utils.http.HttpRequestUtils.TYPICAL_FILE_PART_HEADER;
@@ -248,5 +251,86 @@ public class LaunchLoggingTest {
 		verify(subscriber, timeout(1000)).onError(exceptionCaptor.capture());
 
 		assertThat(exceptionCaptor.getValue(), sameInstance(exc));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void test_virtual_item_no_logging_calls_before_population() {
+		ReportPortalClient client = mock(ReportPortalClient.class);
+		TestUtils.mockStartLaunch(client, "launchUuid");
+		ListenerParameters myParameters = TestUtils.standardParameters();
+		LaunchImpl launch = new LaunchImpl(client, myParameters, TestUtils.standardLaunchRequest(myParameters), executor);
+		//noinspection ReactiveStreamsUnusedPublisher
+		launch.start(false);
+
+		// Start virtual item
+		//noinspection ReactiveStreamsUnusedPublisher
+		launch.startVirtualItem();
+
+		// Log to the virtual item
+		ReportPortal.emitLog(itemUuid -> {
+			SaveLogRQ logRQ = new SaveLogRQ();
+			logRQ.setItemUuid(itemUuid);
+			logRQ.setLevel(LogLevel.INFO.name());
+			logRQ.setMessage("Test virtual item log");
+			logRQ.setLogTime(Calendar.getInstance().getTime());
+			return logRQ;
+		});
+
+		// Verify no calls to client.log()
+		verify(client, after(1000).times(0)).log(any(List.class));
+	}
+
+	@Test
+	@Timeout(value = 10, unit = TimeUnit.SECONDS)
+	@SuppressWarnings("unchecked")
+	public void test_virtual_item_logging_after_population() {
+		ReportPortalClient client = mock(ReportPortalClient.class);
+		String launchUuid = "launchUuid";
+		TestUtils.mockStartLaunch(client, launchUuid);
+		String itemUuid = "itemUuid";
+		TestUtils.mockStartTestItem(client, itemUuid);
+		TestUtils.mockBatchLogging(client);
+		ListenerParameters myParameters = TestUtils.standardParameters();
+		LaunchImpl launch = new LaunchImpl(client, myParameters, TestUtils.standardLaunchRequest(myParameters), executor);
+		//noinspection ReactiveStreamsUnusedPublisher
+		launch.start(false);
+
+		// Start virtual item
+		Maybe<String> virtualItem = launch.startVirtualItem();
+
+		// Log to the virtual item
+		String logMessage = "Test virtual item log after population";
+		Date time = Calendar.getInstance().getTime();
+		ReportPortal.emitLog(uuid -> {
+			SaveLogRQ logRQ = new SaveLogRQ();
+			logRQ.setItemUuid(uuid);
+			logRQ.setLevel(LogLevel.INFO.name());
+			logRQ.setMessage(logMessage);
+			logRQ.setLogTime(time);
+			return logRQ;
+		});
+
+		// Verify no calls to client.log()
+		verify(client, after(1000).times(0)).log(any(List.class));
+
+		// Populate virtual item with a real ID
+		Maybe<String> realItemUuid = launch.startVirtualTestItem(virtualItem, TestUtils.standardStartStepRequest());
+
+		// Verify call to client.log()
+		ArgumentCaptor<List<MultipartBody.Part>> captor = ArgumentCaptor.forClass(List.class);
+		verify(client, timeout(1000)).log(captor.capture());
+
+		List<MultipartBody.Part> parts = captor.getValue();
+		List<SaveLogRQ> logRequest = TestUtils.extractJsonParts(parts);
+
+		assertThat(logRequest, notNullValue());
+		assertThat(logRequest, hasSize(1));
+		SaveLogRQ logRq = logRequest.get(0);
+		assertThat(logRq.getMessage(), equalTo(logMessage));
+		assertThat(logRq.getItemUuid(), equalTo(realItemUuid.blockingGet()));
+		assertThat(logRq.getLogTime(), equalTo(time));
+		assertThat(logRq.getLevel(), equalTo(LogLevel.INFO.name()));
+		assertThat(logRq.getLaunchUuid(), equalTo(launchUuid));
 	}
 }

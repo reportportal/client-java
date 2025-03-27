@@ -301,17 +301,22 @@ public class TestUtils {
 		when(client.finishLaunch(eq(launchUuid), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
 	}
 
-	public static void mockLaunch(ReportPortalClient client, String launchUuid, String testClassUuid, String testMethodUuid) {
-		mockLaunch(client, launchUuid, testClassUuid, Collections.singleton(testMethodUuid));
+	public static void mockStartTestItem(ReportPortalClient client, String itemUuid) {
+		Maybe<ItemCreatedRS> testItemMaybe = Maybe.just(new ItemCreatedRS(itemUuid, itemUuid));
+		when(client.startTestItem(any())).thenReturn(testItemMaybe);
+	}
+
+	public static void mockTestItem(ReportPortalClient client, String itemUuid) {
+		mockStartTestItem(client, itemUuid);
+		Maybe<OperationCompletionRS> testClassFinishMaybe = Maybe.just(new OperationCompletionRS());
+		when(client.finishTestItem(eq(itemUuid), any())).thenReturn(testClassFinishMaybe);
 	}
 
 	@SuppressWarnings("unchecked")
 	public static void mockLaunch(ReportPortalClient client, String launchUuid, String testClassUuid,
 			Collection<String> testMethodUuidList) {
 		mockLaunch(client, launchUuid);
-
-		Maybe<ItemCreatedRS> testClassMaybe = Maybe.just(new ItemCreatedRS(testClassUuid, testClassUuid));
-		when(client.startTestItem(any())).thenReturn(testClassMaybe);
+		mockTestItem(client, testClassUuid);
 
 		List<Maybe<ItemCreatedRS>> responses = testMethodUuidList.stream()
 				.map(uuid -> Maybe.just(new ItemCreatedRS(uuid, uuid)))
@@ -323,9 +328,15 @@ public class TestUtils {
 				eq(testMethodUuid),
 				any()
 		)).thenReturn(Maybe.just(new OperationCompletionRS())));
+	}
 
-		Maybe<OperationCompletionRS> testClassFinishMaybe = Maybe.just(new OperationCompletionRS());
-		when(client.finishTestItem(eq(testClassUuid), any())).thenReturn(testClassFinishMaybe);
+	public static void mockLaunch(ReportPortalClient client, String launchUuid, String testClassUuid, String testMethodUuid) {
+		mockLaunch(client, launchUuid, testClassUuid, Collections.singleton(testMethodUuid));
+	}
+
+	public static void mockStartTestItem(ReportPortalClient client, String parentUuid, String itemUuid) {
+		Maybe<ItemCreatedRS> testItemMaybe = Maybe.just(new ItemCreatedRS(itemUuid, itemUuid));
+		when(client.startTestItem(eq(parentUuid), any())).thenReturn(testItemMaybe);
 	}
 
 	public static void mockNestedSteps(ReportPortalClient client, Pair<String, String> parentNestedPair) {
