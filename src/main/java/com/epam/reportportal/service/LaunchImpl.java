@@ -390,7 +390,7 @@ public class LaunchImpl extends Launch {
 	}
 
 	/**
-	 * Starts a virtual test item in ReportPortal asynchronously (non-blocking).
+	 * Starts a virtual test item in ReportPortal.
 	 * Virtual items are used as temporary placeholders until they are populated with real item IDs.
 	 * This is useful for scenarios where item creation order needs to be decoupled from test execution order.
 	 *

@@ -26,6 +26,7 @@ import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,6 +82,16 @@ public abstract class Launch {
 	abstract public void finish(final FinishExecutionRQ rq);
 
 	/**
+	 * Starts a virtual test item in ReportPortal.
+	 * Virtual items are used as temporary placeholders until they are populated with real item IDs.
+	 * This is useful for scenarios where item creation order needs to be decoupled from test execution order.
+	 *
+	 * @return Virtual test item ID promise that will be populated with a real ID later
+	 */
+	@Nonnull
+	abstract public Maybe<String> startVirtualItem();
+
+	/**
 	 * Starts new root test item in ReportPortal asynchronously (non-blocking).
 	 *
 	 * @param rq Item start request.
@@ -110,6 +121,27 @@ public abstract class Launch {
 	 */
 	@Nonnull
 	abstract public Maybe<String> startTestItem(final Maybe<String> parentId, final Maybe<String> retryOf, final StartTestItemRQ rq);
+
+	/**
+	 * Starts new test item in ReportPortal asynchronously (non-blocking) and populates the provided virtual item with the real item ID.
+	 *
+	 * @param virtualItem Virtual item ID promise to populate with real ID.
+	 * @param rq          Item start rq.
+	 * @return Real Test Item ID promise.
+	 */
+	@Nonnull
+	abstract public Maybe<String> startVirtualTestItem(final Maybe<String> virtualItem, final StartTestItemRQ rq);
+
+	/**
+	 * Starts new test item in ReportPortal asynchronously (non-blocking) and populates the provided virtual item with the real item ID.
+	 *
+	 * @param parentId    Promise of parent item ID.
+	 * @param virtualItem Virtual item ID promise to populate with real ID.
+	 * @param rq          Item start request.
+	 * @return Real Test Item ID promise.
+	 */
+	@Nonnull
+	abstract public Maybe<String> startVirtualTestItem(final Maybe<String> parentId, final Maybe<String> virtualItem, final StartTestItemRQ rq);
 
 	/**
 	 * Logs message to the ReportPortal Launch, root item.
@@ -207,6 +239,12 @@ public abstract class Launch {
 		public void finish(FinishExecutionRQ rq) {
 		}
 
+		@NotNull
+		@Override
+		public Maybe<String> startVirtualItem() {
+			return Maybe.empty();
+		}
+
 		@Override
 		@Nonnull
 		public Maybe<String> startTestItem(StartTestItemRQ rq) {
@@ -222,6 +260,18 @@ public abstract class Launch {
 		@Override
 		@Nonnull
 		public Maybe<String> startTestItem(Maybe<String> parentId, Maybe<String> retryOf, StartTestItemRQ rq) {
+			return Maybe.empty();
+		}
+
+		@NotNull
+		@Override
+		public Maybe<String> startVirtualTestItem(Maybe<String> virtualItem, StartTestItemRQ rq) {
+			return Maybe.empty();
+		}
+
+		@NotNull
+		@Override
+		public Maybe<String> startVirtualTestItem(Maybe<String> parentId, Maybe<String> virtualItem, StartTestItemRQ rq) {
 			return Maybe.empty();
 		}
 
