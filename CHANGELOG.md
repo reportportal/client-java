@@ -14,6 +14,7 @@
 - `LoggingContext` class is not responsible for log emitting anymore, just holds Item ID context, all logs are emitted by `LaunchImpl` class, by @HardNorth
 ### Removed
 - `LaunchLoggingContext` class, by @HardNorth
+- Deprecated code, by @HardNorth
 
 ## [5.2.31]
 ### Added
