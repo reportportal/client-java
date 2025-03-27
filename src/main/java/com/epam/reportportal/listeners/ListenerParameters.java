@@ -15,7 +15,6 @@
  */
 package com.epam.reportportal.listeners;
 
-import com.epam.reportportal.service.LoggingContext;
 import com.epam.reportportal.service.launch.lock.LaunchIdLockMode;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.reportportal.utils.properties.ListenerProperty;
@@ -34,7 +33,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static com.epam.reportportal.utils.properties.ListenerProperty.*;
-import static com.epam.reportportal.utils.properties.ListenerProperty.TRUSTSTORE_PASSWORD;
 import static java.util.Optional.ofNullable;
 
 /**
@@ -72,6 +70,7 @@ public class ListenerParameters implements Cloneable {
 
 	public static final boolean DEFAULT_EXCEPTION_TRUNCATE = true;
 
+	public static final int DEFAULT_LOG_BATCH_SIZE = 10;
 	// Due to shortcoming of payload calculation mechanism this value is set to 65 million of bytes rather than 65 megabytes
 	public static final long DEFAULT_BATCH_PAYLOAD_LIMIT = 65 * 1000 * 1000;
 
@@ -184,7 +183,7 @@ public class ListenerParameters implements Cloneable {
 
 		this.isSkippedAnIssue = DEFAULT_SKIP_ISSUE;
 
-		this.batchLogsSize = LoggingContext.DEFAULT_LOG_BATCH_SIZE;
+		this.batchLogsSize = DEFAULT_LOG_BATCH_SIZE;
 		this.batchPayloadLimit = DEFAULT_BATCH_PAYLOAD_LIMIT;
 		this.convertImage = DEFAULT_CONVERT_IMAGE;
 		this.reportingTimeout = DEFAULT_REPORTING_TIMEOUT;
@@ -253,7 +252,7 @@ public class ListenerParameters implements Cloneable {
 		this.enable = properties.getPropertyAsBoolean(ENABLE, DEFAULT_ENABLE);
 		this.isSkippedAnIssue = properties.getPropertyAsBoolean(SKIPPED_AS_ISSUE, DEFAULT_SKIP_ISSUE);
 
-		this.batchLogsSize = properties.getPropertyAsInt(BATCH_SIZE_LOGS, LoggingContext.DEFAULT_LOG_BATCH_SIZE);
+		this.batchLogsSize = properties.getPropertyAsInt(BATCH_SIZE_LOGS, DEFAULT_LOG_BATCH_SIZE);
 		this.batchPayloadLimit = properties.getPropertyAsLong(BATCH_PAYLOAD_LIMIT, DEFAULT_BATCH_PAYLOAD_LIMIT);
 		this.convertImage = properties.getPropertyAsBoolean(IS_CONVERT_IMAGE, DEFAULT_CONVERT_IMAGE);
 		this.reportingTimeout = properties.getPropertyAsInt(REPORTING_TIMEOUT, DEFAULT_REPORTING_TIMEOUT);

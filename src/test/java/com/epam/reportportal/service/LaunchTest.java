@@ -59,9 +59,8 @@ import java.util.concurrent.Executors;
 import static com.epam.reportportal.test.TestUtils.*;
 import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.endsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -462,7 +461,7 @@ public class LaunchTest {
 		simulateStartLaunchResponse(rpClient);
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		PrintStream testStream = new PrintStream(baos);
+		PrintStream testStream = new PrintStream(baos, false, StandardCharsets.UTF_8.name());
 		ListenerParameters parameters = standardParameters();
 		parameters.setPrintLaunchUuid(true);
 		parameters.setPrintLaunchUuidOutput(testStream);

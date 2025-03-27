@@ -113,7 +113,7 @@ public class LogBatchingFlowable extends Flowable<List<SaveLogRQ>> implements Ha
 				return;
 			}
 			if (payloadSize + size > payloadLimit) {
-				if (buffer.size() > 0) {
+				if (!buffer.isEmpty()) {
 					toSend.add(buffer);
 					reset();
 				}

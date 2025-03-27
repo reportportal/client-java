@@ -19,7 +19,7 @@ package com.epam.reportportal.service.launch;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.LaunchIdLock;
-import com.epam.reportportal.service.LaunchLoggingContext;
+import com.epam.reportportal.service.LoggingContext;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.utils.Waiter;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
@@ -67,8 +67,10 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 							disposables.add(launch.subscribe(uuid -> {
 								Maybe<LaunchResource> maybeRs = client.getLaunchByUuid(uuid);
 								if (maybeRs != null) {
-									disposables.add(maybeRs.subscribe(launchResource -> result = Boolean.TRUE,
-											throwable -> LOGGER.debug("Unable to get a Launch: " + throwable.getLocalizedMessage(),
+									disposables.add(maybeRs.subscribe(
+											launchResource -> result = Boolean.TRUE,
+											throwable -> LOGGER.debug(
+													"Unable to get a Launch: " + throwable.getLocalizedMessage(),
 													throwable
 											)
 									));
@@ -98,8 +100,8 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 
 	@Override
 	public void finish(final FinishExecutionRQ request) {
-		QUEUE.getOrCompute(launch).addToQueue(LaunchLoggingContext.complete());
-		Throwable throwable = Completable.concat(QUEUE.getOrCompute(this.launch).getChildren())
+		queue.getOrCompute(launch).addToQueue(completeLogEmitter());
+		Throwable throwable = Completable.concat(queue.getOrCompute(this.launch).getChildren())
 				.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS)
 				.blockingGet();
 		if (throwable != null) {
@@ -108,5 +110,13 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 		// ignore super call, since only primary launch should finish it
 		stopRunning();
 		lock.finishInstanceUuid(uuid);
+
+		// Dispose all collected virtual item disposables
+		virtualItemDisposables.removeIf(d -> {
+			d.dispose();
+			return true;
+		});
+		// Dispose all logged items
+		LoggingContext.dispose();
 	}
 }

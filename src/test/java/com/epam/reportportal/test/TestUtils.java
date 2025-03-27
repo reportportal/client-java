@@ -177,7 +177,8 @@ public class TestUtils {
 	}
 
 	public static void simulateFinishTestItemResponse(final ReportPortalClient client) {
-		when(client.finishTestItem(anyString(),
+		when(client.finishTestItem(
+				anyString(),
 				any(FinishTestItemRQ.class)
 		)).then((Answer<Maybe<OperationCompletionRS>>) invocation -> finishTestItemResponse());
 	}
@@ -246,8 +247,10 @@ public class TestUtils {
 				})
 				.map(b -> {
 					try {
-						return HttpRequestUtils.MAPPER.readValue(b, new TypeReference<List<SaveLogRQ>>() {
-						});
+						return HttpRequestUtils.MAPPER.readValue(
+								b, new TypeReference<List<SaveLogRQ>>() {
+								}
+						);
 					} catch (IOException e) {
 						return Collections.<SaveLogRQ>emptyList();
 					}
@@ -261,7 +264,7 @@ public class TestUtils {
 				.filter(p -> ofNullable(p.headers()).map(headers -> headers.get("Content-Disposition"))
 						.map(h -> h.contains(Constants.LOG_REQUEST_BINARY_PART))
 						.orElse(false))
-				.map(p-> Pair.of(ofNullable(p.body().contentType()).map(MediaType::toString).orElse(null), p.body()))
+				.map(p -> Pair.of(ofNullable(p.body().contentType()).map(MediaType::toString).orElse(null), p.body()))
 				.map(b -> {
 					Buffer buf = new Buffer();
 					try {
@@ -278,7 +281,7 @@ public class TestUtils {
 		when(client.log(any(List.class))).then((Answer<Maybe<BatchSaveOperatingRS>>) invocation -> {
 			List<MultipartBody.Part> rq = invocation.getArgument(0);
 			List<String> saveRqs = extractJsonParts(rq).stream()
-					.peek(r -> LOGGER.info(r.getItemUuid() + " - " + r.getMessage()))
+					.peek(r -> LOGGER.info("{} - {}", r.getItemUuid(), r.getMessage()))
 					.map(s -> ofNullable(s.getUuid()).orElseGet(() -> UUID.randomUUID().toString()))
 					.collect(Collectors.toList());
 			return batchLogResponse(saveRqs);
@@ -292,33 +295,28 @@ public class TestUtils {
 		return rq;
 	}
 
-	public static void mockLaunch(ReportPortalClient client, String launchUuid, String testClassUuid, String testMethodUuid) {
-		mockLaunch(client, launchUuid, testClassUuid, Collections.singleton(testMethodUuid));
+	public static void mockStartLaunch(ReportPortalClient client, String launchUuid) {
+		when(client.startLaunch(any())).thenReturn(Maybe.just(new StartLaunchRS(launchUuid, 1L)));
 	}
 
-	@SuppressWarnings("unchecked")
-	public static void mockLaunch(ReportPortalClient client, String launchUuid, String testClassUuid,
-			Collection<String> testMethodUuidList) {
-		when(client.startLaunch(any())).thenReturn(Maybe.just(new StartLaunchRS(launchUuid, 1L)));
-
-		Maybe<ItemCreatedRS> testClassMaybe = Maybe.just(new ItemCreatedRS(testClassUuid, testClassUuid));
-		when(client.startTestItem(any())).thenReturn(testClassMaybe);
-
-		List<Maybe<ItemCreatedRS>> responses = testMethodUuidList.stream()
-				.map(uuid -> Maybe.just(new ItemCreatedRS(uuid, uuid)))
-				.collect(Collectors.toList());
-		Maybe<ItemCreatedRS> first = responses.get(0);
-		Maybe<ItemCreatedRS>[] other = responses.subList(1, responses.size()).toArray(new Maybe[0]);
-		when(client.startTestItem(eq(testClassUuid), any())).thenReturn(first, other);
-		new HashSet<>(testMethodUuidList).forEach(testMethodUuid -> when(client.finishTestItem(
-				eq(testMethodUuid),
-				any()
-		)).thenReturn(Maybe.just(new OperationCompletionRS())));
-
-		Maybe<OperationCompletionRS> testClassFinishMaybe = Maybe.just(new OperationCompletionRS());
-		when(client.finishTestItem(eq(testClassUuid), any())).thenReturn(testClassFinishMaybe);
-
+	public static void mockLaunch(ReportPortalClient client, String launchUuid) {
+		mockStartLaunch(client, launchUuid);
 		when(client.finishLaunch(eq(launchUuid), any())).thenReturn(Maybe.just(new OperationCompletionRS()));
+	}
+
+	public static void mockStartTestItem(ReportPortalClient client, String itemUuid) {
+		Maybe<ItemCreatedRS> testItemMaybe = Maybe.just(new ItemCreatedRS(itemUuid, itemUuid));
+		when(client.startTestItem(any())).thenReturn(testItemMaybe);
+	}
+
+	public static void mockFinishTestItem(ReportPortalClient client, String itemUuid) {
+		Maybe<OperationCompletionRS> testClassFinishMaybe = Maybe.just(new OperationCompletionRS());
+		when(client.finishTestItem(eq(itemUuid), any())).thenReturn(testClassFinishMaybe);
+	}
+
+	public static void mockStartTestItem(ReportPortalClient client, String parentUuid, String itemUuid) {
+		Maybe<ItemCreatedRS> testItemMaybe = Maybe.just(new ItemCreatedRS(itemUuid, itemUuid));
+		when(client.startTestItem(eq(parentUuid), any())).thenReturn(testItemMaybe);
 	}
 
 	public static void mockNestedSteps(ReportPortalClient client, Pair<String, String> parentNestedPair) {
@@ -338,7 +336,8 @@ public class TestUtils {
 			Maybe<ItemCreatedRS>[] other = responses.subList(1, responses.size()).toArray(new Maybe[0]);
 			when(client.startTestItem(eq(k), any(StartTestItemRQ.class))).thenReturn(first, other);
 		});
-		parentNestedPairs.forEach(p -> when(client.finishTestItem(same(p.getValue()),
+		parentNestedPairs.forEach(p -> when(client.finishTestItem(
+				same(p.getValue()),
 				any(FinishTestItemRQ.class)
 		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> Maybe.just(new OperationCompletionRS())));
 	}

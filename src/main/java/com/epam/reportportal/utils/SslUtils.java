@@ -43,6 +43,7 @@ public class SslUtils {
 	 *
 	 * @param keyStore keystore resource
 	 * @param password keystore password
+	 * @param type     keystore type
 	 * @return JKD keystore representation
 	 */
 	@Nonnull
