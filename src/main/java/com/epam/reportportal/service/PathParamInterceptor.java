@@ -26,6 +26,22 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.IntStream;
 
+/**
+ * OkHttp {@link Interceptor} implementation that substitutes path parameters in URL segments.
+ * <p>
+ * This interceptor replaces token strings in the URL path segments with specified values.
+ * A path parameter is identified by the format {@code {paramName}}, where 'paramName' is the name
+ * of the parameter to be substituted.
+ * <p>
+ * Example:
+ * For a URL like "https://example.com/api/{projectName}/launch"
+ * When configured with PathParamInterceptor("projectName", "testProject")
+ * The resulting URL will be "https://example.com/api/testProject/launch"
+ * <p>
+ * This interceptor is used in the ReportPortal client to replace project name placeholders
+ * in API endpoints with the actual project name specified in the client configuration.
+ */
+@SuppressWarnings("JavadocLinkAsPlainText")
 public class PathParamInterceptor implements Interceptor {
 
 	private static final String PARAMETER_PATTERN = "{%s}";
@@ -33,11 +49,25 @@ public class PathParamInterceptor implements Interceptor {
 	private final String key;
 	private final String value;
 
+	/**
+	 * Constructs a {@link PathParamInterceptor} with specified parameter name and replacement value.
+	 *
+	 * @param replaceKey   The name of the parameter to replace (will be wrapped in {} in the URL)
+	 * @param replaceValue The value to substitute for the parameter
+	 */
 	public PathParamInterceptor(String replaceKey, String replaceValue) {
 		key = String.format(PARAMETER_PATTERN, replaceKey);
 		value = replaceValue;
 	}
 
+	/**
+	 * Intercepts the HTTP request and replaces any path segments containing the specified parameter
+	 * with the replacement value.
+	 *
+	 * @param chain The interceptor chain
+	 * @return The response from the chain after processing the modified request
+	 * @throws IOException If an I/O error occurs during request processing
+	 */
 	@Override
 	@Nonnull
 	public Response intercept(Chain chain) throws IOException {

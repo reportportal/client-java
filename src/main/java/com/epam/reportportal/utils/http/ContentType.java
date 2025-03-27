@@ -130,19 +130,6 @@ public class ContentType {
 	}
 
 	/**
-	 * Extract Media Type from a Content-Type header.
-	 *
-	 * @param contentType Content-Type header value
-	 * @return Media Type
-	 * @deprecated Use {@link #stripMediaType(String)} instead
-	 */
-	@Deprecated
-	@Nullable
-	public static String parse(@Nullable String contentType) {
-		return stripMediaType(contentType);
-	}
-
-	/**
 	 * Check if the Media Type is known.
 	 *
 	 * @param mediaType Media Type value
