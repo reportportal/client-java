@@ -5,6 +5,11 @@
 - `LaunchImpl.completeLogEmitter()` method, by @HardNorth
 - `Launch.log(SaveLogRQ rq)` method, by @HardNorth
 - `Launch.log(Function<String, SaveLogRQ> logSupplier)` method, by @HardNorth
+- `Launch.createVirtualItem()` method, which ability to get Item ID promise without actually starting an Item, by @HardNorth
+- `Launch.startVirtualTestItem(Maybe<String>, StartTestItemRQ)` method, which populates virtual Item ID promise with actual Item ID, by @HardNorth
+- `Launch.startVirtualTestItem(Maybe<String>, Maybe<String>, StartTestItemRQ)` method, which populates child virtual Item ID promise with actual Item ID, by @HardNorth
+### Changed
+- `LoggingContext` class is not responsible for log emitting anymore, just holds Item ID context, all logs are emitted by `LaunchImpl` class, by @HardNorth
 ### Removed
 - `LaunchLoggingContext` class, by @HardNorth
 
