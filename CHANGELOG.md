@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.3.0]
 ### Added
 - `LaunchImpl.completeLogEmitter()` method, by @HardNorth
 - `Launch.log(SaveLogRQ rq)` method, by @HardNorth
