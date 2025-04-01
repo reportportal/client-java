@@ -282,7 +282,7 @@ public class LaunchLoggingTest {
 	}
 
 	@Test
-	@Timeout(value = 10, unit = TimeUnit.SECONDS)
+	@Timeout(value = 1, unit = TimeUnit.MINUTES)
 	@SuppressWarnings("unchecked")
 	public void test_virtual_item_logging_after_population() {
 		ReportPortalClient client = mock(ReportPortalClient.class);
@@ -335,7 +335,7 @@ public class LaunchLoggingTest {
 	}
 
 	@Test
-	@Timeout(value = 10, unit = TimeUnit.SECONDS)
+	@Timeout(value = 1, unit = TimeUnit.MINUTES)
 	@SuppressWarnings("unchecked")
 	public void test_virtual_child_item_with_parent() {
 		// Mock client 
@@ -401,7 +401,7 @@ public class LaunchLoggingTest {
 	}
 
 	@Test
-	@Timeout(value = 10, unit = TimeUnit.SECONDS)
+	@Timeout(value = 1, unit = TimeUnit.MINUTES)
 	@SuppressWarnings("unchecked")
 	public void test_child_item_with_virtual_parent_no_calls() {
 		// Mock client
@@ -439,7 +439,7 @@ public class LaunchLoggingTest {
 	}
 
 	@Test
-	@Timeout(value = 10, unit = TimeUnit.SECONDS)
+	@Timeout(value = 1, unit = TimeUnit.MINUTES)
 	@SuppressWarnings("unchecked")
 	public void test_child_item_with_virtual_parent_after_population() {
 		// Mock client

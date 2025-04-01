@@ -339,6 +339,59 @@ public class LaunchImpl extends Launch {
 	}
 
 	/**
+	 * Creates a Completable that polls for completion of all virtual items.
+	 * This method recursively checks if all virtual items have been populated with real IDs.
+	 * If there are still virtual items pending, it schedules another check after a 100ms delay.
+	 * When all virtual items are processed (the virtualItems map is empty), it completes.
+	 *
+	 * @return A Completable that completes when all virtual items are processed
+	 */
+	protected Completable createVirtualItemCompletable() {
+		return Completable.defer(() -> {
+			if (virtualItems.isEmpty()) {
+				return Completable.complete();
+			}
+			// Poll every 100ms until all virtual items are processed
+			return Completable.timer(100, TimeUnit.MILLISECONDS).andThen(Completable.defer(this::createVirtualItemCompletable));
+		});
+	}
+
+	/**
+	 * Waits for the completion of all test items, including virtual items.
+	 * This method ensures that all items have been properly reported to ReportPortal before
+	 * allowing the launch to itemFinishCompletable. It works by:
+	 * <ol>
+	 *   <li>Waiting for all virtual items to be populated with real IDs</li>
+	 *   <li>Completing the log emitter to ensure all logs are sent</li>
+	 *   <li>Waiting for the provided item finish operation completable to complete</li>
+	 * </ol>
+	 * 
+	 * The method respects the reporting timeout configured in the parameters and logs
+	 * appropriate error messages if the timeout is exceeded or any other error occurs.
+	 *
+	 * @param itemFinishCompletable The completable representing the item finish operation for the launch
+	 */
+	protected void waitForItemsCompletion(Completable itemFinishCompletable) {
+		// Create a non-blocking reactive check for virtual items completion
+		Completable waitForVirtualItems = createVirtualItemCompletable();
+
+		long timeoutInSeconds = getParameters().getReportingTimeout();
+		// Wait for all items (including virtual) to be reported in a non-blocking way
+		try {
+			// Run all completion tasks concurrently but within the timeout
+			boolean result = Completable.mergeArray(itemFinishCompletable, waitForVirtualItems, completeLogEmitter())
+					.timeout(timeoutInSeconds, TimeUnit.SECONDS)
+					.blockingAwait(timeoutInSeconds, TimeUnit.SECONDS);
+
+			if (!result) {
+				LOGGER.error("Unable to finish launch in ReportPortal. Timeout exceeded. The data may be lost.");
+			}
+		} catch (Exception e) {
+			LOGGER.error("Unable to finish launch in ReportPortal", e);
+		}
+	}
+
+	/**
 	 * Finishes launch in ReportPortal. Blocks until all items are reported correctly.
 	 *
 	 * @param request Launch finish request.
@@ -356,20 +409,7 @@ public class LaunchImpl extends Launch {
 					.blockingGet())).ignoreElement();
 		}
 		finish = finish.cache();
-
-		// Wait for all items to be reported
-		try {
-			boolean result = finish.blockingAwait(getParameters().getReportingTimeout(), TimeUnit.SECONDS);
-			if (!result) {
-				LOGGER.error("Unable to finish launch in ReportPortal. Timeout exceeded. The data may be lost.");
-			}
-			result = completeLogEmitter().blockingAwait(getParameters().getReportingTimeout(), TimeUnit.SECONDS);
-			if (!result) {
-				LOGGER.error("Unable to log residual log items on ReportPortal. Timeout exceeded. The data may be lost.");
-			}
-		} catch (Exception e) {
-			LOGGER.error("Unable to finish launch in ReportPortal", e);
-		}
+		waitForItemsCompletion(finish);
 
 		// Close and re-create statistics service
 		getStatisticsService().close();

@@ -100,13 +100,8 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 
 	@Override
 	public void finish(final FinishExecutionRQ request) {
-		queue.getOrCompute(launch).addToQueue(completeLogEmitter());
-		Throwable throwable = Completable.concat(queue.getOrCompute(this.launch).getChildren())
-				.timeout(getParameters().getReportingTimeout(), TimeUnit.SECONDS)
-				.blockingGet();
-		if (throwable != null) {
-			LOGGER.error("Unable to finish secondary launch in ReportPortal", throwable);
-		}
+		waitForItemsCompletion(Completable.concat(queue.getOrCompute(this.launch).getChildren()));
+
 		// ignore super call, since only primary launch should finish it
 		stopRunning();
 		lock.finishInstanceUuid(uuid);
