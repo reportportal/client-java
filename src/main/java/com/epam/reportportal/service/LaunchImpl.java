@@ -384,10 +384,10 @@ public class LaunchImpl extends Launch {
 					.blockingAwait(timeoutInSeconds, TimeUnit.SECONDS);
 
 			if (!result) {
-				LOGGER.error("Unable to itemFinishCompletable launch in ReportPortal. Timeout exceeded. The data may be lost.");
+				LOGGER.error("Unable to finish launch in ReportPortal. Timeout exceeded. The data may be lost.");
 			}
 		} catch (Exception e) {
-			LOGGER.error("Unable to itemFinishCompletable launch in ReportPortal", e);
+			LOGGER.error("Unable to finish launch in ReportPortal", e);
 		}
 	}
 
