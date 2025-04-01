@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.3.1]
 ### Changed
 - `LaunchImpl.finish` method now waits virtual items fulfillment, by @HardNorth
 - `LaunchImpl.finish` method now waits for all items completion simultaneously, by @HardNorth
