@@ -117,12 +117,12 @@ public class LaunchImpl extends Launch {
 	/**
 	 * Mapping between virtual item Maybes and their emitters
 	 */
-	protected final ConcurrentHashMap<Maybe<String>, PublishSubject<String>> virtualItems = new ConcurrentHashMap<>();
+	protected final Map<Maybe<String>, PublishSubject<String>> virtualItems = new ConcurrentHashMap<>();
 
 	/**
 	 * Collection of disposables from virtual item subscriptions
 	 */
-	protected final ConcurrentLinkedQueue<Disposable> virtualItemDisposables = new ConcurrentLinkedQueue<>();
+	protected final Queue<Disposable> virtualItemDisposables = new ConcurrentLinkedQueue<>();
 
 	protected final Maybe<String> launch;
 	protected final StartLaunchRQ startRq;
