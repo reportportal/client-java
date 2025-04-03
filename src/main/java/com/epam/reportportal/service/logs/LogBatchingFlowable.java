@@ -54,10 +54,7 @@ public class LogBatchingFlowable extends Flowable<List<SaveLogRQ>> implements Ha
 
 	@Override
 	protected void subscribeActual(Subscriber<? super List<SaveLogRQ>> s) {
-		source.subscribe(new LogBatchingFlowable.BufferSubscriber(new SerializedSubscriber<>(s),
-				maxSize,
-				payloadLimit
-		));
+		source.subscribe(new LogBatchingFlowable.BufferSubscriber(new SerializedSubscriber<>(s), maxSize, payloadLimit));
 	}
 
 	@Override

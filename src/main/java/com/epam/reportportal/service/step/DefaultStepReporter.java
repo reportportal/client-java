@@ -174,7 +174,8 @@ public class DefaultStepReporter implements StepReporter {
 
 	@Override
 	@Nonnull
-	public Maybe<String> sendStep(final @Nonnull ItemStatus status, @Nonnull final String name, final Throwable throwable, final File... files) {
+	public Maybe<String> sendStep(final @Nonnull ItemStatus status, @Nonnull final String name, final Throwable throwable,
+			final File... files) {
 		return sendStep(
 				status, name, () -> {
 					for (final File file : files) {

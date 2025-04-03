@@ -47,7 +47,8 @@ public class AbstractJoinedLaunch extends LaunchImpl {
 			ScheduledExecutorService service) {
 		Random r = new Random();
 		int delay = updateInterval > Integer.MAX_VALUE ? r.nextInt(Integer.MAX_VALUE) : r.nextInt((int) updateInterval);
-		return service.scheduleWithFixedDelay(() -> launchIdLock.updateInstanceUuid(instanceUuid),
+		return service.scheduleWithFixedDelay(
+				() -> launchIdLock.updateInstanceUuid(instanceUuid),
 				delay,
 				updateInterval,
 				TimeUnit.MILLISECONDS

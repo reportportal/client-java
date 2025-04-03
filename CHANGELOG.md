@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Virtual item has not been populated with actual ID in some cases, by @HardNorth
+### Changed
+- `LaunchImpl.finish` method item waits order was tuned to complete items only after virtual items and all logs, by @HardNorth
+- Some refactoring in `LaunchImpl` class, by @HardNorth
 
 ## [5.3.1]
 ### Changed

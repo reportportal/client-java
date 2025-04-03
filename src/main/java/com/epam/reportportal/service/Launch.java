@@ -141,7 +141,8 @@ public abstract class Launch {
 	 * @return Real Test Item ID promise.
 	 */
 	@Nonnull
-	abstract public Maybe<String> startVirtualTestItem(final Maybe<String> parentId, final Maybe<String> virtualItem, final StartTestItemRQ rq);
+	abstract public Maybe<String> startVirtualTestItem(final Maybe<String> parentId, final Maybe<String> virtualItem,
+			final StartTestItemRQ rq);
 
 	/**
 	 * Logs message to the ReportPortal Launch, root item.

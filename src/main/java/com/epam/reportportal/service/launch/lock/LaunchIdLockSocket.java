@@ -93,15 +93,13 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 					byte[] launchUuid = lockUuid.getBytes(TRANSFER_CHARSET);
 					os.write(launchUuid);
 					os.flush();
-					byte[] updateUuid = new byte[(Command.UPDATE.name() + COMMAND_DELIMITER + lockUuid).getBytes(
-							TRANSFER_CHARSET).length];
+					byte[] updateUuid = new byte[(Command.UPDATE.name() + COMMAND_DELIMITER + lockUuid).getBytes(TRANSFER_CHARSET).length];
 					InputStream is = s.getInputStream();
 					//noinspection ResultOfMethodCallIgnored
 					is.read(updateUuid);
 					String data = new String(updateUuid, TRANSFER_CHARSET);
 					final Command command = Command.valueOf(data.substring(0, data.indexOf(COMMAND_DELIMITER)));
-					final String instanceUuid = data.substring(
-							data.indexOf(COMMAND_DELIMITER) + COMMAND_DELIMITER.length());
+					final String instanceUuid = data.substring(data.indexOf(COMMAND_DELIMITER) + COMMAND_DELIMITER.length());
 					switch (command) {
 						case UPDATE:
 							INSTANCES.put(instanceUuid, new Date());
@@ -159,8 +157,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 						//noinspection ResultOfMethodCallIgnored
 						is.read(launchAnswerBuffer);
 						String launchUuid = new String(launchAnswerBuffer, TRANSFER_CHARSET);
-						byte[] saveBuffer = (command.name() + COMMAND_DELIMITER + instanceUuid).getBytes(
-								TRANSFER_CHARSET);
+						byte[] saveBuffer = (command.name() + COMMAND_DELIMITER + instanceUuid).getBytes(TRANSFER_CHARSET);
 						OutputStream os = socket.getOutputStream();
 						os.write(saveBuffer);
 						os.flush();
@@ -175,12 +172,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 						}
 						return launchUuid;
 					} catch (IOException e) {
-						LOGGER.warn(
-								"Unable to '{}' instance UUID on port '{}', connection error",
-								command.name(),
-								portNumber,
-								e
-						);
+						LOGGER.warn("Unable to '{}' instance UUID on port '{}', connection error", command.name(), portNumber, e);
 						return null;
 					}
 				});
@@ -295,10 +287,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchId
 	@Override
 	public Collection<String> getLiveInstanceUuids() {
 		Calendar calendar = Calendar.getInstance();
-		calendar.add(
-				Calendar.MILLISECOND,
-				-instanceWaitTimeout < Integer.MIN_VALUE ? Integer.MIN_VALUE : (int) -instanceWaitTimeout
-		);
+		calendar.add(Calendar.MILLISECOND, -instanceWaitTimeout < Integer.MIN_VALUE ? Integer.MIN_VALUE : (int) -instanceWaitTimeout);
 		Date timeoutTime = calendar.getTime();
 		return INSTANCES.entrySet()
 				.stream()
