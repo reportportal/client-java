@@ -37,8 +37,8 @@ import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
  * launches.
  */
 public class PrimaryLaunch extends AbstractJoinedLaunch {
-	public PrimaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, StartLaunchRQ launch,
-			ExecutorService executorService, LaunchIdLock launchIdLock, String instanceUuid) {
+	public PrimaryLaunch(ReportPortalClient rpClient, ListenerParameters parameters, StartLaunchRQ launch, ExecutorService executorService,
+			LaunchIdLock launchIdLock, String instanceUuid) {
 		super(rpClient, parameters, launch, executorService, launchIdLock, instanceUuid);
 	}
 
@@ -56,10 +56,8 @@ public class PrimaryLaunch extends AbstractJoinedLaunch {
 		// If there was launch number change (finished == false) we will wait more.
 		// Only if
 		while (finished != Boolean.TRUE && finished != null) {
-			Waiter waiter = new Waiter("Wait for all launches end").duration(
-					getParameters().getClientJoinTimeout(),
-					TimeUnit.MILLISECONDS
-			).pollingEvery(1, TimeUnit.SECONDS);
+			Waiter waiter = new Waiter("Wait for all launches end").duration(getParameters().getClientJoinTimeout(), TimeUnit.MILLISECONDS)
+					.pollingEvery(1, TimeUnit.SECONDS);
 			finished = waiter.till(finishCondition);
 		}
 		lock.finishInstanceUuid(uuid);

@@ -75,15 +75,13 @@ public class PathParamInterceptor implements Interceptor {
 
 		List<String> segments = originalRequest.url().pathSegments();
 		HttpUrl.Builder urlBuilder = originalRequest.url().newBuilder();
-		IntStream.range(0, segments.size()).forEach(i->{
+		IntStream.range(0, segments.size()).forEach(i -> {
 			String s = segments.get(i);
 			if (s.contains(key)) {
 				urlBuilder.setPathSegment(i, s.replace(key, value));
 			}
 		});
-		Request request = originalRequest.newBuilder()
-				.url(urlBuilder.build())
-				.build();
+		Request request = originalRequest.newBuilder().url(urlBuilder.build()).build();
 		return chain.proceed(request);
 	}
 }

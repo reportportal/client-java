@@ -357,38 +357,44 @@ public class LaunchImpl extends Launch {
 	}
 
 	/**
-	 * Waits for the completion of all test items, including virtual items.
-	 * This method ensures that all items have been properly reported to ReportPortal before
-	 * allowing the launch to itemFinishCompletable. It works by:
-	 * <ol>
-	 *   <li>Waiting for all virtual items to be populated with real IDs</li>
-	 *   <li>Completing the log emitter to ensure all logs are sent</li>
-	 *   <li>Waiting for the provided item finish operation completable to complete</li>
-	 * </ol>
-	 * 
-	 * The method respects the reporting timeout configured in the parameters and logs
-	 * appropriate error messages if the timeout is exceeded or any other error occurs.
+	 * Executes completion tasks with a timeout.
 	 *
-	 * @param itemFinishCompletable The completable representing the item finish operation for the launch
+	 * @param completableTasks Completable tasks to execute
 	 */
-	protected void waitForItemsCompletion(Completable itemFinishCompletable) {
-		// Create a non-blocking reactive check for virtual items completion
-		Completable waitForVirtualItems = createVirtualItemCompletable();
-
+	protected void waitForCompletable(Completable... completableTasks) {
+		if (completableTasks == null || completableTasks.length == 0) {
+			return;
+		}
 		long timeoutInSeconds = getParameters().getReportingTimeout();
 		// Wait for all items (including virtual) to be reported in a non-blocking way
 		try {
 			// Run all completion tasks concurrently but within the timeout
-			boolean result = Completable.mergeArray(itemFinishCompletable, waitForVirtualItems, completeLogEmitter())
-					.timeout(timeoutInSeconds, TimeUnit.SECONDS)
-					.blockingAwait(timeoutInSeconds, TimeUnit.SECONDS);
+			Completable completable = completableTasks.length > 1 ? Completable.mergeArray(completableTasks) : completableTasks[0];
+			boolean result = completable.timeout(timeoutInSeconds, TimeUnit.SECONDS).blockingAwait(timeoutInSeconds, TimeUnit.SECONDS);
 
 			if (!result) {
-				LOGGER.error("Unable to finish launch in ReportPortal. Timeout exceeded. The data may be lost.");
+				LOGGER.error("Unable to finish launch items on ReportPortal. Timeout exceeded. The data may be lost.");
 			}
 		} catch (Exception e) {
-			LOGGER.error("Unable to finish launch in ReportPortal", e);
+			LOGGER.error("Unable to finish launch items on ReportPortal", e);
 		}
+	}
+
+	/**
+	 * Waits for the completion of all virtual test items and logs.
+	 * This method ensures that all items have been properly reported to ReportPortal. It works by:
+	 * <ol>
+	 *   <li>Waiting for all virtual items to be populated with real IDs</li>
+	 *   <li>Completing the log emitter to ensure all logs are sent</li>
+	 * </ol>
+	 * <p>
+	 * The method respects the reporting timeout configured in the parameters and logs
+	 * appropriate error messages if the timeout is exceeded or any other error occurs.
+	 */
+	protected void waitForItemsCompletion() {
+		// Create a non-blocking reactive check for virtual items completion
+		Completable waitForVirtualItems = createVirtualItemCompletable();
+		waitForCompletable(waitForVirtualItems, completeLogEmitter());
 	}
 
 	/**
@@ -397,8 +403,14 @@ public class LaunchImpl extends Launch {
 	 * @param request Launch finish request.
 	 */
 	public void finish(final FinishExecutionRQ request) {
+		// Finish virtual items and logs
+		waitForItemsCompletion();
+
 		// Collect all items to be reported
-		Completable finish = Completable.concat(queue.getOrCompute(launch).getChildren());
+		Completable finish = Completable.concat(queue.values()
+				.stream()
+				.flatMap(i -> i.getChildren().stream())
+				.collect(Collectors.toList()));
 		if (StringUtils.isBlank(getParameters().getLaunchUuid()) || !getParameters().isLaunchUuidCreationSkip()) {
 			FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
 			truncateAttributes(rq);
@@ -408,8 +420,9 @@ public class LaunchImpl extends Launch {
 					.doOnError(LOG_ERROR)
 					.blockingGet())).ignoreElement();
 		}
-		finish = finish.cache();
-		waitForItemsCompletion(finish);
+
+		// Finish all items
+		waitForCompletable(finish.cache());
 
 		// Close and re-create statistics service
 		getStatisticsService().close();
@@ -427,53 +440,6 @@ public class LaunchImpl extends Launch {
 	private static <T> Maybe<T> createErrorResponse(Throwable cause) {
 		LOGGER.error(cause.getMessage(), cause);
 		return Maybe.error(cause);
-	}
-
-	/**
-	 * Creates a virtual test item in ReportPortal.
-	 * Virtual items are used as temporary placeholders until they are populated with real item IDs.
-	 * This is useful for scenarios where item creation order needs to be decoupled from test execution order.
-	 *
-	 * @return Virtual test item ID promise that will be populated with a real ID later
-	 */
-	@Nonnull
-	public Maybe<String> createVirtualItem() {
-		PublishSubject<String> emitter = PublishSubject.create();
-		Maybe<String> virtualItem = RxJavaPlugins.onAssembly(emitter.singleElement().cache()).subscribeOn(scheduler);
-		virtualItems.put(virtualItem, emitter);
-		LoggingContext.init(virtualItem);
-		return virtualItem;
-	}
-
-	/**
-	 * Populates a virtual item with a real ID, triggering all subscribers waiting for this ID.
-	 *
-	 * @param virtualItem Virtual item ID promise.
-	 * @param realId      Real ID to populate the virtual item with.
-	 */
-	private void populateVirtualItem(@Nonnull final Maybe<String> virtualItem, @Nonnull final String realId) {
-		PublishSubject<String> emitter = virtualItems.remove(virtualItem);
-		if (emitter != null) {
-			emitter.onNext(realId);
-			emitter.onComplete();
-		} else {
-			LOGGER.error("Unable to populate virtual item with ID: {}. No emitter found.", realId);
-		}
-	}
-
-	/**
-	 * Populates a virtual item with an error, triggering all subscribers waiting with the error.
-	 *
-	 * @param virtualItem Virtual item ID promise.
-	 * @param cause       Error to populate the virtual item with.
-	 */
-	private void populateVirtualItem(@Nonnull final Maybe<String> virtualItem, @Nonnull final Throwable cause) {
-		PublishSubject<String> emitter = virtualItems.remove(virtualItem);
-		if (emitter != null) {
-			emitter.onError(cause);
-		} else {
-			LOGGER.error("Unable to populate virtual item with error. No emitter found.", cause);
-		}
 	}
 
 	/**
@@ -495,13 +461,13 @@ public class LaunchImpl extends Launch {
 		truncateName(rq);
 		truncateAttributes(rq);
 
-		Maybe<String> item = launch.flatMap((Function<String, Maybe<String>>) launchId -> {
+		String itemDescription = String.format("root test item [%s] '%s'", rq.getType(), rq.getName());
+		final Maybe<String> item = launch.flatMap((Function<String, Maybe<String>>) launchId -> {
 			rq.setLaunchUuid(launchId);
-			return getClient().startTestItem(rq).retry(DEFAULT_REQUEST_RETRY).doOnSuccess(logCreated("item")).map(TO_ID);
+			LOGGER.trace("Starting {} in thread: {}", itemDescription, Thread.currentThread().getName());
+			return getClient().startTestItem(rq).retry(DEFAULT_REQUEST_RETRY).map(TO_ID);
 		}).cache();
-
-		String itemDescription = String.format("Start root test item [%s] '%s'", rq.getType(), rq.getName());
-		item.subscribeOn(getScheduler()).subscribe(logMaybeResults(itemDescription));
+		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start " + itemDescription));
 		queue.getOrCompute(item).addToQueue(item.ignoreElement().onErrorComplete());
 		LoggingContext.init(item);
 
@@ -551,21 +517,71 @@ public class LaunchImpl extends Launch {
 		truncateName(rq);
 		truncateAttributes(rq);
 
-		final Maybe<String> item = launch.flatMap((Function<String, Maybe<String>>) lId -> parentId.flatMap((Function<String, MaybeSource<String>>) pId -> {
-			rq.setLaunchUuid(lId);
-			LOGGER.trace("Starting test item in thread: {}", Thread.currentThread().getName());
-			Maybe<ItemCreatedRS> result = getClient().startTestItem(pId, rq);
-			result = result.retry(DEFAULT_REQUEST_RETRY);
-			result = result.doOnSuccess(logCreated("item"));
-			return result.map(TO_ID);
-		})).cache();
-		String itemDescription = String.format("Start child test item [%s] '%s'", rq.getType(), rq.getName());
-		item.subscribeOn(getScheduler()).subscribe(logMaybeResults(itemDescription));
+		String itemDescription = String.format("child test item [%s] '%s'", rq.getType(), rq.getName());
+		final Maybe<String> item = RxJavaPlugins.onAssembly(Maybe.zip(
+				launch, parentId, (lId, pId) -> {
+					rq.setLaunchUuid(lId);
+					LOGGER.trace("Starting {} in thread: {}", itemDescription, Thread.currentThread().getName());
+					return getClient().startTestItem(pId, rq);
+				}
+		).flatMap(rs -> rs.retry(DEFAULT_REQUEST_RETRY).map(TO_ID)).cache());
+
+		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start " + itemDescription));
 		queue.getOrCompute(item).withParent(parentId).addToQueue(item.ignoreElement().onErrorComplete());
 		LoggingContext.init(item);
 
 		getStepReporter().setParent(item);
 		return item;
+	}
+
+	/**
+	 * Creates a virtual test item in ReportPortal.
+	 * Virtual items are used as temporary placeholders until they are populated with real item IDs.
+	 * This is useful for scenarios where item creation order needs to be decoupled from test execution order.
+	 *
+	 * @return Virtual test item ID promise that will be populated with a real ID later
+	 */
+	@Nonnull
+	public Maybe<String> createVirtualItem() {
+		System.err.println("Creating virtual item");
+		PublishSubject<String> emitter = PublishSubject.create();
+		Maybe<String> virtualItem = RxJavaPlugins.onAssembly(emitter.singleElement().cache());
+		virtualItems.put(virtualItem, emitter);
+		LoggingContext.init(virtualItem);
+		return virtualItem;
+	}
+
+	/**
+	 * Populates a virtual item with a real ID, triggering all subscribers waiting for this ID.
+	 *
+	 * @param virtualItem Virtual item ID promise.
+	 * @param realId      Real ID to populate the virtual item with.
+	 */
+	private void populateVirtualItem(@Nonnull final Maybe<String> virtualItem, @Nonnull final String realId) {
+		PublishSubject<String> emitter = virtualItems.get(virtualItem);
+		if (emitter != null) {
+			emitter.onNext(realId);
+			emitter.onComplete();
+		} else {
+			LOGGER.error("Unable to populate virtual item with ID: {}. No emitter found.", realId);
+		}
+		virtualItems.remove(virtualItem);
+	}
+
+	/**
+	 * Populates a virtual item with an error, triggering all subscribers waiting with the error.
+	 *
+	 * @param virtualItem Virtual item ID promise.
+	 * @param cause       Error to populate the virtual item with.
+	 */
+	private void populateVirtualItem(@Nonnull final Maybe<String> virtualItem, @Nonnull final Throwable cause) {
+		PublishSubject<String> emitter = virtualItems.get(virtualItem);
+		if (emitter != null) {
+			emitter.onError(cause);
+		} else {
+			LOGGER.error("Unable to populate virtual item with error. No emitter found.", cause);
+		}
+		virtualItems.remove(virtualItem);
 	}
 
 	/**
@@ -638,6 +654,7 @@ public class LaunchImpl extends Launch {
 	 */
 	@Nonnull
 	public Maybe<String> startVirtualTestItem(final Maybe<String> parentId, final Maybe<String> virtualItem, final StartTestItemRQ rq) {
+		System.err.println("Starting virtual item");
 		Maybe<String> error = handleVirtualItemError(virtualItem, rq);
 		if (error != null) {
 			return error;
@@ -774,8 +791,9 @@ public class LaunchImpl extends Launch {
 				.andThen(finishResponse)
 				.doAfterTerminate(() -> queue.remove(item)) //cleanup children
 				.ignoreElement()
-				.cache();
-		finishCompletion.subscribeOn(getScheduler()).subscribe(logCompletableResults("Finish test item"));
+				.cache()
+				.subscribeOn(getScheduler());
+		finishCompletion.subscribe(logCompletableResults("Finish test item"));
 		//find parent and add to its queue
 		final Maybe<String> parent = treeItem.getParent();
 		if (null != parent) {

@@ -28,7 +28,6 @@ import retrofit2.http.Query;
 public interface StatisticsApiClient {
 
 	@POST("mp/collect")
-	Maybe<Response<ResponseBody>> send(@Header("User-Agent") String agent,
-			@Query("measurement_id") String measurement_id, @Query("api_secret") String apiSecret,
-			@Body StatisticsItem item);
+	Maybe<Response<ResponseBody>> send(@Header("User-Agent") String agent, @Query("measurement_id") String measurement_id,
+			@Query("api_secret") String apiSecret, @Body StatisticsItem item);
 }

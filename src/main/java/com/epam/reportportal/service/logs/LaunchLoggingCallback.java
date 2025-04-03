@@ -43,7 +43,11 @@ public final class LaunchLoggingCallback {
 	/**
 	 * Logs an error
 	 */
-	public static final Consumer<Throwable> LOG_ERROR = rs -> LOGGER.error("[{}] ReportPortal execution error", Thread.currentThread().getId(), rs);
+	public static final Consumer<Throwable> LOG_ERROR = rs -> LOGGER.error(
+			"[{}] ReportPortal execution error",
+			Thread.currentThread().getId(),
+			rs
+	);
 
 	/**
 	 * Logs message once some entity creation

@@ -57,7 +57,7 @@ public class TestItemTree {
 	 * Create a Test Item Leaf for a tree of Test Items
 	 *
 	 * @param parentId an ID of a parent Test Item (leaf)
-	 * @param itemId an ID of the leaf
+	 * @param itemId   an ID of the leaf
 	 * @return a leaf object
 	 */
 	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> parentId, Maybe<String> itemId) {
@@ -67,33 +67,32 @@ public class TestItemTree {
 	/**
 	 * Create a Test Item Leaf for a tree of Test Items
 	 *
-	 * @param itemId an ID of the leaf
+	 * @param itemId     an ID of the leaf
 	 * @param childItems child leaf elements
 	 * @return a leaf object
 	 */
-	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> itemId,
-			Map<ItemTreeKey, TestItemLeaf> childItems) {
+	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> itemId, Map<ItemTreeKey, TestItemLeaf> childItems) {
 		return new TestItemTree.TestItemLeaf(itemId, Collections.emptyMap(), childItems);
 	}
 
 	/**
 	 * Create a Test Item Leaf for a tree of Test Items
 	 *
-	 * @param itemId an ID of the leaf
+	 * @param itemId     an ID of the leaf
 	 * @param childItems child leaf elements
 	 * @param attributes leaf attributes
 	 * @return a leaf object
 	 */
-	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> itemId,
-			Map<ItemTreeKey, TestItemLeaf> childItems, Map<String, Object> attributes) {
+	public static TestItemTree.TestItemLeaf createTestItemLeaf(Maybe<String> itemId, Map<ItemTreeKey, TestItemLeaf> childItems,
+			Map<String, Object> attributes) {
 		return new TestItemTree.TestItemLeaf(itemId, attributes, childItems);
 	}
 
 	/**
 	 * Create a Test Item Leaf for a tree of Test Items
 	 *
-	 * @param parentId an ID of a parent Test Item (leaf)
-	 * @param itemId an ID of the leaf
+	 * @param parentId   an ID of a parent Test Item (leaf)
+	 * @param itemId     an ID of the leaf
 	 * @param childItems child leaf elements
 	 * @return a leaf object
 	 */
@@ -105,8 +104,8 @@ public class TestItemTree {
 	/**
 	 * Create a Test Item Leaf for a tree of Test Items
 	 *
-	 * @param parentId an ID of a parent Test Item (leaf)
-	 * @param itemId an ID of the leaf
+	 * @param parentId   an ID of a parent Test Item (leaf)
+	 * @param itemId     an ID of the leaf
 	 * @param childItems child leaf elements
 	 * @param attributes leaf attributes
 	 * @return a leaf object

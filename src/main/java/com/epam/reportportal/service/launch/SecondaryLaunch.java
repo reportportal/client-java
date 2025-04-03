@@ -70,7 +70,8 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 									disposables.add(maybeRs.subscribe(
 											launchResource -> result = Boolean.TRUE,
 											throwable -> LOGGER.debug(
-													"Unable to get a Launch: " + throwable.getLocalizedMessage(),
+													"Unable to get a Launch: {}",
+													throwable.getLocalizedMessage(),
 													throwable
 											)
 									));
@@ -100,7 +101,11 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 
 	@Override
 	public void finish(final FinishExecutionRQ request) {
-		waitForItemsCompletion(Completable.concat(queue.getOrCompute(this.launch).getChildren()));
+		// Finish virtual items and logs
+		waitForItemsCompletion();
+
+		// Wait for all items to be finished
+		waitForCompletable(Completable.concat(queue.getOrCompute(this.launch).getChildren()));
 
 		// ignore super call, since only primary launch should finish it
 		stopRunning();

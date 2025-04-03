@@ -51,9 +51,8 @@ public class StatisticsService implements Closeable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(StatisticsService.class);
 
 	private static final String CLIENT_INFO = "Ry1XUDU3UlNHOFhMOjUxREVTTzQ4UV9DbmlnbVEwY2JoYmc=";
-	private static final String[] DECODED_CLIENT_INFO = new String(Base64.getDecoder().decode(CLIENT_INFO),
-			StandardCharsets.UTF_8
-	).split(":");
+	private static final String[] DECODED_CLIENT_INFO = new String(Base64.getDecoder().decode(CLIENT_INFO), StandardCharsets.UTF_8).split(
+			":");
 
 	private static final String CLIENT_PROPERTIES_FILE = "client.properties";
 	public static final String START_LAUNCH_EVENT_ACTION = "start_launch";
@@ -86,8 +85,7 @@ public class StatisticsService implements Closeable {
 	}
 
 	public StatisticsService(ListenerParameters listenerParameters) {
-		this(listenerParameters,
-				new StatisticsClient(DECODED_CLIENT_INFO[0], DECODED_CLIENT_INFO[1], listenerParameters));
+		this(listenerParameters, new StatisticsClient(DECODED_CLIENT_INFO[0], DECODED_CLIENT_INFO[1], listenerParameters));
 	}
 
 	protected Statistics getStatistics() {
@@ -101,17 +99,15 @@ public class StatisticsService implements Closeable {
 				.map(ItemAttributeResource::getValue)
 				.map(a -> a.split(Pattern.quote(SystemAttributesExtractor.ATTRIBUTE_VALUE_SEPARATOR)))
 				.filter(a -> a.length >= 2)
-				.flatMap(a -> Stream.of(Pair.of(CLIENT_NAME_PARAM, a[0]),
+				.flatMap(a -> Stream.of(
+						Pair.of(CLIENT_NAME_PARAM, a[0]),
 						Pair.of(CLIENT_VERSION_PARAM, a[1]),
-						Pair.of(INTERPRETER_PARAM,
-								String.format(INTERPRETER_FORMAT, System.getProperty("java.version"))
-						)
+						Pair.of(INTERPRETER_PARAM, String.format(INTERPRETER_FORMAT, System.getProperty("java.version")))
 				))
 				.forEach(p -> event.addParam(p.getKey(), p.getValue()));
 
 		ofNullable(rq.getAttributes()).flatMap(r -> r.stream()
-						.filter(attribute -> attribute.isSystem() && DefaultProperties.AGENT.getName()
-								.equalsIgnoreCase(attribute.getKey()))
+						.filter(attribute -> attribute.isSystem() && DefaultProperties.AGENT.getName().equalsIgnoreCase(attribute.getKey()))
 						.findAny())
 				.map(ItemAttributeResource::getValue)
 				.map(a -> a.split(Pattern.quote(SystemAttributesExtractor.ATTRIBUTE_VALUE_SEPARATOR)))
@@ -119,24 +115,24 @@ public class StatisticsService implements Closeable {
 				.ifPresent(a -> Stream.of(Pair.of(AGENT_NAME_PARAM, a[0]), Pair.of(AGENT_VERSION_PARAM, a[1]))
 						.forEach(p -> event.addParam(p.getKey(), p.getValue())));
 
-		Maybe<Response<ResponseBody>> statisticsMaybe = launchIdMaybe.flatMap(l -> getStatistics().send(new StatisticsItem(
-				CLIENT_ID).addEvent(event))).cache().subscribeOn(scheduler);
+		Maybe<Response<ResponseBody>> statisticsMaybe = launchIdMaybe.flatMap(l -> getStatistics().send(new StatisticsItem(CLIENT_ID).addEvent(
+				event))).cache().subscribeOn(scheduler);
 		dependencies.add(statisticsMaybe.ignoreElement());
 		//noinspection ResultOfMethodCallIgnored
-		statisticsMaybe.subscribe(t -> {
-			ofNullable(t.body()).ifPresent(ResponseBody::close);
-			getStatistics().close();
-		}, t -> {
-			LOGGER.error("Unable to send statistics", t);
-			getStatistics().close();
-		});
+		statisticsMaybe.subscribe(
+				t -> {
+					ofNullable(t.body()).ifPresent(ResponseBody::close);
+					getStatistics().close();
+				}, t -> {
+					LOGGER.error("Unable to send statistics", t);
+					getStatistics().close();
+				}
+		);
 	}
 
 	@Override
 	public void close() {
-		Throwable result = Completable.concat(dependencies)
-				.timeout(parameters.getReportingTimeout(), TimeUnit.SECONDS)
-				.blockingGet();
+		Throwable result = Completable.concat(dependencies).timeout(parameters.getReportingTimeout(), TimeUnit.SECONDS).blockingGet();
 		if (result != null) {
 			LOGGER.warn("Unable to complete execution of all dependencies", result);
 		}
