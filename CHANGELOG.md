@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.3.2]
 ### Fixed
 - Virtual item has not been populated with actual ID in some cases, by @HardNorth
 ### Changed
