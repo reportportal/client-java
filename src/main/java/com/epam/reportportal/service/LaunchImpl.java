@@ -543,7 +543,6 @@ public class LaunchImpl extends Launch {
 	 */
 	@Nonnull
 	public Maybe<String> createVirtualItem() {
-		System.err.println("Creating virtual item");
 		PublishSubject<String> emitter = PublishSubject.create();
 		Maybe<String> virtualItem = RxJavaPlugins.onAssembly(emitter.singleElement().cache());
 		virtualItems.put(virtualItem, emitter);
@@ -654,7 +653,6 @@ public class LaunchImpl extends Launch {
 	 */
 	@Nonnull
 	public Maybe<String> startVirtualTestItem(final Maybe<String> parentId, final Maybe<String> virtualItem, final StartTestItemRQ rq) {
-		System.err.println("Starting virtual item");
 		Maybe<String> error = handleVirtualItemError(virtualItem, rq);
 		if (error != null) {
 			return error;
