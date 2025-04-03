@@ -557,14 +557,13 @@ public class LaunchImpl extends Launch {
 	 * @param realId      Real ID to populate the virtual item with.
 	 */
 	private void populateVirtualItem(@Nonnull final Maybe<String> virtualItem, @Nonnull final String realId) {
-		PublishSubject<String> emitter = virtualItems.get(virtualItem);
+		PublishSubject<String> emitter = virtualItems.remove(virtualItem);
 		if (emitter != null) {
 			emitter.onNext(realId);
 			emitter.onComplete();
 		} else {
 			LOGGER.error("Unable to populate virtual item with ID: {}. No emitter found.", realId);
 		}
-		virtualItems.remove(virtualItem);
 	}
 
 	/**
@@ -574,13 +573,12 @@ public class LaunchImpl extends Launch {
 	 * @param cause       Error to populate the virtual item with.
 	 */
 	private void populateVirtualItem(@Nonnull final Maybe<String> virtualItem, @Nonnull final Throwable cause) {
-		PublishSubject<String> emitter = virtualItems.get(virtualItem);
+		PublishSubject<String> emitter = virtualItems.remove(virtualItem);
 		if (emitter != null) {
 			emitter.onError(cause);
 		} else {
 			LOGGER.error("Unable to populate virtual item with error. No emitter found.", cause);
 		}
-		virtualItems.remove(virtualItem);
 	}
 
 	/**
