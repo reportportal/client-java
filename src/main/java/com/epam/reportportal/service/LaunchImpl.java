@@ -774,14 +774,18 @@ public class LaunchImpl extends Launch {
 		}
 
 		//wait for the children to complete
-		Maybe<OperationCompletionRS> finishResponse = this.launch.flatMap((Function<String, Maybe<OperationCompletionRS>>) launchId -> item.flatMap(
-				(Function<String, Maybe<OperationCompletionRS>>) itemId -> {
+		Maybe<OperationCompletionRS> finishResponse = RxJavaPlugins.onAssembly(Maybe.zip(
+				this.launch, item, (launchId, itemId) -> {
+					// set launch UUID for the request
 					rq.setLaunchUuid(launchId);
+					LOGGER.trace("Finishing test item {} in thread: {}", itemId, Thread.currentThread().getName());
+					// make the actual call to finish the test item
 					return getClient().finishTestItem(itemId, rq)
 							.retry(TEST_ITEM_FINISH_REQUEST_RETRY)
 							.doOnSuccess(LOG_SUCCESS)
 							.doOnError(LOG_ERROR);
-				})).cache();
+				}
+		).flatMap(m -> m).cache());
 
 		Completable finishCompletion = Completable.concat(treeItem.getChildren())
 				.andThen(finishResponse)
@@ -790,6 +794,7 @@ public class LaunchImpl extends Launch {
 				.cache()
 				.subscribeOn(getScheduler());
 		finishCompletion.subscribe(logCompletableResults("Finish test item"));
+
 		//find parent and add to its queue
 		final Maybe<String> parent = treeItem.getParent();
 		if (null != parent) {
