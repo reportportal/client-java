@@ -145,9 +145,9 @@ public class LaunchImpl extends Launch {
 						new FlowableFromObservable<>(emitter).flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable),
 						parameters
 				))
+				.observeOn(scheduler)
 				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
 						rqs)).toFlowable())
-				.observeOn(scheduler)
 				.onBackpressureBuffer(parameters.getRxBufferSize(), false, true)
 				.subscribe(loggingSubscriber);
 		return emitter;
