@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Sporadically missed item finish, by @HardNorth
 
 ## [5.3.3]
 ### Fixed
