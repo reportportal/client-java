@@ -145,7 +145,6 @@ public class LaunchImpl extends Launch {
 						new FlowableFromObservable<>(emitter).flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable),
 						parameters
 				))
-				.subscribeOn(scheduler)
 				.observeOn(scheduler)
 				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
 						rqs)).toFlowable())
