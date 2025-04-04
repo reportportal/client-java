@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.3.3]
 ### Fixed
 - Sporadically missed logs, by @HardNorth
 
