@@ -85,6 +85,7 @@ public class ManualNestedStepTest {
 	private Maybe<String> testMethodUuidMaybe;
 	private StepReporter sr;
 
+	@SuppressWarnings("ResultOfMethodCallIgnored")
 	@BeforeEach
 	public void initMocks() {
 		client = mock(ReportPortalClient.class);
@@ -96,7 +97,9 @@ public class ManualNestedStepTest {
 		launch = new MyLaunch(client, parameters, executor);
 		launchUuid = launch.start();
 		testClassUuidMaybe = launch.startTestItem(TestUtils.standardStartTestRequest());
+		testClassUuidMaybe.blockingGet();
 		testMethodUuidMaybe = launch.startTestItem(testClassUuidMaybe, TestUtils.standardStartStepRequest());
+		testMethodUuidMaybe.blockingGet();
 		sr = launch.getStepReporter();
 	}
 
