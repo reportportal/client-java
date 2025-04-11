@@ -17,23 +17,14 @@
 package com.epam.reportportal.service.logs;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Flowable;
-import io.reactivex.FlowableSubscriber;
 import io.reactivex.internal.fuseable.HasUpstreamPublisher;
-import io.reactivex.internal.subscriptions.SubscriptionHelper;
-import io.reactivex.internal.util.BackpressureHelper;
-import io.reactivex.plugins.RxJavaPlugins;
 import io.reactivex.subscribers.SerializedSubscriber;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A flowable which compile {@link SaveLogRQ} messages into specific batches limited by the number of entities in the batch and estimated
@@ -54,116 +45,11 @@ public class LogBatchingFlowable extends Flowable<List<SaveLogRQ>> implements Ha
 
 	@Override
 	protected void subscribeActual(Subscriber<? super List<SaveLogRQ>> s) {
-		source.subscribe(new LogBatchingFlowable.BufferSubscriber(new SerializedSubscriber<>(s), maxSize, payloadLimit));
+		source.subscribe(new BufferSubscriber(new SerializedSubscriber<>(s), maxSize, payloadLimit));
 	}
 
 	@Override
 	public Publisher<SaveLogRQ> source() {
 		return source;
-	}
-
-	private static final class BufferSubscriber implements FlowableSubscriber<SaveLogRQ>, Subscription {
-		private final ReentrantLock lock = new ReentrantLock();
-		private final Subscriber<List<SaveLogRQ>> downstream;
-		private final int maxSize;
-		private final long payloadLimit;
-
-		private volatile List<SaveLogRQ> buffer;
-		private volatile long payloadSize;
-		private volatile Subscription upstream;
-		private volatile boolean done;
-
-		public BufferSubscriber(Subscriber<List<SaveLogRQ>> actual, int batchMaxSize, long batchPayloadLimit) {
-			downstream = actual;
-			maxSize = batchMaxSize;
-			payloadLimit = batchPayloadLimit;
-		}
-
-		@Override
-		public void onSubscribe(@Nonnull Subscription s) {
-			if (!SubscriptionHelper.validate(upstream, s)) {
-				return;
-			}
-			upstream = s;
-			buffer = new ArrayList<>();
-			payloadSize = HttpRequestUtils.TYPICAL_MULTIPART_FOOTER_LENGTH;
-
-			downstream.onSubscribe(this);
-		}
-
-		private void reset() {
-			buffer = new ArrayList<>();
-			payloadSize = HttpRequestUtils.TYPICAL_MULTIPART_FOOTER_LENGTH;
-		}
-
-		@Override
-		@SuppressWarnings("UnnecessaryLocalVariable")
-		public void onNext(SaveLogRQ t) {
-			if (done) {
-				return;
-			}
-			long size = HttpRequestUtils.calculateRequestSize(t);
-			List<List<SaveLogRQ>> toSend = new ArrayList<>();
-			lock.lock();
-			if (buffer == null) {
-				lock.unlock();
-				return;
-			}
-			if (payloadSize + size > payloadLimit) {
-				if (!buffer.isEmpty()) {
-					toSend.add(buffer);
-					reset();
-				}
-			}
-			buffer.add(t);
-			long newSize = payloadSize + size;
-			payloadSize = newSize;
-			if (buffer.size() >= maxSize) {
-				toSend.add(buffer);
-				reset();
-			}
-			lock.unlock();
-			toSend.forEach(downstream::onNext);
-		}
-
-		@Override
-		public void onError(Throwable t) {
-			if (done) {
-				RxJavaPlugins.onError(t);
-				return;
-			}
-			done = true;
-			downstream.onError(t);
-		}
-
-		@Override
-		public void onComplete() {
-			if (done) {
-				return;
-			}
-			done = true;
-
-			List<List<SaveLogRQ>> toSend = new ArrayList<>();
-			lock.lock();
-			if (buffer != null && !buffer.isEmpty()) {
-				toSend.add(buffer);
-				reset();
-			}
-			lock.unlock();
-			toSend.forEach(downstream::onNext);
-			downstream.onComplete();
-		}
-
-		@Override
-		public void request(long n) {
-			if (SubscriptionHelper.validate(n)) {
-				upstream.request(BackpressureHelper.multiplyCap(n, maxSize));
-			}
-		}
-
-		@Override
-		public void cancel() {
-			upstream.cancel();
-		}
 	}
 }
