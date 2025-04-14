@@ -19,7 +19,6 @@ package com.epam.reportportal.service;
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.aspect.StepAspectCommon;
-import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
@@ -37,7 +36,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -393,7 +391,7 @@ public class LaunchTest {
 
 	@Test
 	@Timeout(10)
-	public void launch_should_throw_exceptions_if_finished_and_started_again() {
+	public void launch_should_not_throw_exceptions_or_hang_if_finished_and_started_again() {
 		simulateStartLaunchResponse(rpClient);
 		simulateFinishLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
@@ -408,7 +406,13 @@ public class LaunchTest {
 		verify(rpClient).startTestItem(any());
 		verify(rpClient).finishTestItem(same(id.blockingGet()), any());
 
-		Assertions.assertThrows(InternalReportPortalClientException.class, launch::start);
+		launch.start();
+		id = launch.startTestItem(standardStartSuiteRequest());
+		launch.finishTestItem(id, positiveFinishRequest());
+		launch.finish(standardLaunchFinishRequest());
+
+		verify(rpClient, times(2)).startTestItem(any());
+		verify(rpClient, times(1)).finishTestItem(same(id.blockingGet()), any());
 	}
 
 	@Test

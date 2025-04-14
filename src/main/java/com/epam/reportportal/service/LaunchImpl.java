@@ -55,6 +55,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.service.logs.LaunchLoggingCallback.*;
@@ -128,6 +129,7 @@ public class LaunchImpl extends Launch {
 	protected final Maybe<String> launch;
 	protected final StartLaunchRQ startRq;
 	protected final Maybe<ProjectSettingsResource> projectSettings;
+	private final AtomicBoolean isShutDownHook = new AtomicBoolean(false);
 	private final PublishSubject<Maybe<SaveLogRQ>> logEmitter;
 	private final ExecutorService executor;
 	private final Scheduler scheduler;
@@ -327,6 +329,15 @@ public class LaunchImpl extends Launch {
 		if (getExecutor().isShutdown()) {
 			throw new InternalReportPortalClientException("Executor service is already shut down");
 		}
+		// Register JVM shutdown hook to wait for the executor to complete
+		if (isShutDownHook.compareAndSet(false, true)) {
+			Runtime.getRuntime()
+					.addShutdownHook(new Thread(() -> MultithreadingUtils.shutdownExecutorService(
+							getExecutor(),
+							getParameters().getReportingTimeout(),
+							TimeUnit.SECONDS
+					)));
+		}
 		launch.subscribe(logMaybeResults("Launch start"));
 		ListenerParameters params = getParameters();
 		if (params.isPrintLaunchUuid()) {
@@ -405,7 +416,7 @@ public class LaunchImpl extends Launch {
 	 * @param request Launch finish request.
 	 */
 	public void finish(final FinishExecutionRQ request) {
-		if(getExecutor().isShutdown()) {
+		if (getExecutor().isShutdown()) {
 			throw new InternalReportPortalClientException("Executor service is already shut down");
 		}
 
@@ -438,8 +449,6 @@ public class LaunchImpl extends Launch {
 		});
 		// Dispose all logged items
 		LoggingContext.dispose();
-
-		MultithreadingUtils.shutdownExecutorService(getExecutor(), getParameters().getReportingTimeout(), TimeUnit.SECONDS);
 	}
 
 	private static <T> Maybe<T> createErrorResponse(Throwable cause) {

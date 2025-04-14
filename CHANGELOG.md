@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Move Launch executor shutdown to a shutdown hook, by @HardNorth
 
 ## [5.3.5]
 ### Fixed
