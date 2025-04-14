@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Sporadically missed logs on Launch finish, by @HardNorth
 
 ## [5.3.4]
 ### Fixed

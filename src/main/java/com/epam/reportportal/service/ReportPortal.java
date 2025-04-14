@@ -21,6 +21,7 @@ import com.epam.reportportal.message.ReportPortalMessage;
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.service.launch.PrimaryLaunch;
 import com.epam.reportportal.service.launch.SecondaryLaunch;
+import com.epam.reportportal.utils.MultithreadingUtils;
 import com.epam.reportportal.utils.SslUtils;
 import com.epam.reportportal.utils.files.Utils;
 import com.epam.reportportal.utils.http.ClientUtils;
@@ -55,9 +56,6 @@ import java.security.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
@@ -208,7 +206,7 @@ public class ReportPortal {
 	 */
 	@Nonnull
 	public static ReportPortal create(ReportPortalClient client, ListenerParameters params) {
-		return create(client, params, buildExecutorService(params));
+		return create(client, params, MultithreadingUtils.buildExecutorService("rp-io-", params));
 	}
 
 	/**
@@ -633,18 +631,7 @@ public class ReportPortal {
 		}
 
 		protected ExecutorService buildExecutorService(ListenerParameters params) {
-			return ReportPortal.buildExecutorService(params);
+			return MultithreadingUtils.buildExecutorService("rp-io-", params);
 		}
-	}
-
-	private static ExecutorService buildExecutorService(ListenerParameters params) {
-		AtomicLong threadCounter = new AtomicLong();
-		ThreadFactory threadFactory = r -> {
-			Thread t = new Thread(r);
-			t.setDaemon(true);
-			t.setName("rp-io-" + threadCounter.incrementAndGet());
-			return t;
-		};
-		return Executors.newFixedThreadPool(params.getIoPoolSize(), threadFactory);
 	}
 }
