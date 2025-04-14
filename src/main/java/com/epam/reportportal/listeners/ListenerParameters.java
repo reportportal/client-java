@@ -40,7 +40,7 @@ import static java.util.Optional.ofNullable;
  */
 public class ListenerParameters implements Cloneable {
 	private static final int DEFAULT_REPORTING_TIMEOUT = 5 * 60;
-	private static final int DEFAULT_IO_POOL_SIZE = 100;
+	private static final int DEFAULT_IO_POOL_SIZE = (Runtime.getRuntime().availableProcessors() * 2) - 1;
 	private static final boolean DEFAULT_ENABLE = true;
 	private static final boolean DEFAULT_SKIP_ISSUE = true;
 	private static final boolean DEFAULT_CONVERT_IMAGE = false;

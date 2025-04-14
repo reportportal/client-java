@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Limit the number of client threads, by @HardNorth
 
 ## [5.3.6]
 ### Changed
