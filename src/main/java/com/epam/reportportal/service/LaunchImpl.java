@@ -380,17 +380,11 @@ public class LaunchImpl extends Launch {
 	}
 
 	/**
-	 * Waits for the completion of all virtual test items and logs.
-	 * This method ensures that all items have been properly reported to ReportPortal. It works by:
-	 * <ol>
-	 *   <li>Waiting for all virtual items to be populated with real IDs</li>
-	 *   <li>Completing the log emitter to ensure all logs are sent</li>
-	 * </ol>
-	 * <p>
-	 * The method respects the reporting timeout configured in the parameters and logs
-	 * appropriate error messages if the timeout is exceeded or any other error occurs.
+	 * Waits for completion of all test items including virtual ones and log emitters.
+	 * This method ensures all test results are properly reported to ReportPortal before the launch completes.
+	 * It uses the timeout defined in the parameters to prevent indefinite waiting.
 	 *
-	 * @param itemCompletable Completable that represents the completion of regular items
+	 * @param itemCompletable A completable representing the test items to be completed before finishing the launch
 	 */
 	protected void waitForItemsCompletion(Completable itemCompletable) {
 		waitForCompletable(createVirtualItemCompletable(), itemCompletable, completeLogEmitter());
