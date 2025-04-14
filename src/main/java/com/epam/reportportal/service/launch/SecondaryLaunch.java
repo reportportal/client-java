@@ -21,6 +21,7 @@ import com.epam.reportportal.service.Launch;
 import com.epam.reportportal.service.LaunchIdLock;
 import com.epam.reportportal.service.LoggingContext;
 import com.epam.reportportal.service.ReportPortalClient;
+import com.epam.reportportal.utils.MultithreadingUtils;
 import com.epam.reportportal.utils.Waiter;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.launch.LaunchResource;
@@ -101,11 +102,8 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 
 	@Override
 	public void finish(final FinishExecutionRQ request) {
-		// Finish virtual items and logs
-		waitForItemsCompletion();
-
 		// Wait for all items to be finished
-		waitForCompletable(Completable.concat(queue.getOrCompute(this.launch).getChildren()));
+		waitForItemsCompletion(Completable.concat(queue.getOrCompute(this.launch).getChildren()));
 
 		// ignore super call, since only primary launch should finish it
 		stopRunning();
@@ -118,5 +116,7 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 		});
 		// Dispose all logged items
 		LoggingContext.dispose();
+
+		MultithreadingUtils.shutdownExecutorService(getExecutor(), getParameters().getReportingTimeout(), TimeUnit.SECONDS);
 	}
 }

@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Sporadically missed logs on Launch finish, by @HardNorth
+- Weird JDK 8 issue with `java.nio.ByteBuffer` class, by @HardNorth
 
 ## [5.3.4]
 ### Fixed

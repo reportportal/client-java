@@ -24,6 +24,7 @@ import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.service.logs.LogBatchingFlowable;
 import com.epam.reportportal.service.logs.LoggingSubscriber;
 import com.epam.reportportal.service.statistics.StatisticsService;
+import com.epam.reportportal.utils.MultithreadingUtils;
 import com.epam.reportportal.utils.RetryWithDelay;
 import com.epam.reportportal.utils.StaticStructuresUtils;
 import com.epam.reportportal.utils.files.ByteSource;
@@ -159,6 +160,9 @@ public class LaunchImpl extends Launch {
 		super(reportPortalClient, parameters);
 		requireNonNull(parameters, "Parameters shouldn't be NULL");
 		executor = requireNonNull(executorService);
+		if (executor.isShutdown()) {
+			throw new InternalReportPortalClientException("Executor service is already shut down");
+		}
 		scheduler = createScheduler(executor);
 		statisticsService = new StatisticsService(parameters);
 		startRq = clonePojo(rq, StartLaunchRQ.class);
@@ -196,6 +200,9 @@ public class LaunchImpl extends Launch {
 		super(reportPortalClient, parameters);
 		requireNonNull(parameters, "Parameters shouldn't be NULL");
 		executor = requireNonNull(executorService);
+		if (executor.isShutdown()) {
+			throw new InternalReportPortalClientException("Executor service is already shut down");
+		}
 		scheduler = createScheduler(executor);
 		statisticsService = new StatisticsService(parameters);
 		startRq = emptyStartLaunchForStatistics();
@@ -317,6 +324,9 @@ public class LaunchImpl extends Launch {
 	 */
 	@Nonnull
 	protected Maybe<String> start(boolean statistics) {
+		if (getExecutor().isShutdown()) {
+			throw new InternalReportPortalClientException("Executor service is already shut down");
+		}
 		launch.subscribe(logMaybeResults("Launch start"));
 		ListenerParameters params = getParameters();
 		if (params.isPrintLaunchUuid()) {
@@ -347,13 +357,11 @@ public class LaunchImpl extends Launch {
 	 * @return A Completable that completes when all virtual items are processed
 	 */
 	protected Completable createVirtualItemCompletable() {
-		return Completable.defer(() -> {
-			if (virtualItems.isEmpty()) {
-				return Completable.complete();
-			}
-			// Poll every 100ms until all virtual items are processed
-			return Completable.timer(100, TimeUnit.MILLISECONDS).andThen(Completable.defer(this::createVirtualItemCompletable));
-		});
+		if (virtualItems.isEmpty()) {
+			return Completable.complete();
+		}
+		// Poll every 100ms until all virtual items are processed
+		return Completable.timer(100, TimeUnit.MILLISECONDS).andThen(Completable.defer(this::createVirtualItemCompletable));
 	}
 
 	/**
@@ -369,7 +377,7 @@ public class LaunchImpl extends Launch {
 		// Wait for all items (including virtual) to be reported in a non-blocking way
 		try {
 			// Run all completion tasks concurrently but within the timeout
-			Completable completable = completableTasks.length > 1 ? Completable.mergeArray(completableTasks) : completableTasks[0];
+			Completable completable = completableTasks.length > 1 ? Completable.concatArray(completableTasks) : completableTasks[0];
 			boolean result = completable.timeout(timeoutInSeconds, TimeUnit.SECONDS).blockingAwait(timeoutInSeconds, TimeUnit.SECONDS);
 
 			if (!result) {
@@ -381,20 +389,14 @@ public class LaunchImpl extends Launch {
 	}
 
 	/**
-	 * Waits for the completion of all virtual test items and logs.
-	 * This method ensures that all items have been properly reported to ReportPortal. It works by:
-	 * <ol>
-	 *   <li>Waiting for all virtual items to be populated with real IDs</li>
-	 *   <li>Completing the log emitter to ensure all logs are sent</li>
-	 * </ol>
-	 * <p>
-	 * The method respects the reporting timeout configured in the parameters and logs
-	 * appropriate error messages if the timeout is exceeded or any other error occurs.
+	 * Waits for completion of all test items including virtual ones and log emitters.
+	 * This method ensures all test results are properly reported to ReportPortal before the launch completes.
+	 * It uses the timeout defined in the parameters to prevent indefinite waiting.
+	 *
+	 * @param itemCompletable A completable representing the test items to be completed before finishing the launch
 	 */
-	protected void waitForItemsCompletion() {
-		// Create a non-blocking reactive check for virtual items completion
-		Completable waitForVirtualItems = createVirtualItemCompletable();
-		waitForCompletable(waitForVirtualItems, completeLogEmitter());
+	protected void waitForItemsCompletion(Completable itemCompletable) {
+		waitForCompletable(createVirtualItemCompletable(), itemCompletable, completeLogEmitter());
 	}
 
 	/**
@@ -403,8 +405,9 @@ public class LaunchImpl extends Launch {
 	 * @param request Launch finish request.
 	 */
 	public void finish(final FinishExecutionRQ request) {
-		// Finish virtual items and logs
-		waitForItemsCompletion();
+		if(getExecutor().isShutdown()) {
+			throw new InternalReportPortalClientException("Executor service is already shut down");
+		}
 
 		// Collect all items to be reported
 		Completable finish = Completable.concat(queue.values()
@@ -422,7 +425,7 @@ public class LaunchImpl extends Launch {
 		}
 
 		// Finish all items
-		waitForCompletable(finish.cache());
+		waitForItemsCompletion(finish.cache());
 
 		// Close and re-create statistics service
 		getStatisticsService().close();
@@ -435,6 +438,8 @@ public class LaunchImpl extends Launch {
 		});
 		// Dispose all logged items
 		LoggingContext.dispose();
+
+		MultithreadingUtils.shutdownExecutorService(getExecutor(), getParameters().getReportingTimeout(), TimeUnit.SECONDS);
 	}
 
 	private static <T> Maybe<T> createErrorResponse(Throwable cause) {
