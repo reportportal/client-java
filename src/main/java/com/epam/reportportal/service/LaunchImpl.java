@@ -160,6 +160,9 @@ public class LaunchImpl extends Launch {
 		super(reportPortalClient, parameters);
 		requireNonNull(parameters, "Parameters shouldn't be NULL");
 		executor = requireNonNull(executorService);
+		if (executor.isShutdown()) {
+			throw new InternalReportPortalClientException("Executor service is already shut down");
+		}
 		scheduler = createScheduler(executor);
 		statisticsService = new StatisticsService(parameters);
 		startRq = clonePojo(rq, StartLaunchRQ.class);
@@ -197,6 +200,9 @@ public class LaunchImpl extends Launch {
 		super(reportPortalClient, parameters);
 		requireNonNull(parameters, "Parameters shouldn't be NULL");
 		executor = requireNonNull(executorService);
+		if (executor.isShutdown()) {
+			throw new InternalReportPortalClientException("Executor service is already shut down");
+		}
 		scheduler = createScheduler(executor);
 		statisticsService = new StatisticsService(parameters);
 		startRq = emptyStartLaunchForStatistics();
@@ -318,6 +324,9 @@ public class LaunchImpl extends Launch {
 	 */
 	@Nonnull
 	protected Maybe<String> start(boolean statistics) {
+		if (getExecutor().isShutdown()) {
+			throw new IllegalStateException("Executor service is already shut down");
+		}
 		launch.subscribe(logMaybeResults("Launch start"));
 		ListenerParameters params = getParameters();
 		if (params.isPrintLaunchUuid()) {
@@ -396,6 +405,10 @@ public class LaunchImpl extends Launch {
 	 * @param request Launch finish request.
 	 */
 	public void finish(final FinishExecutionRQ request) {
+		if(getExecutor().isShutdown()) {
+			throw new InternalReportPortalClientException("Executor service is already shut down");
+		}
+
 		// Collect all items to be reported
 		Completable finish = Completable.concat(queue.values()
 				.stream()
