@@ -325,7 +325,7 @@ public class LaunchImpl extends Launch {
 	@Nonnull
 	protected Maybe<String> start(boolean statistics) {
 		if (getExecutor().isShutdown()) {
-			throw new IllegalStateException("Executor service is already shut down");
+			throw new InternalReportPortalClientException("Executor service is already shut down");
 		}
 		launch.subscribe(logMaybeResults("Launch start"));
 		ListenerParameters params = getParameters();

@@ -19,6 +19,7 @@ package com.epam.reportportal.service;
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.aspect.StepAspect;
 import com.epam.reportportal.aspect.StepAspectCommon;
+import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.exception.ReportPortalException;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
@@ -407,7 +408,7 @@ public class LaunchTest {
 		verify(rpClient).startTestItem(any());
 		verify(rpClient).finishTestItem(same(id.blockingGet()), any());
 
-		Assertions.assertThrows(IllegalStateException.class, launch::start);
+		Assertions.assertThrows(InternalReportPortalClientException.class, launch::start);
 	}
 
 	@Test
