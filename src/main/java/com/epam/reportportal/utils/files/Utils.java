@@ -22,6 +22,7 @@ import com.epam.reportportal.utils.MimeTypeDetector;
 import javax.annotation.Nonnull;
 import java.io.*;
 import java.net.URL;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -119,7 +120,10 @@ public class Utils {
 		int read;
 		while ((read = channel.read(buffer)) > 0) {
 			baos.write(buffer.array(), 0, read);
-			buffer.clear();
+			// Some strange behavior of ByteBuffer.
+			// See https://stackoverflow.com/questions/48693695/java-nio-buffer-not-loading-clear-method-on-runtime
+			//noinspection RedundantCast
+			((Buffer) buffer).clear();
 		}
 
 		return baos.toByteArray();
