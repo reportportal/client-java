@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.3.8]
 ### Fixed
 - Refactor `Flowable` and `Maybe` futures in `LaunchImpl` to ensure in their completion, by @HardNorth
 
