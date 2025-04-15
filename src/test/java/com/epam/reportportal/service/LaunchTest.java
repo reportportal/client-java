@@ -276,7 +276,6 @@ public class LaunchTest {
 		simulateFinishTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
 		simulateFinishLaunchResponse(rpClient);
-		simulateBatchLogResponse(rpClient);
 		Launch launch = createLaunch();
 
 		launch.start();
