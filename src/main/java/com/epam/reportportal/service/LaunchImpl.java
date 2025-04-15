@@ -79,10 +79,7 @@ public class LaunchImpl extends Launch {
 	private static final Map<ExecutorService, Scheduler> SCHEDULERS = new ConcurrentHashMap<>();
 
 	private static final Function<ItemCreatedRS, String> TO_ID = EntryCreatedAsyncRS::getId;
-	private static final Consumer<StartLaunchRS> LAUNCH_SUCCESS_CONSUMER = rs -> {
-		logCreated("launch").accept(rs);
-		System.setProperty("rp.launch.id", String.valueOf(rs.getId()));
-	};
+	private static final Consumer<StartLaunchRS> LAUNCH_SUCCESS_CONSUMER = rs -> logCreated("launch").accept(rs);
 
 	private static final int DEFAULT_RETRY_COUNT = 5;
 	private static final int DEFAULT_RETRY_TIMEOUT = 2;
