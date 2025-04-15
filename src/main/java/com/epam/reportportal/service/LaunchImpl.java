@@ -401,7 +401,13 @@ public class LaunchImpl extends Launch {
 	 * @param itemCompletable A completable representing the test items to be completed before finishing the launch
 	 */
 	protected void waitForItemsCompletion(Completable itemCompletable) {
-		waitForCompletable(getLaunch().ignoreElement(), createVirtualItemCompletable(), itemCompletable, completeLogEmitter());
+		waitForCompletable(
+				getLaunch().ignoreElement(),
+				createVirtualItemCompletable(),
+				itemCompletable,
+				LoggingContext.completed(),
+				completeLogEmitter()
+		);
 	}
 
 	/**
@@ -441,8 +447,6 @@ public class LaunchImpl extends Launch {
 			d.dispose();
 			return true;
 		});
-		// Dispose all logged items
-		LoggingContext.dispose();
 	}
 
 	private static <T> Maybe<T> createErrorResponse(Throwable cause) {
@@ -813,7 +817,7 @@ public class LaunchImpl extends Launch {
 		}
 
 		getStepReporter().removeParent(item);
-		LoggingContext.complete();
+		LoggingContext.dispose();
 		return finishResponse;
 	}
 
@@ -845,7 +849,7 @@ public class LaunchImpl extends Launch {
 		Maybe<SaveLogRQ> result = getLaunch().map(launchUuid -> {
 			emitLog(prepareRequest(launchUuid, rq));
 			return rq;
-		}).cache();
+		});
 		logCompletables.add(result.ignoreElement());
 		result.subscribe(SubscriptionUtils.logMaybeResults("Log item"));
 	}
@@ -860,7 +864,7 @@ public class LaunchImpl extends Launch {
 			SaveLogRQ rq = prepareRequest(logSupplier.apply(launchUuid));
 			emitLog(rq);
 			return rq;
-		}).cache();
+		});
 		logCompletables.add(result.ignoreElement());
 		result.subscribe(SubscriptionUtils.logMaybeResults("Log item"));
 	}

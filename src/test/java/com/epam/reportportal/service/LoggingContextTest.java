@@ -78,7 +78,7 @@ public class LoggingContextTest {
 	@Test
 	public void test_complete_method_removes_context() {
 		LoggingContext context = LoggingContext.init(Maybe.just("item_id"));
-		LoggingContext.complete();
+		LoggingContext.dispose();
 		assertThat(LoggingContext.context(), anyOf(nullValue(), not(sameInstance(context))));
 	}
 
@@ -118,9 +118,6 @@ public class LoggingContextTest {
 		assertThat(capturedRequest.getLaunchUuid(), equalTo(launchUuid));
 		assertThat(capturedRequest.getLevel(), equalTo(LogLevel.INFO.name()));
 		assertThat(capturedRequest.getMessage(), equalTo("Test log message"));
-
-		// Clean up
-		context.disposed();
 	}
 
 	@Test
