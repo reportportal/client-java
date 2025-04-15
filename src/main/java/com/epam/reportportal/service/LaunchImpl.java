@@ -27,6 +27,7 @@ import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.utils.MultithreadingUtils;
 import com.epam.reportportal.utils.RetryWithDelay;
 import com.epam.reportportal.utils.StaticStructuresUtils;
+import com.epam.reportportal.utils.SubscriptionUtils;
 import com.epam.reportportal.utils.files.ByteSource;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.reportportal.utils.properties.DefaultProperties;
@@ -48,7 +49,6 @@ import io.reactivex.plugins.RxJavaPlugins;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.PublishSubject;
 import org.apache.commons.lang3.StringUtils;
-import org.reactivestreams.Publisher;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -79,10 +79,7 @@ public class LaunchImpl extends Launch {
 	private static final Map<ExecutorService, Scheduler> SCHEDULERS = new ConcurrentHashMap<>();
 
 	private static final Function<ItemCreatedRS, String> TO_ID = EntryCreatedAsyncRS::getId;
-	private static final Consumer<StartLaunchRS> LAUNCH_SUCCESS_CONSUMER = rs -> {
-		logCreated("launch").accept(rs);
-		System.setProperty("rp.launch.id", String.valueOf(rs.getId()));
-	};
+	private static final Consumer<StartLaunchRS> LAUNCH_SUCCESS_CONSUMER = rs -> logCreated("launch").accept(rs);
 
 	private static final int DEFAULT_RETRY_COUNT = 5;
 	private static final int DEFAULT_RETRY_TIMEOUT = 2;
@@ -126,34 +123,41 @@ public class LaunchImpl extends Launch {
 	 */
 	protected final Queue<Disposable> virtualItemDisposables = new ConcurrentLinkedQueue<>();
 
+	protected final Queue<Completable> logCompletables = new ConcurrentLinkedQueue<>();
+
 	protected final Maybe<String> launch;
 	protected final StartLaunchRQ startRq;
 	protected final Maybe<ProjectSettingsResource> projectSettings;
 	private final AtomicBoolean isShutDownHook = new AtomicBoolean(false);
-	private final PublishSubject<Maybe<SaveLogRQ>> logEmitter;
+	private final PublishSubject<SaveLogRQ> logEmitter;
 	private final ExecutorService executor;
 	private final Scheduler scheduler;
 	private StatisticsService statisticsService;
 
-	private static Maybe<ProjectSettingsResource> getProjectSettings(@Nonnull final ReportPortalClient client,
-			@Nonnull final Scheduler scheduler) {
-		return ofNullable(client.getProjectSettings()).map(settings -> settings.subscribeOn(scheduler).cache()).orElse(Maybe.empty());
+	private static Maybe<String> getLaunchMaybe(@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler,
+			@Nonnull final StartLaunchRQ startRq) {
+		return Maybe.defer(() -> client.startLaunch(startRq)
+				.retry(DEFAULT_REQUEST_RETRY)
+				.doOnSuccess(LAUNCH_SUCCESS_CONSUMER)
+				.doOnError(LOG_ERROR)).map(StartLaunchRS::getId).cache().subscribeOn(scheduler);
 	}
 
-	private static PublishSubject<Maybe<SaveLogRQ>> getLogEmitter(@Nonnull final ReportPortalClient client,
+	private static PublishSubject<SaveLogRQ> getLogEmitter(@Nonnull final ReportPortalClient client,
 			@Nonnull final ListenerParameters parameters, @Nonnull final Scheduler scheduler,
 			@Nonnull final FlowableSubscriber<BatchSaveOperatingRS> loggingSubscriber) {
-		PublishSubject<Maybe<SaveLogRQ>> emitter = PublishSubject.create();
-		RxJavaPlugins.onAssembly(new LogBatchingFlowable(
-						new FlowableFromObservable<>(emitter).flatMap((Function<Maybe<SaveLogRQ>, Publisher<SaveLogRQ>>) Maybe::toFlowable),
-						parameters
-				))
+		PublishSubject<SaveLogRQ> emitter = PublishSubject.create();
+		RxJavaPlugins.onAssembly(new LogBatchingFlowable(new FlowableFromObservable<>(emitter), parameters))
 				.observeOn(scheduler)
 				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
 						rqs)).toFlowable())
 				.onBackpressureBuffer(parameters.getRxBufferSize(), false, true)
 				.subscribe(loggingSubscriber);
 		return emitter;
+	}
+
+	private static Maybe<ProjectSettingsResource> getProjectSettings(@Nonnull final ReportPortalClient client,
+			@Nonnull final Scheduler scheduler) {
+		return ofNullable(client.getProjectSettings()).map(settings -> settings.subscribeOn(scheduler).cache()).orElse(Maybe.empty());
 	}
 
 	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
@@ -168,26 +172,11 @@ public class LaunchImpl extends Launch {
 		scheduler = createScheduler(executor);
 		statisticsService = new StatisticsService(parameters);
 		startRq = clonePojo(rq, StartLaunchRQ.class);
+		truncateAttributes(startRq);
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 
-		launch = Maybe.create((MaybeOnSubscribe<String>) emitter -> {
-			Maybe<StartLaunchRS> launchPromise = Maybe.defer(() -> {
-				truncateAttributes(startRq);
-				return getClient().startLaunch(startRq)
-						.retry(DEFAULT_REQUEST_RETRY)
-						.doOnSuccess(LAUNCH_SUCCESS_CONSUMER)
-						.doOnError(LOG_ERROR);
-			}).subscribeOn(getScheduler()).cache();
-
-			//noinspection ResultOfMethodCallIgnored
-			launchPromise.subscribe(
-					rs -> emitter.onSuccess(rs.getId()), t -> {
-						LOG_ERROR.accept(t);
-						emitter.onComplete();
-					}
-			);
-		}).cache();
+		launch = getLaunchMaybe(getClient(), getScheduler(), startRq);
 		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
 		projectSettings = getProjectSettings(getClient(), getScheduler());
 	}
@@ -210,7 +199,7 @@ public class LaunchImpl extends Launch {
 		startRq = emptyStartLaunchForStatistics();
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
-		launch = launchMaybe.cache();
+		launch = launchMaybe.cache().subscribeOn(getScheduler());
 		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler(), new LoggingSubscriber());
 		projectSettings = getProjectSettings(getClient(), getScheduler());
 	}
@@ -314,8 +303,10 @@ public class LaunchImpl extends Launch {
 	 * @return {@link Completable}
 	 */
 	public Completable completeLogEmitter() {
+		Completable items = Completable.merge(logCompletables);
+		logCompletables.clear();
 		logEmitter.onComplete();
-		return logEmitter.ignoreElements();
+		return Completable.concat(Arrays.asList(items, logEmitter.ignoreElements()));
 	}
 
 	/**
@@ -407,7 +398,13 @@ public class LaunchImpl extends Launch {
 	 * @param itemCompletable A completable representing the test items to be completed before finishing the launch
 	 */
 	protected void waitForItemsCompletion(Completable itemCompletable) {
-		waitForCompletable(createVirtualItemCompletable(), itemCompletable, completeLogEmitter());
+		waitForCompletable(
+				getLaunch().ignoreElement(),
+				createVirtualItemCompletable(),
+				itemCompletable,
+				LoggingContext.completed(),
+				completeLogEmitter()
+		);
 	}
 
 	/**
@@ -447,8 +444,6 @@ public class LaunchImpl extends Launch {
 			d.dispose();
 			return true;
 		});
-		// Dispose all logged items
-		LoggingContext.dispose();
 	}
 
 	private static <T> Maybe<T> createErrorResponse(Throwable cause) {
@@ -819,7 +814,7 @@ public class LaunchImpl extends Launch {
 		}
 
 		getStepReporter().removeParent(item);
-		LoggingContext.complete();
+		LoggingContext.dispose();
 		return finishResponse;
 	}
 
@@ -838,13 +833,22 @@ public class LaunchImpl extends Launch {
 		return prepareRequest(rq);
 	}
 
+	private void emitLog(@Nonnull final SaveLogRQ rq) {
+		logEmitter.onNext(rq);
+	}
+
 	/**
 	 * Logs message to the ReportPortal Launch.
 	 *
 	 * @param rq Log request.
 	 */
 	public void log(@Nonnull final SaveLogRQ rq) {
-		logEmitter.onNext(getLaunch().map(launchUuid -> prepareRequest(launchUuid, rq)));
+		Maybe<SaveLogRQ> result = getLaunch().map(launchUuid -> {
+			emitLog(prepareRequest(launchUuid, rq));
+			return rq;
+		});
+		logCompletables.add(result.ignoreElement());
+		result.subscribe(SubscriptionUtils.logMaybeResults("Log item"));
 	}
 
 	/**
@@ -853,7 +857,13 @@ public class LaunchImpl extends Launch {
 	 * @param logSupplier Log Message Factory. Argument of the function will be actual launch UUID.
 	 */
 	public void log(@Nonnull final java.util.function.Function<String, SaveLogRQ> logSupplier) {
-		logEmitter.onNext(getLaunch().map(launchUuid -> prepareRequest(logSupplier.apply(launchUuid))));
+		Maybe<SaveLogRQ> result = getLaunch().map(launchUuid -> {
+			SaveLogRQ rq = prepareRequest(logSupplier.apply(launchUuid));
+			emitLog(rq);
+			return rq;
+		});
+		logCompletables.add(result.ignoreElement());
+		result.subscribe(SubscriptionUtils.logMaybeResults("Log item"));
 	}
 
 	/**

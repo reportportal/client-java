@@ -69,7 +69,8 @@ public class LaunchNullCheckTest {
 	}
 
 	@Test
-	public void launch_should_not_throw_any_exceptions_if_an_agent_bypasses_null_parent_item_id_on_start_item() {
+	public void launch_should_not_throw_any_exceptions_if_an_agent_bypasses_null_parent_item_id_on_start_item()
+			throws InterruptedException {
 		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
 			@Override
 			StatisticsService getStatisticsService() {
@@ -81,13 +82,14 @@ public class LaunchNullCheckTest {
 		launch.start();
 		launch.startTestItem(standardStartSuiteRequest());
 		Maybe<String> result = launch.startTestItem(null, null);
+		Thread.sleep(200);
 
 		//noinspection ResultOfMethodCallIgnored
 		Assertions.assertThrows(NullPointerException.class, result::blockingGet);
 	}
 
 	@Test
-	public void launch_should_not_throw_any_exceptions_if_an_agent_bypasses_null_item_id_on_finish_item() {
+	public void launch_should_not_throw_any_exceptions_if_an_agent_bypasses_null_item_id_on_finish_item() throws InterruptedException {
 		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
 			@Override
 			StatisticsService getStatisticsService() {
@@ -99,13 +101,14 @@ public class LaunchNullCheckTest {
 		launch.start();
 		launch.startTestItem(standardStartSuiteRequest());
 		Maybe<OperationCompletionRS> result = launch.finishTestItem(null, positiveFinishRequest());
+		Thread.sleep(200);
 
 		//noinspection ResultOfMethodCallIgnored
 		Assertions.assertThrows(NullPointerException.class, result::blockingGet);
 	}
 
 	@Test
-	public void launch_should_not_throw_any_exceptions_if_an_agent_bypasses_null_finish_rq_on_finish_item() {
+	public void launch_should_not_throw_any_exceptions_if_an_agent_bypasses_null_finish_rq_on_finish_item() throws InterruptedException {
 		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
 			@Override
 			StatisticsService getStatisticsService() {
@@ -117,6 +120,7 @@ public class LaunchNullCheckTest {
 		launch.start();
 		launch.startTestItem(standardStartSuiteRequest());
 		Maybe<OperationCompletionRS> result = launch.finishTestItem(launch.startTestItem(standardStartSuiteRequest()), null);
+		Thread.sleep(200);
 
 		//noinspection ResultOfMethodCallIgnored
 		Assertions.assertThrows(NullPointerException.class, result::blockingGet);

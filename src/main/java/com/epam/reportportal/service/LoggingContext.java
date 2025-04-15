@@ -15,10 +15,11 @@
  */
 package com.epam.reportportal.service;
 
+import com.epam.reportportal.utils.SubscriptionUtils;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
+import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
-import io.reactivex.disposables.Disposable;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nonnull;
@@ -26,6 +27,7 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
 
@@ -92,42 +94,28 @@ public class LoggingContext {
 	/**
 	 * Disposes current logging context
 	 */
-	public static void complete() {
+	public static void dispose() {
 		ofNullable(getContext()).map(Deque::poll).ifPresent(USED_CONTEXTS::add);
 	}
 
-	/**
-	 * Disposes current logging context
-	 */
-	public static void dispose() {
-		USED_CONTEXTS.removeIf(c -> {
-			c.disposed();
-			return true;
-		});
+	public static Completable completed() {
+		Completable completable = Completable.merge(USED_CONTEXTS.stream().map(LoggingContext::complete).collect(Collectors.toList()));
+		Deque<LoggingContext> context = getContext();
+		return ofNullable(context).map(ctx -> Completable.concat(Arrays.asList(
+				completable,
+				Completable.merge(ctx.stream().map(LoggingContext::complete).collect(Collectors.toList()))
+		))).orElse(completable);
 	}
 
 	/**
 	 * Messages queue to track items execution order
 	 */
-	private final Queue<Disposable> disposables = new ConcurrentLinkedQueue<>();
+	private final Queue<Completable> completables = new ConcurrentLinkedQueue<>();
 	/* a UUID of TestItem in ReportPortal to report into */
 	private final Maybe<String> itemUuid;
 
 	LoggingContext(@Nonnull final Maybe<String> itemUuid) {
 		this.itemUuid = itemUuid;
-	}
-
-	/**
-	 * Emits log. Basically, put it into processing pipeline
-	 *
-	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
-	 */
-	public void emit(@Nonnull final java.util.function.Function<String, SaveLogRQ> logSupplier) {
-		Launch launch = Launch.currentLaunch();
-		if (launch == null) {
-			return;
-		}
-		disposables.add(itemUuid.subscribe(itemUuid -> launch.log(logSupplier.apply(itemUuid))));
 	}
 
 	/**
@@ -141,16 +129,31 @@ public class LoggingContext {
 		if (launch == null) {
 			return;
 		}
-		disposables.add(logItemUuid.subscribe(itemUuid -> launch.log(logSupplier.apply(itemUuid))));
+		Maybe<String> future = logItemUuid.map(itemUuid -> {
+			launch.log(logSupplier.apply(itemUuid));
+			return itemUuid;
+		});
+		completables.add(future.ignoreElement());
+		future.subscribe(SubscriptionUtils.logMaybeResults("LoggingContext"));
 	}
 
 	/**
-	 * Dispose context
+	 * Emits log. Basically, put it into processing pipeline
+	 *
+	 * @param logSupplier Log Message Factory. Key if the function is actual test item ID
 	 */
-	public void disposed() {
-		disposables.removeIf(d -> {
-			d.dispose();
-			return true;
-		});
+	public void emit(@Nonnull final java.util.function.Function<String, SaveLogRQ> logSupplier) {
+		emit(itemUuid, logSupplier);
+	}
+
+	/**
+	 * Complete the context.
+	 *
+	 * @return the instance will be completed when all logs are sent
+	 */
+	public Completable complete() {
+		Completable completable = Completable.merge(completables);
+		completables.clear();
+		return completable;
 	}
 }

@@ -190,6 +190,7 @@ public class LaunchTest {
 		ExecutorService launchCreateExecutor = Executors.newSingleThreadExecutor();
 		Launch launchOnCreate = launchCreateExecutor.submit(() -> this.createLaunch()).get();
 		Launch launchGet = launchCreateExecutor.submit(Launch::currentLaunch).get();
+		Thread.sleep(200);
 		assertThat(launchGet, sameInstance(launchOnCreate));
 		shutdownExecutorService(launchCreateExecutor);
 
@@ -197,6 +198,7 @@ public class LaunchTest {
 		ExecutorService launchStartExecutor = Executors.newSingleThreadExecutor();
 		launchStartExecutor.submit(launchOnCreate::start).get();
 		launchGet = launchStartExecutor.submit(Launch::currentLaunch).get();
+		Thread.sleep(200);
 		assertThat(launchGet, sameInstance(launchOnCreate));
 		shutdownExecutorService(launchStartExecutor);
 
@@ -204,6 +206,7 @@ public class LaunchTest {
 		ExecutorService launchSuiteStartExecutor = Executors.newSingleThreadExecutor();
 		Maybe<String> parent = launchSuiteStartExecutor.submit(() -> launchOnCreate.startTestItem(standardStartSuiteRequest())).get();
 		launchGet = launchSuiteStartExecutor.submit(Launch::currentLaunch).get();
+		Thread.sleep(200);
 		assertThat(launchGet, sameInstance(launchOnCreate));
 		shutdownExecutorService(launchSuiteStartExecutor);
 
@@ -211,6 +214,7 @@ public class LaunchTest {
 		ExecutorService launchChildStartExecutor = Executors.newSingleThreadExecutor();
 		launchChildStartExecutor.submit(() -> launchOnCreate.startTestItem(parent, standardStartTestRequest())).get();
 		launchGet = launchChildStartExecutor.submit(Launch::currentLaunch).get();
+		Thread.sleep(200);
 		assertThat(launchGet, sameInstance(launchOnCreate));
 		shutdownExecutorService(launchChildStartExecutor);
 	}
@@ -276,7 +280,6 @@ public class LaunchTest {
 		simulateFinishTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
 		simulateFinishLaunchResponse(rpClient);
-		simulateBatchLogResponse(rpClient);
 		Launch launch = createLaunch();
 
 		launch.start();

@@ -18,6 +18,7 @@ package com.epam.reportportal.service;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.message.ReportPortalMessage;
 import com.epam.reportportal.test.TestUtils;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import okhttp3.MultipartBody;
@@ -25,7 +26,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.*;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,26 +33,32 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings({ "ReactiveStreamsUnusedPublisher", "unchecked", "ResultOfMethodCallIgnored" })
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ReportPortalLoggingTest {
 
-	@Mock
+	private final ListenerParameters parameters = TestUtils.standardParameters();
 	private ReportPortalClient rpClient;
+	private ReportPortal rp;
+	private ExecutorService executor;
 
-	private final ExecutorService executor = Executors.newSingleThreadExecutor();
+	@BeforeEach
+	public void setup() {
+		executor = CommonUtils.testExecutor();
+		rpClient = mock(ReportPortalClient.class);
+		rp = ReportPortal.create(rpClient, parameters, executor);
+	}
 
 	@AfterEach
 	public void tearDown() {
-		shutdownExecutorService(executor);
+		CommonUtils.shutdownExecutorService(executor);
 	}
 
 	private static void verifySaveLogRQ(List<SaveLogRQ> logRequests, String logLevel, String launchUuid, String testUuid) {
@@ -135,23 +141,22 @@ public class ReportPortalLoggingTest {
 
 	@Test
 	@Order(Integer.MAX_VALUE)
-	@SuppressWarnings("unchecked")
-	public void verify_emitLog_simple_message() {
+	public void verify_emitLog_simple_message() throws InterruptedException {
 		String launchUuid = "launchUuid";
-		TestUtils.mockStartLaunch(rpClient, launchUuid);
-		TestUtils.mockBatchLogging(rpClient);
+		TestUtils.mockLaunch(rpClient, launchUuid);
 		String testUuid = "testUuid";
+		TestUtils.mockStartTestItem(rpClient, testUuid);
+		TestUtils.mockBatchLogging(rpClient);
 		String logLevel = "INFO";
 		String message = "message";
-		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
 		Date logDate = Calendar.getInstance().getTime();
 
-		ListenerParameters parameters = TestUtils.standardParameters();
-		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
+		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(parameters));
+		launch.start().blockingGet();
+		launch.startTestItem(TestUtils.standardStartTestRequest()).blockingGet();
 		assertThat("Log wasn't logged", ReportPortal.emitLog(message, logLevel, logDate));
-		Throwable result = launch.completeLogEmitter().blockingGet();
-		assertThat(result, nullValue());
-		context.disposed();
+		Thread.sleep(200);
+		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
@@ -167,24 +172,24 @@ public class ReportPortalLoggingTest {
 	@Test
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
-	public void verify_emitLog_message_with_file() throws IOException {
+	public void verify_emitLog_message_with_file() throws IOException, InterruptedException {
 		String launchUuid = "launchUuid1";
-		TestUtils.mockStartLaunch(rpClient, launchUuid);
-		TestUtils.mockBatchLogging(rpClient);
+		TestUtils.mockLaunch(rpClient, launchUuid);
 		String testUuid = "testUuid1";
+		TestUtils.mockStartTestItem(rpClient, testUuid);
+		TestUtils.mockBatchLogging(rpClient);
 		String logLevel = "INFO";
 		String message = "message";
 		Date logDate = Calendar.getInstance().getTime();
 		String filePath = "pug/lucky.jpg";
 		File file = new File(filePath);
 
-		ListenerParameters parameters = TestUtils.standardParameters();
-		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
-		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
+		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(parameters));
+		launch.start().blockingGet();
+		launch.startTestItem(TestUtils.standardStartTestRequest()).blockingGet();
 		assertThat("Log wasn't logged", ReportPortal.emitLog(message, logLevel, logDate, file));
-		Throwable result = launch.completeLogEmitter().blockingGet();
-		assertThat(result, nullValue());
-		context.disposed();
+		Thread.sleep(200);
+		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
@@ -214,19 +219,19 @@ public class ReportPortalLoggingTest {
 	@Test
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
-	public void verify_emitLaunchLog_simple_message() {
+	public void verify_emitLaunchLog_simple_message() throws InterruptedException {
 		String launchUuid = "launchUuid2";
-		TestUtils.mockStartLaunch(rpClient, launchUuid);
+		TestUtils.mockLaunch(rpClient, launchUuid);
 		TestUtils.mockBatchLogging(rpClient);
 		String logLevel = "INFO";
 		String message = "message";
-		ListenerParameters parameters = TestUtils.standardParameters();
-		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
+		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(parameters));
 		Date logDate = Calendar.getInstance().getTime();
 
+		launch.start().blockingGet();
 		assertThat("Log wasn't logged", ReportPortal.emitLaunchLog(message, logLevel, logDate));
-		Throwable result = launch.completeLogEmitter().blockingGet();
-		assertThat(result, nullValue());
+		Thread.sleep(200);
+		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
@@ -242,9 +247,9 @@ public class ReportPortalLoggingTest {
 	@Test
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
-	public void verify_emitLaunchLog_message_with_file() throws IOException {
+	public void verify_emitLaunchLog_message_with_file() throws IOException, InterruptedException {
 		String launchUuid = "launchUuid3";
-		TestUtils.mockStartLaunch(rpClient, launchUuid);
+		TestUtils.mockLaunch(rpClient, launchUuid);
 		TestUtils.mockBatchLogging(rpClient);
 		String logLevel = "INFO";
 		String message = "message";
@@ -252,11 +257,11 @@ public class ReportPortalLoggingTest {
 		String filePath = "pug/unlucky.jpg";
 		File file = new File(filePath);
 
-		ListenerParameters parameters = TestUtils.standardParameters();
-		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
+		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(parameters));
+		launch.start().blockingGet();
 		assertThat("Log wasn't logged", ReportPortal.emitLaunchLog(message, logLevel, logDate, file));
-		Throwable result = launch.completeLogEmitter().blockingGet();
-		assertThat(result, nullValue());
+		Thread.sleep(200);
+		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
@@ -286,24 +291,24 @@ public class ReportPortalLoggingTest {
 	@Test
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
-	public void verify_emitLog_method_with_ReportPortalMessage() throws IOException {
+	public void verify_emitLog_method_with_ReportPortalMessage() throws IOException, InterruptedException {
 		String launchUuid = "launchUuid4";
-		TestUtils.mockStartLaunch(rpClient, launchUuid);
-		TestUtils.mockBatchLogging(rpClient);
+		TestUtils.mockLaunch(rpClient, launchUuid);
 		String testUuid = "testUuid4";
+		TestUtils.mockStartTestItem(rpClient, testUuid);
+		TestUtils.mockBatchLogging(rpClient);
 		String logLevel = "INFO";
 		String message = "message";
 		Date logDate = Calendar.getInstance().getTime();
 		String filePath = "pug/unlucky.jpg";
 		File file = new File(filePath);
 
-		ListenerParameters parameters = TestUtils.standardParameters();
-		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
-		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
+		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(parameters));
+		launch.start().blockingGet();
+		launch.startTestItem(TestUtils.standardStartTestRequest()).blockingGet();
 		assertThat("Log wasn't logged", ReportPortal.emitLog(new ReportPortalMessage(file, message), logLevel, logDate));
-		Throwable result = launch.completeLogEmitter().blockingGet();
-		assertThat(result, nullValue());
-		context.disposed();
+		Thread.sleep(200);
+		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
@@ -333,22 +338,22 @@ public class ReportPortalLoggingTest {
 	@Test
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
-	public void verify_emitLog_method_with_ReportPortalMessage_no_file() {
+	public void verify_emitLog_method_with_ReportPortalMessage_no_file() throws InterruptedException {
 		String launchUuid = "launchUuid5";
-		TestUtils.mockStartLaunch(rpClient, launchUuid);
-		TestUtils.mockBatchLogging(rpClient);
+		TestUtils.mockLaunch(rpClient, launchUuid);
 		String testUuid = "testUuid5";
+		TestUtils.mockStartTestItem(rpClient, testUuid);
+		TestUtils.mockBatchLogging(rpClient);
 		String logLevel = "INFO";
 		String message = "message";
 		Date logDate = Calendar.getInstance().getTime();
 
-		ListenerParameters parameters = TestUtils.standardParameters();
-		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
-		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
+		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(parameters));
+		launch.start().blockingGet();
+		launch.startTestItem(TestUtils.standardStartTestRequest()).blockingGet();
 		assertThat("Log wasn't logged", ReportPortal.emitLog(new ReportPortalMessage(message), logLevel, logDate));
-		Throwable result = launch.completeLogEmitter().blockingGet();
-		assertThat(result, nullValue());
-		context.disposed();
+		Thread.sleep(200);
+		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
@@ -375,9 +380,9 @@ public class ReportPortalLoggingTest {
 	@Test
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
-	public void verify_emitLaunchLog_method_with_ReportPortalMessage() throws IOException {
+	public void verify_emitLaunchLog_method_with_ReportPortalMessage() throws IOException, InterruptedException {
 		String launchUuid = "launchUuid6";
-		TestUtils.mockStartLaunch(rpClient, launchUuid);
+		TestUtils.mockLaunch(rpClient, launchUuid);
 		TestUtils.mockBatchLogging(rpClient);
 		String logLevel = "INFO";
 		String message = "message";
@@ -385,11 +390,11 @@ public class ReportPortalLoggingTest {
 		String filePath = "pug/unlucky.jpg";
 		File file = new File(filePath);
 
-		ListenerParameters parameters = TestUtils.standardParameters();
-		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
+		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(parameters));
+		launch.start().blockingGet();
 		assertThat("Log wasn't logged", ReportPortal.emitLaunchLog(new ReportPortalMessage(file, message), logLevel, logDate));
-		Throwable result = launch.completeLogEmitter().blockingGet();
-		assertThat(result, nullValue());
+		Thread.sleep(200);
+		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
@@ -419,19 +424,19 @@ public class ReportPortalLoggingTest {
 	@Test
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
-	public void verify_emitLaunchLog_method_with_ReportPortalMessage_no_file() {
+	public void verify_emitLaunchLog_method_with_ReportPortalMessage_no_file() throws InterruptedException {
 		String launchUuid = "launchUuid7";
-		TestUtils.mockStartLaunch(rpClient, launchUuid);
+		TestUtils.mockLaunch(rpClient, launchUuid);
 		TestUtils.mockBatchLogging(rpClient);
 		String logLevel = "INFO";
 		String message = "message";
 		Date logDate = Calendar.getInstance().getTime();
 
-		ListenerParameters parameters = TestUtils.standardParameters();
-		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
+		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(parameters));
+		launch.start().blockingGet();
 		assertThat("Log wasn't logged", ReportPortal.emitLaunchLog(new ReportPortalMessage(message), logLevel, logDate));
-		Throwable result = launch.completeLogEmitter().blockingGet();
-		assertThat(result, nullValue());
+		Thread.sleep(200);
+		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
@@ -458,28 +463,29 @@ public class ReportPortalLoggingTest {
 	@Test
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
-	public void verify_emitLog_method_with_specified_id() {
+	public void verify_emitLog_method_with_specified_id() throws InterruptedException {
 		String launchUuid = "launchUuid8";
-		TestUtils.mockStartLaunch(rpClient, launchUuid);
-		TestUtils.mockBatchLogging(rpClient);
+		TestUtils.mockLaunch(rpClient, launchUuid);
 		String testUuid = "testUuid8";
+		TestUtils.mockStartTestItem(rpClient, testUuid);
 		String customUuid = "testUuid9";
+		TestUtils.mockStartTestItem(rpClient, customUuid);
+		TestUtils.mockBatchLogging(rpClient);
 		String logLevel = "INFO";
 		String message = "message";
 		Date logDate = Calendar.getInstance().getTime();
 
-		ListenerParameters parameters = TestUtils.standardParameters();
-		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
-		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
+		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(parameters));
+		launch.start().blockingGet();
+		launch.startTestItem(TestUtils.standardStartTestRequest()).blockingGet();
 		assertThat(
 				"Log wasn't logged", ReportPortal.emitLog(
 						Maybe.just(customUuid),
 						itemUuid -> ReportPortal.toSaveLogRQ(launchUuid, itemUuid, logLevel, logDate, new ReportPortalMessage(message))
 				)
 		);
-		Throwable result = launch.completeLogEmitter().blockingGet();
-		assertThat(result, nullValue());
-		context.disposed();
+		Thread.sleep(200);
+		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
@@ -495,21 +501,21 @@ public class ReportPortalLoggingTest {
 	@Test
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
-	public void verify_sendStackTraceToRP_method() {
+	public void verify_sendStackTraceToRP_method() throws InterruptedException {
 		String launchUuid = "launchUuid10";
-		TestUtils.mockStartLaunch(rpClient, launchUuid);
-		TestUtils.mockBatchLogging(rpClient);
+		TestUtils.mockLaunch(rpClient, launchUuid);
 		String testUuid = "testUuid10";
+		TestUtils.mockStartTestItem(rpClient, testUuid);
+		TestUtils.mockBatchLogging(rpClient);
 		String logLevel = "ERROR";
 		String message = "java.lang.Throwable\n...";
 
-		ListenerParameters parameters = TestUtils.standardParameters();
-		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
-		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
+		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(parameters));
+		launch.start().blockingGet();
+		launch.startTestItem(TestUtils.standardStartTestRequest()).blockingGet();
 		ReportPortal.sendStackTraceToRP(new Throwable());
-		Throwable result = launch.completeLogEmitter().blockingGet();
-		assertThat(result, nullValue());
-		context.disposed();
+		Thread.sleep(200);
+		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
@@ -525,21 +531,21 @@ public class ReportPortalLoggingTest {
 	@Test
 	@Order(Order.DEFAULT)
 	@SuppressWarnings("unchecked")
-	public void verify_sendStackTraceToRP_method_null_value() {
+	public void verify_sendStackTraceToRP_method_null_value() throws InterruptedException {
 		String launchUuid = "launchUuid11";
-		TestUtils.mockStartLaunch(rpClient, launchUuid);
-		TestUtils.mockBatchLogging(rpClient);
+		TestUtils.mockLaunch(rpClient, launchUuid);
 		String testUuid = "testUuid11";
+		TestUtils.mockStartTestItem(rpClient, testUuid);
+		TestUtils.mockBatchLogging(rpClient);
 		String logLevel = "ERROR";
 		String message = "Test has failed without exception";
 
-		ListenerParameters parameters = TestUtils.standardParameters();
-		LaunchImpl launch = new LaunchImpl(rpClient, parameters, TestUtils.standardLaunchRequest(parameters), executor);
-		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
+		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(parameters));
+		launch.start().blockingGet();
+		launch.startTestItem(TestUtils.standardStartTestRequest()).blockingGet();
 		ReportPortal.sendStackTraceToRP(null);
-		Throwable result = launch.completeLogEmitter().blockingGet();
-		assertThat(result, nullValue());
-		context.disposed();
+		Thread.sleep(200);
+		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
@@ -555,23 +561,27 @@ public class ReportPortalLoggingTest {
 	@Test
 	@Order(Integer.MAX_VALUE)
 	@SuppressWarnings("unchecked")
-	public void verify_sendStackTraceToRP_method_no_format() {
+	public void verify_sendStackTraceToRP_method_no_format() throws InterruptedException {
+		String launchUuid = "launchUuid12";
+		TestUtils.mockLaunch(rpClient, launchUuid);
+		String testUuid = "testUuid12";
+		TestUtils.mockStartTestItem(rpClient, testUuid);
 		TestUtils.mockBatchLogging(rpClient);
 		ListenerParameters parameters = TestUtils.standardParameters();
 		parameters.setExceptionTruncate(false);
 		ReportPortal reportPortal = ReportPortal.create(rpClient, parameters, executor);
-		String launchUuid = "launchUuid12";
-		reportPortal.withLaunch(Maybe.just(launchUuid));
-		String testUuid = "testUuid12";
+		Launch launch = reportPortal.newLaunch(TestUtils.standardLaunchRequest(parameters));
 		String logLevel = "ERROR";
 		String message = "java.lang.Throwable\n\tat com.epam";
 
-		LoggingContext context = LoggingContext.init(Maybe.just(testUuid));
+		launch.start().blockingGet();
+		launch.startTestItem(TestUtils.standardStartTestRequest()).blockingGet();
 		ReportPortal.sendStackTraceToRP(new Throwable());
+		Thread.sleep(200);
+		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000)).log(logCaptor.capture());
-		context.disposed();
 
 		// Verify basic fields
 		List<SaveLogRQ> logRequests = logCaptor.getAllValues()

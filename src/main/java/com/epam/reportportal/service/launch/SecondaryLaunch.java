@@ -114,9 +114,5 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 			d.dispose();
 			return true;
 		});
-		// Dispose all logged items
-		LoggingContext.dispose();
-
-		MultithreadingUtils.shutdownExecutorService(getExecutor(), getParameters().getReportingTimeout(), TimeUnit.SECONDS);
 	}
 }
