@@ -41,7 +41,6 @@ import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.epam.ta.reportportal.ws.model.project.config.ProjectSettingsResource;
 import io.reactivex.*;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 import io.reactivex.internal.operators.flowable.FlowableFromObservable;
@@ -79,7 +78,6 @@ public class LaunchImpl extends Launch {
 	private static final Map<ExecutorService, Scheduler> SCHEDULERS = new ConcurrentHashMap<>();
 
 	private static final Function<ItemCreatedRS, String> TO_ID = EntryCreatedAsyncRS::getId;
-	private static final Consumer<StartLaunchRS> LAUNCH_SUCCESS_CONSUMER = rs -> logCreated("launch").accept(rs);
 
 	private static final int DEFAULT_RETRY_COUNT = 5;
 	private static final int DEFAULT_RETRY_TIMEOUT = 2;
@@ -138,8 +136,7 @@ public class LaunchImpl extends Launch {
 			@Nonnull final StartLaunchRQ startRq) {
 		return Maybe.defer(() -> client.startLaunch(startRq)
 				.retry(DEFAULT_REQUEST_RETRY)
-				.doOnSuccess(LAUNCH_SUCCESS_CONSUMER)
-				.doOnError(LOG_ERROR)).map(StartLaunchRS::getId).cache().subscribeOn(scheduler);
+				.map(StartLaunchRS::getId)).cache().subscribeOn(scheduler);
 	}
 
 	private static PublishSubject<SaveLogRQ> getLogEmitter(@Nonnull final ReportPortalClient client,
@@ -417,6 +414,17 @@ public class LaunchImpl extends Launch {
 			throw new InternalReportPortalClientException("Executor service is already shut down");
 		}
 
+		try {
+			// FIXME: Find out a way to ensure that everything in Schedulers, Completables and in the middle were processed
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
+
+		// Close and re-create statistics service
+		getStatisticsService().close();
+		statisticsService = new StatisticsService(getParameters());
+
 		// Collect all items to be reported
 		Completable finish = Completable.concat(queue.values()
 				.stream()
@@ -434,10 +442,6 @@ public class LaunchImpl extends Launch {
 
 		// Finish all items
 		waitForItemsCompletion(finish.cache());
-
-		// Close and re-create statistics service
-		getStatisticsService().close();
-		statisticsService = new StatisticsService(getParameters());
 
 		// Dispose all collected virtual item disposables
 		virtualItemDisposables.removeIf(d -> {
