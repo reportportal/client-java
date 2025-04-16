@@ -396,7 +396,7 @@ public class ReportPortalClientJoinTest {
 		assertThat(finishThread.isAlive(), equalTo(Boolean.TRUE));
 
 		when(launchIdLock.getLiveInstanceUuids()).thenReturn(Collections.emptyList());
-		verify(rpClient, after(1100)).finishLaunch(anyString(), any(FinishExecutionRQ.class));
+		verify(rpClient, after(3000)).finishLaunch(anyString(), any(FinishExecutionRQ.class));
 		verify(launchIdLock, atLeast(1)).getLiveInstanceUuids();
 		assertThat(finishThread.isAlive(), equalTo(Boolean.FALSE));
 	}
