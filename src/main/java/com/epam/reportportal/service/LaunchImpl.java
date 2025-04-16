@@ -41,7 +41,6 @@ import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.epam.ta.reportportal.ws.model.project.config.ProjectSettingsResource;
 import io.reactivex.*;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 import io.reactivex.internal.operators.flowable.FlowableFromObservable;
@@ -79,7 +78,6 @@ public class LaunchImpl extends Launch {
 	private static final Map<ExecutorService, Scheduler> SCHEDULERS = new ConcurrentHashMap<>();
 
 	private static final Function<ItemCreatedRS, String> TO_ID = EntryCreatedAsyncRS::getId;
-	private static final Consumer<StartLaunchRS> LAUNCH_SUCCESS_CONSUMER = rs -> logCreated("launch").accept(rs);
 
 	private static final int DEFAULT_RETRY_COUNT = 5;
 	private static final int DEFAULT_RETRY_TIMEOUT = 2;
@@ -397,6 +395,13 @@ public class LaunchImpl extends Launch {
 	 * @param itemCompletable A completable representing the test items to be completed before finishing the launch
 	 */
 	protected void waitForItemsCompletion(Completable itemCompletable) {
+		waitForCompletable(
+				getLaunch().ignoreElement(),
+				createVirtualItemCompletable(),
+				itemCompletable,
+				LoggingContext.completed(),
+				completeLogEmitter()
+		);
 		waitForCompletable(
 				getLaunch().ignoreElement(),
 				createVirtualItemCompletable(),

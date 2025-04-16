@@ -24,6 +24,7 @@ import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.service.step.StepReporter;
+import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.utils.ObjectUtils;
 import com.epam.reportportal.utils.StaticStructuresUtils;
 import com.epam.reportportal.utils.properties.DefaultProperties;
@@ -216,6 +217,8 @@ public class LaunchTest {
 		launchGet = launchChildStartExecutor.submit(Launch::currentLaunch).get();
 
 		assertThat(launchGet, sameInstance(launchOnCreate));
+
+		launchOnCreate.finish(TestUtils.standardLaunchFinishRequest());
 		shutdownExecutorService(launchChildStartExecutor);
 	}
 
