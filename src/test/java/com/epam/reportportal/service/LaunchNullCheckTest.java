@@ -82,7 +82,6 @@ public class LaunchNullCheckTest {
 		launch.start();
 		launch.startTestItem(standardStartSuiteRequest());
 		Maybe<String> result = launch.startTestItem(null, null);
-		Thread.sleep(200);
 
 		//noinspection ResultOfMethodCallIgnored
 		Assertions.assertThrows(NullPointerException.class, result::blockingGet);
@@ -101,7 +100,6 @@ public class LaunchNullCheckTest {
 		launch.start();
 		launch.startTestItem(standardStartSuiteRequest());
 		Maybe<OperationCompletionRS> result = launch.finishTestItem(null, positiveFinishRequest());
-		Thread.sleep(200);
 
 		//noinspection ResultOfMethodCallIgnored
 		Assertions.assertThrows(NullPointerException.class, result::blockingGet);
@@ -120,7 +118,6 @@ public class LaunchNullCheckTest {
 		launch.start();
 		launch.startTestItem(standardStartSuiteRequest());
 		Maybe<OperationCompletionRS> result = launch.finishTestItem(launch.startTestItem(standardStartSuiteRequest()), null);
-		Thread.sleep(200);
 
 		//noinspection ResultOfMethodCallIgnored
 		Assertions.assertThrows(NullPointerException.class, result::blockingGet);

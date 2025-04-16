@@ -40,7 +40,7 @@ import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.Mockito.*;
 
-@SuppressWarnings({ "ReactiveStreamsUnusedPublisher", "unchecked", "ResultOfMethodCallIgnored" })
+@SuppressWarnings({ "unchecked", "ResultOfMethodCallIgnored" })
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ReportPortalLoggingTest {
 
@@ -155,7 +155,7 @@ public class ReportPortalLoggingTest {
 		launch.start().blockingGet();
 		launch.startTestItem(TestUtils.standardStartTestRequest()).blockingGet();
 		assertThat("Log wasn't logged", ReportPortal.emitLog(message, logLevel, logDate));
-		Thread.sleep(200);
+
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -188,7 +188,7 @@ public class ReportPortalLoggingTest {
 		launch.start().blockingGet();
 		launch.startTestItem(TestUtils.standardStartTestRequest()).blockingGet();
 		assertThat("Log wasn't logged", ReportPortal.emitLog(message, logLevel, logDate, file));
-		Thread.sleep(200);
+
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -230,7 +230,7 @@ public class ReportPortalLoggingTest {
 
 		launch.start().blockingGet();
 		assertThat("Log wasn't logged", ReportPortal.emitLaunchLog(message, logLevel, logDate));
-		Thread.sleep(200);
+
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -260,7 +260,7 @@ public class ReportPortalLoggingTest {
 		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(parameters));
 		launch.start().blockingGet();
 		assertThat("Log wasn't logged", ReportPortal.emitLaunchLog(message, logLevel, logDate, file));
-		Thread.sleep(200);
+
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -307,7 +307,7 @@ public class ReportPortalLoggingTest {
 		launch.start().blockingGet();
 		launch.startTestItem(TestUtils.standardStartTestRequest()).blockingGet();
 		assertThat("Log wasn't logged", ReportPortal.emitLog(new ReportPortalMessage(file, message), logLevel, logDate));
-		Thread.sleep(200);
+
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -352,7 +352,7 @@ public class ReportPortalLoggingTest {
 		launch.start().blockingGet();
 		launch.startTestItem(TestUtils.standardStartTestRequest()).blockingGet();
 		assertThat("Log wasn't logged", ReportPortal.emitLog(new ReportPortalMessage(message), logLevel, logDate));
-		Thread.sleep(200);
+
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -393,7 +393,7 @@ public class ReportPortalLoggingTest {
 		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(parameters));
 		launch.start().blockingGet();
 		assertThat("Log wasn't logged", ReportPortal.emitLaunchLog(new ReportPortalMessage(file, message), logLevel, logDate));
-		Thread.sleep(200);
+
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -435,7 +435,7 @@ public class ReportPortalLoggingTest {
 		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(parameters));
 		launch.start().blockingGet();
 		assertThat("Log wasn't logged", ReportPortal.emitLaunchLog(new ReportPortalMessage(message), logLevel, logDate));
-		Thread.sleep(200);
+
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -484,7 +484,7 @@ public class ReportPortalLoggingTest {
 						itemUuid -> ReportPortal.toSaveLogRQ(launchUuid, itemUuid, logLevel, logDate, new ReportPortalMessage(message))
 				)
 		);
-		Thread.sleep(200);
+
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -514,7 +514,7 @@ public class ReportPortalLoggingTest {
 		launch.start().blockingGet();
 		launch.startTestItem(TestUtils.standardStartTestRequest()).blockingGet();
 		ReportPortal.sendStackTraceToRP(new Throwable());
-		Thread.sleep(200);
+
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -544,7 +544,7 @@ public class ReportPortalLoggingTest {
 		launch.start().blockingGet();
 		launch.startTestItem(TestUtils.standardStartTestRequest()).blockingGet();
 		ReportPortal.sendStackTraceToRP(null);
-		Thread.sleep(200);
+
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
@@ -577,7 +577,7 @@ public class ReportPortalLoggingTest {
 		launch.start().blockingGet();
 		launch.startTestItem(TestUtils.standardStartTestRequest()).blockingGet();
 		ReportPortal.sendStackTraceToRP(new Throwable());
-		Thread.sleep(200);
+
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);

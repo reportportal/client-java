@@ -138,8 +138,7 @@ public class LaunchImpl extends Launch {
 			@Nonnull final StartLaunchRQ startRq) {
 		return Maybe.defer(() -> client.startLaunch(startRq)
 				.retry(DEFAULT_REQUEST_RETRY)
-				.doOnSuccess(LAUNCH_SUCCESS_CONSUMER)
-				.doOnError(LOG_ERROR)).map(StartLaunchRS::getId).cache().subscribeOn(scheduler);
+				.map(StartLaunchRS::getId)).cache().subscribeOn(scheduler);
 	}
 
 	private static PublishSubject<SaveLogRQ> getLogEmitter(@Nonnull final ReportPortalClient client,
@@ -417,6 +416,10 @@ public class LaunchImpl extends Launch {
 			throw new InternalReportPortalClientException("Executor service is already shut down");
 		}
 
+		// Close and re-create statistics service
+		getStatisticsService().close();
+		statisticsService = new StatisticsService(getParameters());
+
 		// Collect all items to be reported
 		Completable finish = Completable.concat(queue.values()
 				.stream()
@@ -434,10 +437,6 @@ public class LaunchImpl extends Launch {
 
 		// Finish all items
 		waitForItemsCompletion(finish.cache());
-
-		// Close and re-create statistics service
-		getStatisticsService().close();
-		statisticsService = new StatisticsService(getParameters());
 
 		// Dispose all collected virtual item disposables
 		virtualItemDisposables.removeIf(d -> {
