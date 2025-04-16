@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Launch items wait mechanism, by @HardNorth
 
 ## [5.3.8]
 ### Fixed
