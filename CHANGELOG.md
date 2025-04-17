@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Cleanup of Completables, by @HardNorth
 
 ## [5.3.9]
 ### Fixed
