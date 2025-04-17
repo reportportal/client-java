@@ -57,7 +57,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import static com.epam.reportportal.service.logs.LaunchLoggingCallback.*;
+import static com.epam.reportportal.service.logs.LaunchLoggingCallback.LOG_ERROR;
+import static com.epam.reportportal.service.logs.LaunchLoggingCallback.LOG_SUCCESS;
 import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
 import static com.epam.reportportal.utils.SubscriptionUtils.*;
 import static com.epam.reportportal.utils.files.ImageConverter.convert;
@@ -134,9 +135,9 @@ public class LaunchImpl extends Launch {
 
 	private static Maybe<String> getLaunchMaybe(@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler,
 			@Nonnull final StartLaunchRQ startRq) {
-		return Maybe.defer(() -> client.startLaunch(startRq)
-				.retry(DEFAULT_REQUEST_RETRY)
-				.map(StartLaunchRS::getId)).cache().subscribeOn(scheduler);
+		return Maybe.defer(() -> client.startLaunch(startRq).retry(DEFAULT_REQUEST_RETRY).map(StartLaunchRS::getId))
+				.cache()
+				.subscribeOn(scheduler);
 	}
 
 	private static PublishSubject<SaveLogRQ> getLogEmitter(@Nonnull final ReportPortalClient client,
@@ -839,6 +840,10 @@ public class LaunchImpl extends Launch {
 
 	private void emitLog(@Nonnull final SaveLogRQ rq) {
 		logEmitter.onNext(rq);
+		int removeFactor = 100;
+		if (rq.hashCode() % removeFactor == 0) {
+			logCompletables.removeIf(c -> c.test().completions() > 0);
+		}
 	}
 
 	/**
