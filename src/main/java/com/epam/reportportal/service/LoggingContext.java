@@ -95,7 +95,15 @@ public class LoggingContext {
 	 * Disposes current logging context
 	 */
 	public static void dispose() {
-		ofNullable(getContext()).map(Deque::poll).ifPresent(USED_CONTEXTS::add);
+		ofNullable(getContext()).map(Deque::poll).ifPresent(context -> {
+			USED_CONTEXTS.add(context);
+			if (context.hashCode() % 100 == 0) {
+				USED_CONTEXTS.removeIf(ctx -> {
+					ctx.completables.removeIf(c -> c.test().completions() > 0);
+					return ctx.completables.isEmpty();
+				});
+			}
+		});
 	}
 
 	public static Completable completed() {
