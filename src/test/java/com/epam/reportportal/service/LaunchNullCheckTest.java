@@ -31,6 +31,7 @@ import java.util.concurrent.Executors;
 import static com.epam.reportportal.test.TestUtils.*;
 import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
 
+@SuppressWarnings({ "ReactiveStreamsUnusedPublisher", "ResultOfMethodCallIgnored" })
 public class LaunchNullCheckTest {
 
 	@Mock
@@ -64,13 +65,11 @@ public class LaunchNullCheckTest {
 		launch.start();
 		Maybe<String> result = launch.startTestItem(null);
 
-		//noinspection ResultOfMethodCallIgnored
 		Assertions.assertThrows(NullPointerException.class, result::blockingGet);
 	}
 
 	@Test
-	public void launch_should_not_throw_any_exceptions_if_an_agent_bypasses_null_parent_item_id_on_start_item()
-			throws InterruptedException {
+	public void launch_should_not_throw_any_exceptions_if_an_agent_bypasses_null_parent_item_id_on_start_item() {
 		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
 			@Override
 			StatisticsService getStatisticsService() {
@@ -83,12 +82,11 @@ public class LaunchNullCheckTest {
 		launch.startTestItem(standardStartSuiteRequest()).blockingGet();
 		Maybe<String> result = launch.startTestItem(null, null);
 
-		//noinspection ResultOfMethodCallIgnored
 		Assertions.assertThrows(NullPointerException.class, result::blockingGet);
 	}
 
 	@Test
-	public void launch_should_not_throw_any_exceptions_if_an_agent_bypasses_null_item_id_on_finish_item() throws InterruptedException {
+	public void launch_should_not_throw_any_exceptions_if_an_agent_bypasses_null_item_id_on_finish_item() {
 		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
 			@Override
 			StatisticsService getStatisticsService() {
@@ -101,12 +99,11 @@ public class LaunchNullCheckTest {
 		launch.startTestItem(standardStartSuiteRequest()).blockingGet();
 		Maybe<OperationCompletionRS> result = launch.finishTestItem(null, positiveFinishRequest());
 
-		//noinspection ResultOfMethodCallIgnored
 		Assertions.assertThrows(NullPointerException.class, result::blockingGet);
 	}
 
 	@Test
-	public void launch_should_not_throw_any_exceptions_if_an_agent_bypasses_null_finish_rq_on_finish_item() throws InterruptedException {
+	public void launch_should_not_throw_any_exceptions_if_an_agent_bypasses_null_finish_rq_on_finish_item() {
 		Launch launch = new LaunchImpl(rpClient, STANDARD_PARAMETERS, standardLaunchRequest(STANDARD_PARAMETERS), executor) {
 			@Override
 			StatisticsService getStatisticsService() {
@@ -119,7 +116,6 @@ public class LaunchNullCheckTest {
 		launch.startTestItem(standardStartSuiteRequest()).blockingGet();
 		Maybe<OperationCompletionRS> result = launch.finishTestItem(launch.startTestItem(standardStartSuiteRequest()), null);
 
-		//noinspection ResultOfMethodCallIgnored
 		Assertions.assertThrows(NullPointerException.class, result::blockingGet);
 	}
 }
