@@ -80,7 +80,7 @@ public class LaunchNullCheckTest {
 		simulateStartTestItemResponse(rpClient);
 
 		launch.start();
-		launch.startTestItem(standardStartSuiteRequest());
+		launch.startTestItem(standardStartSuiteRequest()).blockingGet();
 		Maybe<String> result = launch.startTestItem(null, null);
 
 		//noinspection ResultOfMethodCallIgnored
@@ -98,7 +98,7 @@ public class LaunchNullCheckTest {
 		simulateStartTestItemResponse(rpClient);
 
 		launch.start();
-		launch.startTestItem(standardStartSuiteRequest());
+		launch.startTestItem(standardStartSuiteRequest()).blockingGet();
 		Maybe<OperationCompletionRS> result = launch.finishTestItem(null, positiveFinishRequest());
 
 		//noinspection ResultOfMethodCallIgnored
@@ -116,7 +116,7 @@ public class LaunchNullCheckTest {
 		simulateStartTestItemResponse(rpClient);
 
 		launch.start();
-		launch.startTestItem(standardStartSuiteRequest());
+		launch.startTestItem(standardStartSuiteRequest()).blockingGet();
 		Maybe<OperationCompletionRS> result = launch.finishTestItem(launch.startTestItem(standardStartSuiteRequest()), null);
 
 		//noinspection ResultOfMethodCallIgnored
