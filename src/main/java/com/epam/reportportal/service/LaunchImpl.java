@@ -824,6 +824,10 @@ public class LaunchImpl extends Launch {
 
 		getStepReporter().removeParent(item);
 		LoggingContext.dispose();
+		int removeFactor = 100;
+		if (rq.hashCode() % removeFactor == 0) {
+			logCompletables.removeIf(c -> c.test().completions() > 0);
+		}
 		return finishResponse;
 	}
 
