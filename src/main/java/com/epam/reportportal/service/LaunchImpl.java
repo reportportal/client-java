@@ -147,7 +147,8 @@ public class LaunchImpl extends Launch {
 		RxJavaPlugins.onAssembly(new LogBatchingFlowable(new FlowableFromObservable<>(emitter), parameters))
 				.observeOn(scheduler)
 				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
-						rqs)).toFlowable())
+						rqs)).retry(DEFAULT_REQUEST_RETRY).toFlowable())
+				.cache()
 				.onBackpressureBuffer(parameters.getRxBufferSize(), false, true)
 				.subscribe(loggingSubscriber);
 		return emitter;
@@ -318,6 +319,14 @@ public class LaunchImpl extends Launch {
 		if (getExecutor().isShutdown()) {
 			throw new InternalReportPortalClientException("Executor service is already shut down");
 		}
+
+		ListenerParameters params = getParameters();
+		if (params.isPrintLaunchUuid()) {
+			launch.subscribe(printLaunch(params));
+		} else {
+			launch.subscribe(logMaybeResults("Launch start"));
+		}
+
 		// Register JVM shutdown hook to wait for the executor to complete
 		if (isShutDownHook.compareAndSet(false, true)) {
 			Runtime.getRuntime()
@@ -326,11 +335,6 @@ public class LaunchImpl extends Launch {
 							getParameters().getReportingTimeout(),
 							TimeUnit.SECONDS
 					)));
-		}
-		launch.subscribe(logMaybeResults("Launch start"));
-		ListenerParameters params = getParameters();
-		if (params.isPrintLaunchUuid()) {
-			launch.subscribe(printLaunch(params));
 		}
 		if (statistics) {
 			getStatisticsService().sendEvent(launch, startRq);
@@ -820,6 +824,10 @@ public class LaunchImpl extends Launch {
 
 		getStepReporter().removeParent(item);
 		LoggingContext.dispose();
+		int removeFactor = 100;
+		if (rq.hashCode() % removeFactor == 0) {
+			logCompletables.removeIf(c -> c.test().completions() > 0);
+		}
 		return finishResponse;
 	}
 
@@ -840,10 +848,6 @@ public class LaunchImpl extends Launch {
 
 	private void emitLog(@Nonnull final SaveLogRQ rq) {
 		logEmitter.onNext(rq);
-		int removeFactor = 100;
-		if (rq.hashCode() % removeFactor == 0) {
-			logCompletables.removeIf(c -> c.test().completions() > 0);
-		}
 	}
 
 	/**
