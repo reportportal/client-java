@@ -844,10 +844,6 @@ public class LaunchImpl extends Launch {
 
 	private void emitLog(@Nonnull final SaveLogRQ rq) {
 		logEmitter.onNext(rq);
-		int removeFactor = 100;
-		if (rq.hashCode() % removeFactor == 0) {
-			logCompletables.removeIf(c -> c.test().completions() > 0);
-		}
 	}
 
 	/**
