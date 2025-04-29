@@ -133,7 +133,11 @@ public class LaunchImpl extends Launch {
 
 	private static Supplier<Maybe<String>> getLaunchSupplier(@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler,
 			@Nonnull final StartLaunchRQ startRq) {
-		return new MemoizingSupplier<>(() -> client.startLaunch(startRq).retry(DEFAULT_REQUEST_RETRY).map(StartLaunchRS::getId).cache().subscribeOn(scheduler));
+		return new MemoizingSupplier<>(() -> client.startLaunch(startRq)
+				.retry(DEFAULT_REQUEST_RETRY)
+				.map(StartLaunchRS::getId)
+				.cache()
+				.subscribeOn(scheduler));
 	}
 
 	private static PublishSubject<SaveLogRQ> getLogEmitter(@Nonnull final ReportPortalClient client,
