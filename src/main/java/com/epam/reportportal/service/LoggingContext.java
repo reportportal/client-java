@@ -141,7 +141,7 @@ public class LoggingContext {
 		Maybe<String> future = logItemUuid.map(itemUuid -> {
 			launch.log(logSupplier.apply(itemUuid));
 			return itemUuid;
-		});
+		}).cache();
 		completables.add(future.ignoreElement());
 		future.subscribe(SubscriptionUtils.logMaybeResults("LoggingContext"));
 	}
