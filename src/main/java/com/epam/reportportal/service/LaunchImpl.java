@@ -135,9 +135,7 @@ public class LaunchImpl extends Launch {
 
 	private static Maybe<String> getLaunchMaybe(@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler,
 			@Nonnull final StartLaunchRQ startRq) {
-		return Maybe.defer(() -> client.startLaunch(startRq).retry(DEFAULT_REQUEST_RETRY).map(StartLaunchRS::getId))
-				.cache()
-				.subscribeOn(scheduler);
+		return client.startLaunch(startRq).retry(DEFAULT_REQUEST_RETRY).map(StartLaunchRS::getId).cache().subscribeOn(scheduler);
 	}
 
 	private static PublishSubject<SaveLogRQ> getLogEmitter(@Nonnull final ReportPortalClient client,
