@@ -141,11 +141,11 @@ public class LaunchImpl extends Launch {
 			@Nonnull final FlowableSubscriber<BatchSaveOperatingRS> loggingSubscriber) {
 		PublishSubject<SaveLogRQ> emitter = PublishSubject.create();
 		RxJavaPlugins.onAssembly(new LogBatchingFlowable(new FlowableFromObservable<>(emitter), parameters))
-				.observeOn(scheduler)
 				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
 						rqs)).retry(DEFAULT_REQUEST_RETRY).toFlowable())
-				.cache()
 				.onBackpressureBuffer(parameters.getRxBufferSize(), false, true)
+				.cache()
+				.subscribeOn(scheduler)
 				.subscribe(loggingSubscriber);
 		return emitter;
 	}
@@ -856,7 +856,7 @@ public class LaunchImpl extends Launch {
 		Maybe<SaveLogRQ> result = getLaunch().map(launchUuid -> {
 			emitLog(prepareRequest(launchUuid, rq));
 			return rq;
-		});
+		}).cache();
 		logCompletables.add(result.ignoreElement());
 		result.subscribe(SubscriptionUtils.logMaybeResults("Log item"));
 	}
@@ -871,7 +871,7 @@ public class LaunchImpl extends Launch {
 			SaveLogRQ rq = prepareRequest(logSupplier.apply(launchUuid));
 			emitLog(rq);
 			return rq;
-		});
+		}).cache();
 		logCompletables.add(result.ignoreElement());
 		result.subscribe(SubscriptionUtils.logMaybeResults("Log item"));
 	}

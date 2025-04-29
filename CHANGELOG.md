@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Possible log duplication, by @HardNorth
 
 ## [5.3.10]
 ### Added
