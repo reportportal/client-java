@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Possible multiple start launches, by @HardNorth
 
 ## [5.3.10]
 ### Added
