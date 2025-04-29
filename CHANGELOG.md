@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Added
 - Cleanup of Completables, by @HardNorth
+- `Utils.getFile(java.net.URI)` method, by @HardNorth
 
 ## [5.3.9]
 ### Fixed

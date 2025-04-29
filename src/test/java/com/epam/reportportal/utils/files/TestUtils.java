@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -29,6 +30,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class TestUtils {
 	public static final String FILE_PATH = "src/test/resources/files/image.png";
+	public static final String FILE_CLASSPATH = "classpath:files/image.png";
 
 	@Test
 	public void test_copy_files() throws IOException {
@@ -41,4 +43,11 @@ public class TestUtils {
 		);
 	}
 
+	@Test
+	public void test_get_file_by_uri() throws IOException {
+		assertThat(
+				Utils.getFile(URI.create(FILE_CLASSPATH)).read(),
+				equalTo(IOUtils.toByteArray(Files.newInputStream(Paths.get(FILE_PATH))))
+		);
+	}
 }

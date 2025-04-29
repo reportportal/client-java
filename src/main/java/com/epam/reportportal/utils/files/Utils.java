@@ -21,6 +21,7 @@ import com.epam.reportportal.utils.MimeTypeDetector;
 
 import javax.annotation.Nonnull;
 import java.io.*;
+import java.net.URI;
 import java.net.URL;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -28,6 +29,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /**
  * File utilities.
@@ -205,6 +207,25 @@ public class Utils {
 	public static TypeAwareByteSource getFile(@Nonnull File file) throws IOException {
 		String name = file.getName();
 		ByteSource byteSource = getFileAsByteSource(file);
+		return new TypeAwareByteSource(byteSource, MimeTypeDetector.detect(byteSource, name));
+	}
+
+	/**
+	 * Locates and reads a file either by a direct path or by a relative path in classpath.
+	 *
+	 * @param uri a file to locate and read
+	 * @return file data and type
+	 * @throws IOException in case of a read error, or a file not found
+	 */
+	public static TypeAwareByteSource getFile(@Nonnull URI uri) throws IOException {
+		if (!"classpath".equals(uri.getScheme())) {
+			return getFile(Paths.get(uri).toFile());
+		}
+		String resourcePath = uri.getSchemeSpecificPart();
+		int substringIndex = resourcePath.startsWith("//") ? 2 : resourcePath.startsWith("/") ? 1 : 0;
+		resourcePath = resourcePath.substring(substringIndex);
+		ByteSource byteSource = ByteSource.wrap(readInputStreamToBytes(getResourceAsStream(resourcePath)));
+		String name = resourcePath.substring(Math.max(resourcePath.lastIndexOf('/'), resourcePath.lastIndexOf('\\')) + 1);
 		return new TypeAwareByteSource(byteSource, MimeTypeDetector.detect(byteSource, name));
 	}
 
