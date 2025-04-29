@@ -145,11 +145,11 @@ public class LaunchImpl extends Launch {
 			@Nonnull final FlowableSubscriber<BatchSaveOperatingRS> loggingSubscriber) {
 		PublishSubject<SaveLogRQ> emitter = PublishSubject.create();
 		RxJavaPlugins.onAssembly(new LogBatchingFlowable(new FlowableFromObservable<>(emitter), parameters))
+				.observeOn(scheduler)
 				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
 						rqs)).toFlowable())
 				.cache()
 				.onBackpressureBuffer(parameters.getRxBufferSize(), false, true)
-				.subscribeOn(scheduler)
 				.subscribe(loggingSubscriber);
 		return emitter;
 	}
