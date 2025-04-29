@@ -260,8 +260,8 @@ public class LaunchLoggingTest {
 		TestUtils.mockStartLaunch(client, "launchUuid");
 		ListenerParameters myParameters = TestUtils.standardParameters();
 		LaunchImpl launch = new LaunchImpl(client, myParameters, TestUtils.standardLaunchRequest(myParameters), executor);
-		//noinspection ReactiveStreamsUnusedPublisher
-		launch.start(false);
+		//noinspection ResultOfMethodCallIgnored
+		launch.start(false).blockingGet();
 
 		// Create virtual item
 		//noinspection ReactiveStreamsUnusedPublisher
@@ -293,8 +293,8 @@ public class LaunchLoggingTest {
 		TestUtils.mockBatchLogging(client);
 		ListenerParameters myParameters = TestUtils.standardParameters();
 		LaunchImpl launch = new LaunchImpl(client, myParameters, TestUtils.standardLaunchRequest(myParameters), executor);
-		//noinspection ReactiveStreamsUnusedPublisher
-		launch.start(false);
+		//noinspection ResultOfMethodCallIgnored
+		launch.start(false).blockingGet();
 
 		// Create virtual item
 		Maybe<String> virtualItem = launch.createVirtualItem();
@@ -351,8 +351,8 @@ public class LaunchLoggingTest {
 		// Create launch
 		ListenerParameters myParameters = TestUtils.standardParameters();
 		LaunchImpl launch = new LaunchImpl(client, myParameters, TestUtils.standardLaunchRequest(myParameters), executor);
-		//noinspection ReactiveStreamsUnusedPublisher
-		launch.start(false);
+		//noinspection ResultOfMethodCallIgnored
+		launch.start(false).blockingGet();
 
 		// Start root item
 		Maybe<String> rootItem = launch.startTestItem(TestUtils.standardStartTestRequest());
@@ -412,8 +412,8 @@ public class LaunchLoggingTest {
 		// Create launch
 		ListenerParameters myParameters = TestUtils.standardParameters();
 		LaunchImpl launch = new LaunchImpl(client, myParameters, TestUtils.standardLaunchRequest(myParameters), executor);
-		//noinspection ReactiveStreamsUnusedPublisher
-		launch.start(false);
+		//noinspection ResultOfMethodCallIgnored
+		launch.start(false).blockingGet();
 
 		// Create virtual parent item
 		Maybe<String> virtualParentItem = launch.createVirtualItem();
@@ -455,8 +455,8 @@ public class LaunchLoggingTest {
 		// Create launch
 		ListenerParameters myParameters = TestUtils.standardParameters();
 		LaunchImpl launch = new LaunchImpl(client, myParameters, TestUtils.standardLaunchRequest(myParameters), executor);
-		//noinspection ReactiveStreamsUnusedPublisher
-		launch.start(false);
+		//noinspection ResultOfMethodCallIgnored
+		launch.start(false).blockingGet();
 
 		// Create virtual parent item
 		Maybe<String> virtualParentItem = launch.createVirtualItem();
