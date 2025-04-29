@@ -63,7 +63,7 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 					@Override
 					public Boolean call() {
 						if (result == null) {
-							disposables.add(launch.subscribe(uuid -> {
+							disposables.add(getLaunch().subscribe(uuid -> {
 								Maybe<LaunchResource> maybeRs = client.getLaunchByUuid(uuid);
 								if (maybeRs != null) {
 									disposables.add(maybeRs.subscribe(
@@ -101,7 +101,7 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 	@Override
 	public void finish(final FinishExecutionRQ request) {
 		// Wait for all items to be finished
-		waitForItemsCompletion(Completable.concat(queue.getOrCompute(this.launch).getChildren()));
+		waitForItemsCompletion(Completable.concat(queue.getOrCompute(getLaunch()).getChildren()));
 
 		// ignore super call, since only primary launch should finish it
 		stopRunning();

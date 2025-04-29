@@ -24,10 +24,7 @@ import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.service.logs.LogBatchingFlowable;
 import com.epam.reportportal.service.logs.LoggingSubscriber;
 import com.epam.reportportal.service.statistics.StatisticsService;
-import com.epam.reportportal.utils.MultithreadingUtils;
-import com.epam.reportportal.utils.RetryWithDelay;
-import com.epam.reportportal.utils.StaticStructuresUtils;
-import com.epam.reportportal.utils.SubscriptionUtils;
+import com.epam.reportportal.utils.*;
 import com.epam.reportportal.utils.files.ByteSource;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.reportportal.utils.properties.DefaultProperties;
@@ -55,6 +52,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.service.logs.LaunchLoggingCallback.LOG_ERROR;
@@ -124,18 +122,18 @@ public class LaunchImpl extends Launch {
 
 	protected final Queue<Completable> logCompletables = new ConcurrentLinkedQueue<>();
 
-	protected final Maybe<String> launch;
 	protected final StartLaunchRQ startRq;
 	protected final Maybe<ProjectSettingsResource> projectSettings;
+	private final Supplier<Maybe<String>> launch;
 	private final AtomicBoolean isShutDownHook = new AtomicBoolean(false);
 	private final PublishSubject<SaveLogRQ> logEmitter;
 	private final ExecutorService executor;
 	private final Scheduler scheduler;
 	private StatisticsService statisticsService;
 
-	private static Maybe<String> getLaunchMaybe(@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler,
+	private static Supplier<Maybe<String>> getLaunchSupplier(@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler,
 			@Nonnull final StartLaunchRQ startRq) {
-		return client.startLaunch(startRq).retry(DEFAULT_REQUEST_RETRY).map(StartLaunchRS::getId).cache().subscribeOn(scheduler);
+		return new MemoizingSupplier<>(() -> client.startLaunch(startRq).retry(DEFAULT_REQUEST_RETRY).map(StartLaunchRS::getId).cache().subscribeOn(scheduler));
 	}
 
 	private static PublishSubject<SaveLogRQ> getLogEmitter(@Nonnull final ReportPortalClient client,
@@ -173,7 +171,7 @@ public class LaunchImpl extends Launch {
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 
-		launch = getLaunchMaybe(getClient(), getScheduler(), startRq);
+		launch = getLaunchSupplier(getClient(), getScheduler(), startRq);
 		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
 		projectSettings = getProjectSettings(getClient(), getScheduler());
 	}
@@ -196,7 +194,7 @@ public class LaunchImpl extends Launch {
 		startRq = emptyStartLaunchForStatistics();
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
-		launch = launchMaybe.cache().subscribeOn(getScheduler());
+		launch = () -> launchMaybe.cache().subscribeOn(getScheduler());
 		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler(), new LoggingSubscriber());
 		projectSettings = getProjectSettings(getClient(), getScheduler());
 	}
@@ -237,7 +235,7 @@ public class LaunchImpl extends Launch {
 	@Override
 	@Nonnull
 	public Maybe<String> getLaunch() {
-		return launch;
+		return launch.get();
 	}
 
 	StatisticsService getStatisticsService() {
@@ -319,10 +317,11 @@ public class LaunchImpl extends Launch {
 		}
 
 		ListenerParameters params = getParameters();
+		Maybe<String> myLaunch = getLaunch();
 		if (params.isPrintLaunchUuid()) {
-			launch.subscribe(printLaunch(params));
+			myLaunch.subscribe(printLaunch(params));
 		} else {
-			launch.subscribe(logMaybeResults("Launch start"));
+			myLaunch.subscribe(logMaybeResults("Launch start"));
 		}
 
 		// Register JVM shutdown hook to wait for the executor to complete
@@ -335,9 +334,9 @@ public class LaunchImpl extends Launch {
 					)));
 		}
 		if (statistics) {
-			getStatisticsService().sendEvent(launch, startRq);
+			getStatisticsService().sendEvent(myLaunch, startRq);
 		}
-		return launch;
+		return myLaunch;
 	}
 
 	/**
@@ -436,7 +435,7 @@ public class LaunchImpl extends Launch {
 		if (StringUtils.isBlank(getParameters().getLaunchUuid()) || !getParameters().isLaunchUuidCreationSkip()) {
 			FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
 			truncateAttributes(rq);
-			finish = finish.andThen(launch.map(id -> getClient().finishLaunch(id, rq)
+			finish = finish.andThen(getLaunch().map(id -> getClient().finishLaunch(id, rq)
 					.retry(DEFAULT_REQUEST_RETRY)
 					.doOnSuccess(LOG_SUCCESS)
 					.doOnError(LOG_ERROR)
@@ -478,7 +477,7 @@ public class LaunchImpl extends Launch {
 		truncateAttributes(rq);
 
 		String itemDescription = String.format("root test item [%s] '%s'", rq.getType(), rq.getName());
-		final Maybe<String> item = launch.flatMap((Function<String, Maybe<String>>) launchId -> {
+		final Maybe<String> item = getLaunch().flatMap((Function<String, Maybe<String>>) launchId -> {
 			rq.setLaunchUuid(launchId);
 			LOGGER.trace("Starting {} in thread: {}", itemDescription, Thread.currentThread().getName());
 			return getClient().startTestItem(rq).retry(DEFAULT_REQUEST_RETRY).map(TO_ID);
@@ -535,7 +534,7 @@ public class LaunchImpl extends Launch {
 
 		String itemDescription = String.format("child test item [%s] '%s'", rq.getType(), rq.getName());
 		final Maybe<String> item = RxJavaPlugins.onAssembly(Maybe.zip(
-				launch, parentId, (lId, pId) -> {
+				getLaunch(), parentId, (lId, pId) -> {
 					rq.setLaunchUuid(lId);
 					LOGGER.trace("Starting {} in thread: {}", itemDescription, Thread.currentThread().getName());
 					return getClient().startTestItem(pId, rq);
@@ -791,7 +790,7 @@ public class LaunchImpl extends Launch {
 
 		//wait for the children to complete
 		Maybe<OperationCompletionRS> finishResponse = RxJavaPlugins.onAssembly(Maybe.zip(
-				this.launch, item, (launchId, itemId) -> {
+				this.getLaunch(), item, (launchId, itemId) -> {
 					// set launch UUID for the request
 					rq.setLaunchUuid(launchId);
 					LOGGER.trace("Finishing test item {} in thread: {}", itemId, Thread.currentThread().getName());
@@ -817,7 +816,7 @@ public class LaunchImpl extends Launch {
 			queue.getOrCompute(parent).addToQueue(finishCompletion.onErrorComplete());
 		} else {
 			//seems like this is root item
-			queue.getOrCompute(this.launch).addToQueue(finishCompletion.onErrorComplete());
+			queue.getOrCompute(this.getLaunch()).addToQueue(finishCompletion.onErrorComplete());
 		}
 
 		getStepReporter().removeParent(item);

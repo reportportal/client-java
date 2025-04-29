@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- `LaunchImpl.launch` is now private, by @HardNorth
 ### Fixed
 - Possible multiple start launches, by @HardNorth
 
