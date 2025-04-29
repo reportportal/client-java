@@ -1,12 +1,13 @@
 # Changelog
 
 ## [Unreleased]
-
-## [5.3.10]
 ### Added
 - Cleanup of Completables, by @HardNorth
 - `Utils.getFile(java.net.URI)` method, by @HardNorth
+### Changed
+- `LaunchImpl.launch` is now private, by @HardNorth
 ### Fixed
+- Possible multiple start launches, by @HardNorth
 - Possible log duplication, by @HardNorth
 
 ## [5.3.9]
