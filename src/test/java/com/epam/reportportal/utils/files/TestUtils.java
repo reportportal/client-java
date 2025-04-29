@@ -18,19 +18,24 @@ package com.epam.reportportal.utils.files;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 public class TestUtils {
 	public static final String FILE_PATH = "src/test/resources/files/image.png";
-	public static final String FILE_CLASSPATH = "classpath:files/image.png";
+	public static final String FILE_CLASSPATH_URI = "classpath:files/image.png";
+	public static final String FILE_ABSOLUTE_NO_HOST_PATH_URI = "file:" + System.getProperty("user.dir") + File.separator + FILE_PATH;
+	public static final String FILE_ABSOLUTE_OMIT_HOST_PATH_URI = "file://" + System.getProperty("user.dir") + File.separator + FILE_PATH;
 
 	@Test
 	public void test_copy_files() throws IOException {
@@ -43,11 +48,17 @@ public class TestUtils {
 		);
 	}
 
-	@Test
-	public void test_get_file_by_uri() throws IOException {
-		assertThat(
-				Utils.getFile(URI.create(FILE_CLASSPATH)).read(),
-				equalTo(IOUtils.toByteArray(Files.newInputStream(Paths.get(FILE_PATH))))
+	public static Iterable<Object[]> fileUriProvider() {
+		return Arrays.asList(
+				new Object[] { FILE_ABSOLUTE_NO_HOST_PATH_URI },
+				new Object[] { FILE_ABSOLUTE_OMIT_HOST_PATH_URI },
+				new Object[] { FILE_CLASSPATH_URI }
 		);
+	}
+
+	@ParameterizedTest
+	@MethodSource("fileUriProvider")
+	public void test_get_file_by_uri(String uri) throws IOException {
+		assertThat(Utils.getFile(URI.create(uri)).read(), equalTo(IOUtils.toByteArray(Files.newInputStream(Paths.get(FILE_PATH)))));
 	}
 }
