@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.3.11]
 ### Fixed
 - Possible log duplication, by @HardNorth
 
