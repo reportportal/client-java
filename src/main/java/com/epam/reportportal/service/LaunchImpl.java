@@ -147,7 +147,7 @@ public class LaunchImpl extends Launch {
 		RxJavaPlugins.onAssembly(new LogBatchingFlowable(new FlowableFromObservable<>(emitter), parameters))
 				.observeOn(scheduler)
 				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
-						rqs)).toFlowable())
+						rqs)).retry(DEFAULT_REQUEST_RETRY).toFlowable())
 				.cache()
 				.onBackpressureBuffer(parameters.getRxBufferSize(), false, true)
 				.subscribe(loggingSubscriber);
