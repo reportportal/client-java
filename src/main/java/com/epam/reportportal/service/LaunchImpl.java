@@ -149,6 +149,7 @@ public class LaunchImpl extends Launch {
 				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
 						rqs)).toFlowable())
 				.onBackpressureBuffer(parameters.getRxBufferSize(), false, true)
+				.cache()
 				.subscribe(loggingSubscriber);
 		return emitter;
 	}

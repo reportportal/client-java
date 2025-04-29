@@ -4,6 +4,8 @@
 ### Added
 - Cleanup of Completables, by @HardNorth
 - `Utils.getFile(java.net.URI)` method, by @HardNorth
+### Fixed
+- Possible log duplication, by @HardNorth
 
 ## [5.3.9]
 ### Fixed
