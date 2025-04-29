@@ -319,6 +319,14 @@ public class LaunchImpl extends Launch {
 		if (getExecutor().isShutdown()) {
 			throw new InternalReportPortalClientException("Executor service is already shut down");
 		}
+
+		ListenerParameters params = getParameters();
+		if (params.isPrintLaunchUuid()) {
+			launch.subscribe(printLaunch(params));
+		} else {
+			launch.subscribe(logMaybeResults("Launch start"));
+		}
+
 		// Register JVM shutdown hook to wait for the executor to complete
 		if (isShutDownHook.compareAndSet(false, true)) {
 			Runtime.getRuntime()
@@ -327,11 +335,6 @@ public class LaunchImpl extends Launch {
 							getParameters().getReportingTimeout(),
 							TimeUnit.SECONDS
 					)));
-		}
-		launch.subscribe(logMaybeResults("Launch start"));
-		ListenerParameters params = getParameters();
-		if (params.isPrintLaunchUuid()) {
-			launch.subscribe(printLaunch(params));
 		}
 		if (statistics) {
 			getStatisticsService().sendEvent(launch, startRq);
