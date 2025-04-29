@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.3.10]
 ### Added
 - Cleanup of Completables, by @HardNorth
 - `Utils.getFile(java.net.URI)` method, by @HardNorth
