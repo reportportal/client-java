@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Replace "jsr305" with "jakarta.annotation-api", by @HardNorth
 
 ## [5.3.11]
 ### Fixed

@@ -34,7 +34,7 @@ import org.junit.jupiter.api.*;
 import org.mockito.ArgumentCaptor;
 import org.opentest4j.AssertionFailedError;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.List;

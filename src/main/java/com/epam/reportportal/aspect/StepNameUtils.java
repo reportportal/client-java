@@ -22,7 +22,7 @@ import com.epam.reportportal.utils.formatting.templating.TemplateProcessing;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
 

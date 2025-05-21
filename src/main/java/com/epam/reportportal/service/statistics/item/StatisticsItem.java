@@ -18,7 +18,7 @@ package com.epam.reportportal.service.statistics.item;
 
 import com.epam.reportportal.service.statistics.StatisticsClient;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

@@ -26,7 +26,7 @@ import okhttp3.MultipartBody;
 import org.junit.jupiter.api.*;
 import org.mockito.ArgumentCaptor;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.ExecutorService;

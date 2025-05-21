@@ -16,7 +16,7 @@
 
 package com.epam.reportportal.utils.http;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collections;

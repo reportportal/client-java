@@ -19,7 +19,7 @@ package com.epam.reportportal.utils.files;
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.utils.MimeTypeDetector;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.io.*;
 import java.net.URI;
 import java.net.URL;

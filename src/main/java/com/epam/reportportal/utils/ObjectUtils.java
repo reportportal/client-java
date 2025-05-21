@@ -19,7 +19,7 @@ package com.epam.reportportal.utils;
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
 import java.io.IOException;
 
 /**
