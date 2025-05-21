@@ -3,6 +3,8 @@
 ## [Unreleased]
 ### Changed
 - Replace "jsr305" with "jakarta.annotation-api", by @HardNorth
+### Removed
+- Java 8 support, by @HardNorth
 
 ## [5.3.11]
 ### Fixed
