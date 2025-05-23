@@ -17,7 +17,6 @@
 package com.epam.reportportal.service.launch.lock;
 
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.LaunchIdLock;
 import com.epam.reportportal.utils.Waiter;
 import com.epam.reportportal.utils.properties.ListenerProperty;
 import org.slf4j.Logger;
@@ -45,7 +44,7 @@ import java.util.stream.Collectors;
  *
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
-public class LaunchIdLockSocket extends AbstractLaunchIdLock implements LaunchIdLock {
+public class LaunchIdLockSocket extends AbstractLaunchIdLock {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LaunchIdLockSocket.class);
 
 	public static final Charset TRANSFER_CHARSET = StandardCharsets.ISO_8859_1;

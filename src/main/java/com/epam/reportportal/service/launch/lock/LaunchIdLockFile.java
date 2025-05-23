@@ -18,7 +18,6 @@ package com.epam.reportportal.service.launch.lock;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.listeners.ListenerParameters;
-import com.epam.reportportal.service.LaunchIdLock;
 import com.epam.reportportal.utils.Waiter;
 import com.epam.reportportal.utils.properties.ListenerProperty;
 import org.apache.commons.lang3.tuple.Pair;
@@ -49,7 +48,7 @@ import static java.util.Optional.ofNullable;
  *
  * @author <a href="mailto:vadzim_hushchanskou@epam.com">Vadzim Hushchanskou</a>
  */
-public class LaunchIdLockFile extends AbstractLaunchIdLock implements LaunchIdLock {
+public class LaunchIdLockFile extends AbstractLaunchIdLock {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LaunchIdLockFile.class);
 
 	public static final Charset LOCK_FILE_CHARSET = StandardCharsets.ISO_8859_1;
