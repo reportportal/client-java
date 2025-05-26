@@ -3,6 +3,10 @@
 ## [Unreleased]
 ### Added
 - Add Launch.log(Maybe<java.lang.String>, jFunction<String, SaveLogRQ>) method, by @HardNorth
+### Changed
+- Simplified `LoggingContext` class, by @HardNorth
+### Fixed
+- Log items wait mechanism, by @HardNorth
 
 ## [5.3.11]
 ### Fixed
