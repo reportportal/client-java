@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 ### Added
-- Add LaunchImpl.log(Maybe<java.lang.String>, jFunction<String, SaveLogRQ>) method, by @HardNorth
+- Add Launch.log(Maybe<java.lang.String>, jFunction<String, SaveLogRQ>) method, by @HardNorth
 
 ## [5.3.11]
 ### Fixed

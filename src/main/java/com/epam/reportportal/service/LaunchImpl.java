@@ -857,6 +857,7 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @param rq Log request.
 	 */
+	@Override
 	public void log(@Nonnull final SaveLogRQ rq) {
 		Maybe<SaveLogRQ> result = getLaunch().map(launchUuid -> {
 			emitLog(prepareRequest(launchUuid, rq));
@@ -871,6 +872,7 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @param logSupplier Log Message Factory. Argument of the function will be actual launch UUID.
 	 */
+	@Override
 	public void log(@Nonnull final java.util.function.Function<String, SaveLogRQ> logSupplier) {
 		Maybe<SaveLogRQ> result = getLaunch().map(launchUuid -> {
 			SaveLogRQ rq = prepareRequest(logSupplier.apply(launchUuid));
@@ -887,6 +889,7 @@ public class LaunchImpl extends Launch {
 	 * @param logItemUuid Test Item ID promise
 	 * @param logSupplier Log Message Factory. Argument of the function will be actual launch UUID.
 	 */
+	@Override
 	public void log(@Nonnull final Maybe<String> logItemUuid, @Nonnull final java.util.function.Function<String, SaveLogRQ> logSupplier) {
 		Maybe<SaveLogRQ> result = Maybe.zip(
 				getLaunch(), logItemUuid, (launchUuid, itemUuid) -> {
