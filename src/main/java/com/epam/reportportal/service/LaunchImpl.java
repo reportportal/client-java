@@ -884,13 +884,13 @@ public class LaunchImpl extends Launch {
 	 */
 	@Override
 	public void log(@Nonnull final Maybe<String> logItemUuid, @Nonnull final java.util.function.Function<String, SaveLogRQ> logSupplier) {
-		Maybe<SaveLogRQ> result = Maybe.zip(
+		Maybe<SaveLogRQ> result = RxJavaPlugins.onAssembly(Maybe.zip(
 				getLaunch(), logItemUuid, (launchUuid, itemUuid) -> {
 					SaveLogRQ rq = prepareRequest(launchUuid, logSupplier.apply(itemUuid));
 					emitLog(rq);
 					return rq;
 				}
-		).cache();
+		).cache());
 		logCompletables.add(result.ignoreElement());
 		result.subscribe(SubscriptionUtils.logMaybeResults("Log item"));
 	}
