@@ -407,7 +407,6 @@ public class LaunchImpl extends Launch {
 				getLaunch().ignoreElement(),
 				createVirtualItemCompletable(),
 				itemCompletable,
-				LoggingContext.completed(),
 				completeLogEmitter()
 		);
 	}
@@ -420,13 +419,6 @@ public class LaunchImpl extends Launch {
 	public void finish(final FinishExecutionRQ request) {
 		if (getExecutor().isShutdown()) {
 			throw new InternalReportPortalClientException("Executor service is already shut down");
-		}
-
-		try {
-			// FIXME: Find out a way to ensure that everything in Schedulers, Completables and in the middle were processed
-			Thread.sleep(500);
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
 		}
 
 		// Close and re-create statistics service
