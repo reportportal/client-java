@@ -84,6 +84,8 @@ public class LaunchImpl extends Launch {
 	private static final int ITEM_FINISH_MAX_RETRIES = 10;
 	private static final int ITEM_FINISH_RETRY_TIMEOUT = 10;
 
+	private static final int LOG_REMOVE_FACTOR = 100;
+
 	private static final Predicate<Throwable> INTERNAL_CLIENT_EXCEPTION_PREDICATE = throwable -> throwable instanceof InternalReportPortalClientException;
 	private static final Predicate<Throwable> TEST_ITEM_FINISH_RETRY_PREDICATE = throwable -> (throwable instanceof ReportPortalException
 			&& ErrorType.FINISH_ITEM_NOT_ALLOWED.equals(((ReportPortalException) throwable).getError().getErrorType()))
@@ -825,8 +827,7 @@ public class LaunchImpl extends Launch {
 
 		getStepReporter().removeParent(item);
 		LoggingContext.dispose();
-		int removeFactor = 100;
-		if (rq.hashCode() % removeFactor == 0) {
+		if (rq.hashCode() % LOG_REMOVE_FACTOR == 0) {
 			logCompletables.removeIf(c -> c.test().completions() > 0);
 		}
 		return finishResponse;
@@ -876,6 +877,25 @@ public class LaunchImpl extends Launch {
 			emitLog(rq);
 			return rq;
 		}).cache();
+		logCompletables.add(result.ignoreElement());
+		result.subscribe(SubscriptionUtils.logMaybeResults("Log item"));
+	}
+
+	/**
+	 * Logs message to the ReportPortal Launch.
+	 *
+	 * @param logItemUuid Test Item ID promise
+	 * @param logSupplier Log Message Factory. Argument of the function will be actual launch UUID.
+	 */
+	public void log(@Nonnull final Maybe<String> logItemUuid, @Nonnull final java.util.function.Function<String, SaveLogRQ> logSupplier) {
+		Maybe<SaveLogRQ> result = Maybe.zip(
+				getLaunch(), logItemUuid, (launchUuid, itemUuid) -> {
+					SaveLogRQ rq = prepareRequest(logSupplier.apply(launchUuid));
+					rq.setItemUuid(itemUuid);
+					emitLog(rq);
+					return rq;
+				}
+		).cache();
 		logCompletables.add(result.ignoreElement());
 		result.subscribe(SubscriptionUtils.logMaybeResults("Log item"));
 	}
