@@ -303,11 +303,10 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @return {@link Completable}
 	 */
-	public Completable completeLogEmitter() {
+	public Completable completeLogCompletables() {
 		Completable items = Completable.merge(logCompletables);
 		logCompletables.clear();
-		logEmitter.onComplete();
-		return Completable.concat(Arrays.asList(items, logEmitter.ignoreElements()));
+		return items;
 	}
 
 	/**
@@ -407,7 +406,7 @@ public class LaunchImpl extends Launch {
 				getLaunch().ignoreElement(),
 				createVirtualItemCompletable(),
 				itemCompletable,
-				completeLogEmitter()
+				completeLogCompletables()
 		);
 	}
 
@@ -419,13 +418,6 @@ public class LaunchImpl extends Launch {
 	public void finish(final FinishExecutionRQ request) {
 		if (getExecutor().isShutdown()) {
 			throw new InternalReportPortalClientException("Executor service is already shut down");
-		}
-
-		try {
-			// FIXME: Find out a way to ensure that everything in Schedulers, Completables and in the middle were processed
-			Thread.sleep(1000);
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
 		}
 
 		// Close and re-create statistics service
@@ -455,6 +447,8 @@ public class LaunchImpl extends Launch {
 			d.dispose();
 			return true;
 		});
+		logEmitter.onComplete();
+		waitForCompletable(logEmitter.ignoreElements());
 	}
 
 	private static <T> Maybe<T> createErrorResponse(Throwable cause) {
