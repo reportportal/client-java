@@ -22,7 +22,7 @@ import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.service.logs.LogBatchingFlowable;
-import com.epam.reportportal.service.logs.TrackingLoggingSubscriber;
+import com.epam.reportportal.service.logs.LoggingSubscriber;
 import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.utils.*;
 import com.epam.reportportal.utils.files.ByteSource;
@@ -127,7 +127,6 @@ public class LaunchImpl extends Launch {
 	private final Supplier<Maybe<String>> launch;
 	private final AtomicBoolean isShutDownHook = new AtomicBoolean(false);
 	private final PublishSubject<SaveLogRQ> logEmitter;
-	private final TrackingLoggingSubscriber loggingSubscriber;
 	private final ExecutorService executor;
 	private final Scheduler scheduler;
 	private StatisticsService statisticsService;
@@ -143,15 +142,11 @@ public class LaunchImpl extends Launch {
 
 	private static PublishSubject<SaveLogRQ> getLogEmitter(@Nonnull final ReportPortalClient client,
 			@Nonnull final ListenerParameters parameters, @Nonnull final Scheduler scheduler,
-			@Nonnull final TrackingLoggingSubscriber loggingSubscriber) {
+			@Nonnull final FlowableSubscriber<BatchSaveOperatingRS> loggingSubscriber) {
 		PublishSubject<SaveLogRQ> emitter = PublishSubject.create();
 		RxJavaPlugins.onAssembly(new LogBatchingFlowable(new FlowableFromObservable<>(emitter), parameters))
-				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> {
-					// Notify the subscriber that a batch is being processed - do this first
-					loggingSubscriber.onBatchProcessing();
-					// Then make the HTTP request
-					return client.log(HttpRequestUtils.buildLogMultiPartRequest(rqs)).retry(DEFAULT_REQUEST_RETRY).toFlowable();
-				})
+				.flatMap((Function<List<SaveLogRQ>, Flowable<BatchSaveOperatingRS>>) rqs -> client.log(HttpRequestUtils.buildLogMultiPartRequest(
+						rqs)).retry(DEFAULT_REQUEST_RETRY).toFlowable())
 				.onBackpressureBuffer(parameters.getRxBufferSize(), false, true)
 				.cache()
 				.subscribeOn(scheduler)
@@ -181,19 +176,13 @@ public class LaunchImpl extends Launch {
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 
 		launch = getLaunchSupplier(getClient(), getScheduler(), startRq);
-		// Use TrackingLoggingSubscriber with delegation to the provided subscriber
-		if (loggingSubscriber instanceof TrackingLoggingSubscriber) {
-			this.loggingSubscriber = (TrackingLoggingSubscriber) loggingSubscriber;
-		} else {
-			this.loggingSubscriber = new TrackingLoggingSubscriber(loggingSubscriber);
-		}
-		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler(), this.loggingSubscriber);
+		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
 		projectSettings = getProjectSettings(getClient(), getScheduler());
 	}
 
 	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
 			@Nonnull final StartLaunchRQ rq, @Nonnull final ExecutorService executorService) {
-		this(reportPortalClient, parameters, rq, executorService, new TrackingLoggingSubscriber());
+		this(reportPortalClient, parameters, rq, executorService, new LoggingSubscriber());
 	}
 
 	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
@@ -210,8 +199,7 @@ public class LaunchImpl extends Launch {
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 		launch = () -> launchMaybe.cache().subscribeOn(getScheduler());
-		loggingSubscriber = new TrackingLoggingSubscriber();
-		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
+		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler(), new LoggingSubscriber());
 		projectSettings = getProjectSettings(getClient(), getScheduler());
 	}
 
@@ -430,6 +418,13 @@ public class LaunchImpl extends Launch {
 	public void finish(final FinishExecutionRQ request) {
 		if (getExecutor().isShutdown()) {
 			throw new InternalReportPortalClientException("Executor service is already shut down");
+		}
+
+		try {
+			// FIXME: Find out a way to ensure that everything in Schedulers, Completables and in the middle were processed
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
 		}
 
 		// Close and re-create statistics service
