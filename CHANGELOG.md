@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.3.12]
 ### Added
 - Add Launch.log(Maybe<java.lang.String>, jFunction<String, SaveLogRQ>) method, by @HardNorth
 ### Changed
