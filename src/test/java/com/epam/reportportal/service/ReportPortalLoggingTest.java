@@ -91,7 +91,6 @@ public class ReportPortalLoggingTest {
 
 	@Test
 	@Order(1)
-	@SuppressWarnings("unchecked")
 	public void verify_emitLog_no_context() {
 		String logLevel = "INFO";
 		String message = "message";
@@ -104,7 +103,6 @@ public class ReportPortalLoggingTest {
 
 	@Test
 	@Order(1)
-	@SuppressWarnings("unchecked")
 	public void verify_emitLog_with_id_no_context() {
 		String logLevel = "INFO";
 		String message = "message";
@@ -128,7 +126,6 @@ public class ReportPortalLoggingTest {
 
 	@Test
 	@Order(1)
-	@SuppressWarnings("unchecked")
 	public void verify_emitLaunchLog_no_context() {
 		String logLevel = "INFO";
 		String message = "message";
@@ -141,7 +138,7 @@ public class ReportPortalLoggingTest {
 
 	@Test
 	@Order(Integer.MAX_VALUE)
-	public void verify_emitLog_simple_message() throws InterruptedException {
+	public void verify_emitLog_simple_message() {
 		String launchUuid = "launchUuid";
 		TestUtils.mockLaunch(rpClient, launchUuid);
 		String testUuid = "testUuid";
@@ -171,8 +168,7 @@ public class ReportPortalLoggingTest {
 
 	@Test
 	@Order(Order.DEFAULT)
-	@SuppressWarnings("unchecked")
-	public void verify_emitLog_message_with_file() throws IOException, InterruptedException {
+	public void verify_emitLog_message_with_file() throws IOException {
 		String launchUuid = "launchUuid1";
 		TestUtils.mockLaunch(rpClient, launchUuid);
 		String testUuid = "testUuid1";
@@ -218,8 +214,7 @@ public class ReportPortalLoggingTest {
 
 	@Test
 	@Order(Order.DEFAULT)
-	@SuppressWarnings("unchecked")
-	public void verify_emitLaunchLog_simple_message() throws InterruptedException {
+	public void verify_emitLaunchLog_simple_message() {
 		String launchUuid = "launchUuid2";
 		TestUtils.mockLaunch(rpClient, launchUuid);
 		TestUtils.mockBatchLogging(rpClient);
@@ -246,8 +241,7 @@ public class ReportPortalLoggingTest {
 
 	@Test
 	@Order(Order.DEFAULT)
-	@SuppressWarnings("unchecked")
-	public void verify_emitLaunchLog_message_with_file() throws IOException, InterruptedException {
+	public void verify_emitLaunchLog_message_with_file() throws IOException {
 		String launchUuid = "launchUuid3";
 		TestUtils.mockLaunch(rpClient, launchUuid);
 		TestUtils.mockBatchLogging(rpClient);
@@ -290,8 +284,7 @@ public class ReportPortalLoggingTest {
 
 	@Test
 	@Order(Order.DEFAULT)
-	@SuppressWarnings("unchecked")
-	public void verify_emitLog_method_with_ReportPortalMessage() throws IOException, InterruptedException {
+	public void verify_emitLog_method_with_ReportPortalMessage() throws IOException {
 		String launchUuid = "launchUuid4";
 		TestUtils.mockLaunch(rpClient, launchUuid);
 		String testUuid = "testUuid4";
@@ -337,8 +330,7 @@ public class ReportPortalLoggingTest {
 
 	@Test
 	@Order(Order.DEFAULT)
-	@SuppressWarnings("unchecked")
-	public void verify_emitLog_method_with_ReportPortalMessage_no_file() throws InterruptedException {
+	public void verify_emitLog_method_with_ReportPortalMessage_no_file() {
 		String launchUuid = "launchUuid5";
 		TestUtils.mockLaunch(rpClient, launchUuid);
 		String testUuid = "testUuid5";
@@ -379,8 +371,7 @@ public class ReportPortalLoggingTest {
 
 	@Test
 	@Order(Order.DEFAULT)
-	@SuppressWarnings("unchecked")
-	public void verify_emitLaunchLog_method_with_ReportPortalMessage() throws IOException, InterruptedException {
+	public void verify_emitLaunchLog_method_with_ReportPortalMessage() throws IOException {
 		String launchUuid = "launchUuid6";
 		TestUtils.mockLaunch(rpClient, launchUuid);
 		TestUtils.mockBatchLogging(rpClient);
@@ -423,8 +414,7 @@ public class ReportPortalLoggingTest {
 
 	@Test
 	@Order(Order.DEFAULT)
-	@SuppressWarnings("unchecked")
-	public void verify_emitLaunchLog_method_with_ReportPortalMessage_no_file() throws InterruptedException {
+	public void verify_emitLaunchLog_method_with_ReportPortalMessage_no_file() {
 		String launchUuid = "launchUuid7";
 		TestUtils.mockLaunch(rpClient, launchUuid);
 		TestUtils.mockBatchLogging(rpClient);
@@ -462,8 +452,7 @@ public class ReportPortalLoggingTest {
 
 	@Test
 	@Order(Order.DEFAULT)
-	@SuppressWarnings("unchecked")
-	public void verify_emitLog_method_with_specified_id() throws InterruptedException {
+	public void verify_emitLog_method_with_specified_id() {
 		String launchUuid = "launchUuid8";
 		TestUtils.mockLaunch(rpClient, launchUuid);
 		String testUuid = "testUuid8";
@@ -500,8 +489,7 @@ public class ReportPortalLoggingTest {
 
 	@Test
 	@Order(Order.DEFAULT)
-	@SuppressWarnings("unchecked")
-	public void verify_sendStackTraceToRP_method() throws InterruptedException {
+	public void verify_sendStackTraceToRP_method() {
 		String launchUuid = "launchUuid10";
 		TestUtils.mockLaunch(rpClient, launchUuid);
 		String testUuid = "testUuid10";
@@ -530,8 +518,7 @@ public class ReportPortalLoggingTest {
 
 	@Test
 	@Order(Order.DEFAULT)
-	@SuppressWarnings("unchecked")
-	public void verify_sendStackTraceToRP_method_null_value() throws InterruptedException {
+	public void verify_sendStackTraceToRP_method_null_value() {
 		String launchUuid = "launchUuid11";
 		TestUtils.mockLaunch(rpClient, launchUuid);
 		String testUuid = "testUuid11";
@@ -560,8 +547,7 @@ public class ReportPortalLoggingTest {
 
 	@Test
 	@Order(Integer.MAX_VALUE)
-	@SuppressWarnings("unchecked")
-	public void verify_sendStackTraceToRP_method_no_format() throws InterruptedException {
+	public void verify_sendStackTraceToRP_method_no_format() {
 		String launchUuid = "launchUuid12";
 		TestUtils.mockLaunch(rpClient, launchUuid);
 		String testUuid = "testUuid12";
