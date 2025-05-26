@@ -423,7 +423,7 @@ public class LaunchImpl extends Launch {
 
 		try {
 			// FIXME: Find out a way to ensure that everything in Schedulers, Completables and in the middle were processed
-			Thread.sleep(500);
+			Thread.sleep(1000);
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
