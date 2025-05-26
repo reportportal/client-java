@@ -415,6 +415,7 @@ public class ReportPortal {
 	 */
 	public static void sendStackTraceToRP(final Throwable cause) {
 		ListenerParameters myParameters = ofNullable(Launch.currentLaunch()).map(Launch::getParameters).orElseGet(ListenerParameters::new);
+		Throwable base = new Throwable();
 		ReportPortal.emitLog(itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
@@ -422,7 +423,7 @@ public class ReportPortal {
 			rq.setLogTime(Calendar.getInstance().getTime());
 			if (cause != null) {
 				if (myParameters.isExceptionTruncate()) {
-					rq.setMessage(getStackTrace(cause, new Throwable()));
+					rq.setMessage(getStackTrace(cause, base));
 				} else {
 					rq.setMessage(ExceptionUtils.getStackTrace(cause));
 				}

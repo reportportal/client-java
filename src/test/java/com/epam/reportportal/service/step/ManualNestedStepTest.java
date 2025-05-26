@@ -322,7 +322,7 @@ public class ManualNestedStepTest {
 		assertThat(nestedStepFinish.getStatus(), equalTo(ItemStatus.PASSED.name()));
 		assertThat(nestedStepFinish.getEndTime(), notNullValue());
 
-		launch.completeLogEmitter().blockingAwait(10, TimeUnit.SECONDS);
+		launch.completeLogCompletables().blockingAwait(10, TimeUnit.SECONDS);
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, timeout(1000).atLeastOnce()).log(logCaptor.capture());
 		List<Pair<String, String>> logRequests = logCaptor.getAllValues()
