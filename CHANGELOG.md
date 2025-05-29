@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Removed
+- Shutdown hook for Launch executor, since it makes issues with shutdown hooks in Agents, by @HardNorth
 
 ## [5.3.12]
 ### Added

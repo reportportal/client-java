@@ -51,7 +51,6 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -127,7 +126,6 @@ public class LaunchImpl extends Launch {
 	protected final StartLaunchRQ startRq;
 	protected final Maybe<ProjectSettingsResource> projectSettings;
 	private final Supplier<Maybe<String>> launch;
-	private final AtomicBoolean isShutDownHook = new AtomicBoolean(false);
 	private final PublishSubject<SaveLogRQ> logEmitter;
 	private final ExecutorService executor;
 	private final Scheduler scheduler;
@@ -327,16 +325,6 @@ public class LaunchImpl extends Launch {
 			myLaunch.subscribe(printLaunch(params));
 		} else {
 			myLaunch.subscribe(logMaybeResults("Launch start"));
-		}
-
-		// Register JVM shutdown hook to wait for the executor to complete
-		if (isShutDownHook.compareAndSet(false, true)) {
-			Runtime.getRuntime()
-					.addShutdownHook(new Thread(() -> MultithreadingUtils.shutdownExecutorService(
-							getExecutor(),
-							getParameters().getReportingTimeout(),
-							TimeUnit.SECONDS
-					)));
 		}
 		if (statistics) {
 			getStatisticsService().sendEvent(myLaunch, startRq);
