@@ -20,6 +20,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.statistics.item.StatisticsEvent;
 import com.epam.reportportal.service.statistics.item.StatisticsItem;
 import com.epam.reportportal.utils.ClientIdProvider;
+import com.epam.reportportal.utils.MultithreadingUtils;
 import com.epam.reportportal.utils.properties.ClientProperties;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;
@@ -40,8 +41,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -65,14 +67,7 @@ public class StatisticsService implements Closeable {
 
 	private static final String CLIENT_ID = ClientIdProvider.getClientId();
 
-	private static final AtomicLong THREAD_COUNTER = new AtomicLong();
-	private static final ThreadFactory THREAD_FACTORY = r -> {
-		Thread t = new Thread(r);
-		t.setDaemon(true);
-		t.setName("rp-stat-" + THREAD_COUNTER.incrementAndGet());
-		return t;
-	};
-	private final ExecutorService statisticsExecutor = Executors.newSingleThreadExecutor(THREAD_FACTORY);
+	private final ExecutorService statisticsExecutor = MultithreadingUtils.buildExecutorService("rp-stat-", 1);
 	private final Scheduler scheduler = Schedulers.from(statisticsExecutor);
 	private final Statistics statistics;
 	private final List<Completable> dependencies = new CopyOnWriteArrayList<>();
