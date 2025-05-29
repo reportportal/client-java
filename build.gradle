@@ -82,8 +82,7 @@ dependencies {
         exclude group: 'org.hamcrest'
     }
     testImplementation 'commons-io:commons-io:2.17.0'
-    testImplementation 'com.epam.reportportal:agent-java-test-utils:0.0.9'
-
+    testImplementation 'com.epam.reportportal:agent-java-test-utils:0.0.10'
 }
 
 test {
