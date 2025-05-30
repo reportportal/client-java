@@ -63,6 +63,15 @@ public class StatusEvaluation {
 		}
 		switch (childStatus) {
 			case PASSED:
+				switch (currentStatus) {
+					case SKIPPED:
+					case STOPPED:
+					case INFO:
+					case WARN:
+						return childStatus;
+					default:
+						return currentStatus;
+				}
 			case SKIPPED:
 			case STOPPED:
 			case INFO:

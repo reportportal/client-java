@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- More evaluation cases in `StatusEvaluation.evaluateStatus` utility method, by @HardNorth
 
 ## [5.3.13]
 ### Removed
