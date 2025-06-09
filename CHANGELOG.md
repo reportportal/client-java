@@ -6,6 +6,22 @@
 ### Removed
 - Java 8-10 support, by @HardNorth
 
+## [5.3.14]
+### Added
+- More evaluation cases in `StatusEvaluation.evaluateStatus` utility method, by @HardNorth
+
+## [5.3.13]
+### Removed
+- Shutdown hook for Launch executor, since it makes issues with shutdown hooks in Agents, by @HardNorth
+
+## [5.3.12]
+### Added
+- Add Launch.log(Maybe<java.lang.String>, jFunction<String, SaveLogRQ>) method, by @HardNorth
+### Changed
+- Simplified `LoggingContext` class, by @HardNorth
+### Fixed
+- Log items wait mechanism, by @HardNorth
+
 ## [5.3.11]
 ### Fixed
 - Possible log duplication, by @HardNorth

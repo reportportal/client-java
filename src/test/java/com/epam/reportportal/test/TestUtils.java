@@ -277,8 +277,7 @@ public class TestUtils {
 	}
 
 	public static void simulateBatchLogResponse(final ReportPortalClient client) {
-		//noinspection unchecked
-		when(client.log(any(List.class))).then((Answer<Maybe<BatchSaveOperatingRS>>) invocation -> {
+		when(client.log(anyList())).then((Answer<Maybe<BatchSaveOperatingRS>>) invocation -> {
 			List<MultipartBody.Part> rq = invocation.getArgument(0);
 			List<String> saveRqs = extractJsonParts(rq).stream()
 					.peek(r -> LOGGER.info("{} - {}", r.getItemUuid(), r.getMessage()))
@@ -342,8 +341,7 @@ public class TestUtils {
 		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> Maybe.just(new OperationCompletionRS())));
 	}
 
-	@SuppressWarnings("unchecked")
 	public static void mockBatchLogging(ReportPortalClient client) {
-		when(client.log(any(List.class))).thenReturn(Maybe.just(new BatchSaveOperatingRS()));
+		when(client.log(anyList())).thenReturn(Maybe.just(new BatchSaveOperatingRS()));
 	}
 }

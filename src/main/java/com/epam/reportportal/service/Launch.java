@@ -145,18 +145,26 @@ public abstract class Launch {
 			final StartTestItemRQ rq);
 
 	/**
-	 * Logs message to the ReportPortal Launch, root item.
+	 * //	 * Logs message to the ReportPortal Launch, provided request.
 	 *
 	 * @param rq Log request.
 	 */
 	abstract public void log(@Nonnull final SaveLogRQ rq);
 
 	/**
-	 * Logs message to the ReportPortal Launch.
+	 * Logs message to the ReportPortal Launch, request factory.
 	 *
 	 * @param logSupplier Log Message Factory. Argument of the function will be actual launch UUID.
 	 */
 	abstract public void log(@Nonnull final Function<String, SaveLogRQ> logSupplier);
+
+	/**
+	 * Logs message to the ReportPortal Launch, request factory with specified Test Item UUID.
+	 *
+	 * @param logItemUuid Test Item ID promise
+	 * @param logSupplier Log Message Factory. Argument of the function will be actual launch UUID.
+	 */
+	public abstract void log(@Nonnull Maybe<String> logItemUuid, @Nonnull Function<String, SaveLogRQ> logSupplier);
 
 	/**
 	 * Finishes Test Item in ReportPortal asynchronously (non-blocking). Schedules finish after success of all child items.
@@ -282,6 +290,10 @@ public abstract class Launch {
 
 		@Override
 		public void log(@Nonnull final Function<String, SaveLogRQ> logSupplier) {
+		}
+
+		@Override
+		public void log(@Nonnull Maybe<String> logItemUuid, @Nonnull Function<String, SaveLogRQ> logSupplier) {
 		}
 
 		@Override

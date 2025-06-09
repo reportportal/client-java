@@ -15,19 +15,18 @@
  */
 package com.epam.reportportal.service;
 
-import com.epam.reportportal.utils.SubscriptionUtils;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.tuple.Pair;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
-import java.util.*;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
 
@@ -44,7 +43,6 @@ import static java.util.Optional.ofNullable;
  * @see LoggingContext#init(Maybe)
  */
 public class LoggingContext {
-	private static final Queue<LoggingContext> USED_CONTEXTS = new ConcurrentLinkedQueue<>();
 	private static final ThreadLocal<Pair<Long, Deque<LoggingContext>>> CONTEXT_THREAD_LOCAL = new InheritableThreadLocal<>();
 
 	private static final Set<Long> THREAD_IDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -95,31 +93,9 @@ public class LoggingContext {
 	 * Disposes current logging context
 	 */
 	public static void dispose() {
-		int removeFactor = 100;
-		ofNullable(getContext()).map(Deque::poll).ifPresent(context -> {
-			USED_CONTEXTS.add(context);
-			if (context.hashCode() % removeFactor == 0) {
-				USED_CONTEXTS.removeIf(ctx -> {
-					ctx.completables.removeIf(c -> c.test().completions() > 0);
-					return ctx.completables.isEmpty();
-				});
-			}
-		});
+		ofNullable(getContext()).ifPresent(Deque::poll);
 	}
 
-	public static Completable completed() {
-		Completable completable = Completable.merge(USED_CONTEXTS.stream().map(LoggingContext::complete).collect(Collectors.toList()));
-		Deque<LoggingContext> context = getContext();
-		return ofNullable(context).map(ctx -> Completable.concat(Arrays.asList(
-				completable,
-				Completable.merge(ctx.stream().map(LoggingContext::complete).collect(Collectors.toList()))
-		))).orElse(completable);
-	}
-
-	/**
-	 * Messages queue to track items execution order
-	 */
-	private final Queue<Completable> completables = new ConcurrentLinkedQueue<>();
 	/* a UUID of TestItem in ReportPortal to report into */
 	private final Maybe<String> itemUuid;
 
@@ -138,12 +114,7 @@ public class LoggingContext {
 		if (launch == null) {
 			return;
 		}
-		Maybe<String> future = logItemUuid.map(itemUuid -> {
-			launch.log(logSupplier.apply(itemUuid));
-			return itemUuid;
-		}).cache();
-		completables.add(future.ignoreElement());
-		future.subscribe(SubscriptionUtils.logMaybeResults("LoggingContext"));
+		launch.log(logItemUuid, logSupplier);
 	}
 
 	/**
@@ -153,16 +124,5 @@ public class LoggingContext {
 	 */
 	public void emit(@Nonnull final java.util.function.Function<String, SaveLogRQ> logSupplier) {
 		emit(itemUuid, logSupplier);
-	}
-
-	/**
-	 * Complete the context.
-	 *
-	 * @return the instance will be completed when all logs are sent
-	 */
-	public Completable complete() {
-		Completable completable = Completable.merge(completables);
-		completables.clear();
-		return completable;
 	}
 }

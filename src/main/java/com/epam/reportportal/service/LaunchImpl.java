@@ -51,7 +51,6 @@ import jakarta.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -83,6 +82,8 @@ public class LaunchImpl extends Launch {
 
 	private static final int ITEM_FINISH_MAX_RETRIES = 10;
 	private static final int ITEM_FINISH_RETRY_TIMEOUT = 10;
+
+	private static final int LOG_REMOVE_FACTOR = 100;
 
 	private static final Predicate<Throwable> INTERNAL_CLIENT_EXCEPTION_PREDICATE = throwable -> throwable instanceof InternalReportPortalClientException;
 	private static final Predicate<Throwable> TEST_ITEM_FINISH_RETRY_PREDICATE = throwable -> (throwable instanceof ReportPortalException
@@ -125,7 +126,6 @@ public class LaunchImpl extends Launch {
 	protected final StartLaunchRQ startRq;
 	protected final Maybe<ProjectSettingsResource> projectSettings;
 	private final Supplier<Maybe<String>> launch;
-	private final AtomicBoolean isShutDownHook = new AtomicBoolean(false);
 	private final PublishSubject<SaveLogRQ> logEmitter;
 	private final ExecutorService executor;
 	private final Scheduler scheduler;
@@ -301,11 +301,10 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @return {@link Completable}
 	 */
-	public Completable completeLogEmitter() {
+	public Completable completeLogCompletables() {
 		Completable items = Completable.merge(logCompletables);
 		logCompletables.clear();
-		logEmitter.onComplete();
-		return Completable.concat(Arrays.asList(items, logEmitter.ignoreElements()));
+		return items;
 	}
 
 	/**
@@ -326,16 +325,6 @@ public class LaunchImpl extends Launch {
 			myLaunch.subscribe(printLaunch(params));
 		} else {
 			myLaunch.subscribe(logMaybeResults("Launch start"));
-		}
-
-		// Register JVM shutdown hook to wait for the executor to complete
-		if (isShutDownHook.compareAndSet(false, true)) {
-			Runtime.getRuntime()
-					.addShutdownHook(new Thread(() -> MultithreadingUtils.shutdownExecutorService(
-							getExecutor(),
-							getParameters().getReportingTimeout(),
-							TimeUnit.SECONDS
-					)));
 		}
 		if (statistics) {
 			getStatisticsService().sendEvent(myLaunch, startRq);
@@ -405,8 +394,7 @@ public class LaunchImpl extends Launch {
 				getLaunch().ignoreElement(),
 				createVirtualItemCompletable(),
 				itemCompletable,
-				LoggingContext.completed(),
-				completeLogEmitter()
+				completeLogCompletables()
 		);
 	}
 
@@ -418,13 +406,6 @@ public class LaunchImpl extends Launch {
 	public void finish(final FinishExecutionRQ request) {
 		if (getExecutor().isShutdown()) {
 			throw new InternalReportPortalClientException("Executor service is already shut down");
-		}
-
-		try {
-			// FIXME: Find out a way to ensure that everything in Schedulers, Completables and in the middle were processed
-			Thread.sleep(500);
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
 		}
 
 		// Close and re-create statistics service
@@ -454,6 +435,8 @@ public class LaunchImpl extends Launch {
 			d.dispose();
 			return true;
 		});
+		logEmitter.onComplete();
+		waitForCompletable(logEmitter.ignoreElements());
 	}
 
 	private static <T> Maybe<T> createErrorResponse(Throwable cause) {
@@ -825,8 +808,7 @@ public class LaunchImpl extends Launch {
 
 		getStepReporter().removeParent(item);
 		LoggingContext.dispose();
-		int removeFactor = 100;
-		if (rq.hashCode() % removeFactor == 0) {
+		if (rq.hashCode() % LOG_REMOVE_FACTOR == 0) {
 			logCompletables.removeIf(c -> c.test().completions() > 0);
 		}
 		return finishResponse;
@@ -856,6 +838,7 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @param rq Log request.
 	 */
+	@Override
 	public void log(@Nonnull final SaveLogRQ rq) {
 		Maybe<SaveLogRQ> result = getLaunch().map(launchUuid -> {
 			emitLog(prepareRequest(launchUuid, rq));
@@ -870,12 +853,32 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @param logSupplier Log Message Factory. Argument of the function will be actual launch UUID.
 	 */
+	@Override
 	public void log(@Nonnull final java.util.function.Function<String, SaveLogRQ> logSupplier) {
 		Maybe<SaveLogRQ> result = getLaunch().map(launchUuid -> {
 			SaveLogRQ rq = prepareRequest(logSupplier.apply(launchUuid));
 			emitLog(rq);
 			return rq;
 		}).cache();
+		logCompletables.add(result.ignoreElement());
+		result.subscribe(SubscriptionUtils.logMaybeResults("Log item"));
+	}
+
+	/**
+	 * Logs message to the ReportPortal Launch.
+	 *
+	 * @param logItemUuid Test Item ID promise
+	 * @param logSupplier Log Message Factory. Argument of the function will be actual launch UUID.
+	 */
+	@Override
+	public void log(@Nonnull final Maybe<String> logItemUuid, @Nonnull final java.util.function.Function<String, SaveLogRQ> logSupplier) {
+		Maybe<SaveLogRQ> result = RxJavaPlugins.onAssembly(Maybe.zip(
+				getLaunch(), logItemUuid, (launchUuid, itemUuid) -> {
+					SaveLogRQ rq = prepareRequest(launchUuid, logSupplier.apply(itemUuid));
+					emitLog(rq);
+					return rq;
+				}
+		).cache());
 		logCompletables.add(result.ignoreElement());
 		result.subscribe(SubscriptionUtils.logMaybeResults("Log item"));
 	}

@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class BufferSubscriber implements FlowableSubscriber<SaveLogRQ>, Subscription {
 	private final ReentrantLock lock = new ReentrantLock();
-	private final Subscriber<List<SaveLogRQ>> downstream;
+	private final Subscriber<? super List<SaveLogRQ>> downstream;
 	private final int maxSize;
 	private final long payloadLimit;
 
@@ -41,7 +41,7 @@ public class BufferSubscriber implements FlowableSubscriber<SaveLogRQ>, Subscrip
 	private volatile Subscription upstream;
 	private volatile boolean done;
 
-	public BufferSubscriber(Subscriber<List<SaveLogRQ>> actual, int batchMaxSize, long batchPayloadLimit) {
+	public BufferSubscriber(Subscriber<? super List<SaveLogRQ>> actual, int batchMaxSize, long batchPayloadLimit) {
 		downstream = actual;
 		maxSize = batchMaxSize;
 		payloadLimit = batchPayloadLimit;

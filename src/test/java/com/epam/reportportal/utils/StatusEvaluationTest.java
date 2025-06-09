@@ -36,7 +36,12 @@ public class StatusEvaluationTest {
 				{ItemStatus.FAILED, ItemStatus.INTERRUPTED, ItemStatus.FAILED},
 				{ItemStatus.FAILED, ItemStatus.CANCELLED, ItemStatus.FAILED},
 				{null, ItemStatus.SKIPPED, ItemStatus.SKIPPED},
-				{ItemStatus.PASSED, null, ItemStatus.PASSED}
+				{ItemStatus.PASSED, null, ItemStatus.PASSED},
+				{ItemStatus.SKIPPED, ItemStatus.PASSED, ItemStatus.PASSED},
+				{ItemStatus.STOPPED, ItemStatus.PASSED, ItemStatus.PASSED},
+				{ItemStatus.INFO, ItemStatus.PASSED, ItemStatus.PASSED},
+				{ItemStatus.WARN, ItemStatus.PASSED, ItemStatus.PASSED},
+				{ItemStatus.SKIPPED, ItemStatus.SKIPPED, ItemStatus.SKIPPED},
 		};
 		//@formatter:on
 	}
