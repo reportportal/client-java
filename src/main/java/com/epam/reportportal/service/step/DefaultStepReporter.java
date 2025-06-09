@@ -318,13 +318,14 @@ public class DefaultStepReporter implements StepReporter {
 		return step(ItemStatus.PASSED, name, actions);
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Nonnull
 	private Maybe<String> startStepRequest(final StartTestItemRQ startTestItemRQ) {
 		finishPreviousStepInternal(null).ifPresent(e -> {
-			Date previousDate = e.getTimestamp();
-			Date currentDate = startTestItemRQ.getStartTime();
-			if (!previousDate.before(currentDate)) {
-				startTestItemRQ.setStartTime(new Date(previousDate.getTime() + 1));
+			Comparable previousDate = e.getTimestamp();
+			Comparable currentDate = startTestItemRQ.getStartTime();
+			if (previousDate.compareTo(currentDate) > 0) {
+				startTestItemRQ.setStartTime(previousDate);
 			}
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
 				failParents();
@@ -342,7 +343,7 @@ public class DefaultStepReporter implements StepReporter {
 		return startTestItemRQ;
 	}
 
-	private void addStepEntry(Maybe<String> stepId, ItemStatus status, Date timestamp) {
+	private void addStepEntry(Maybe<String> stepId, ItemStatus status, Comparable<?> timestamp) {
 		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status);
 		steps.put(stepId, new StepEntry(stepId, timestamp, finishTestItemRQ));
 	}

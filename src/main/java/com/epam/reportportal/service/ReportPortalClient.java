@@ -15,7 +15,7 @@
  */
 package com.epam.reportportal.service;
 
-import com.epam.reportportal.model.ApiInfo;
+import com.epam.ta.reportportal.ws.model.ApiInfo;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.*;

@@ -150,10 +150,10 @@ public interface StepReporter {
 
 	class StepEntry {
 		private final Maybe<String> itemId;
-		private final Date timestamp;
+		private final Comparable<?> timestamp;
 		private final FinishTestItemRQ finishTestItemRQ;
 
-		public StepEntry(@Nonnull Maybe<String> itemId, @Nonnull Date stepStartTime, @Nonnull FinishTestItemRQ finishTestItemRQ) {
+		public StepEntry(@Nonnull Maybe<String> itemId, @Nonnull Comparable<?> stepStartTime, @Nonnull FinishTestItemRQ finishTestItemRQ) {
 			this.itemId = itemId;
 			this.timestamp = stepStartTime;
 			this.finishTestItemRQ = finishTestItemRQ;
@@ -169,7 +169,7 @@ public interface StepReporter {
 		}
 
 		@Nonnull
-		public Date getTimestamp() {
+		public Comparable<?> getTimestamp() {
 			return timestamp;
 		}
 

@@ -40,10 +40,6 @@ repositories {
 }
 
 dependencies {
-    api ('com.epam.reportportal:commons-model:5.3.3') {
-        exclude module: 'jackson-databind'
-        exclude module: 'guava'
-    }
     api 'com.fasterxml.jackson.core:jackson-databind:2.15.4' // Access is needed by HTTP loggers to format JSON
     api 'io.reactivex.rxjava2:rxjava:2.2.21'
     api 'jakarta.annotation:jakarta.annotation-api:3.0.0' // To not specify the dependency in all our Agents
@@ -64,6 +60,7 @@ dependencies {
     implementation "org.aspectj:aspectjweaver:${project.aspectj_version}"
 
     implementation "org.slf4j:slf4j-api:${slf4j_version}"
+    implementation 'org.apache.commons:commons-lang3:3.17.0'
 
     testImplementation "org.slf4j:jul-to-slf4j:${slf4j_version}"
     testImplementation("org.junit.platform:junit-platform-runner:${project.junit_runner_version}") {
