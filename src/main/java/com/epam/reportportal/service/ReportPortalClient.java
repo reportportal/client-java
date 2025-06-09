@@ -15,6 +15,7 @@
  */
 package com.epam.reportportal.service;
 
+import com.epam.reportportal.model.ApiInfo;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
 import com.epam.ta.reportportal.ws.model.launch.*;
@@ -27,6 +28,9 @@ import retrofit2.http.*;
 import java.util.List;
 
 public interface ReportPortalClient {
+
+	@GET("info")
+	Maybe<ApiInfo> getApiInfo();
 
 	@POST("v1/{projectName}/launch")
 	Maybe<StartLaunchRS> startLaunch(@Body StartLaunchRQ rq);
