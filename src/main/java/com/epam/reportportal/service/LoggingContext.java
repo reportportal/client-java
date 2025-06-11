@@ -91,6 +91,8 @@ public class LoggingContext {
 
 	/**
 	 * Disposes current logging context
+	 *
+	 * @return Disposed Logging Context or 'null' if no context was found
 	 */
 	@Nullable
 	public static LoggingContext dispose() {
