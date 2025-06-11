@@ -40,7 +40,8 @@ repositories {
 }
 
 dependencies {
-    api 'com.fasterxml.jackson.core:jackson-databind:2.15.4' // Access is needed by HTTP loggers to format JSON
+    api "com.fasterxml.jackson.core:jackson-databind:${project.jackson_version}" // Access is needed by HTTP loggers to format JSON
+
     api 'io.reactivex.rxjava2:rxjava:2.2.21'
     api 'jakarta.annotation:jakarta.annotation-api:3.0.0' // To not specify the dependency in all our Agents
 

@@ -16,11 +16,15 @@
 
 package com.epam.ta.reportportal.ws.model;
 
+import com.epam.reportportal.utils.serialize.TimeDeserializer;
+import com.epam.reportportal.utils.serialize.TimeSerializer;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.util.Set;
 
@@ -32,6 +36,8 @@ import java.util.Set;
 public class FinishExecutionRQ {
 
 	@JsonProperty(value = "endTime", required = true)
+	@JsonSerialize(using = TimeSerializer.class)
+	@JsonDeserialize(using = TimeDeserializer.class)
 	@JsonAlias({ "endTime", "end_time" })
 	private Comparable<?> endTime;
 

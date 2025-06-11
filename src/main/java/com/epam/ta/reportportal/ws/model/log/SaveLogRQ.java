@@ -16,11 +16,15 @@
 
 package com.epam.ta.reportportal.ws.model.log;
 
+import com.epam.reportportal.utils.serialize.TimeDeserializer;
+import com.epam.reportportal.utils.serialize.TimeSerializer;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @JsonInclude(Include.NON_NULL)
 public class SaveLogRQ {
@@ -35,6 +39,8 @@ public class SaveLogRQ {
 	private String launchUuid;
 
 	@JsonProperty(value = "time", required = true)
+	@JsonSerialize(using = TimeSerializer.class)
+	@JsonDeserialize(using = TimeDeserializer.class)
 	private Comparable<?> logTime;
 
 	@JsonProperty(value = "message")

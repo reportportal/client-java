@@ -16,10 +16,14 @@
 
 package com.epam.ta.reportportal.ws.model.launch;
 
+import com.epam.reportportal.utils.serialize.TimeDeserializer;
+import com.epam.reportportal.utils.serialize.TimeSerializer;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributeResource;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -46,9 +50,13 @@ public class LaunchResource {
 	private String description;
 
 	@JsonProperty(value = "startTime", required = true)
+	@JsonSerialize(using = TimeSerializer.class)
+	@JsonDeserialize(using = TimeDeserializer.class)
 	private Comparable<?> startTime;
 
 	@JsonProperty(value = "endTime")
+	@JsonSerialize(using = TimeSerializer.class)
+	@JsonDeserialize(using = TimeDeserializer.class)
 	private Comparable<?> endTime;
 
 	@JsonProperty(value = "lastModified")

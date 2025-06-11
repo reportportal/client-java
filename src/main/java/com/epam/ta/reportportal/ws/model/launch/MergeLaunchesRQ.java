@@ -16,10 +16,14 @@
 
 package com.epam.ta.reportportal.ws.model.launch;
 
+import com.epam.reportportal.utils.serialize.TimeDeserializer;
+import com.epam.reportportal.utils.serialize.TimeSerializer;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributeResource;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.util.Set;
 
@@ -36,6 +40,8 @@ public class MergeLaunchesRQ {
 	private Set<ItemAttributeResource> attributes;
 
 	@JsonProperty(value = "startTime")
+	@JsonSerialize(using = TimeSerializer.class)
+	@JsonDeserialize(using = TimeDeserializer.class)
 	private Comparable<?> startTime;
 
 	@JsonProperty("mode")

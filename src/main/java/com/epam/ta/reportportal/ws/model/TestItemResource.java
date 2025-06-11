@@ -16,11 +16,15 @@
 
 package com.epam.ta.reportportal.ws.model;
 
+import com.epam.reportportal.utils.serialize.TimeDeserializer;
+import com.epam.reportportal.utils.serialize.TimeSerializer;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributeResource;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.util.List;
 import java.util.Set;
@@ -56,9 +60,13 @@ public class TestItemResource {
 	private String type;
 
 	@JsonProperty(value = "startTime")
+	@JsonSerialize(using = TimeSerializer.class)
+	@JsonDeserialize(using = TimeDeserializer.class)
 	private Comparable<?> startTime;
 
 	@JsonProperty(value = "endTime")
+	@JsonSerialize(using = TimeSerializer.class)
+	@JsonDeserialize(using = TimeDeserializer.class)
 	private Comparable<?> endTime;
 
 	@JsonProperty(value = "status")

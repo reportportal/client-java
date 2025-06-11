@@ -33,11 +33,6 @@ public class StartLaunchRQ extends StartRQ {
 	@JsonProperty("rerunOf")
 	private String rerunOf;
 
-	@Override
-	public String getName() {
-		return name;
-	}
-
 	public Mode getMode() {
 		return mode;
 	}
