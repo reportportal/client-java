@@ -16,6 +16,8 @@
 
 package com.epam.ta.reportportal.ws.model.attribute;
 
+import java.util.Objects;
+
 public class ItemAttributesRQ extends ItemAttributeResource {
 
 	private boolean system;
@@ -43,4 +45,21 @@ public class ItemAttributesRQ extends ItemAttributeResource {
 	public void setSystem(boolean system) {
 		this.system = system;
 	}
-} 
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof ItemAttributesRQ)) {
+			return false;
+		}
+		if (!super.equals(o)) {
+			return false;
+		}
+		ItemAttributesRQ that = (ItemAttributesRQ) o;
+		return system == that.system;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), system);
+	}
+}

@@ -16,6 +16,8 @@
 
 package com.epam.ta.reportportal.ws.model.attribute;
 
+import java.util.Objects;
+
 public class ItemAttributeResource {
 
 	private String key;
@@ -44,4 +46,18 @@ public class ItemAttributeResource {
 	public void setValue(String value) {
 		this.value = value;
 	}
-} 
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof ItemAttributeResource)) {
+			return false;
+		}
+		ItemAttributeResource that = (ItemAttributeResource) o;
+		return Objects.equals(key, that.key) && Objects.equals(value, that.value);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(key, value);
+	}
+}
