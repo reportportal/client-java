@@ -60,6 +60,7 @@ public class ImageConverterTest {
 		byte[] expectedImage = IOUtils.toByteArray(Objects.requireNonNull(ImageConverterTest.class.getClassLoader()
 				.getResourceAsStream("defaultUserPhoto_bw.png")));
 		assertThat("Image conversion failed", bwImage, notNullValue());
-		assertThat("Invalid result image", bwImage.read(), equalTo(expectedImage));
+		byte[] bwImageBytes = bwImage.read();
+		assertThat("Invalid result image", bwImageBytes, equalTo(expectedImage));
 	}
 }
