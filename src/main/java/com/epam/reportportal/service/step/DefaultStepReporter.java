@@ -29,13 +29,15 @@ import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -324,8 +326,17 @@ public class DefaultStepReporter implements StepReporter {
 		finishPreviousStepInternal(null).ifPresent(e -> {
 			Comparable previousDate = e.getTimestamp();
 			Comparable currentDate = startTestItemRQ.getStartTime();
-			if (previousDate.compareTo(currentDate) > 0) {
-				startTestItemRQ.setStartTime(previousDate);
+			if (previousDate.compareTo(currentDate) >= 0) {
+				Comparable newDate;
+				if (previousDate instanceof Date) {
+					newDate = new Date(((Date) previousDate).getTime() + 1);
+				} else if (previousDate instanceof Instant) {
+					newDate = ((Instant) previousDate).plus(1, ChronoUnit.MICROS);
+				} else {
+					// Fallback to the original timestamp if it is not a Date or Instant to not fail reporting
+					newDate = previousDate;
+				}
+				startTestItemRQ.setStartTime(newDate);
 			}
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
 				failParents();
@@ -339,6 +350,7 @@ public class DefaultStepReporter implements StepReporter {
 		startTestItemRQ.setName(name);
 		startTestItemRQ.setType("STEP");
 		startTestItemRQ.setHasStats(false);
+		// TODO: Check for server version and set Date or Instant accordingly
 		startTestItemRQ.setStartTime(Calendar.getInstance().getTime());
 		return startTestItemRQ;
 	}
@@ -353,6 +365,7 @@ public class DefaultStepReporter implements StepReporter {
 		rq.setItemUuid(itemId);
 		rq.setMessage(message);
 		rq.setLevel(level.name());
+		// TODO: Check for server version and set Date or Instant accordingly
 		rq.setLogTime(Calendar.getInstance().getTime());
 		return rq;
 	}

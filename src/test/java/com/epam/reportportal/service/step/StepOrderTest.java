@@ -38,8 +38,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.any;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.*;
 
 public class StepOrderTest {
@@ -104,10 +104,11 @@ public class StepOrderTest {
 		List<StartTestItemRQ> rqs = stepCaptor.getAllValues();
 		assertThat(rqs, hasSize(stepNum));
 		for (int i = 1; i < stepNum; i++) {
+			//noinspection rawtypes, unchecked
 			assertThat(
 					"Each nested step should not complete in the same millisecond, iteration: " + i,
-					rqs.get(i - 1).getStartTime(),
-					not(equalTo(rqs.get(i).getStartTime()))
+					((Comparable) rqs.get(i - 1).getStartTime()).compareTo(rqs.get(i).getStartTime()),
+					equalTo(-1)
 			);
 		}
 	}
