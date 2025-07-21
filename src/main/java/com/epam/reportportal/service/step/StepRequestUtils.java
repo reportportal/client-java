@@ -38,6 +38,7 @@ public class StepRequestUtils {
 		StartTestItemRQ request = new StartTestItemRQ();
 		ofNullable(description).filter(d -> !d.isEmpty()).ifPresent(request::setDescription);
 		request.setName(name);
+		// TODO: Check for server version and set Date or Instant accordingly
 		request.setStartTime(Calendar.getInstance().getTime());
 		request.setType("STEP");
 		request.setHasStats(false);
@@ -54,6 +55,7 @@ public class StepRequestUtils {
 
 	@Nonnull
 	public static FinishTestItemRQ buildFinishTestItemRequest(@Nonnull ItemStatus status) {
+		// TODO: Check for server version and set Date or Instant accordingly
 		return buildFinishTestItemRequest(status, Calendar.getInstance().getTime());
 	}
 }

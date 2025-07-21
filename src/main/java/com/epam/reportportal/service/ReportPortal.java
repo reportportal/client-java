@@ -420,6 +420,7 @@ public class ReportPortal {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			rq.setLevel("ERROR");
+			// TODO: Check for server version and set Date or Instant accordingly
 			rq.setLogTime(Calendar.getInstance().getTime());
 			if (cause != null) {
 				if (myParameters.isExceptionTruncate()) {

@@ -62,6 +62,7 @@ public class PrimaryLaunch extends AbstractJoinedLaunch {
 		}
 		lock.finishInstanceUuid(uuid);
 		FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
+		// TODO: Check for server version and set Date or Instant accordingly
 		rq.setEndTime(Calendar.getInstance().getTime());
 		super.finish(rq);
 	}

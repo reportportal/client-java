@@ -160,6 +160,7 @@ public interface StepReporter {
 		}
 
 		public StepEntry(@Nonnull Maybe<String> itemId, @Nonnull FinishTestItemRQ finishTestItemRQ) {
+			// TODO: Check for server version and set Date or Instant accordingly
 			this(itemId, Calendar.getInstance().getTime(), finishTestItemRQ);
 		}
 
