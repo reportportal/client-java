@@ -691,8 +691,7 @@ public class LaunchImpl extends Launch {
 					}
 				}));
 
-		if (ofNullable(issue.getExternalSystemIssues()).filter(Set::isEmpty).isPresent()) {
-			// If there are no external issues, we do not need to fill them
+		if (ofNullable(issue.getExternalSystemIssues()).filter(issues -> !issues.isEmpty()).isEmpty()) {
 			return;
 		}
 		ListenerParameters params = getParameters();
