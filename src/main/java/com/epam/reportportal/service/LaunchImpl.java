@@ -691,7 +691,8 @@ public class LaunchImpl extends Launch {
 					}
 				}));
 
-		if (!ofNullable(issue.getExternalSystemIssues()).filter(issues -> !issues.isEmpty()).isPresent()) {
+		if (ofNullable(issue.getExternalSystemIssues()).filter(Set::isEmpty).isPresent()) {
+			// If there are no external issues, we do not need to fill them
 			return;
 		}
 		ListenerParameters params = getParameters();
@@ -799,12 +800,8 @@ public class LaunchImpl extends Launch {
 
 		//find parent and add to its queue
 		final Maybe<String> parent = treeItem.getParent();
-		if (null != parent) {
-			queue.getOrCompute(parent).addToQueue(finishCompletion.onErrorComplete());
-		} else {
-			//seems like this is root item
-			queue.getOrCompute(this.getLaunch()).addToQueue(finishCompletion.onErrorComplete());
-		}
+		// If parent is not present, we use the launch ID, since the item is a root item
+		queue.getOrCompute(Objects.requireNonNullElseGet(parent, this::getLaunch)).addToQueue(finishCompletion.onErrorComplete());
 
 		getStepReporter().removeParent(item);
 		LoggingContext.dispose();
