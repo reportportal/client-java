@@ -18,11 +18,10 @@ package com.epam.reportportal.service;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.listeners.LogLevel;
+import com.epam.reportportal.service.logs.LoggingSubscriber;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
-import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
-import io.reactivex.FlowableSubscriber;
 import io.reactivex.Maybe;
 import okhttp3.MultipartBody;
 import org.junit.jupiter.api.AfterEach;
@@ -240,7 +239,7 @@ public class LaunchLoggingTest {
 		TestUtils.mockStartLaunch(client, "launchUuid");
 		RuntimeException exc = new IllegalStateException("test");
 		when(client.log(any(List.class))).thenThrow(exc);
-		FlowableSubscriber<BatchSaveOperatingRS> subscriber = mock(FlowableSubscriber.class);
+		LoggingSubscriber subscriber = mock(LoggingSubscriber.class);
 		ListenerParameters myParameters = TestUtils.standardParameters();
 		Launch launch = new LaunchImpl(client, myParameters, TestUtils.standardLaunchRequest(myParameters), executor, subscriber);
 
