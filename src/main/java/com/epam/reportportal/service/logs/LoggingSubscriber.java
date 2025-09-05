@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Set of logging subscription for ReportPortal logging client
  */
-public final class LoggingSubscriber implements FlowableSubscriber<BatchSaveOperatingRS> {
+public class LoggingSubscriber implements FlowableSubscriber<BatchSaveOperatingRS> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoggingSubscriber.class);
 
 	private final AtomicInteger counter = new AtomicInteger(0);
