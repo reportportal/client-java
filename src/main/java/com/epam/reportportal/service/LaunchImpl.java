@@ -129,6 +129,7 @@ public class LaunchImpl extends Launch {
 	private final PublishSubject<SaveLogRQ> logEmitter;
 	private final ExecutorService executor;
 	private final Scheduler scheduler;
+	private final LoggingSubscriber loggingSubscriber;
 	private StatisticsService statisticsService;
 
 	private static Supplier<Maybe<String>> getLaunchSupplier(@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler,
@@ -161,7 +162,7 @@ public class LaunchImpl extends Launch {
 
 	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
 			@Nonnull final StartLaunchRQ rq, @Nonnull final ExecutorService executorService,
-			@Nonnull final FlowableSubscriber<BatchSaveOperatingRS> loggingSubscriber) {
+			@Nonnull final LoggingSubscriber loggingSubscriber) {
 		super(reportPortalClient, parameters);
 		requireNonNull(parameters, "Parameters shouldn't be NULL");
 		executor = requireNonNull(executorService);
@@ -176,6 +177,7 @@ public class LaunchImpl extends Launch {
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 
 		launch = getLaunchSupplier(getClient(), getScheduler(), startRq);
+		this.loggingSubscriber = loggingSubscriber;
 		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
 		projectSettings = getProjectSettings(getClient(), getScheduler());
 	}
@@ -199,7 +201,8 @@ public class LaunchImpl extends Launch {
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 		launch = () -> launchMaybe.cache().subscribeOn(getScheduler());
-		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler(), new LoggingSubscriber());
+		loggingSubscriber = new LoggingSubscriber();
+		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
 		projectSettings = getProjectSettings(getClient(), getScheduler());
 	}
 
@@ -390,12 +393,7 @@ public class LaunchImpl extends Launch {
 	 * @param itemCompletable A completable representing the test items to be completed before finishing the launch
 	 */
 	protected void waitForItemsCompletion(Completable itemCompletable) {
-		waitForCompletable(
-				getLaunch().ignoreElement(),
-				createVirtualItemCompletable(),
-				itemCompletable,
-				completeLogCompletables()
-		);
+		waitForCompletable(getLaunch().ignoreElement(), createVirtualItemCompletable(), itemCompletable, completeLogCompletables());
 	}
 
 	/**
@@ -435,7 +433,16 @@ public class LaunchImpl extends Launch {
 			d.dispose();
 			return true;
 		});
+
+		// To ensure we sent all logs post one message (for the case when there were no logs at all) and wait for it to be sent
+		// Use blocking get, since we are at the end of the flow and Maybe.map(..) will be stopped by system exit
+		String launchUUID = getLaunch().blockingGet();
+		int logBatchesSent = loggingSubscriber.getProcessedCount();
+		emitLog(StaticStructuresUtils.getLastLogRQ(launchUUID));
 		logEmitter.onComplete();
+		Waiter waiter = new Waiter("Wait for last log batch sent").duration(getParameters().getReportingTimeout(), TimeUnit.SECONDS)
+				.pollingEvery(100, TimeUnit.MILLISECONDS);
+		waiter.till(() -> logBatchesSent < loggingSubscriber.getProcessedCount() ? true : null);
 		waitForCompletable(logEmitter.ignoreElements());
 	}
 

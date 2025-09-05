@@ -16,8 +16,11 @@
 
 package com.epam.reportportal.utils;
 
+import com.epam.reportportal.listeners.LogLevel;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
+import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 
+import java.util.Calendar;
 import java.util.Set;
 
 public class StaticStructuresUtils {
@@ -96,4 +99,13 @@ public class StaticStructuresUtils {
 			throw new UnsupportedOperationException();
 		}
 	};
+
+	public static SaveLogRQ getLastLogRQ(String launchUuid) {
+		SaveLogRQ rq = new SaveLogRQ();
+		rq.setLogTime(Calendar.getInstance().getTime());
+		rq.setMessage("Launch finished");
+		rq.setLevel(LogLevel.TRACE.name());
+		rq.setLaunchUuid(launchUuid);
+		return rq;
+	}
 }
