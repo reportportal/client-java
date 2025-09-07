@@ -434,6 +434,9 @@ public class LaunchImpl extends Launch {
 			return true;
 		});
 
+		if (logEmitter.hasComplete()) {
+			return;
+		}
 		// To ensure we sent all logs post one message (for the case when there were no logs at all) and wait for it to be sent
 		// Use blocking get, since we are at the end of the flow and Maybe.map(..) will be stopped by system exit
 		String launchUUID = getLaunch().blockingGet();
