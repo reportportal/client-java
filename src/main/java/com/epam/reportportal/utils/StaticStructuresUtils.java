@@ -24,6 +24,7 @@ import java.util.Calendar;
 import java.util.Set;
 
 public class StaticStructuresUtils {
+	public static final String LAUNCH_FINISHED_MESSAGE = "Launch finished";
 
 	public static final Issue REDUNDANT_ISSUE = new Issue() {
 		public static final String AUTOMATION_BUG_ISSUE_TYPE = "ab001";
@@ -103,7 +104,7 @@ public class StaticStructuresUtils {
 	public static SaveLogRQ getLastLogRQ(String launchUuid) {
 		SaveLogRQ rq = new SaveLogRQ();
 		rq.setLogTime(Calendar.getInstance().getTime());
-		rq.setMessage("Launch finished");
+		rq.setMessage(LAUNCH_FINISHED_MESSAGE);
 		rq.setLevel(LogLevel.TRACE.name());
 		rq.setLaunchUuid(launchUuid);
 		return rq;
