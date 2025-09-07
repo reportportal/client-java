@@ -17,6 +17,7 @@ package com.epam.reportportal.listeners;
 
 import com.epam.reportportal.service.launch.lock.LaunchIdLockMode;
 import com.epam.reportportal.utils.AttributeParser;
+import com.epam.reportportal.utils.CommonConstants;
 import com.epam.reportportal.utils.properties.ListenerProperty;
 import com.epam.reportportal.utils.properties.OutputTypes;
 import com.epam.reportportal.utils.properties.PropertiesLoader;
@@ -32,6 +33,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static com.epam.reportportal.utils.CommonConstants.MEGABYTES;
 import static com.epam.reportportal.utils.properties.ListenerProperty.*;
 import static java.util.Optional.ofNullable;
 
@@ -66,13 +68,12 @@ public class ListenerParameters implements Cloneable {
 	private static final boolean DEFAULT_TRUNCATE = true;
 	private static final int DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT = 1024;
 	private static final int DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT = 128;
-	private static final String DEFAULT_TRUNCATE_REPLACEMENT = "...";
 
 	public static final boolean DEFAULT_EXCEPTION_TRUNCATE = true;
 
 	public static final int DEFAULT_LOG_BATCH_SIZE = 10;
-	// Due to shortcoming of payload calculation mechanism this value is set to 65 million of bytes rather than 65 megabytes
-	public static final long DEFAULT_BATCH_PAYLOAD_LIMIT = 65 * 1000 * 1000;
+	// Due to shortcoming of payload calculation mechanism this value is set to 62 megabytes rather than 65 megabytes
+	public static final long DEFAULT_BATCH_PAYLOAD_LIMIT = 62L * MEGABYTES;
 
 	public static final boolean DEFAULT_LAUNCH_CREATION_SKIP = true;
 	public static final boolean DEFAULT_LAUNCH_UUID_PRINT = false;
@@ -214,7 +215,7 @@ public class ListenerParameters implements Cloneable {
 
 		this.truncateFields = DEFAULT_TRUNCATE;
 		this.truncateItemNamesLimit = DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT;
-		this.truncateReplacement = DEFAULT_TRUNCATE_REPLACEMENT;
+		this.truncateReplacement = CommonConstants.DEFAULT_TRUNCATE_REPLACEMENT;
 		this.attributeLengthLimit = DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT;
 
 		this.printLaunchUuid = DEFAULT_LAUNCH_UUID_PRINT;
@@ -295,7 +296,7 @@ public class ListenerParameters implements Cloneable {
 
 		this.truncateFields = properties.getPropertyAsBoolean(TRUNCATE_FIELDS, DEFAULT_TRUNCATE);
 		this.truncateItemNamesLimit = properties.getPropertyAsInt(TRUNCATE_ITEM_NAME_LIMIT, DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT);
-		this.truncateReplacement = properties.getProperty(TRUNCATE_REPLACEMENT, DEFAULT_TRUNCATE_REPLACEMENT);
+		this.truncateReplacement = properties.getProperty(TRUNCATE_REPLACEMENT, CommonConstants.DEFAULT_TRUNCATE_REPLACEMENT);
 		this.attributeLengthLimit = properties.getPropertyAsInt(TRUNCATE_ATTRIBUTE_LIMIT, DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT);
 
 		this.exceptionTruncate = properties.getPropertyAsBoolean(EXCEPTION_TRUNCATE, DEFAULT_EXCEPTION_TRUNCATE);
