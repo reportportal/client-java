@@ -254,11 +254,8 @@ public class LaunchImpl extends Launch {
 			return;
 		}
 		String name = rq.getName();
-		int limit = getParameters().getTruncateItemNamesLimit();
-		String replacement = getParameters().getTruncateReplacement();
-		if (name.length() > limit && name.length() > replacement.length()) {
-			rq.setName(name.substring(0, limit - replacement.length()) + replacement);
-		}
+		ListenerParameters params = getParameters();
+		rq.setName(BasicUtils.truncateString(name, params.getTruncateItemNamesLimit(), params.getTruncateReplacement()));
 	}
 
 	@Nullable
