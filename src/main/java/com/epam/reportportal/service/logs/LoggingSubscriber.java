@@ -22,26 +22,34 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Set of logging subscription for ReportPortal logging client
  */
-public final class LoggingSubscriber implements FlowableSubscriber<BatchSaveOperatingRS> {
+public class LoggingSubscriber implements FlowableSubscriber<BatchSaveOperatingRS> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LoggingSubscriber.class);
+
+	private final AtomicInteger counter = new AtomicInteger(0);
 
 	@Override
 	public void onSubscribe(@Nonnull Subscription s) {
-		// ignore
+		s.request(Long.MAX_VALUE);
 	}
 
 	@Override
 	public void onNext(BatchSaveOperatingRS result) {
-		// ignore
+		counter.incrementAndGet();
+	}
+
+	public int getProcessedCount() {
+		return counter.get();
 	}
 
 	@Override
 	public void onError(Throwable e) {
 		LOGGER.error("[{}] ReportPortal logging error", Thread.currentThread().getId(), e);
+		counter.incrementAndGet();
 	}
 
 	@Override

@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Ensure all logs are sent before JVM exit, by @HardNorth
+- Issue [#293](https://github.com/reportportal/client-java/issues/293): Minimum IO pool size, by @HardNorth
+- Issue [#292](https://github.com/reportportal/client-java/issues/292): Truncate too long string fields, by @HardNorth
 
 ## [5.3.14]
 ### Added
