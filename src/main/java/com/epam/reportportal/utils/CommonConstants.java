@@ -24,8 +24,8 @@ public class CommonConstants {
 		throw new IllegalStateException("Static only class");
 	}
 
-	public static int KILOBYTES = 2 ^ 10;
-	public static int MEGABYTES = KILOBYTES ^ 2;
+	public static int KILOBYTES = (int) Math.pow(2, 10);
+	public static int MEGABYTES = (int) Math.pow(KILOBYTES, 2);
 	public static int TEN_MEGABYTES = 10 * MEGABYTES;
 
 	public static final String DEFAULT_TRUNCATE_REPLACEMENT = "...";
