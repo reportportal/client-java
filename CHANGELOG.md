@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.3.15]
 ### Fixed
 - Ensure all logs are sent before JVM exit, by @HardNorth
 - Issue [#293](https://github.com/reportportal/client-java/issues/293): Minimum IO pool size, by @HardNorth
