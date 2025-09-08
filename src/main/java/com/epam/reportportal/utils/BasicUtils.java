@@ -36,10 +36,16 @@ public class BasicUtils {
 	 */
 	@Nonnull
 	public static String truncateString(@Nonnull String string, int limit, @Nullable String truncateReplacement) {
-		String replacement = truncateReplacement == null ? CommonConstants.DEFAULT_TRUNCATE_REPLACEMENT : truncateReplacement;
-		if (string.length() > limit && string.length() > replacement.length()) {
-			return string.substring(0, limit - replacement.length()) + replacement;
+		int effectiveLimit = Math.max(0, limit);
+		if (string.length() <= effectiveLimit) {
+			return string;
 		}
-		return string;
+		if (effectiveLimit == 0) {
+			return "";
+		}
+		String replacement = truncateReplacement == null ? CommonConstants.DEFAULT_TRUNCATE_REPLACEMENT : truncateReplacement;
+		return string.length() > replacement.length() ?
+				string.substring(0, effectiveLimit - replacement.length()) + replacement :
+				string.substring(0, effectiveLimit);
 	}
 }
