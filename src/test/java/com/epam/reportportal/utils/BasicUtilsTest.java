@@ -64,5 +64,3 @@ public class BasicUtilsTest {
 		assertThat(result, endsWith(CommonConstants.DEFAULT_TRUNCATE_REPLACEMENT));
 	}
 }
-
-
