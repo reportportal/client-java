@@ -16,15 +16,17 @@
 
 package com.epam.reportportal.utils;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 
 public class BasicUtilsTest {
 	public static Object[][] testData() {
-        //@formatter:off
+		//@formatter:off
         return new Object[][]{
                 // 1. String is longer than limit, truncateReplacement is less than limit
                 {"HelloWorld", 5, "..", "Hel.."},
@@ -35,16 +37,32 @@ public class BasicUtilsTest {
                 // 4. Limit is 0
                 {"Hello", 0, "...", ""},
                 // 5. Limit is less than 0
-                {"Hello", -3, "...", ""}
+                {"Hello", -3, "...", ""},
+				{"Hello", -3, "...", ""},
+				// 6. String length equals limit
+				{"Hello", 5, "...", "Hello"},
+				// 7. truncateReplacement length equals limit
+				{"HelloWorld", 3, "xyz", "Hel"},
+				// 8. Empty input
+				{"", 3, "...", ""}
         };
         //@formatter:on
-    }
+	}
 
-    @ParameterizedTest
-    @MethodSource("testData")
-    public void test_truncate_string_scenarios(String input, int limit, String replacement, String expected) {
-        assertThat(BasicUtils.truncateString(input, limit, replacement), equalTo(expected));
-    }
+	@ParameterizedTest
+	@MethodSource("testData")
+	public void test_truncate_string_scenarios(String input, int limit, String replacement, String expected) {
+		assertThat(BasicUtils.truncateString(input, limit, replacement), equalTo(expected));
+	}
+
+	@Test
+	public void test_truncate_string_null_replacement_uses_default_and_respects_limit() {
+		String input = "HelloWorld";
+		int limit = 5;
+		String result = BasicUtils.truncateString(input, limit, null);
+		assertThat(result.length(), equalTo(limit));
+		assertThat(result, endsWith(CommonConstants.DEFAULT_TRUNCATE_REPLACEMENT));
+	}
 }
 
 
