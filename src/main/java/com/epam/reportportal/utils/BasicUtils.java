@@ -44,8 +44,9 @@ public class BasicUtils {
 			return "";
 		}
 		String replacement = truncateReplacement == null ? CommonConstants.DEFAULT_TRUNCATE_REPLACEMENT : truncateReplacement;
-		return string.length() > replacement.length() ?
-				string.substring(0, effectiveLimit - replacement.length()) + replacement :
-				string.substring(0, effectiveLimit);
+		if (effectiveLimit <= replacement.length()) {
+			return string.substring(0, effectiveLimit);
+		}
+		return string.substring(0, effectiveLimit - replacement.length()) + replacement;
 	}
 }
