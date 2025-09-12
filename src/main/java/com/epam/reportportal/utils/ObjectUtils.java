@@ -17,16 +17,46 @@
 package com.epam.reportportal.utils;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import jakarta.annotation.Nonnull;
 import java.io.IOException;
+
+import static com.epam.reportportal.utils.CommonConstants.TEN_MEGABYTES;
 
 /**
  * A class for auxiliary manipulations with objects.
  */
 public class ObjectUtils {
-	private static final ObjectMapper MAPPER = new ObjectMapper();
+
+	private static class LimitedStringDeserializer extends StdDeserializer<String> {
+		private static final long serialVersionUID = 1L;
+
+		private final int maxLength;
+
+		public LimitedStringDeserializer(int maxLength) {
+			super(String.class);
+			this.maxLength = Math.max(0, maxLength);
+		}
+
+		@Override
+		public String deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
+			String value = p.getValueAsString();
+			if (value == null) {
+				return null;
+			}
+			return BasicUtils.truncateString(value, maxLength, null);
+		}
+	}
+
+	private static final ObjectMapper MAPPER = new ObjectMapper().registerModule(new SimpleModule().addDeserializer(
+			String.class,
+			new LimitedStringDeserializer(TEN_MEGABYTES)
+	));
 
 	private ObjectUtils() {
 		throw new IllegalStateException("Static only class");
@@ -44,7 +74,9 @@ public class ObjectUtils {
 			return MAPPER.writeValueAsString(pojoObject);
 		} catch (IOException e) {
 			throw new InternalReportPortalClientException(
-					"Unable to serialize " + pojoObject.getClass().getSimpleName() + " object to String", e);
+					"Unable to serialize " + pojoObject.getClass().getSimpleName() + " object to String",
+					e
+			);
 		}
 	}
 
@@ -61,8 +93,7 @@ public class ObjectUtils {
 		try {
 			return MAPPER.readValue(toString(pojoObject), clazz);
 		} catch (IOException e) {
-			throw new InternalReportPortalClientException(
-					"Unable to clone " + pojoObject.getClass().getSimpleName() + " object", e);
+			throw new InternalReportPortalClientException("Unable to clone " + pojoObject.getClass().getSimpleName() + " object", e);
 		}
 	}
 }

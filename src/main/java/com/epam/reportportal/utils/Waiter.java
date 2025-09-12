@@ -101,6 +101,29 @@ public class Waiter {
 		return false;
 	}
 
+	/**
+	 * Waits until the supplied callable returns a non-null result, polling at the configured interval,
+	 * or until the wait times out or the thread is interrupted.
+	 * <p>
+	 * Important: {@code false} is still a non-null value for {@link Boolean} and will stop waiting
+	 * as a successful result.
+	 * <p>
+	 * Exceptions matching those configured via {@link #ignore(Class)} are swallowed and the wait is retried;
+	 * any other exception aborts the wait and is wrapped into {@link InternalReportPortalClientException}.
+	 * <p>
+	 * If the timeout elapses:
+	 * <ul>
+	 *   <li>when {@link #timeoutFail()} was configured, an {@link InternalReportPortalClientException} is thrown;</li>
+	 *   <li>otherwise, {@code null} is returned.</li>
+	 * </ul>
+	 * If the thread is interrupted, a warning is logged and {@code null} is returned.
+	 *
+	 * @param waitFor a callable that is evaluated repeatedly until it returns a non-null result
+	 * @param <T> type of the result supplied by the callable
+	 * @return the first non-null result returned by the callable; {@code null} on timeout/interruption when not configured to fail
+	 * @throws InternalReportPortalClientException if an unexpected exception occurs in the callable
+	 *                                            or if timeout occurs and {@link #timeoutFail()} was configured
+	 */
 	public <T> T till(Callable<T> waitFor) {
 		long triesLong = durationNs / pollingNs;
 		int tries = triesLong > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) triesLong;

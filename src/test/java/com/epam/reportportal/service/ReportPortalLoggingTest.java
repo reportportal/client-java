@@ -19,6 +19,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.message.ReportPortalMessage;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
+import com.epam.reportportal.utils.StaticStructuresUtils;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import okhttp3.MultipartBody;
@@ -156,12 +157,13 @@ public class ReportPortalLoggingTest {
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(rpClient, timeout(1000)).log(logCaptor.capture());
+		verify(rpClient, timeout(1000).times(2)).log(logCaptor.capture());
 
 		// Verify basic fields
 		List<SaveLogRQ> logRequests = logCaptor.getAllValues()
 				.stream()
 				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())
+				.filter(rq -> !StaticStructuresUtils.LAUNCH_FINISHED_MESSAGE.equals(rq.getMessage()))
 				.collect(Collectors.toList());
 		verifySaveLogRQNullFile(logRequests, logLevel, message, logDate, launchUuid, testUuid);
 	}
@@ -188,12 +190,13 @@ public class ReportPortalLoggingTest {
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(rpClient, timeout(1000)).log(logCaptor.capture());
+		verify(rpClient, timeout(1000).times(2)).log(logCaptor.capture());
 
 		// Verify basic fields
 		List<SaveLogRQ> logRequests = logCaptor.getAllValues()
 				.stream()
 				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())
+				.filter(rq -> !StaticStructuresUtils.LAUNCH_FINISHED_MESSAGE.equals(rq.getMessage()))
 				.collect(Collectors.toList());
 		verifySaveLogRQ(logRequests, logLevel, message, logDate, launchUuid, testUuid);
 
@@ -229,12 +232,13 @@ public class ReportPortalLoggingTest {
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(rpClient, timeout(1000)).log(logCaptor.capture());
+		verify(rpClient, timeout(1000).times(2)).log(logCaptor.capture());
 
 		// Verify basic fields
 		List<SaveLogRQ> logRequests = logCaptor.getAllValues()
 				.stream()
 				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())
+				.filter(rq -> !StaticStructuresUtils.LAUNCH_FINISHED_MESSAGE.equals(rq.getMessage()))
 				.collect(Collectors.toList());
 		verifySaveLogRQNullFile(logRequests, logLevel, message, logDate, launchUuid, null);
 	}
@@ -258,12 +262,13 @@ public class ReportPortalLoggingTest {
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(rpClient, timeout(1000)).log(logCaptor.capture());
+		verify(rpClient, timeout(1000).times(2)).log(logCaptor.capture());
 
 		// Verify basic fields
 		List<SaveLogRQ> logRequests = logCaptor.getAllValues()
 				.stream()
 				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())
+				.filter(rq -> !StaticStructuresUtils.LAUNCH_FINISHED_MESSAGE.equals(rq.getMessage()))
 				.collect(Collectors.toList());
 		verifySaveLogRQ(logRequests, logLevel, message, logDate, launchUuid, null);
 
@@ -304,12 +309,13 @@ public class ReportPortalLoggingTest {
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(rpClient, timeout(1000)).log(logCaptor.capture());
+		verify(rpClient, timeout(1000).times(2)).log(logCaptor.capture());
 
 		// Verify basic fields
 		List<SaveLogRQ> logRequests = logCaptor.getAllValues()
 				.stream()
 				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())
+				.filter(rq -> !StaticStructuresUtils.LAUNCH_FINISHED_MESSAGE.equals(rq.getMessage()))
 				.collect(Collectors.toList());
 		verifySaveLogRQ(logRequests, logLevel, message, logDate, launchUuid, testUuid);
 
@@ -348,12 +354,13 @@ public class ReportPortalLoggingTest {
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(rpClient, timeout(1000)).log(logCaptor.capture());
+		verify(rpClient, timeout(1000).times(2)).log(logCaptor.capture());
 
 		// Verify basic fields
 		List<SaveLogRQ> logRequests = logCaptor.getAllValues()
 				.stream()
 				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())
+				.filter(rq -> !StaticStructuresUtils.LAUNCH_FINISHED_MESSAGE.equals(rq.getMessage()))
 				.collect(Collectors.toList());
 		verifySaveLogRQ(logRequests, logLevel, message, logDate, launchUuid, testUuid);
 
@@ -388,12 +395,13 @@ public class ReportPortalLoggingTest {
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(rpClient, timeout(1000)).log(logCaptor.capture());
+		verify(rpClient, timeout(1000).times(2)).log(logCaptor.capture());
 
 		// Verify basic fields
 		List<SaveLogRQ> logRequests = logCaptor.getAllValues()
 				.stream()
 				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())
+				.filter(rq -> !StaticStructuresUtils.LAUNCH_FINISHED_MESSAGE.equals(rq.getMessage()))
 				.collect(Collectors.toList());
 		verifySaveLogRQ(logRequests, logLevel, message, logDate, launchUuid, null);
 
@@ -429,12 +437,14 @@ public class ReportPortalLoggingTest {
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(rpClient, timeout(1000)).log(logCaptor.capture());
+		// One log for message, one log for launch finished message
+		verify(rpClient, timeout(1000).times(2)).log(logCaptor.capture());
 
 		// Verify basic fields
 		List<SaveLogRQ> logRequests = logCaptor.getAllValues()
 				.stream()
 				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())
+				.filter(rq -> !StaticStructuresUtils.LAUNCH_FINISHED_MESSAGE.equals(rq.getMessage()))
 				.collect(Collectors.toList());
 		verifySaveLogRQ(logRequests, logLevel, message, logDate, launchUuid, null);
 
@@ -477,12 +487,13 @@ public class ReportPortalLoggingTest {
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(rpClient, timeout(1000)).log(logCaptor.capture());
+		verify(rpClient, timeout(1000).times(2)).log(logCaptor.capture());
 
 		// Verify basic fields
 		List<SaveLogRQ> logRequests = logCaptor.getAllValues()
 				.stream()
 				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())
+				.filter(rq -> !StaticStructuresUtils.LAUNCH_FINISHED_MESSAGE.equals(rq.getMessage()))
 				.collect(Collectors.toList());
 		verifySaveLogRQ(logRequests, logLevel, message, logDate, launchUuid, customUuid);
 	}
@@ -506,12 +517,13 @@ public class ReportPortalLoggingTest {
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(rpClient, timeout(1000)).log(logCaptor.capture());
+		verify(rpClient, timeout(1000).times(2)).log(logCaptor.capture());
 
 		// Verify basic fields
 		List<SaveLogRQ> logRequests = logCaptor.getAllValues()
 				.stream()
 				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())
+				.filter(rq -> !StaticStructuresUtils.LAUNCH_FINISHED_MESSAGE.equals(rq.getMessage()))
 				.collect(Collectors.toList());
 		verifySaveLogRQ(logRequests, logLevel, message, launchUuid, testUuid);
 	}
@@ -535,12 +547,13 @@ public class ReportPortalLoggingTest {
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(rpClient, timeout(1000)).log(logCaptor.capture());
+		verify(rpClient, timeout(1000).times(2)).log(logCaptor.capture());
 
 		// Verify basic fields
 		List<SaveLogRQ> logRequests = logCaptor.getAllValues()
 				.stream()
 				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())
+				.filter(rq -> !StaticStructuresUtils.LAUNCH_FINISHED_MESSAGE.equals(rq.getMessage()))
 				.collect(Collectors.toList());
 		verifySaveLogRQ(logRequests, logLevel, message, launchUuid, testUuid);
 	}
@@ -567,12 +580,13 @@ public class ReportPortalLoggingTest {
 		launch.finish(TestUtils.standardLaunchFinishRequest());
 
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
-		verify(rpClient, timeout(1000)).log(logCaptor.capture());
+		verify(rpClient, timeout(1000).times(2)).log(logCaptor.capture());
 
 		// Verify basic fields
 		List<SaveLogRQ> logRequests = logCaptor.getAllValues()
 				.stream()
 				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())
+				.filter(rq -> !StaticStructuresUtils.LAUNCH_FINISHED_MESSAGE.equals(rq.getMessage()))
 				.collect(Collectors.toList());
 		verifySaveLogRQ(logRequests, logLevel, launchUuid, testUuid);
 		assertThat(logRequests.get(0).getMessage(), startsWith(message));

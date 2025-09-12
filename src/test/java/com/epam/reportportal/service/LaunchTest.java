@@ -130,6 +130,7 @@ public class LaunchTest {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
+		simulateBatchLogResponse(rpClient);
 		Launch launch = createLaunch();
 
 		Maybe<String> launchUuid = launch.start();
@@ -186,6 +187,8 @@ public class LaunchTest {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
+		simulateBatchLogResponse(rpClient);
+		simulateFinishLaunchResponse(rpClient);
 
 		// Verify Launch set on creation
 		ExecutorService launchCreateExecutor = Executors.newSingleThreadExecutor();
@@ -226,6 +229,7 @@ public class LaunchTest {
 	@SuppressWarnings("unchecked")
 	public void launch_should_send_analytics_events_if_created_with_request() {
 		simulateStartLaunchResponse(rpClient);
+		simulateBatchLogResponse(rpClient);
 		simulateFinishLaunchResponse(rpClient);
 
 		StartLaunchRQ startRq = standardLaunchRequest(STANDARD_PARAMETERS);
@@ -243,6 +247,7 @@ public class LaunchTest {
 	@Test
 	@SuppressWarnings("unchecked")
 	public void launch_should_send_analytics_events_if_created_with_launch_maybe() {
+		simulateBatchLogResponse(rpClient);
 		simulateFinishLaunchResponse(rpClient);
 
 		Maybe<String> launchUuid = Maybe.just("launchUuid");
@@ -282,6 +287,7 @@ public class LaunchTest {
 		simulateStartTestItemResponse(rpClient);
 		simulateFinishTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
+		simulateBatchLogResponse(rpClient);
 		simulateFinishLaunchResponse(rpClient);
 		Launch launch = createLaunch();
 
@@ -353,6 +359,7 @@ public class LaunchTest {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateFinishTestItemResponse(rpClient);
+		simulateBatchLogResponse(rpClient);
 		simulateFinishLaunchResponse(rpClient);
 
 		ListenerParameters parameters = standardParameters();
@@ -399,6 +406,7 @@ public class LaunchTest {
 	@Timeout(10)
 	public void launch_should_not_throw_exceptions_or_hang_if_finished_and_started_again() {
 		simulateStartLaunchResponse(rpClient);
+		simulateBatchLogResponse(rpClient);
 		simulateFinishLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateFinishTestItemResponse(rpClient);
