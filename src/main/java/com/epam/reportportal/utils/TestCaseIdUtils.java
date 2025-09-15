@@ -80,8 +80,7 @@ public class TestCaseIdUtils {
 		Annotation[][] parameterAnnotations = executable.getParameterAnnotations();
 		List<Integer> keys = new ArrayList<>();
 		for (int paramIndex = 0; paramIndex < parameterAnnotations.length; paramIndex++) {
-			for (int annotationIndex = 0; annotationIndex < parameterAnnotations[paramIndex].length;
-			     annotationIndex++) {
+			for (int annotationIndex = 0; annotationIndex < parameterAnnotations[paramIndex].length; annotationIndex++) {
 				Annotation testCaseIdAnnotation = parameterAnnotations[paramIndex][annotationIndex];
 				if (testCaseIdAnnotation.annotationType() == TestCaseIdKey.class) {
 					keys.add(paramIndex);
@@ -108,7 +107,7 @@ public class TestCaseIdUtils {
 	 */
 	@Nullable
 	public static <T> TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Executable executable,
-	                                                @Nullable List<T> parameters) {
+			@Nullable List<T> parameters) {
 		return getTestCaseId(annotation, executable, null, parameters);
 	}
 
@@ -124,7 +123,7 @@ public class TestCaseIdUtils {
 	 */
 	@Nullable
 	public static <T> TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Executable executable,
-	                                                @Nullable String codRef, @Nullable List<T> parameters) {
+			@Nullable String codRef, @Nullable List<T> parameters) {
 		return getTestCaseId(annotation, executable, codRef, parameters, null);
 	}
 
@@ -141,8 +140,7 @@ public class TestCaseIdUtils {
 	 */
 	@Nullable
 	public static <T> TestCaseIdEntry getTestCaseId(@Nullable TestCaseId annotation, @Nullable Executable executable,
-	                                                @Nullable String codRef, @Nullable List<T> parameters,
-	                                                @Nullable Object testInstance) {
+			@Nullable String codRef, @Nullable List<T> parameters, @Nullable Object testInstance) {
 		if (annotation != null) {
 			if (annotation.value().isEmpty()) {
 				if (annotation.parametrized()) {
@@ -150,29 +148,20 @@ public class TestCaseIdUtils {
 							.orElse(ofNullable(codRef).map(c -> getTestCaseId(c, parameters))
 									.orElse(getTestCaseId(executable, parameters)));
 				} else {
-					return ofNullable(codRef).map(c -> getTestCaseId(c, parameters))
-							.orElse(getTestCaseId(executable, parameters));
+					return ofNullable(codRef).map(c -> getTestCaseId(c, parameters)).orElse(getTestCaseId(executable, parameters));
 				}
 			} else {
 				String idTemplate = annotation.value();
 				TemplateConfiguration templateConfig = new TemplateConfiguration(annotation.config());
 				Map<String, Object> parametersMap = new HashMap<>();
-				ofNullable(parameters).ifPresent(params -> IntStream.range(0,
-								params.size()
-						)
+				ofNullable(parameters).ifPresent(params -> IntStream.range(0, params.size())
 						.boxed()
 						.forEach(i -> parametersMap.put(i.toString(), params.get(i))));
-				String id = TemplateProcessing.processTemplate(idTemplate,
-						testInstance,
-						executable,
-						parametersMap,
-						templateConfig
-				);
+				String id = TemplateProcessing.processTemplate(idTemplate, testInstance, executable, parametersMap, templateConfig);
 
 				if (annotation.parametrized()) {
 					String resultParameters = getParametersForTestCaseId(executable, parameters);
-					return ofNullable(resultParameters).map(p -> new TestCaseIdEntry(
-									id + (p.startsWith("[") ? p : "[" + p + "]")))
+					return ofNullable(resultParameters).map(p -> new TestCaseIdEntry(id + (p.startsWith("[") ? p : "[" + p + "]")))
 							.orElse(ofNullable(codRef).map(c -> getTestCaseId(c, parameters))
 									.orElse(getTestCaseId(executable, parameters)));
 				} else {
@@ -193,8 +182,7 @@ public class TestCaseIdUtils {
 	 */
 	@Nullable
 	public static <T> TestCaseIdEntry getTestCaseId(@Nullable Executable executable, @Nullable List<T> parameters) {
-		return ofNullable(executable).map(m -> getTestCaseId(getCodeRef(m), parameters))
-				.orElse(getTestCaseId(parameters));
+		return ofNullable(executable).map(m -> getTestCaseId(getCodeRef(m), parameters)).orElse(getTestCaseId(parameters));
 	}
 
 	/**
@@ -207,8 +195,7 @@ public class TestCaseIdUtils {
 	 */
 	@Nullable
 	public static <T> TestCaseIdEntry getTestCaseId(@Nullable String codeRef, @Nullable List<T> parameters) {
-		return ofNullable(codeRef).map(r -> new TestCaseIdEntry(
-						codeRef + ofNullable(parameters).map(TRANSFORM_PARAMETERS).orElse("")))
+		return ofNullable(codeRef).map(r -> new TestCaseIdEntry(codeRef + ofNullable(parameters).map(TRANSFORM_PARAMETERS).orElse("")))
 				.orElse(getTestCaseId(parameters));
 	}
 

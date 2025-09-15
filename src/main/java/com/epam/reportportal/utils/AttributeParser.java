@@ -148,10 +148,7 @@ public class AttributeParser {
 	@Nonnull
 	public static List<ItemAttributesRQ> createItemAttributes(@Nullable String key, @Nullable String[] values) {
 		if (values != null && values.length > 0) {
-			return Arrays.stream(values)
-					.filter(StringUtils::isNotBlank)
-					.map(v -> createItemAttribute(key, v))
-					.collect(Collectors.toList());
+			return Arrays.stream(values).filter(StringUtils::isNotBlank).map(v -> createItemAttribute(key, v)).collect(Collectors.toList());
 		}
 		return Collections.emptyList();
 	}

@@ -54,7 +54,8 @@ public class ImageConverter {
 	 */
 	public static TypeAwareByteSource convert(ByteSource source) throws IOException {
 		BufferedImage image = ImageIO.read(source.openBufferedStream());
-		final BufferedImage blackAndWhiteImage = new BufferedImage(image.getWidth(null),
+		final BufferedImage blackAndWhiteImage = new BufferedImage(
+				image.getWidth(null),
 				image.getHeight(null),
 				BufferedImage.TYPE_BYTE_GRAY
 		);

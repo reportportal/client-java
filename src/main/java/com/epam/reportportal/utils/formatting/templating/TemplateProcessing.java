@@ -150,11 +150,7 @@ public class TemplateProcessing {
 				String method = field.substring(0, methodCallStartIndex);
 				String parameters = field.substring(methodCallStartIndex + 1, field.length() - 1);
 				if (!parameters.isEmpty()) {
-					LOGGER.warn(
-							"Method parameters are not supported. Method: {} Parameters: {}. Ignoring the call.",
-							method,
-							parameters
-					);
+					LOGGER.warn("Method parameters are not supported. Method: {} Parameters: {}. Ignoring the call.", method, parameters);
 					return Arrays.stream(fields).collect(Collectors.joining(templateConfig.getFieldDelimiter()));
 				}
 				object = Accessible.on(object).method(method).invoke();

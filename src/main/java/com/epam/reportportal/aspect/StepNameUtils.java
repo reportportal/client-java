@@ -46,8 +46,7 @@ public class StepNameUtils {
 	 * @return step name
 	 */
 	@Nonnull
-	public static String getStepName(@Nonnull Step step, @Nonnull MethodSignature signature,
-			@Nonnull JoinPoint joinPoint) {
+	public static String getStepName(@Nonnull Step step, @Nonnull MethodSignature signature, @Nonnull JoinPoint joinPoint) {
 		String nameTemplate = step.value();
 		if (nameTemplate.trim().isEmpty()) {
 			return signature.getMethod().getName();
@@ -70,21 +69,14 @@ public class StepNameUtils {
 	public static String getStepName(@Nonnull String nameTemplate, @Nonnull TemplateConfiguration config,
 			@Nonnull MethodSignature signature, @Nonnull JoinPoint joinPoint) {
 		Map<String, Object> parametersMap = createParamsMapping(signature, joinPoint);
-		return TemplateProcessing.processTemplate(nameTemplate,
-				joinPoint.getThis(),
-				signature.getMethod(),
-				parametersMap,
-				config
-		);
+		return TemplateProcessing.processTemplate(nameTemplate, joinPoint.getThis(), signature.getMethod(), parametersMap, config);
 	}
 
 	@Nonnull
 	static Map<String, Object> createParamsMapping(@Nonnull MethodSignature signature, @Nonnull JoinPoint joinPoint) {
 		Object[] args = joinPoint.getArgs();
 		String[] parameterNames = signature.getParameterNames();
-		int paramsCount = Math.min(ofNullable(parameterNames).map(p -> p.length).orElse(0),
-				ofNullable(args).map(a -> a.length).orElse(0)
-		);
+		int paramsCount = Math.min(ofNullable(parameterNames).map(p -> p.length).orElse(0), ofNullable(args).map(a -> a.length).orElse(0));
 
 		Map<String, Object> paramsMapping = new HashMap<>();
 		for (int i = 0; i < paramsCount; i++) {
