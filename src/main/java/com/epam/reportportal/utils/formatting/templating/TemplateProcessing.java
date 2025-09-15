@@ -103,7 +103,7 @@ public class TemplateProcessing {
 		try {
 			return retrieveValue(templateConfig, 1, fields, param);
 		} catch (Throwable e) {
-			LOGGER.error("Unable to parse: {}", templatePart);
+			LOGGER.error("Unable to parse: {}", templatePart, e);
 			return null;
 		}
 	}
