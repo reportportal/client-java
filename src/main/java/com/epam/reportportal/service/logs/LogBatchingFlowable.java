@@ -20,7 +20,6 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Flowable;
 import io.reactivex.internal.fuseable.HasUpstreamPublisher;
-import io.reactivex.subscribers.SerializedSubscriber;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 

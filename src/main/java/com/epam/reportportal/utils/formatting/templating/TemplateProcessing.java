@@ -24,13 +24,11 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Array;
 import java.lang.reflect.Executable;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static java.util.Optional.ofNullable;
 
@@ -105,7 +103,7 @@ public class TemplateProcessing {
 		try {
 			return retrieveValue(templateConfig, 1, fields, param);
 		} catch (Throwable e) {
-			LOGGER.error("Unable to parse: {}", templatePart);
+			LOGGER.error("Unable to parse: {}", templatePart, e);
 			return null;
 		}
 	}
@@ -150,12 +148,8 @@ public class TemplateProcessing {
 				String method = field.substring(0, methodCallStartIndex);
 				String parameters = field.substring(methodCallStartIndex + 1, field.length() - 1);
 				if (!parameters.isEmpty()) {
-					LOGGER.warn(
-							"Method parameters are not supported. Method: {} Parameters: {}. Ignoring the call.",
-							method,
-							parameters
-					);
-					return Arrays.stream(fields).collect(Collectors.joining(templateConfig.getFieldDelimiter()));
+					LOGGER.warn("Method parameters are not supported. Method: {} Parameters: {}. Ignoring the call.", method, parameters);
+					return String.join(templateConfig.getFieldDelimiter(), fields);
 				}
 				object = Accessible.on(object).method(method).invoke();
 			} else {

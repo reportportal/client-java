@@ -53,15 +53,21 @@ public class ImageConverter {
 	 * @throws IOException In case of IO exception
 	 */
 	public static TypeAwareByteSource convert(ByteSource source) throws IOException {
-		BufferedImage image = ImageIO.read(source.openBufferedStream());
-		final BufferedImage blackAndWhiteImage = new BufferedImage(image.getWidth(null),
-				image.getHeight(null),
-				BufferedImage.TYPE_BYTE_GRAY
-		);
-		final Graphics2D graphics2D = (Graphics2D) blackAndWhiteImage.getGraphics();
-		graphics2D.drawImage(image, 0, 0, null);
-		graphics2D.dispose();
-		return convertToInputStream(blackAndWhiteImage);
+		try (java.io.InputStream in = source.openBufferedStream()) {
+			BufferedImage image = ImageIO.read(in);
+			if (image == null) {
+				throw new IOException("Unsupported or unreadable image content");
+			}
+			final BufferedImage blackAndWhiteImage = new BufferedImage(
+					image.getWidth(null),
+					image.getHeight(null),
+					BufferedImage.TYPE_BYTE_GRAY
+			);
+			final Graphics2D graphics2D = (Graphics2D) blackAndWhiteImage.getGraphics();
+			graphics2D.drawImage(image, 0, 0, null);
+			graphics2D.dispose();
+			return convertToInputStream(blackAndWhiteImage);
+		}
 	}
 
 	/**

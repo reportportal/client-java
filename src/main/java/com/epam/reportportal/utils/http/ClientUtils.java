@@ -43,8 +43,7 @@ public class ClientUtils {
 	}
 
 	@Nonnull
-	public static OkHttpClient.Builder setupProxy(@Nonnull OkHttpClient.Builder builder,
-	                                              @Nonnull ListenerParameters parameters) {
+	public static OkHttpClient.Builder setupProxy(@Nonnull OkHttpClient.Builder builder, @Nonnull ListenerParameters parameters) {
 		String proxyStr = parameters.getProxyUrl();
 		if (isBlank(proxyStr)) {
 			return builder;
@@ -52,19 +51,15 @@ public class ClientUtils {
 		try {
 			URL proxyUrl = new URL(proxyStr);
 			int port = proxyUrl.getPort();
-			builder.proxy(new Proxy(Proxy.Type.HTTP,
-					InetSocketAddress.createUnresolved(
-							proxyUrl.getHost(),
-							port >= 0 ? port : proxyUrl.getDefaultPort()
-					)
+			builder.proxy(new Proxy(
+					Proxy.Type.HTTP,
+					InetSocketAddress.createUnresolved(proxyUrl.getHost(), port >= 0 ? port : proxyUrl.getDefaultPort())
 			));
 			String proxyUser = parameters.getProxyUser();
 			if (isNotBlank(proxyUser)) {
 				builder.proxyAuthenticator((route, response) -> {
-					String credential = Credentials.basic(proxyUser, parameters.getProxyPassword(),
-							StandardCharsets.UTF_8);
-					return response.request().newBuilder().header("Proxy-Authorization", credential)
-							.build();
+					String credential = Credentials.basic(proxyUser, parameters.getProxyPassword(), StandardCharsets.UTF_8);
+					return response.request().newBuilder().header("Proxy-Authorization", credential).build();
 				});
 			}
 		} catch (MalformedURLException e) {

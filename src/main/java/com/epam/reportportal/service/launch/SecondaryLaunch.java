@@ -35,6 +35,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * An implementation of a {@link Launch} object which didn't manage to obtain main lock with {@link LaunchIdLock}
@@ -100,17 +101,25 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 
 	@Override
 	public void finish(final FinishExecutionRQ request) {
-		// Wait for all items to be finished
-		waitForItemsCompletion(Completable.concat(queue.getOrCompute(getLaunch()).getChildren()));
+		// Collect all items to be reported
+		Completable finish = Completable.concat(queue.values()
+				.stream()
+				.flatMap(i -> i.getChildren().stream())
+				.collect(Collectors.toList()));
 
-		// ignore super call, since only primary launch should finish it
-		stopRunning();
-		lock.finishInstanceUuid(uuid);
+		// Wait for all items to be finished
+		waitForItemsCompletion(finish);
 
 		// Dispose all collected virtual item disposables
 		virtualItemDisposables.removeIf(d -> {
 			d.dispose();
 			return true;
 		});
+
+		completeLogEmitter();
+
+		// ignore super call, since only primary launch should finish it
+		stopRunning();
+		lock.finishInstanceUuid(uuid);
 	}
 }

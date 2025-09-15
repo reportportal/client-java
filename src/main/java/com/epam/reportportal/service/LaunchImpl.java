@@ -141,7 +141,7 @@ public class LaunchImpl extends Launch {
 				.subscribeOn(scheduler));
 	}
 
-	private static PublishSubject<SaveLogRQ> getLogEmitter(@Nonnull final ReportPortalClient client,
+	private static PublishSubject<SaveLogRQ> createLogEmitter(@Nonnull final ReportPortalClient client,
 			@Nonnull final ListenerParameters parameters, @Nonnull final Scheduler scheduler,
 			@Nonnull final FlowableSubscriber<BatchSaveOperatingRS> loggingSubscriber) {
 		PublishSubject<SaveLogRQ> emitter = PublishSubject.create();
@@ -160,6 +160,17 @@ public class LaunchImpl extends Launch {
 		return ofNullable(client.getProjectSettings()).map(settings -> settings.subscribeOn(scheduler).cache()).orElse(Maybe.empty());
 	}
 
+	/**
+	 * Constructs a {@link LaunchImpl} that starts a new launch on first use and
+	 * configures a batched log emitter.
+	 *
+	 * @param reportPortalClient the client used to communicate with ReportPortal
+	 * @param parameters         the agent listener parameters
+	 * @param rq                 launch start request used to initialize the launch
+	 * @param executorService    executor used to schedule reactive operations
+	 * @param loggingSubscriber  subscriber which receives batched log upload results
+	 * @throws InternalReportPortalClientException if the provided executor is already shut down
+	 */
 	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
 			@Nonnull final StartLaunchRQ rq, @Nonnull final ExecutorService executorService,
 			@Nonnull final LoggingSubscriber loggingSubscriber) {
@@ -178,15 +189,33 @@ public class LaunchImpl extends Launch {
 
 		launch = getLaunchSupplier(getClient(), getScheduler(), startRq);
 		this.loggingSubscriber = loggingSubscriber;
-		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
+		logEmitter = createLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
 		projectSettings = getProjectSettings(getClient(), getScheduler());
 	}
 
+	/**
+	 * Convenience constructor which uses a default {@link LoggingSubscriber} for batched log uploads.
+	 *
+	 * @param reportPortalClient the client used to communicate with ReportPortal
+	 * @param parameters         the agent listener parameters
+	 * @param rq                 launch start request used to initialize the launch
+	 * @param executorService    executor used to schedule reactive operations
+	 */
 	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
 			@Nonnull final StartLaunchRQ rq, @Nonnull final ExecutorService executorService) {
 		this(reportPortalClient, parameters, rq, executorService, new LoggingSubscriber());
 	}
 
+	/**
+	 * Constructs a {@link LaunchImpl} using an already created launch ID promise.
+	 * No new launch will be started by this instance.
+	 *
+	 * @param reportPortalClient the client used to communicate with ReportPortal
+	 * @param parameters         the agent listener parameters
+	 * @param launchMaybe        an existing launch ID promise to be used by this instance
+	 * @param executorService    executor used to schedule reactive operations
+	 * @throws InternalReportPortalClientException if the provided executor is already shut down
+	 */
 	protected LaunchImpl(@Nonnull final ReportPortalClient reportPortalClient, @Nonnull final ListenerParameters parameters,
 			@Nonnull final Maybe<String> launchMaybe, @Nonnull final ExecutorService executorService) {
 		super(reportPortalClient, parameters);
@@ -202,7 +231,7 @@ public class LaunchImpl extends Launch {
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 		launch = () -> launchMaybe.cache().subscribeOn(getScheduler());
 		loggingSubscriber = new LoggingSubscriber();
-		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
+		logEmitter = createLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
 		projectSettings = getProjectSettings(getClient(), getScheduler());
 	}
 
@@ -212,6 +241,13 @@ public class LaunchImpl extends Launch {
 		return result;
 	}
 
+	/**
+	 * Creates or reuses an RxJava {@link Scheduler} backed by the provided executor.
+	 * Ensures a single scheduler per executor instance.
+	 *
+	 * @param executorService the executor to back the scheduler
+	 * @return a scheduler mapped to the provided executor
+	 */
 	protected Scheduler createScheduler(ExecutorService executorService) {
 		return SCHEDULERS.computeIfAbsent(executorService, Schedulers::from);
 	}
@@ -245,6 +281,11 @@ public class LaunchImpl extends Launch {
 		return launch.get();
 	}
 
+	/**
+	 * Returns the statistics service responsible for sending analytics events.
+	 *
+	 * @return the current {@link StatisticsService}
+	 */
 	StatisticsService getStatisticsService() {
 		return statisticsService;
 	}
@@ -297,26 +338,17 @@ public class LaunchImpl extends Launch {
 	}
 
 	/**
-	 * Marks flow as completed
+	 * Starts the launch asynchronously on first subscription. Subsequent calls do
+	 * not start the launch again due to internal caching.
 	 *
-	 * @return {@link Completable}
-	 */
-	public Completable completeLogCompletables() {
-		Completable items = Completable.merge(logCompletables);
-		logCompletables.clear();
-		return items;
-	}
-
-	/**
-	 * Starts launch in ReportPortal. Does NOT start the same launch twice.
-	 *
-	 * @param statistics Send or not Launch statistics.
-	 * @return Launch ID promise.
+	 * @param statistics whether to send analytics events for the launch
+	 * @return a {@link Maybe} that emits the launch UUID once available
 	 */
 	@Nonnull
 	protected Maybe<String> start(boolean statistics) {
 		if (getExecutor().isShutdown()) {
-			throw new InternalReportPortalClientException("Executor service is already shut down");
+			LOGGER.error("Unable to start Launch: executor service is already shut down. The data may be lost.");
+			return Maybe.empty();
 		}
 
 		ListenerParameters params = getParameters();
@@ -382,6 +414,12 @@ public class LaunchImpl extends Launch {
 		}
 	}
 
+	private Completable completeLogCompletables() {
+		Completable items = Completable.merge(logCompletables);
+		logCompletables.clear();
+		return items;
+	}
+
 	/**
 	 * Waits for completion of all test items including virtual ones and log emitters.
 	 * This method ensures all test results are properly reported to ReportPortal before the launch completes.
@@ -394,13 +432,35 @@ public class LaunchImpl extends Launch {
 	}
 
 	/**
+	 * Finalizes the batched log emitter ensuring the last batch is sent before
+	 * completing. Blocks within the configured reporting timeout while waiting for
+	 * the final batch to be processed.
+	 */
+	protected void completeLogEmitter() {
+		if (logEmitter.hasComplete()) {
+			return;
+		}
+		// To ensure we sent all logs post one message (for the case when there were no logs at all) and wait for it to be sent
+		// Use blocking get, since we are at the end of the flow and Maybe.map(..) will be stopped by system exit
+		String launchUUID = getLaunch().blockingGet();
+		int logBatchesSent = loggingSubscriber.getProcessedCount();
+		emitLog(StaticStructuresUtils.getLastLogRQ(launchUUID));
+		logEmitter.onComplete();
+		Waiter waiter = new Waiter("Wait for last log batch sent").duration(getParameters().getReportingTimeout(), TimeUnit.SECONDS)
+				.pollingEvery(100, TimeUnit.MILLISECONDS);
+		waiter.till(() -> logBatchesSent < loggingSubscriber.getProcessedCount() ? true : null);
+		waitForCompletable(logEmitter.ignoreElements());
+	}
+
+	/**
 	 * Finishes launch in ReportPortal. Blocks until all items are reported correctly.
 	 *
 	 * @param request Launch finish request.
 	 */
 	public void finish(final FinishExecutionRQ request) {
 		if (getExecutor().isShutdown()) {
-			throw new InternalReportPortalClientException("Executor service is already shut down");
+			LOGGER.error("Unable to finish Launch: executor service is already shut down. The data may be lost.");
+			return;
 		}
 
 		// Close and re-create statistics service
@@ -431,19 +491,7 @@ public class LaunchImpl extends Launch {
 			return true;
 		});
 
-		if (logEmitter.hasComplete()) {
-			return;
-		}
-		// To ensure we sent all logs post one message (for the case when there were no logs at all) and wait for it to be sent
-		// Use blocking get, since we are at the end of the flow and Maybe.map(..) will be stopped by system exit
-		String launchUUID = getLaunch().blockingGet();
-		int logBatchesSent = loggingSubscriber.getProcessedCount();
-		emitLog(StaticStructuresUtils.getLastLogRQ(launchUUID));
-		logEmitter.onComplete();
-		Waiter waiter = new Waiter("Wait for last log batch sent").duration(getParameters().getReportingTimeout(), TimeUnit.SECONDS)
-				.pollingEvery(100, TimeUnit.MILLISECONDS);
-		waiter.till(() -> logBatchesSent < loggingSubscriber.getProcessedCount() ? true : null);
-		waitForCompletable(logEmitter.ignoreElements());
+		completeLogEmitter();
 	}
 
 	private static <T> Maybe<T> createErrorResponse(Throwable cause) {
@@ -897,20 +945,41 @@ public class LaunchImpl extends Launch {
 		private volatile Maybe<String> parent;
 		private final List<Completable> children = new CopyOnWriteArrayList<>();
 
+		/**
+		 * Sets the parent item promise for this tree node.
+		 *
+		 * @param parent the parent item ID promise, may be {@code null} for a root
+		 * @return this instance for chaining
+		 */
 		public LaunchImpl.TreeItem withParent(@Nullable Maybe<String> parent) {
 			this.parent = parent;
 			return this;
 		}
 
+		/**
+		 * Adds a completion task representing a child operation to this node.
+		 *
+		 * @param completable the child completion task to add
+		 */
 		public void addToQueue(@Nonnull Completable completable) {
 			this.children.add(completable);
 		}
 
+		/**
+		 * Returns a snapshot list of child completion tasks.
+		 *
+		 * @return a new list containing this node's child completables
+		 */
 		@Nonnull
 		public List<Completable> getChildren() {
 			return new ArrayList<>(this.children);
 		}
 
+		/**
+		 * Returns the parent item ID promise or {@code null} if this is a root.
+		 *
+		 * @return the parent item ID promise or {@code null}
+		 */
 		@Nullable
 		public Maybe<String> getParent() {
 			return parent;
@@ -918,6 +987,13 @@ public class LaunchImpl extends Launch {
 	}
 
 	protected static class ComputationConcurrentHashMap extends ConcurrentHashMap<Maybe<String>, LaunchImpl.TreeItem> {
+		/**
+		 * Returns an existing tree item by key or creates and stores a new one
+		 * atomically if absent.
+		 *
+		 * @param key the key representing an item ID promise
+		 * @return the existing or newly created {@link LaunchImpl.TreeItem}
+		 */
 		public LaunchImpl.TreeItem getOrCompute(Maybe<String> key) {
 			return computeIfAbsent(key, k -> new LaunchImpl.TreeItem());
 		}

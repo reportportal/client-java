@@ -89,10 +89,7 @@ public class MarkdownUtils {
 		int tableColNum = table.stream().mapToInt(List::size).max().orElse(-1);
 		List<Iterator<T>> iterList = table.stream().map(List::iterator).collect(Collectors.toList());
 		return IntStream.range(0, tableColNum)
-				.mapToObj(n -> iterList.stream()
-						.filter(Iterator::hasNext)
-						.map(Iterator::next)
-						.collect(Collectors.toList()))
+				.mapToObj(n -> iterList.stream().filter(Iterator::hasNext).map(Iterator::next).collect(Collectors.toList()))
 				.collect(Collectors.toList());
 	}
 
@@ -136,7 +133,7 @@ public class MarkdownUtils {
 		List<Integer> colSizes = calculateColSizes(table);
 		boolean transpose = colSizes.size() > table.size() && calculateTableSize(colSizes) > maxTableSize;
 		List<List<String>> printTable = transpose ? transposeTable(table) : table;
-		if(transpose) {
+		if (transpose) {
 			colSizes = calculateColSizes(printTable);
 		}
 		colSizes = adjustColSizes(colSizes, maxTableSize);

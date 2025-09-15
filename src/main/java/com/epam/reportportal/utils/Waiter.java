@@ -119,10 +119,10 @@ public class Waiter {
 	 * If the thread is interrupted, a warning is logged and {@code null} is returned.
 	 *
 	 * @param waitFor a callable that is evaluated repeatedly until it returns a non-null result
-	 * @param <T> type of the result supplied by the callable
+	 * @param <T>     type of the result supplied by the callable
 	 * @return the first non-null result returned by the callable; {@code null} on timeout/interruption when not configured to fail
 	 * @throws InternalReportPortalClientException if an unexpected exception occurs in the callable
-	 *                                            or if timeout occurs and {@link #timeoutFail()} was configured
+	 *                                             or if timeout occurs and {@link #timeoutFail()} was configured
 	 */
 	public <T> T till(Callable<T> waitFor) {
 		long triesLong = durationNs / pollingNs;

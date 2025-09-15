@@ -41,15 +41,15 @@ public class ExceptionUtils {
 	 */
 	public static String getStackTrace(Throwable throwable, Throwable baseThrowable, boolean preserveCause) {
 		String[] mainFrames = org.apache.commons.lang3.exception.ExceptionUtils.getStackFrames(throwable);
-		Set<String> baseFrames = Arrays.stream(org.apache.commons.lang3.exception.ExceptionUtils.getStackFrames(baseThrowable)).collect(
-				Collectors.toSet());
+		Set<String> baseFrames = Arrays.stream(org.apache.commons.lang3.exception.ExceptionUtils.getStackFrames(baseThrowable))
+				.collect(Collectors.toSet());
 		StringBuilder sb = new StringBuilder();
 		if (mainFrames.length > 0) {
 			sb.append(mainFrames[0]).append(LINE_DELIMITER);
 			boolean skipping = false;
 			for (int i = 1; i < mainFrames.length; i++) {
 				String frame = mainFrames[i];
-				if(baseFrames.contains(frame) && (!frame.startsWith("Caused by:") || !preserveCause)) {
+				if (baseFrames.contains(frame) && (!frame.startsWith("Caused by:") || !preserveCause)) {
 					if (!skipping) {
 						sb.append(SKIP_TRACE_MARKER);
 						skipping = true;
@@ -66,7 +66,7 @@ public class ExceptionUtils {
 	/**
 	 * Get stack trace of the throwable excluding the stack trace of the base throwable.
 	 *
-	 * @param throwable Throwable to get stack trace from
+	 * @param throwable     Throwable to get stack trace from
 	 * @param baseThrowable Throwable to exclude stack trace from
 	 * @return Formatted stack trace
 	 */
