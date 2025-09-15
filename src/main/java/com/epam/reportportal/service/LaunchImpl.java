@@ -141,7 +141,7 @@ public class LaunchImpl extends Launch {
 				.subscribeOn(scheduler));
 	}
 
-	private static PublishSubject<SaveLogRQ> getLogEmitter(@Nonnull final ReportPortalClient client,
+	private static PublishSubject<SaveLogRQ> createLogEmitter(@Nonnull final ReportPortalClient client,
 			@Nonnull final ListenerParameters parameters, @Nonnull final Scheduler scheduler,
 			@Nonnull final FlowableSubscriber<BatchSaveOperatingRS> loggingSubscriber) {
 		PublishSubject<SaveLogRQ> emitter = PublishSubject.create();
@@ -178,7 +178,7 @@ public class LaunchImpl extends Launch {
 
 		launch = getLaunchSupplier(getClient(), getScheduler(), startRq);
 		this.loggingSubscriber = loggingSubscriber;
-		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
+		logEmitter = createLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
 		projectSettings = getProjectSettings(getClient(), getScheduler());
 	}
 
@@ -202,7 +202,7 @@ public class LaunchImpl extends Launch {
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 		launch = () -> launchMaybe.cache().subscribeOn(getScheduler());
 		loggingSubscriber = new LoggingSubscriber();
-		logEmitter = getLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
+		logEmitter = createLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
 		projectSettings = getProjectSettings(getClient(), getScheduler());
 	}
 
@@ -393,6 +393,22 @@ public class LaunchImpl extends Launch {
 		waitForCompletable(getLaunch().ignoreElement(), createVirtualItemCompletable(), itemCompletable, completeLogCompletables());
 	}
 
+	protected void completeLogEmitter() {
+		if (logEmitter.hasComplete()) {
+			return;
+		}
+		// To ensure we sent all logs post one message (for the case when there were no logs at all) and wait for it to be sent
+		// Use blocking get, since we are at the end of the flow and Maybe.map(..) will be stopped by system exit
+		String launchUUID = getLaunch().blockingGet();
+		int logBatchesSent = loggingSubscriber.getProcessedCount();
+		emitLog(StaticStructuresUtils.getLastLogRQ(launchUUID));
+		logEmitter.onComplete();
+		Waiter waiter = new Waiter("Wait for last log batch sent").duration(getParameters().getReportingTimeout(), TimeUnit.SECONDS)
+				.pollingEvery(100, TimeUnit.MILLISECONDS);
+		waiter.till(() -> logBatchesSent < loggingSubscriber.getProcessedCount() ? true : null);
+		waitForCompletable(logEmitter.ignoreElements());
+	}
+
 	/**
 	 * Finishes launch in ReportPortal. Blocks until all items are reported correctly.
 	 *
@@ -431,19 +447,7 @@ public class LaunchImpl extends Launch {
 			return true;
 		});
 
-		if (logEmitter.hasComplete()) {
-			return;
-		}
-		// To ensure we sent all logs post one message (for the case when there were no logs at all) and wait for it to be sent
-		// Use blocking get, since we are at the end of the flow and Maybe.map(..) will be stopped by system exit
-		String launchUUID = getLaunch().blockingGet();
-		int logBatchesSent = loggingSubscriber.getProcessedCount();
-		emitLog(StaticStructuresUtils.getLastLogRQ(launchUUID));
-		logEmitter.onComplete();
-		Waiter waiter = new Waiter("Wait for last log batch sent").duration(getParameters().getReportingTimeout(), TimeUnit.SECONDS)
-				.pollingEvery(100, TimeUnit.MILLISECONDS);
-		waiter.till(() -> logBatchesSent < loggingSubscriber.getProcessedCount() ? true : null);
-		waitForCompletable(logEmitter.ignoreElements());
+		completeLogEmitter();
 	}
 
 	private static <T> Maybe<T> createErrorResponse(Throwable cause) {
