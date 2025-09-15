@@ -343,12 +343,12 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @param statistics whether to send analytics events for the launch
 	 * @return a {@link Maybe} that emits the launch UUID once available
-	 * @throws InternalReportPortalClientException if the executor has been shut down
 	 */
 	@Nonnull
 	protected Maybe<String> start(boolean statistics) {
 		if (getExecutor().isShutdown()) {
-			throw new InternalReportPortalClientException("Executor service is already shut down");
+			LOGGER.error("Unable to start Launch: executor service is already shut down. The data may be lost.");
+			return Maybe.empty();
 		}
 
 		ListenerParameters params = getParameters();
@@ -459,7 +459,8 @@ public class LaunchImpl extends Launch {
 	 */
 	public void finish(final FinishExecutionRQ request) {
 		if (getExecutor().isShutdown()) {
-			throw new InternalReportPortalClientException("Executor service is already shut down");
+			LOGGER.error("Unable to finish Launch: executor service is already shut down. The data may be lost.");
+			return;
 		}
 
 		// Close and re-create statistics service
