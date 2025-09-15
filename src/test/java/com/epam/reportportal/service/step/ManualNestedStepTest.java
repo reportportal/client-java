@@ -24,6 +24,7 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
+import com.epam.reportportal.utils.StaticStructuresUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
@@ -41,7 +42,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -294,7 +294,7 @@ public class ManualNestedStepTest {
 	}
 
 	@Test
-	@SuppressWarnings({ "unchecked", "ResultOfMethodCallIgnored" })
+	@SuppressWarnings({ "unchecked" })
 	public void verify_passed_actions_nested_step() {
 		mockNestedSteps(client, nestedStepPairs.get(0));
 		mockBatchLogging(client);
@@ -322,12 +322,13 @@ public class ManualNestedStepTest {
 		assertThat(nestedStepFinish.getStatus(), equalTo(ItemStatus.PASSED.name()));
 		assertThat(nestedStepFinish.getEndTime(), notNullValue());
 
-		launch.completeLogCompletables().blockingAwait(10, TimeUnit.SECONDS);
+		launch.finish(TestUtils.standardLaunchFinishRequest());
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(client, timeout(1000).atLeastOnce()).log(logCaptor.capture());
 		List<Pair<String, String>> logRequests = logCaptor.getAllValues()
 				.stream()
 				.flatMap(rq -> TestUtils.extractJsonParts(rq).stream())
+				.filter(rq -> !StaticStructuresUtils.LAUNCH_FINISHED_MESSAGE.equals(rq.getMessage()))
 				.map(e -> Pair.of(e.getLevel(), e.getMessage()))
 				.collect(Collectors.toList());
 		assertThat(logRequests, hasSize(1));
