@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Ensure all logs are sent before JVM exit for secondary Launches, by @HardNorth
 
 ## [5.3.15]
 ### Fixed

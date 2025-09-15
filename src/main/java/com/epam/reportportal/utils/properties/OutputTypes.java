@@ -19,7 +19,8 @@ package com.epam.reportportal.utils.properties;
 import java.io.PrintStream;
 
 public enum OutputTypes {
-	STDOUT(System.out), STDERR(System.err);
+	STDOUT(System.out),
+	STDERR(System.err);
 
 	private final PrintStream out;
 

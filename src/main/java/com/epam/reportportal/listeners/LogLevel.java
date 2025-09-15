@@ -20,5 +20,11 @@ package com.epam.reportportal.listeners;
  * All possible logging level supported by a backend.
  */
 public enum LogLevel {
-	ERROR, WARN, INFO, DEBUG, TRACE, FATAL, UNKNOWN
+	ERROR,
+	WARN,
+	INFO,
+	DEBUG,
+	TRACE,
+	FATAL,
+	UNKNOWN
 }

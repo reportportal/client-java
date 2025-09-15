@@ -18,13 +18,13 @@ package com.epam.reportportal.utils.http;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.utils.MimeTypeDetector;
+import com.epam.reportportal.utils.files.ByteSource;
 import com.epam.ta.reportportal.ws.model.Constants;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.epam.reportportal.utils.files.ByteSource;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import org.slf4j.Logger;
@@ -61,10 +61,11 @@ public class HttpRequestUtils {
 	public static List<MultipartBody.Part> buildLogMultiPartRequest(List<SaveLogRQ> rqs) {
 		List<MultipartBody.Part> result = new ArrayList<>();
 		try {
-			result.add(MultipartBody.Part.createFormData(Constants.LOG_REQUEST_JSON_PART,
-					null,
+			result.add(MultipartBody.Part.createFormData(
+					Constants.LOG_REQUEST_JSON_PART, null,
 					// Deprecated method call left here till the very end for backward compatibility
-					RequestBody.create(okhttp3.MediaType.get("application/json; charset=utf-8"),
+					RequestBody.create(
+							okhttp3.MediaType.get("application/json; charset=utf-8"),
 							MAPPER.writerFor(new TypeReference<List<SaveLogRQ>>() {
 							}).writeValueAsString(rqs)
 					)
@@ -85,8 +86,8 @@ public class HttpRequestUtils {
 					LOGGER.error("Unable to parse content media type, default value was used: " + DEFAULT_TYPE, e);
 					type = okhttp3.MediaType.get(DEFAULT_TYPE);
 				}
-				result.add(MultipartBody.Part.createFormData(Constants.LOG_REQUEST_BINARY_PART,
-						file.getName(),
+				result.add(MultipartBody.Part.createFormData(
+						Constants.LOG_REQUEST_BINARY_PART, file.getName(),
 						// Deprecated method call left here till the very end for backward compatibility
 						RequestBody.create(type, file.getContent())
 				));

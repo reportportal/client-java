@@ -50,19 +50,18 @@ public class PrimaryLaunch extends AbstractJoinedLaunch {
 	 */
 	@Override
 	public void finish(final FinishExecutionRQ request) {
-		stopRunning();
 		Callable<Boolean> finishCondition = new SecondaryLaunchFinishCondition(lock, uuid);
 		Boolean finished = Boolean.FALSE;
 		// If there was launch number change (finished == false) we will wait more.
-		// Only if
 		while (finished != Boolean.TRUE && finished != null) {
 			Waiter waiter = new Waiter("Wait for all launches end").duration(getParameters().getClientJoinTimeout(), TimeUnit.MILLISECONDS)
 					.pollingEvery(1, TimeUnit.SECONDS);
 			finished = waiter.till(finishCondition);
 		}
-		lock.finishInstanceUuid(uuid);
 		FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
 		rq.setEndTime(Calendar.getInstance().getTime());
 		super.finish(rq);
+		stopRunning();
+		lock.finishInstanceUuid(uuid);
 	}
 }
