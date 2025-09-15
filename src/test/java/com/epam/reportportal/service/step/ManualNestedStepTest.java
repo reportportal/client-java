@@ -297,6 +297,7 @@ public class ManualNestedStepTest {
 	@SuppressWarnings({ "unchecked" })
 	public void verify_passed_actions_nested_step() {
 		mockNestedSteps(client, nestedStepPairs.get(0));
+		simulateFinishLaunchResponse(client);
 		mockBatchLogging(client);
 		String stepName = "verify_passed_actions_nested_step";
 		String returnValue = "return value";
@@ -332,9 +333,7 @@ public class ManualNestedStepTest {
 				.map(e -> Pair.of(e.getLevel(), e.getMessage()))
 				.collect(Collectors.toList());
 		assertThat(logRequests, hasSize(1));
-		Pair<String, String> log = logRequests.get(0);
-		assertThat(log.getKey(), equalTo(LogLevel.DEBUG.name()));
-		assertThat(log.getValue(), equalTo(logMessage));
+		assertThat(logRequests, hasItem(equalTo(Pair.of(LogLevel.DEBUG.name(), logMessage))));
 	}
 
 	@Test
