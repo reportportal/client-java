@@ -53,7 +53,6 @@ public class PrimaryLaunch extends AbstractJoinedLaunch {
 		Callable<Boolean> finishCondition = new SecondaryLaunchFinishCondition(lock, uuid);
 		Boolean finished = Boolean.FALSE;
 		// If there was launch number change (finished == false) we will wait more.
-		// Only if
 		while (finished != Boolean.TRUE && finished != null) {
 			Waiter waiter = new Waiter("Wait for all launches end").duration(getParameters().getClientJoinTimeout(), TimeUnit.MILLISECONDS)
 					.pollingEvery(1, TimeUnit.SECONDS);
