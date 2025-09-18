@@ -33,9 +33,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
@@ -100,6 +98,7 @@ public class StepOrderTest {
 		verify(client, timeout(1000).times(stepNum)).startTestItem(eq(testMethodUuid), stepCaptor.capture());
 
 		List<StartTestItemRQ> rqs = stepCaptor.getAllValues();
+		rqs.sort(Comparator.comparing(rq -> Integer.valueOf(rq.getName().split(" ", 2)[0])));
 		assertThat(rqs, hasSize(stepNum));
 		for (int i = 1; i < stepNum; i++) {
 			//noinspection rawtypes, unchecked
