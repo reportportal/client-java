@@ -58,6 +58,7 @@ import static com.epam.reportportal.service.logs.LaunchLoggingCallback.LOG_ERROR
 import static com.epam.reportportal.service.logs.LaunchLoggingCallback.LOG_SUCCESS;
 import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
 import static com.epam.reportportal.utils.SubscriptionUtils.*;
+import static com.epam.reportportal.utils.BasicUtils.compareSemanticVersions;
 import static com.epam.reportportal.utils.files.ImageConverter.convert;
 import static com.epam.reportportal.utils.files.ImageConverter.isImage;
 import static java.util.Objects.requireNonNull;
@@ -101,6 +102,8 @@ public class LaunchImpl extends Launch {
 			TimeUnit.SECONDS.toMillis(ITEM_FINISH_RETRY_TIMEOUT)
 	);
 
+	private static final String MICROSECONDS_MIN_VERSION = "5.13.2";
+
 	/**
 	 * Default Agent name for cases where real name is not known.
 	 */
@@ -132,6 +135,40 @@ public class LaunchImpl extends Launch {
 	private final Scheduler scheduler;
 	private final LoggingSubscriber loggingSubscriber;
 	private StatisticsService statisticsService;
+	private volatile Boolean useMicroseconds;
+
+	/**
+	 * Determines whether timestamps should use microsecond precision based on the
+	 * ReportPortal server version. Versions greater than or equal to 5.13.2
+	 * support microseconds.
+	 * <p>
+	 * The value is computed once and cached for subsequent calls.
+	 *
+	 * @return {@code true} if server version >= 5.13.2, otherwise {@code false}
+	 */
+	public boolean useMicroseconds() {
+		if (useMicroseconds != null) {
+			return useMicroseconds;
+		}
+
+		boolean result = false;
+		try {
+			ApiInfo info = apiInfo.blockingGet();
+			String version = ofNullable(info)
+					.map(ApiInfo::getBuild)
+					.map(ApiInfo.Build::getVersion)
+					.orElse(null);
+			if (StringUtils.isNotBlank(version)) {
+				result = compareSemanticVersions(version, MICROSECONDS_MIN_VERSION) >= 0;
+			}
+		} catch (Exception e) {
+			// Ignore and keep default false when API info is unavailable
+		}
+		this.useMicroseconds = result;
+		return result;
+	}
+
+
 
 	private static Supplier<Maybe<String>> getLaunchSupplier(@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler,
 			@Nonnull final StartLaunchRQ startRq) {
