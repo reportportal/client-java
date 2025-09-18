@@ -74,6 +74,8 @@ public class LaunchImpl extends Launch {
 	 */
 	public static final String DISABLE_PROPERTY = "AGENT_NO_ANALYTICS";
 
+	public static final String MICROSECONDS_MIN_VERSION = "5.13.2";
+
 	private static final Map<ExecutorService, Scheduler> SCHEDULERS = new ConcurrentHashMap<>();
 
 	private static final Function<ItemCreatedRS, String> TO_ID = EntryCreatedAsyncRS::getId;
@@ -101,8 +103,6 @@ public class LaunchImpl extends Launch {
 			ITEM_FINISH_MAX_RETRIES,
 			TimeUnit.SECONDS.toMillis(ITEM_FINISH_RETRY_TIMEOUT)
 	);
-
-	private static final String MICROSECONDS_MIN_VERSION = "5.13.2";
 
 	/**
 	 * Default Agent name for cases where real name is not known.
