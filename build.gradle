@@ -27,7 +27,7 @@ project.ext.limits = [
         'line'       : 70,
         'complexity' : 60,
         'method'     : 65,
-        'class'      : 90
+        'class'      : 85
 ]
 
 sourceCompatibility = JavaVersion.VERSION_11
