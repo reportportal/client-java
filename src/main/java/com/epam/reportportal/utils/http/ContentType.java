@@ -138,6 +138,10 @@ public class ContentType {
 	 * @return {@code true} if the Media Type is known, {@code false} otherwise
 	 */
 	public static boolean isKnownType(@Nullable String mediaType) {
+		String stripMediaType = stripMediaType(mediaType);
+		if (stripMediaType == null) {
+			return false;
+		}
 		return KNOWN_TYPES.contains(stripMediaType(mediaType));
 	}
 
