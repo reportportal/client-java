@@ -125,6 +125,7 @@ public class LaunchImpl extends Launch {
 
 	protected final StartLaunchRQ startRq;
 	protected final Maybe<ProjectSettingsResource> projectSettings;
+	protected final Maybe<ApiInfo> apiInfo;
 	private final Supplier<Maybe<String>> launch;
 	private final PublishSubject<SaveLogRQ> logEmitter;
 	private final ExecutorService executor;
@@ -160,6 +161,11 @@ public class LaunchImpl extends Launch {
 		return ofNullable(client.getProjectSettings()).map(settings -> settings.subscribeOn(scheduler).cache()).orElse(Maybe.empty());
 	}
 
+	private static Maybe<ApiInfo> getApiInfo(@Nonnull final ReportPortalClient client,
+			@Nonnull final Scheduler scheduler) {
+		return ofNullable(client.getApiInfo()).map(info -> info.subscribeOn(scheduler).cache()).orElse(Maybe.empty());
+	}
+
 	/**
 	 * Constructs a {@link LaunchImpl} that starts a new launch on first use and
 	 * configures a batched log emitter.
@@ -191,6 +197,7 @@ public class LaunchImpl extends Launch {
 		this.loggingSubscriber = loggingSubscriber;
 		logEmitter = createLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
 		projectSettings = getProjectSettings(getClient(), getScheduler());
+		apiInfo = getApiInfo(getClient(), getScheduler());
 	}
 
 	/**
@@ -233,6 +240,7 @@ public class LaunchImpl extends Launch {
 		loggingSubscriber = new LoggingSubscriber();
 		logEmitter = createLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
 		projectSettings = getProjectSettings(getClient(), getScheduler());
+		apiInfo = getApiInfo(getClient(), getScheduler());
 	}
 
 	private static StartLaunchRQ emptyStartLaunchForStatistics() {
