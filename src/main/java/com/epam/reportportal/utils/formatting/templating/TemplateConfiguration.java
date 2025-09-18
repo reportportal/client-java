@@ -78,11 +78,10 @@ public class TemplateConfiguration {
 			return false;
 		}
 		TemplateConfiguration that = (TemplateConfiguration) o;
-		return className.equals(that.className) && classRef.equals(that.classRef) && methodName.equals(that.methodName)
-				&& selfName.equals(that.selfName) && fieldDelimiter.equals(that.fieldDelimiter) && iterableStart.equals(
-				that.iterableStart) && iterableEnd.equals(that.iterableEnd)
-				&& iterableDelimiter.equals(that.iterableDelimiter) && arrayStart.equals(that.arrayStart)
-				&& arrayEnd.equals(that.arrayEnd) && arrayDelimiter.equals(that.arrayDelimiter);
+		return className.equals(that.className) && classRef.equals(that.classRef) && methodName.equals(that.methodName) && selfName.equals(
+				that.selfName) && fieldDelimiter.equals(that.fieldDelimiter) && iterableStart.equals(that.iterableStart)
+				&& iterableEnd.equals(that.iterableEnd) && iterableDelimiter.equals(that.iterableDelimiter)
+				&& arrayStart.equals(that.arrayStart) && arrayEnd.equals(that.arrayEnd) && arrayDelimiter.equals(that.arrayDelimiter);
 	}
 
 	@Override

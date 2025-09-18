@@ -48,7 +48,7 @@ public class ParameterUtils {
 	 * Read all parameters from a method or a constructor and converts in into a list of {@link ParameterResource}.
 	 * Respects {@link ParameterKey} annotation.
 	 *
-	 * @param <T> parameter values type
+	 * @param <T>             parameter values type
 	 * @param method          a method to read parameters
 	 * @param parameterValues a source of parameter values
 	 * @return a list of parameter POJOs with fulfilled name and value.
@@ -119,13 +119,14 @@ public class ParameterUtils {
 	 * Read all parameters from a method or a constructor and converts in into a list of {@link ParameterResource}.
 	 * Respects {@link ParameterKey} annotation.
 	 *
-	 * @param <T> parameter values type
+	 * @param <T>        parameter values type
 	 * @param codeRef    a method reference to read parameters
 	 * @param parameters a source of parameter values and parameter names if not set by {@link ParameterKey} annotation
 	 * @return a list of parameter POJOs with fulfilled name and value.
 	 */
 	@Nonnull
-	public static <T> List<ParameterResource> getParameters(@Nullable final String codeRef, @Nullable final List<Pair<String, T>> parameters) {
+	public static <T> List<ParameterResource> getParameters(@Nullable final String codeRef,
+			@Nullable final List<Pair<String, T>> parameters) {
 		Optional<List<Object>> paramValues = ofNullable(parameters).map(args -> args.stream()
 				.map(a -> (Object) a.getValue())
 				.collect(Collectors.toList()));
@@ -145,9 +146,10 @@ public class ParameterUtils {
 					testStepClass = Optional.empty();
 				}
 			}
-			return testStepClass.flatMap(cl -> Stream.concat(Arrays.stream(cl.getDeclaredMethods()),
-					Arrays.stream(cl.getDeclaredConstructors())
-			)
+			return testStepClass.flatMap(cl -> Stream.concat(
+							Arrays.stream(cl.getDeclaredMethods()),
+							Arrays.stream(cl.getDeclaredConstructors())
+					)
 					.filter(m -> methodName.equals(m.getName()) || cr.equals(m.getName()))
 					.filter(m -> m.getParameterCount() == paramValues.map(List::size).orElse(0))
 					.findAny());

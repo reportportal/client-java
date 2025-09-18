@@ -91,8 +91,8 @@ public class PropertiesLoader {
 	 */
 	public static String getPropertyFilePath() {
 		return ofNullable(normalizeOverrides(System.getProperties()).get(PROPERTIES_PATH_PROPERTY)).filter(StringUtils::isNotBlank)
-				.orElseGet(() -> ofNullable(normalizeOverrides(System.getenv()).get(PROPERTIES_PATH_PROPERTY)).filter(
-						StringUtils::isNotBlank).orElse(INNER_PATH));
+				.orElseGet(() -> ofNullable(normalizeOverrides(System.getenv()).get(PROPERTIES_PATH_PROPERTY)).filter(StringUtils::isNotBlank)
+						.orElse(INNER_PATH));
 	}
 
 	/**
@@ -197,9 +197,7 @@ public class PropertiesLoader {
 	 */
 	private static Map<String, String> normalizeOverrides(Map<?, ?> overrides) {
 		return overrides.entrySet().stream().collect(Collectors.toMap(
-				e -> e.getKey().toString().toLowerCase().replace('_', '.'),
-				e -> e.getValue().toString(),
-				(original, duplicate) -> {
+				e -> e.getKey().toString().toLowerCase().replace('_', '.'), e -> e.getValue().toString(), (original, duplicate) -> {
 					LOGGER.warn("Duplicate key found in property overrides.");
 					return original;
 				}
@@ -225,10 +223,7 @@ public class PropertiesLoader {
 		Map<String, String> overridesNormalized = normalizeOverrides(overrides);
 		for (ListenerProperty listenerProperty : values()) {
 			if (overridesNormalized.get(listenerProperty.getPropertyName()) != null) {
-				source.setProperty(
-						listenerProperty.getPropertyName(),
-						overridesNormalized.get(listenerProperty.getPropertyName())
-				);
+				source.setProperty(listenerProperty.getPropertyName(), overridesNormalized.get(listenerProperty.getPropertyName()));
 			}
 		}
 	}
@@ -244,8 +239,7 @@ public class PropertiesLoader {
 	}
 
 	private static Optional<URL> getResource(String resourceName) {
-		ClassLoader loader = ofNullable(Thread.currentThread()
-				.getContextClassLoader()).orElse(PropertiesLoader.class.getClassLoader());
+		ClassLoader loader = ofNullable(Thread.currentThread().getContextClassLoader()).orElse(PropertiesLoader.class.getClassLoader());
 		return ofNullable(loader.getResource(resourceName));
 	}
 }

@@ -6,6 +6,10 @@
 ### Removed
 - Java 8-10 support, by @HardNorth
 
+## [5.3.16]
+### Fixed
+- Ensure all logs are sent before JVM exit for secondary Launches, by @HardNorth
+
 ## [5.3.15]
 ### Fixed
 - Ensure all logs are sent before JVM exit, by @HardNorth

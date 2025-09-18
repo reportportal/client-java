@@ -34,7 +34,6 @@ public class ClientIdProvider {
 		throw new IllegalStateException("Static only class");
 	}
 
-
 	private static final String CLIENT_ID_PROPERTY = "client.id";
 	public static final Path RP_PROPERTIES_FILE_PATH = Paths.get(System.getProperty("user.home"), ".rp", "rp.properties");
 
