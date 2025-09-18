@@ -20,7 +20,6 @@ import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static java.util.Optional.ofNullable;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,7 +53,7 @@ public class SystemAttributesExtractorTest {
 
 	@Test
 	public void nullSafeTestForPath() {
-		SystemAttributesExtractor.extract((Path) null);
+		SystemAttributesExtractor.extract(null);
 	}
 
 	@Test
@@ -144,8 +142,7 @@ public class SystemAttributesExtractorTest {
 	}
 
 	private Pattern getPattern(ItemAttributesRQ attribute) {
-		return ofNullable(properties.get(attribute.getKey())).orElse(null);
-
+		return properties.get(attribute.getKey());
 	}
 
 }

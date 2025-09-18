@@ -119,7 +119,7 @@ public class LaunchIdLockSocketTest {
 			waitForLine(primaryProcessIo.getMiddle(), primaryProcessIo.getRight(), WELCOME_MESSAGE_PREDICATE);
 			waitForLine(secondaryProcessIo.getMiddle(), secondaryProcessIo.getRight(), WELCOME_MESSAGE_PREDICATE);
 
-			String lineSeparator = System.getProperty("line.separator");
+			String lineSeparator = System.lineSeparator();
 			primaryProcessIo.getLeft().write(lineSeparator);
 			primaryProcessIo.getLeft().flush();
 			String result1 = waitForLine(primaryProcessIo.getMiddle(), primaryProcessIo.getRight(), ANY_STRING_PREDICATE);
@@ -162,7 +162,7 @@ public class LaunchIdLockSocketTest {
 		List<Triple<OutputStreamWriter, BufferedReader, BufferedReader>> processIos = processes.stream()
 				.map(ProcessUtils::getProcessIos)
 				.collect(toList());
-		String lineSeparator = System.getProperty("line.separator");
+		String lineSeparator = System.lineSeparator();
 		List<String> results;
 		try {
 

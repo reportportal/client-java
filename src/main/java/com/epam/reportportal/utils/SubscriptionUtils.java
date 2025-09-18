@@ -31,7 +31,7 @@ public class SubscriptionUtils {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SubscriptionUtils.class);
 
 	public static <T> MaybeObserver<T> logMaybeResults(final String type) {
-		return new MaybeObserver<T>() {
+		return new MaybeObserver<>() {
 
 			@Override
 			public void onSubscribe(@Nonnull Disposable d) {
@@ -77,7 +77,7 @@ public class SubscriptionUtils {
 	}
 
 	public static MaybeObserver<String> printLaunch(@Nonnull ListenerParameters parameters) {
-		return new MaybeObserver<String>() {
+		return new MaybeObserver<>() {
 			@Override
 			public void onSubscribe(@Nonnull Disposable d) {
 				// ignore

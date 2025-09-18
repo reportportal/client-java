@@ -83,7 +83,7 @@ public class LockTestUtil {
 	}
 
 	public static <T> Supplier<T> iterableSupplier(final Iterable<T> instanceIterable) {
-		return new Supplier<T>() {
+		return new Supplier<>() {
 			private final Iterator<T> instanceIterator = instanceIterable.iterator();
 
 			@Override

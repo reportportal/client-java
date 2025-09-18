@@ -124,7 +124,6 @@ public class Utils {
 			baos.write(buffer.array(), 0, read);
 			// Some strange behavior of ByteBuffer.
 			// See https://stackoverflow.com/questions/48693695/java-nio-buffer-not-loading-clear-method-on-runtime
-			//noinspection RedundantCast
 			((Buffer) buffer).clear();
 		}
 

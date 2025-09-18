@@ -66,7 +66,7 @@ public class TemplateProcessingTest {
 
 		final String[] strings = { "first", "second", "third" };
 		final String[] moreStrings = { "fourth", "fifth", "sixth" };
-		List<String[]> outerStrings = new ArrayList<String[]>() {
+		List<String[]> outerStrings = new ArrayList<>() {
 			{
 				add(strings);
 				add(moreStrings);

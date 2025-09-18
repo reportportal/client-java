@@ -111,7 +111,7 @@ public class MarkdownUtilsTest {
 
 	@Test
 	public void test_format_data_table_map() {
-		Map<String, String> table = new LinkedHashMap<String, String>() {{
+		Map<String, String> table = new LinkedHashMap<>() {{
 			put("var_a", "2");
 			put("var_b", "2");
 			put("result", "4");

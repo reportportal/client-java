@@ -27,8 +27,6 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -39,10 +37,12 @@ public class MimeTypeDetector {
 	private static final String EXTENSION_DELIMITER = ".";
 	private static final int BYTES_TO_READ_FOR_DETECTION = 128;
 
-	private static final Map<String, String> ADDITIONAL_EXTENSION_MAPPING = Collections.unmodifiableMap(new HashMap<String, String>() {{
-		put(".properties", "text/plain");
-		put(".json", "application/json");
-	}});
+	private static final Map<String, String> ADDITIONAL_EXTENSION_MAPPING = Map.of(
+			".properties",
+			"text/plain",
+			".json",
+			"application/json"
+	);
 
 	private MimeTypeDetector() {
 		throw new IllegalStateException("Static only class. No instances should exist for the class!");

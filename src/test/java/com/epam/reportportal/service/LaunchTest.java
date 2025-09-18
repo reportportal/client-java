@@ -47,7 +47,6 @@ import org.mockito.Mock;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -470,11 +469,11 @@ public class LaunchTest {
 	}
 
 	@Test
-	public void verify_launch_print() throws UnsupportedEncodingException {
+	public void verify_launch_print() {
 		simulateStartLaunchResponse(rpClient);
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		PrintStream testStream = new PrintStream(baos, false, StandardCharsets.UTF_8.name());
+		PrintStream testStream = new PrintStream(baos, false, StandardCharsets.UTF_8);
 		ListenerParameters parameters = standardParameters();
 		parameters.setPrintLaunchUuid(true);
 		parameters.setPrintLaunchUuidOutput(testStream);
@@ -485,7 +484,7 @@ public class LaunchTest {
 			testStream.flush();
 			return baos.size() > 0;
 		});
-		String result = baos.toString(StandardCharsets.UTF_8.name());
+		String result = baos.toString(StandardCharsets.UTF_8);
 		assertThat(result, endsWith(launchUuid + System.lineSeparator()));
 	}
 

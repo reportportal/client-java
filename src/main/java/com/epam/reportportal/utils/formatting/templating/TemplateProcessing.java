@@ -67,6 +67,7 @@ public class TemplateProcessing {
 		});
 		ofNullable(object).ifPresent(o -> myParams.put(config.getSelfName(), object));
 		Matcher matcher = TEMPLATE_GROUP.matcher(pattern);
+		@SuppressWarnings("StringBufferMayBeStringBuilder")
 		StringBuffer stringBuffer = new StringBuffer();
 		while (matcher.find()) {
 			String templatePart = matcher.group(1);

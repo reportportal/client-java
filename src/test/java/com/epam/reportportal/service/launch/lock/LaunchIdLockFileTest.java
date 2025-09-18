@@ -111,7 +111,6 @@ public class LaunchIdLockFileTest {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void test_sync_file_contains_all_thread_uuids_obtainLaunchUuid() throws InterruptedException, IOException {
 		int threadNum = 5;
 		ExecutorService executor = testExecutor(threadNum);
@@ -159,7 +158,6 @@ public class LaunchIdLockFileTest {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void test_uuid_remove_finishInstanceUuid() throws InterruptedException, IOException {
 		int threadNum = 3;
 		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(
@@ -180,7 +178,6 @@ public class LaunchIdLockFileTest {
 		return Arrays.asList(5, 3, 1);
 	}
 
-	@SuppressWarnings("unchecked")
 	@ParameterizedTest
 	@MethodSource("threadNumProvider")
 	public void test_new_uuid_remove_does_not_spoil_lock_file_finishInstanceUuid(final int threadNum)
@@ -221,7 +218,6 @@ public class LaunchIdLockFileTest {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
 	public void test_lock_and_sync_files_will_be_overwritten_if_not_locked() throws IOException {
 		String firstUuid = UUID.randomUUID().toString();
 		String secondUuid = UUID.randomUUID().toString();
@@ -292,7 +288,7 @@ public class LaunchIdLockFileTest {
 			waitForLine(primaryProcessIo.getMiddle(), primaryProcessIo.getRight(), WELCOME_MESSAGE_PREDICATE);
 			waitForLine(secondaryProcessIo.getMiddle(), secondaryProcessIo.getRight(), WELCOME_MESSAGE_PREDICATE);
 
-			String lineSeparator = System.getProperty("line.separator");
+			String lineSeparator = System.lineSeparator();
 			primaryProcessIo.getLeft().write(lineSeparator);
 			primaryProcessIo.getLeft().flush();
 			secondaryProcessIo.getLeft().write(lineSeparator);
