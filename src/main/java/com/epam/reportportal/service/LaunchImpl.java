@@ -137,39 +137,6 @@ public class LaunchImpl extends Launch {
 	private StatisticsService statisticsService;
 	private volatile Boolean useMicroseconds;
 
-	/**
-	 * Determines whether timestamps should use microsecond precision based on the
-	 * ReportPortal server version. Versions greater than or equal to 5.13.2
-	 * support microseconds.
-	 * <p>
-	 * The value is computed once and cached for subsequent calls.
-	 *
-	 * @return {@code true} if server version >= 5.13.2, otherwise {@code false}
-	 */
-	public boolean useMicroseconds() {
-		if (useMicroseconds != null) {
-			return useMicroseconds;
-		}
-
-		boolean result = false;
-		try {
-			ApiInfo info = apiInfo.blockingGet();
-			String version = ofNullable(info)
-					.map(ApiInfo::getBuild)
-					.map(ApiInfo.Build::getVersion)
-					.orElse(null);
-			if (StringUtils.isNotBlank(version)) {
-				result = compareSemanticVersions(version, MICROSECONDS_MIN_VERSION) >= 0;
-			}
-		} catch (Exception e) {
-			// Ignore and keep default false when API info is unavailable
-		}
-		this.useMicroseconds = result;
-		return result;
-	}
-
-
-
 	private static Supplier<Maybe<String>> getLaunchSupplier(@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler,
 			@Nonnull final StartLaunchRQ startRq) {
 		return new MemoizingSupplier<>(() -> client.startLaunch(startRq)
@@ -295,6 +262,37 @@ public class LaunchImpl extends Launch {
 	 */
 	protected Scheduler createScheduler(ExecutorService executorService) {
 		return SCHEDULERS.computeIfAbsent(executorService, Schedulers::from);
+	}
+
+	/**
+	 * Determines whether timestamps should use microsecond precision based on the
+	 * ReportPortal server version. Versions greater than or equal to 5.13.2
+	 * support microseconds.
+	 * <p>
+	 * The value is computed once and cached for subsequent calls.
+	 *
+	 * @return {@code true} if server version >= 5.13.2, otherwise {@code false}
+	 */
+	public boolean useMicroseconds() {
+		if (useMicroseconds != null) {
+			return useMicroseconds;
+		}
+
+		boolean result = false;
+		try {
+			ApiInfo info = apiInfo.blockingGet();
+			String version = ofNullable(info)
+					.map(ApiInfo::getBuild)
+					.map(ApiInfo.Build::getVersion)
+					.orElse(null);
+			if (StringUtils.isNotBlank(version)) {
+				result = compareSemanticVersions(version, MICROSECONDS_MIN_VERSION) >= 0;
+			}
+		} catch (Exception e) {
+			// Ignore and keep default false when API info is unavailable
+		}
+		this.useMicroseconds = result;
+		return result;
 	}
 
 	/**
