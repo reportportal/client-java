@@ -270,7 +270,7 @@ public class LaunchImpl extends Launch {
 	 * <p>
 	 * The value is computed once and cached for subsequent calls.
 	 *
-	 * @return {@code true} if server version >= 5.13.2, otherwise {@code false}
+	 * @return {@code true} if server version greater or equal 5.13.2, otherwise {@code false}
 	 */
 	public boolean useMicroseconds() {
 		if (useMicroseconds != null) {

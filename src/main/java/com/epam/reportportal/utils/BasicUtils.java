@@ -56,6 +56,10 @@ public class BasicUtils {
 	 * Compares two semantic versions following SemVer precedence rules.
 	 * Returns a negative integer, zero, or a positive integer if the first
 	 * argument is less than, equal to, or greater than the second respectively.
+	 *
+	 * @param compared value for comparison
+	 * @param basic    value to compare with
+	 * @return -1 if compared value less than basic, 0 if compared value equals basic, 1 if compared value greater than basic
 	 */
 	public static int compareSemanticVersions(@Nonnull String compared, @Nonnull String basic) {
 		String comparedNorm = normalizeVersion(compared);
