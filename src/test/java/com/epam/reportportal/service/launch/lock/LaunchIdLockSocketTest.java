@@ -219,7 +219,8 @@ public class LaunchIdLockSocketTest {
 	@Test
 	public void test_uuid_remove_finishInstanceUuid() throws InterruptedException {
 		int threadNum = 3;
-		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(threadNum,
+		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(
+				threadNum,
 				Collections.nCopies(threadNum, launchIdLockSocket)
 		);
 

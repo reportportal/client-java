@@ -168,7 +168,6 @@ public class ListenerParametersTest {
 		assertEquals(21, listenerParameters.getLockWaitTimeout());
 	}
 
-
 	@Test
 	public void verify_http_timeout_values_bypass() {
 		PropertiesLoader properties = PropertiesLoader.load("property-test/http-timeout.properties");
@@ -195,9 +194,9 @@ public class ListenerParametersTest {
 
 	public static Iterable<Object[]> launchPrintTests() {
 		return Arrays.asList(
-				new Object[]{"launch-print-false.properties", false, System.out},
-				new Object[]{"launch-print-true.properties", true, System.out},
-				new Object[]{"launch-print-true-stderr.properties", true, System.err}
+				new Object[] { "launch-print-false.properties", false, System.out },
+				new Object[] { "launch-print-true.properties", true, System.out },
+				new Object[] { "launch-print-true-stderr.properties", true, System.err }
 		);
 	}
 

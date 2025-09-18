@@ -41,7 +41,7 @@ public class SaveLogRQ {
 	@JsonProperty(value = "time", required = true)
 	@JsonSerialize(using = TimeSerializer.class)
 	@JsonDeserialize(using = TimeDeserializer.class)
-	private Comparable<?> logTime;
+	private Comparable<? extends Comparable<?>> logTime;
 
 	@JsonProperty(value = "message")
 	private String message;
@@ -60,11 +60,11 @@ public class SaveLogRQ {
 		this.uuid = uuid;
 	}
 
-	public Comparable<?> getLogTime() {
+	public Comparable<? extends Comparable<?>> getLogTime() {
 		return logTime;
 	}
 
-	public void setLogTime(Comparable<?> logTime) {
+	public void setLogTime(Comparable<? extends Comparable<?>> logTime) {
 		this.logTime = logTime;
 	}
 

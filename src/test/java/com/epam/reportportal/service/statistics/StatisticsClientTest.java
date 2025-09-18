@@ -39,8 +39,8 @@ public class StatisticsClientTest {
 	@Test
 	void sendRequestWithoutError() {
 
-		when(httpClient.send(anyString(), anyString(), anyString(), any(StatisticsItem.class))).thenReturn(Maybe.create(
-				e -> e.onSuccess(Response.success(ResponseBody.create("", MediaType.get("text/plain"))))));
+		when(httpClient.send(anyString(), anyString(), anyString(), any(StatisticsItem.class))).thenReturn(Maybe.create(e -> e.onSuccess(
+				Response.success(ResponseBody.create("", MediaType.get("text/plain"))))));
 
 		try (StatisticsClient googleAnalytics = new StatisticsClient("id", "secret", httpClient)) {
 			StatisticsItem item = new StatisticsItem("client-id");
@@ -55,8 +55,8 @@ public class StatisticsClientTest {
 	@Test
 	void sendRequestErrorShouldNotThrowException() {
 
-		when(httpClient.send(anyString(), anyString(), anyString(), any(StatisticsItem.class))).thenReturn(Maybe.error(
-				new RuntimeException("Internal error")));
+		when(httpClient.send(anyString(), anyString(), anyString(), any(StatisticsItem.class))).thenReturn(Maybe.error(new RuntimeException(
+				"Internal error")));
 
 		try (StatisticsClient googleAnalytics = new StatisticsClient("id", "secret", httpClient)) {
 			Maybe<Response<ResponseBody>> result = googleAnalytics.send(new StatisticsItem("client-id"));

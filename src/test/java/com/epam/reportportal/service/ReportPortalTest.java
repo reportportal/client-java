@@ -62,8 +62,8 @@ import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorServic
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
 
 public class ReportPortalTest {
 	static {

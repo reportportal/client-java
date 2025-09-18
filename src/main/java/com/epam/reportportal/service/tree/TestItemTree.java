@@ -20,9 +20,9 @@ import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.reportportal.listeners.ItemType;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import io.reactivex.Maybe;
-
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;

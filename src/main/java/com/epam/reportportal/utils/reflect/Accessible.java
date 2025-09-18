@@ -18,6 +18,7 @@ package com.epam.reportportal.utils.reflect;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 

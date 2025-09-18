@@ -238,7 +238,10 @@ public class DefaultStepReporter implements StepReporter {
 			return Maybe.empty();
 		}
 		Maybe<String> itemId = launch.startTestItem(parent, startStepRequest);
-		steps.put(itemId, new StepEntry(itemId, new FinishTestItemRQ()));
+		steps.put(
+				itemId,
+				new StepEntry(itemId, launch.useMicroseconds() ? Instant.now() : Calendar.getInstance().getTime(), new FinishTestItemRQ())
+		);
 		return itemId;
 	}
 
@@ -270,7 +273,10 @@ public class DefaultStepReporter implements StepReporter {
 	@Override
 	@Nonnull
 	public Maybe<OperationCompletionRS> finishNestedStep(@Nonnull ItemStatus status) {
-		FinishTestItemRQ finishStepRequest = buildFinishTestItemRequest(status);
+		FinishTestItemRQ finishStepRequest = buildFinishTestItemRequest(
+				status,
+				launch.useMicroseconds() ? Instant.now() : Calendar.getInstance().getTime()
+		);
 		return finishNestedStep(finishStepRequest);
 	}
 
@@ -350,13 +356,12 @@ public class DefaultStepReporter implements StepReporter {
 		startTestItemRQ.setName(name);
 		startTestItemRQ.setType("STEP");
 		startTestItemRQ.setHasStats(false);
-		// TODO: Check for server version and set Date or Instant accordingly
-		startTestItemRQ.setStartTime(Calendar.getInstance().getTime());
+		startTestItemRQ.setStartTime(launch.useMicroseconds() ? Instant.now() : Calendar.getInstance().getTime());
 		return startTestItemRQ;
 	}
 
-	private void addStepEntry(Maybe<String> stepId, ItemStatus status, Comparable<?> timestamp) {
-		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status);
+	private void addStepEntry(Maybe<String> stepId, ItemStatus status, @Nonnull Comparable<? extends Comparable<?>> timestamp) {
+		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status, timestamp);
 		steps.put(stepId, new StepEntry(stepId, timestamp, finishTestItemRQ));
 	}
 
@@ -365,8 +370,7 @@ public class DefaultStepReporter implements StepReporter {
 		rq.setItemUuid(itemId);
 		rq.setMessage(message);
 		rq.setLevel(level.name());
-		// TODO: Check for server version and set Date or Instant accordingly
-		rq.setLogTime(Calendar.getInstance().getTime());
+		rq.setLogTime(launch.useMicroseconds() ? Instant.now() : Calendar.getInstance().getTime());
 		return rq;
 	}
 

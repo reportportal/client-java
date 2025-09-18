@@ -60,7 +60,8 @@ public class SystemAttributesExtractorTest {
 
 	@Test
 	public void testFromResource() {
-		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract("agent-test.properties",
+		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract(
+				"agent-test.properties",
 				SystemAttributesExtractorTest.class.getClassLoader()
 		);
 		assertThat(attributes, hasSize(3));
@@ -108,7 +109,8 @@ public class SystemAttributesExtractorTest {
 
 	@Test
 	public void testFromResourceClientProperties() {
-		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract("client-test.properties",
+		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract(
+				"client-test.properties",
 				SystemAttributesExtractorTest.class.getClassLoader(),
 				ClientProperties.values()
 		);
@@ -126,7 +128,8 @@ public class SystemAttributesExtractorTest {
 
 	@Test
 	public void testFromPathClientProperties() {
-		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract(Paths.get("./src/test/resources/client-test.properties"),
+		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract(
+				Paths.get("./src/test/resources/client-test.properties"),
 				ClientProperties.values()
 		);
 		assertThat(attributes, hasSize(1));

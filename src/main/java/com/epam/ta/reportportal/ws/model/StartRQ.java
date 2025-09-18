@@ -48,7 +48,7 @@ public class StartRQ {
 	@JsonSerialize(using = TimeSerializer.class)
 	@JsonDeserialize(using = TimeDeserializer.class)
 	@JsonAlias({ "startTime", "start_time" })
-	private Comparable<?> startTime;
+	private Comparable<? extends Comparable<?>> startTime;
 
 	@JsonProperty(value = "uuid")
 	private String uuid;
@@ -85,11 +85,11 @@ public class StartRQ {
 		this.uuid = uuid;
 	}
 
-	public Comparable<?> getStartTime() {
+	public Comparable<? extends Comparable<?>> getStartTime() {
 		return startTime;
 	}
 
-	public void setStartTime(Comparable<?> startTime) {
+	public void setStartTime(Comparable<? extends Comparable<?>> startTime) {
 		this.startTime = startTime;
 	}
 } 

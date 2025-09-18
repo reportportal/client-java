@@ -19,10 +19,10 @@ package com.epam.reportportal.utils;
 import com.epam.reportportal.annotations.Issues;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
-import org.apache.commons.lang3.StringUtils;
-
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;

@@ -34,7 +34,7 @@ import java.util.Date;
 public class TimeDeserializer extends JsonDeserializer<Comparable<?>> {
 
 	@Override
-	public Comparable<?> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+	public Comparable<? extends Comparable<?>> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
 		JsonToken token = p.getCurrentToken();
 
 		if (token == JsonToken.VALUE_NULL) {

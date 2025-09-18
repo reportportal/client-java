@@ -39,10 +39,7 @@ public class PropertiesLoaderReloadTest {
 		Properties loadedProps = PropertiesLoader.load().getProperties();
 
 		for (ListenerProperty listenerProperties : ListenerProperty.values()) {
-			assertThat(
-					loadedProps.getProperty(listenerProperties.getPropertyName()),
-					equalTo(listenerProperties.getPropertyName())
-			);
+			assertThat(loadedProps.getProperty(listenerProperties.getPropertyName()), equalTo(listenerProperties.getPropertyName()));
 		}
 
 	}

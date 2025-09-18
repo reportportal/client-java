@@ -44,10 +44,10 @@ import io.reactivex.internal.operators.flowable.FlowableFromObservable;
 import io.reactivex.plugins.RxJavaPlugins;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.PublishSubject;
-import org.apache.commons.lang3.StringUtils;
-
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
@@ -56,9 +56,9 @@ import java.util.stream.Collectors;
 
 import static com.epam.reportportal.service.logs.LaunchLoggingCallback.LOG_ERROR;
 import static com.epam.reportportal.service.logs.LaunchLoggingCallback.LOG_SUCCESS;
+import static com.epam.reportportal.utils.BasicUtils.compareSemanticVersions;
 import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
 import static com.epam.reportportal.utils.SubscriptionUtils.*;
-import static com.epam.reportportal.utils.BasicUtils.compareSemanticVersions;
 import static com.epam.reportportal.utils.files.ImageConverter.convert;
 import static com.epam.reportportal.utils.files.ImageConverter.isImage;
 import static java.util.Objects.requireNonNull;
@@ -165,8 +165,7 @@ public class LaunchImpl extends Launch {
 		return ofNullable(client.getProjectSettings()).map(settings -> settings.subscribeOn(scheduler).cache()).orElse(Maybe.empty());
 	}
 
-	private static Maybe<ApiInfo> getApiInfo(@Nonnull final ReportPortalClient client,
-			@Nonnull final Scheduler scheduler) {
+	private static Maybe<ApiInfo> getApiInfo(@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler) {
 		return ofNullable(client.getApiInfo()).map(info -> info.subscribeOn(scheduler).cache()).orElse(Maybe.empty());
 	}
 
@@ -281,10 +280,7 @@ public class LaunchImpl extends Launch {
 		boolean result = false;
 		try {
 			ApiInfo info = apiInfo.blockingGet();
-			String version = ofNullable(info)
-					.map(ApiInfo::getBuild)
-					.map(ApiInfo.Build::getVersion)
-					.orElse(null);
+			String version = ofNullable(info).map(ApiInfo::getBuild).map(ApiInfo.Build::getVersion).orElse(null);
 			if (StringUtils.isNotBlank(version)) {
 				result = compareSemanticVersions(version, MICROSECONDS_MIN_VERSION) >= 0;
 			}

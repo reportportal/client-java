@@ -19,10 +19,9 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import io.reactivex.CompletableObserver;
 import io.reactivex.MaybeObserver;
 import io.reactivex.disposables.Disposable;
+import jakarta.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import jakarta.annotation.Nonnull;
 
 /**
  * @author Dzianis_Shybeka

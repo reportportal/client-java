@@ -21,6 +21,7 @@ import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
+import jakarta.annotation.Nonnull;
 import okhttp3.MultipartBody;
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
@@ -30,7 +31,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
-import jakarta.annotation.Nonnull;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -60,7 +60,8 @@ public class ItemLoggingContextMultiThreadTest {
 	private ReportPortalClient rpClient;
 	private final ExecutorService clientExecutorService = Executors.newFixedThreadPool(2);
 	// Copy-paste from TestNG executor configuration to reproduce the issue
-	private final ExecutorService testExecutorService = new ThreadPoolExecutor(2,
+	private final ExecutorService testExecutorService = new ThreadPoolExecutor(
+			2,
 			2,
 			10,
 			TimeUnit.SECONDS,

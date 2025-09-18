@@ -32,26 +32,26 @@ import java.util.Date;
  */
 public class TimeSerializer extends JsonSerializer<Object> {
 
-    private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_INSTANT;
+	private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_INSTANT;
 
-    @Override
-    public void serialize(Object value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-        if (value == null) {
-            gen.writeNull();
-            return;
-        }
+	@Override
+	public void serialize(Object value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+		if (value == null) {
+			gen.writeNull();
+			return;
+		}
 
-        if (value instanceof Date) {
-            // Serialize Date to milliseconds from epoch
-            Date date = (Date) value;
-            gen.writeNumber(date.getTime());
-        } else if (value instanceof Instant) {
-            // Serialize Instant to ISO time format with milliseconds
-            Instant instant = (Instant) value;
-            gen.writeString(ISO_FORMATTER.format(instant));
-        } else {
-            // Fallback for other Comparable types - convert to string
-            gen.writeString(value.toString());
-        }
-    }
+		if (value instanceof Date) {
+			// Serialize Date to milliseconds from epoch
+			Date date = (Date) value;
+			gen.writeNumber(date.getTime());
+		} else if (value instanceof Instant) {
+			// Serialize Instant to ISO time format with milliseconds
+			Instant instant = (Instant) value;
+			gen.writeString(ISO_FORMATTER.format(instant));
+		} else {
+			// Fallback for other Comparable types - convert to string
+			gen.writeString(value.toString());
+		}
+	}
 }

@@ -20,12 +20,12 @@ import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.utils.Waiter;
 import com.epam.reportportal.utils.properties.ListenerProperty;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;

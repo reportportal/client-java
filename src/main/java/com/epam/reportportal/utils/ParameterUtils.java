@@ -19,10 +19,10 @@ package com.epam.reportportal.utils;
 import com.epam.reportportal.annotations.ParameterKey;
 import com.epam.reportportal.utils.formatting.MarkdownUtils;
 import com.epam.ta.reportportal.ws.model.ParameterResource;
-import org.apache.commons.lang3.tuple.Pair;
-
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Parameter;

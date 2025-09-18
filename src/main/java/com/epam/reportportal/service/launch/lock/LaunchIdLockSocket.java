@@ -19,10 +19,10 @@ package com.epam.reportportal.service.launch.lock;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.utils.Waiter;
 import com.epam.reportportal.utils.properties.ListenerProperty;
+import jakarta.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;

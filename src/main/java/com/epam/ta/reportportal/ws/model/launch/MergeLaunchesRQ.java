@@ -42,7 +42,7 @@ public class MergeLaunchesRQ {
 	@JsonProperty(value = "startTime")
 	@JsonSerialize(using = TimeSerializer.class)
 	@JsonDeserialize(using = TimeDeserializer.class)
-	private Comparable<?> startTime;
+	private Comparable<? extends Comparable<?>> startTime;
 
 	@JsonProperty("mode")
 	private Mode mode;
@@ -51,7 +51,7 @@ public class MergeLaunchesRQ {
 	private Set<Long> launches;
 
 	@JsonProperty(value = "endTime")
-	private Comparable<?> endTime;
+	private Comparable<? extends Comparable<?>> endTime;
 
 	@JsonProperty("mergeType")
 	private String mergeStrategyType;
@@ -83,11 +83,11 @@ public class MergeLaunchesRQ {
 		this.attributes = attributes;
 	}
 
-	public Comparable<?> getStartTime() {
+	public Comparable<? extends Comparable<?>> getStartTime() {
 		return startTime;
 	}
 
-	public void setStartTime(Comparable<?> startTime) {
+	public void setStartTime(Comparable<? extends Comparable<?>> startTime) {
 		this.startTime = startTime;
 	}
 
@@ -107,11 +107,11 @@ public class MergeLaunchesRQ {
 		this.launches = launches;
 	}
 
-	public Comparable<?> getEndTime() {
+	public Comparable<? extends Comparable<?>> getEndTime() {
 		return endTime;
 	}
 
-	public void setEndTime(Comparable<?> endTime) {
+	public void setEndTime(Comparable<? extends Comparable<?>> endTime) {
 		this.endTime = endTime;
 	}
 

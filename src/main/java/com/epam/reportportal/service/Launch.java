@@ -26,12 +26,12 @@ import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.lang.reflect.Proxy;
 import java.util.function.Function;
 
@@ -65,6 +65,17 @@ public abstract class Launch {
 		CURRENT_LAUNCH.set(this);
 		client = requireNonNull(reportPortalClient, "ReportPortalClient shouldn't be NULL");
 	}
+
+	/**
+	 * Determines whether timestamps should use microsecond precision based on the
+	 * ReportPortal server version. Versions greater than or equal to 5.13.2
+	 * support microseconds.
+	 * <p>
+	 * The value is computed once and cached for subsequent calls.
+	 *
+	 * @return {@code true} if server version >= 5.13.2, otherwise {@code false}
+	 */
+	public abstract boolean useMicroseconds();
 
 	/**
 	 * Starts new launch in ReportPortal asynchronously (non-blocking).
@@ -238,6 +249,11 @@ public abstract class Launch {
 			new ListenerParameters(),
 			StepReporter.NOOP_STEP_REPORTER
 	) {
+		@Override
+		public boolean useMicroseconds() {
+			return false;
+		}
+
 		@Override
 		@Nonnull
 		public Maybe<String> start() {

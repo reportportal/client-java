@@ -21,11 +21,11 @@ import com.epam.reportportal.annotations.attribute.Attributes;
 import com.epam.reportportal.utils.AttributeParser;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -39,17 +39,17 @@ public class StepRequestUtils {
 
 	@Nonnull
 	public static StartTestItemRQ buildStartStepRequest(@Nonnull String name, @Nullable String description,
-			@Nonnull MethodSignature signature) {
-		StartTestItemRQ request = com.epam.reportportal.service.step.StepRequestUtils.buildStartStepRequest(name, description);
+			@Nonnull Comparable<? extends Comparable<?>> dateTime, @Nonnull MethodSignature signature) {
+		StartTestItemRQ request = com.epam.reportportal.service.step.StepRequestUtils.buildStartStepRequest(name, description, dateTime);
 		request.setAttributes(createStepAttributes(signature));
 		return request;
 	}
 
 	@Nonnull
 	public static StartTestItemRQ buildStartStepRequest(@Nonnull MethodSignature signature, @Nonnull Step step,
-			@Nonnull JoinPoint joinPoint) {
+			@Nonnull Comparable<? extends Comparable<?>> dateTime, @Nonnull JoinPoint joinPoint) {
 		String name = StepNameUtils.getStepName(step, signature, joinPoint);
-		return buildStartStepRequest(name, step.description(), signature);
+		return buildStartStepRequest(name, step.description(), dateTime, signature);
 	}
 
 	@Nullable

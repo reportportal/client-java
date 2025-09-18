@@ -15,10 +15,10 @@
  */
 package com.epam.reportportal.utils.formatting;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;

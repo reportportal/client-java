@@ -53,7 +53,8 @@ public class MarkdownUtilsTest {
 
 	@Test
 	public void test_format_data_table() {
-		List<List<String>> table = Arrays.asList(Arrays.asList("var_a", "var_b", "result"),
+		List<List<String>> table = Arrays.asList(
+				Arrays.asList("var_a", "var_b", "result"),
 				Arrays.asList("2", "2", "4"),
 				Arrays.asList("1", "2", "3")
 		);
@@ -77,7 +78,8 @@ public class MarkdownUtilsTest {
 
 	@Test
 	public void test_format_data_table_one_big_col() {
-		List<List<String>> table = Arrays.asList(Arrays.asList("var_a", "var_b", "result"),
+		List<List<String>> table = Arrays.asList(
+				Arrays.asList("var_a", "var_b", "result"),
 				Arrays.asList("2", "2", "4"),
 				Arrays.asList("1", BIG_COLUMN_VALUE, "3")
 		);
@@ -99,7 +101,8 @@ public class MarkdownUtilsTest {
 
 	@Test
 	public void test_format_data_table_two_big_col() {
-		List<List<String>> table = Arrays.asList(Arrays.asList("var_a", "var_b", "result"),
+		List<List<String>> table = Arrays.asList(
+				Arrays.asList("var_a", "var_b", "result"),
 				Arrays.asList("2", "2", BIG_COLUMN_VALUE),
 				Arrays.asList("1", BIG_COLUMN_VALUE, "3")
 		);

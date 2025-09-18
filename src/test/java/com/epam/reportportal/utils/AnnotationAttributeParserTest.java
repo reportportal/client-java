@@ -123,9 +123,7 @@ public class AnnotationAttributeParserTest {
 
 	@Test
 	public void verify_multi_value_attributes_converted_into_correct_rq() throws NoSuchMethodException {
-		verify_multi_value_attributes_converted_into_correct_rq(MultiValueAttributeVerify.class,
-				equalTo(MULTI_VALUE_ATTRIBUTE_KEY_VERIFY)
-		);
+		verify_multi_value_attributes_converted_into_correct_rq(MultiValueAttributeVerify.class, equalTo(MULTI_VALUE_ATTRIBUTE_KEY_VERIFY));
 	}
 
 	private static final class MultiValueAttributeNullKeyVerify {
@@ -252,7 +250,7 @@ public class AnnotationAttributeParserTest {
 	}
 
 	private static final class MultiKeyEmptyKeyAttributeFilter {
-		@Attributes(multiKeyAttributes = @MultiKeyAttribute(keys = {},  value = MULTI_VALUE_ATTRIBUTE_VERIFY))
+		@Attributes(multiKeyAttributes = @MultiKeyAttribute(keys = {}, value = MULTI_VALUE_ATTRIBUTE_VERIFY))
 		public void testMethod() {
 		}
 	}
@@ -288,8 +286,8 @@ public class AnnotationAttributeParserTest {
 	}
 
 	private static final class TwoAttributeVerify {
-		@Attributes(attributes = {@Attribute(key = MULTI_VALUE_ATTRIBUTE_KEY_VERIFY, value = MULTI_VALUE_ATTRIBUTE_VERIFY),
-				@Attribute(key = MULTI_KEY_ATTRIBUTE_KEY_VERIFY_TEST_1, value = MULTI_VALUE_ATTRIBUTE_VERIFY_TEST_1)})
+		@Attributes(attributes = { @Attribute(key = MULTI_VALUE_ATTRIBUTE_KEY_VERIFY, value = MULTI_VALUE_ATTRIBUTE_VERIFY),
+				@Attribute(key = MULTI_KEY_ATTRIBUTE_KEY_VERIFY_TEST_1, value = MULTI_VALUE_ATTRIBUTE_VERIFY_TEST_1) })
 		public void testMethod() {
 		}
 	}
@@ -304,15 +302,18 @@ public class AnnotationAttributeParserTest {
 			assertThat(request.isSystem(), equalTo(false));
 		}
 
-		assertThat(result.stream().map(KEY_EXTRACT).collect(toList()), containsInAnyOrder(MULTI_VALUE_ATTRIBUTE_KEY_VERIFY, MULTI_KEY_ATTRIBUTE_KEY_VERIFY_TEST_1));
-		assertThat(result.stream().map(VALUE_EXTRACT).collect(toList()), containsInAnyOrder(MULTI_VALUE_ATTRIBUTE_VERIFY, MULTI_VALUE_ATTRIBUTE_VERIFY_TEST_1));
+		assertThat(
+				result.stream().map(KEY_EXTRACT).collect(toList()),
+				containsInAnyOrder(MULTI_VALUE_ATTRIBUTE_KEY_VERIFY, MULTI_KEY_ATTRIBUTE_KEY_VERIFY_TEST_1)
+		);
+		assertThat(
+				result.stream().map(VALUE_EXTRACT).collect(toList()),
+				containsInAnyOrder(MULTI_VALUE_ATTRIBUTE_VERIFY, MULTI_VALUE_ATTRIBUTE_VERIFY_TEST_1)
+		);
 	}
 
 	private static final class AllAttributeAnnotationsVerify {
-		@Attributes(attributes = @Attribute(key = MULTI_VALUE_ATTRIBUTE_KEY_VERIFY, value = MULTI_VALUE_ATTRIBUTE_VERIFY),
-		attributeValues = @AttributeValue(VALUE_ATTRIBUTE_VERIFY_TEST_1),
-		multiKeyAttributes = @MultiKeyAttribute(keys = MULTI_KEY_ATTRIBUTE_KEY_VERIFY_TEST_1, value = MULTI_VALUE_ATTRIBUTE_VERIFY),
-		multiValueAttributes = @MultiValueAttribute(key = MULTI_VALUE_ATTRIBUTE_KEY_VERIFY, values = MULTI_VALUE_ATTRIBUTE_VERIFY_TEST_1))
+		@Attributes(attributes = @Attribute(key = MULTI_VALUE_ATTRIBUTE_KEY_VERIFY, value = MULTI_VALUE_ATTRIBUTE_VERIFY), attributeValues = @AttributeValue(VALUE_ATTRIBUTE_VERIFY_TEST_1), multiKeyAttributes = @MultiKeyAttribute(keys = MULTI_KEY_ATTRIBUTE_KEY_VERIFY_TEST_1, value = MULTI_VALUE_ATTRIBUTE_VERIFY), multiValueAttributes = @MultiValueAttribute(key = MULTI_VALUE_ATTRIBUTE_KEY_VERIFY, values = MULTI_VALUE_ATTRIBUTE_VERIFY_TEST_1))
 		public void testMethod() {
 		}
 	}

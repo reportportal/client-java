@@ -39,7 +39,7 @@ public class FinishExecutionRQ {
 	@JsonSerialize(using = TimeSerializer.class)
 	@JsonDeserialize(using = TimeDeserializer.class)
 	@JsonAlias({ "endTime", "end_time" })
-	private Comparable<?> endTime;
+	private Comparable<? extends Comparable<?>> endTime;
 
 	@JsonProperty(value = "status")
 	private String status;
@@ -67,11 +67,11 @@ public class FinishExecutionRQ {
 		this.attributes = attributes;
 	}
 
-	public Comparable<?> getEndTime() {
+	public Comparable<? extends Comparable<?>> getEndTime() {
 		return endTime;
 	}
 
-	public void setEndTime(Comparable<?> endTime) {
+	public void setEndTime(Comparable<? extends Comparable<?>> endTime) {
 		this.endTime = endTime;
 	}
 

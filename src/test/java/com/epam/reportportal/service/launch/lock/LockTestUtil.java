@@ -40,8 +40,7 @@ public class LockTestUtil {
 	public static final Predicate<String> WELCOME_MESSAGE_PREDICATE = WELCOME_MESSAGE::equals;
 	public static final Predicate<String> ANY_STRING_PREDICATE = StringUtils::isNotBlank;
 
-	public static Callable<String> getObtainLaunchUuidReadCallable(final String selfUuid,
-			final LaunchIdLock launchIdLock) {
+	public static Callable<String> getObtainLaunchUuidReadCallable(final String selfUuid, final LaunchIdLock launchIdLock) {
 		return () -> launchIdLock.obtainLaunchUuid(selfUuid);
 	}
 
@@ -59,8 +58,7 @@ public class LockTestUtil {
 		}
 	}
 
-	public static <T extends LaunchIdLock> Map<String, Callable<String>> getLaunchUuidReadCallables(int num,
-			Supplier<T> serviceProvider) {
+	public static <T extends LaunchIdLock> Map<String, Callable<String>> getLaunchUuidReadCallables(int num, Supplier<T> serviceProvider) {
 		Map<String, Callable<String>> results = new HashMap<>();
 		for (int i = 0; i < num; i++) {
 			String uuid = UUID.randomUUID().toString();
@@ -75,11 +73,13 @@ public class LockTestUtil {
 	}
 
 	public static ExecutorService testExecutor(final int threadNum) {
-		return Executors.newFixedThreadPool(threadNum, r -> {
-			Thread t = Executors.defaultThreadFactory().newThread(r);
-			t.setDaemon(true);
-			return t;
-		});
+		return Executors.newFixedThreadPool(
+				threadNum, r -> {
+					Thread t = Executors.defaultThreadFactory().newThread(r);
+					t.setDaemon(true);
+					return t;
+				}
+		);
 	}
 
 	public static <T> Supplier<T> iterableSupplier(final Iterable<T> instanceIterable) {

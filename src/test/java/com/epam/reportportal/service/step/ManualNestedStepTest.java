@@ -28,6 +28,7 @@ import com.epam.reportportal.utils.StaticStructuresUtils;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
+import jakarta.annotation.Nonnull;
 import okhttp3.MultipartBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.Matcher;
@@ -35,7 +36,6 @@ import org.junit.jupiter.api.*;
 import org.mockito.ArgumentCaptor;
 import org.opentest4j.AssertionFailedError;
 
-import jakarta.annotation.Nonnull;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.List;

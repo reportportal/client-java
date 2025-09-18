@@ -33,6 +33,7 @@ import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
+import jakarta.annotation.Nonnull;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.awaitility.Awaitility;
@@ -44,7 +45,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
-import jakarta.annotation.Nonnull;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;

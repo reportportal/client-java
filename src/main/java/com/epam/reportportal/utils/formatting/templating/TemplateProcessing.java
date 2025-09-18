@@ -17,11 +17,11 @@
 package com.epam.reportportal.utils.formatting.templating;
 
 import com.epam.reportportal.utils.reflect.Accessible;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.lang.reflect.Array;
 import java.lang.reflect.Executable;
 import java.util.HashMap;

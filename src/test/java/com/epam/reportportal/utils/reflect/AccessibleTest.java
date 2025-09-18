@@ -61,7 +61,8 @@ public class AccessibleTest extends BaseReflectTest {
 	}
 
 	public static Stream<Arguments> fieldData() throws NoSuchFieldException {
-		return Stream.of(Arguments.of("publicField", AccessibleTest.class.getField("publicField"), PUBLIC_FIELD_VALUE),
+		return Stream.of(
+				Arguments.of("publicField", AccessibleTest.class.getField("publicField"), PUBLIC_FIELD_VALUE),
 				Arguments.of("privateField", AccessibleTest.class.getDeclaredField("privateField"), PRIVATE_FIELD_VALUE),
 				Arguments.of("publicBaseField", BaseReflectTest.class.getField("publicBaseField"), PUBLIC_BASE_FIELD_VALUE),
 				Arguments.of("privateBaseField", BaseReflectTest.class.getDeclaredField("privateBaseField"), PRIVATE_BASE_FIELD_VALUE)
@@ -88,37 +89,46 @@ public class AccessibleTest extends BaseReflectTest {
 	}
 
 	public static Stream<Arguments> methodData() throws NoSuchMethodException {
-		return Stream.of(Arguments.of("publicMethodNoParams",
+		return Stream.of(
+				Arguments.of(
+						"publicMethodNoParams",
 						AccessibleTest.class.getMethod("publicMethodNoParams"),
 						null,
 						PUBLIC_METHOD_NO_PARAMS_VALUE
-				), Arguments.of("privateMethodNoParams",
+				), Arguments.of(
+						"privateMethodNoParams",
 						AccessibleTest.class.getDeclaredMethod("privateMethodNoParams"),
 						null,
 						PRIVATE_METHOD_NO_PARAMS_VALUE
-				), Arguments.of("publicMethodParams",
+				), Arguments.of(
+						"publicMethodParams",
 						AccessibleTest.class.getMethod("publicMethodParams", String.class, String.class),
 						new String[] { "a", "b" },
 						PUBLIC_METHOD_PARAMS_VALUE
-				), Arguments.of("privateMethodParams",
+				), Arguments.of(
+						"privateMethodParams",
 						AccessibleTest.class.getDeclaredMethod("privateMethodParams", String.class, String.class),
 						new String[] { "a", "b" },
 						PRIVATE_METHOD_PARAMS_VALUE
 				),
 
-				Arguments.of("publicBaseMethodNoParams",
+				Arguments.of(
+						"publicBaseMethodNoParams",
 						BaseReflectTest.class.getMethod("publicBaseMethodNoParams"),
 						null,
 						PUBLIC_BASE_METHOD_NO_PARAMS_VALUE
-				), Arguments.of("privateBaseMethodNoParams",
+				), Arguments.of(
+						"privateBaseMethodNoParams",
 						BaseReflectTest.class.getDeclaredMethod("privateBaseMethodNoParams"),
 						null,
 						PRIVATE_BASE_METHOD_NO_PARAMS_VALUE
-				), Arguments.of("publicBaseMethodParams",
+				), Arguments.of(
+						"publicBaseMethodParams",
 						BaseReflectTest.class.getMethod("publicBaseMethodParams", String.class, String.class),
 						new String[] { "a", "b" },
 						PUBLIC_BASE_METHOD_PARAMS_VALUE
-				), Arguments.of("privateBaseMethodParams",
+				), Arguments.of(
+						"privateBaseMethodParams",
 						BaseReflectTest.class.getDeclaredMethod("privateBaseMethodParams", String.class, String.class),
 						new String[] { "a", "b" },
 						PRIVATE_BASE_METHOD_PARAMS_VALUE

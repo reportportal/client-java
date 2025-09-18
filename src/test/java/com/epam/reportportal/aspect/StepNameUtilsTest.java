@@ -80,15 +80,11 @@ public class StepNameUtilsTest {
 	@ParameterizedTest
 	@MethodSource("stepNameValues")
 	public void test_special_characters_in_step_name(String name) throws NoSuchMethodException {
-		when(methodSignature.getMethod()).thenReturn(this.getClass()
-				.getDeclaredMethod("stepWithAValueInName", String.class));
+		when(methodSignature.getMethod()).thenReturn(this.getClass().getDeclaredMethod("stepWithAValueInName", String.class));
 		when(methodSignature.getParameterNames()).thenReturn(new String[] { "value" });
 		when(joinPoint.getArgs()).thenReturn(new String[] { name });
 
-		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class),
-				methodSignature,
-				joinPoint
-		);
+		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class), methodSignature, joinPoint);
 		String expected = "A test step value " + (name == null ? "NULL" : name);
 		assertThat(result, equalTo(expected));
 	}
@@ -104,20 +100,17 @@ public class StepNameUtilsTest {
 		when(methodSignature.getParameterNames()).thenReturn(new String[0]);
 		when(joinPoint.getArgs()).thenReturn(new String[0]);
 
-		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class),
-				methodSignature,
-				joinPoint
-		);
+		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class), methodSignature, joinPoint);
 		assertThat(result, equalTo(STEP_NAME_PATTERN));
 	}
 
 	private static Iterable<Object[]> formatData() {
-		return Arrays.asList(new Object[] { "Method name: {method}", "Method name: stepMethod" },
+		return Arrays.asList(
+				new Object[] { "Method name: {method}", "Method name: stepMethod" },
 				new Object[] { "Inner value: {this.value}", "Inner value: stepValue" },
 				new Object[] { "Inner value: {this.object.value}", "Inner value: pojoValue" },
 				new Object[] { "Class name: {class}", "Class name: StepNameUtilsTest" },
-				new Object[] { "Class reference: {classRef}",
-						"Class reference: com.epam.reportportal.aspect.StepNameUtilsTest" }
+				new Object[] { "Class reference: {classRef}", "Class reference: com.epam.reportportal.aspect.StepNameUtilsTest" }
 		);
 	}
 
@@ -141,13 +134,15 @@ public class StepNameUtilsTest {
 	public void test_step_format_defaults(String stepName, String expectedResult) throws NoSuchMethodException {
 		Method method = this.getClass().getDeclaredMethod("stepMethod");
 		Step realStep = method.getAnnotation(Step.class);
-		Step step = mock(Step.class, withSettings().defaultAnswer(invocation -> {
-			Method invocationMethod = invocation.getMethod();
-			if ("value".equals(invocationMethod.getName())) {
-				return stepName;
-			}
-			return invocationMethod.invoke(realStep, invocation.getArguments());
-		}));
+		Step step = mock(
+				Step.class, withSettings().defaultAnswer(invocation -> {
+					Method invocationMethod = invocation.getMethod();
+					if ("value".equals(invocationMethod.getName())) {
+						return stepName;
+					}
+					return invocationMethod.invoke(realStep, invocation.getArguments());
+				})
+		);
 
 		when(methodSignature.getMethod()).thenReturn(method);
 		when(methodSignature.getParameterNames()).thenReturn(new String[0]);
@@ -171,9 +166,11 @@ public class StepNameUtilsTest {
 		when(joinPoint.getThis()).thenReturn(null);
 		when(joinPoint.getArgs()).thenReturn(null);
 
-		String result = StepNameUtils.getStepName(this.getClass()
-				.getDeclaredMethod("verifyNulls")
-				.getAnnotation(Step.class), methodSignature, joinPoint);
+		String result = StepNameUtils.getStepName(
+				this.getClass().getDeclaredMethod("verifyNulls").getAnnotation(Step.class),
+				methodSignature,
+				joinPoint
+		);
 
 		assertThat(result, equalTo("{method} {this} {0}"));
 	}
@@ -187,9 +184,8 @@ public class StepNameUtilsTest {
 	public void test_null_reference() throws NoSuchMethodException {
 		when(joinPoint.getThis()).thenReturn(null);
 
-		String result = StepNameUtils.getStepName(this.getClass()
-						.getDeclaredMethod("verifyNullReference")
-						.getAnnotation(Step.class),
+		String result = StepNameUtils.getStepName(
+				this.getClass().getDeclaredMethod("verifyNullReference").getAnnotation(Step.class),
 				methodSignature,
 				joinPoint
 		);
@@ -207,10 +203,7 @@ public class StepNameUtilsTest {
 		when(methodSignature.getParameterNames()).thenReturn(new String[0]);
 		when(joinPoint.getArgs()).thenReturn(new String[0]);
 
-		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class),
-				methodSignature,
-				joinPoint
-		);
+		String result = StepNameUtils.getStepName(methodSignature.getMethod().getAnnotation(Step.class), methodSignature, joinPoint);
 		assertThat(result, equalTo("A verifyConfigurationUsage"));
 	}
 }

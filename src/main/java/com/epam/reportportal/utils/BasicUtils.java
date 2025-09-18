@@ -18,6 +18,7 @@ package com.epam.reportportal.utils;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.util.Objects;
 
 public class BasicUtils {

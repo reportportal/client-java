@@ -25,7 +25,6 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.io.File;
-import java.util.Calendar;
 import java.util.function.Supplier;
 
 /**
@@ -149,18 +148,14 @@ public interface StepReporter {
 
 	class StepEntry {
 		private final Maybe<String> itemId;
-		private final Comparable<?> timestamp;
+		private final Comparable<? extends Comparable<?>> timestamp;
 		private final FinishTestItemRQ finishTestItemRQ;
 
-		public StepEntry(@Nonnull Maybe<String> itemId, @Nonnull Comparable<?> stepStartTime, @Nonnull FinishTestItemRQ finishTestItemRQ) {
+		public StepEntry(@Nonnull Maybe<String> itemId, @Nonnull Comparable<? extends Comparable<?>> stepStartTime,
+				@Nonnull FinishTestItemRQ finishTestItemRQ) {
 			this.itemId = itemId;
 			this.timestamp = stepStartTime;
 			this.finishTestItemRQ = finishTestItemRQ;
-		}
-
-		public StepEntry(@Nonnull Maybe<String> itemId, @Nonnull FinishTestItemRQ finishTestItemRQ) {
-			// TODO: Check for server version and set Date or Instant accordingly
-			this(itemId, Calendar.getInstance().getTime(), finishTestItemRQ);
 		}
 
 		@Nonnull
@@ -169,7 +164,7 @@ public interface StepReporter {
 		}
 
 		@Nonnull
-		public Comparable<?> getTimestamp() {
+		public Comparable<? extends Comparable<?>> getTimestamp() {
 			return timestamp;
 		}
 

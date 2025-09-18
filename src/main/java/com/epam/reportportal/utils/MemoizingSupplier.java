@@ -17,6 +17,7 @@
 package com.epam.reportportal.utils;
 
 import jakarta.annotation.Nonnull;
+
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;

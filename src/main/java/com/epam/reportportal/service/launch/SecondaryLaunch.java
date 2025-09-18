@@ -26,10 +26,10 @@ import com.epam.ta.reportportal.ws.model.launch.LaunchResource;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.disposables.Disposable;
+import jakarta.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.annotation.Nonnull;
 import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;

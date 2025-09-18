@@ -16,12 +16,12 @@
 
 package com.epam.reportportal.service;
 
+import jakarta.annotation.Nonnull;
 import okhttp3.HttpUrl;
 import okhttp3.Interceptor;
 import okhttp3.Request;
 import okhttp3.Response;
 
-import jakarta.annotation.Nonnull;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.IntStream;

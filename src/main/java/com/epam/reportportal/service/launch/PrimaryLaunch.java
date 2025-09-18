@@ -24,6 +24,7 @@ import com.epam.reportportal.utils.Waiter;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 
+import java.time.Instant;
 import java.util.Calendar;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -59,8 +60,7 @@ public class PrimaryLaunch extends AbstractJoinedLaunch {
 			finished = waiter.till(finishCondition);
 		}
 		FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
-		// TODO: Check for server version and set Date or Instant accordingly
-		rq.setEndTime(Calendar.getInstance().getTime());
+		rq.setEndTime(useMicroseconds() ? Instant.now() : Calendar.getInstance().getTime());
 		super.finish(rq);
 		stopRunning();
 		lock.finishInstanceUuid(uuid);

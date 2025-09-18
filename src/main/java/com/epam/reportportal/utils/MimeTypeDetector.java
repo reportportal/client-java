@@ -17,9 +17,9 @@ package com.epam.reportportal.utils;
 
 import com.epam.reportportal.utils.files.ByteSource;
 import com.epam.reportportal.utils.files.Utils;
-
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;

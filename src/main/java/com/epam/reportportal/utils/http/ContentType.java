@@ -17,6 +17,7 @@
 package com.epam.reportportal.utils.http;
 
 import jakarta.annotation.Nullable;
+
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collections;

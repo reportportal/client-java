@@ -17,12 +17,12 @@
 package com.epam.reportportal.utils.http;
 
 import com.epam.reportportal.listeners.ListenerParameters;
+import jakarta.annotation.Nonnull;
 import okhttp3.Credentials;
 import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.annotation.Nonnull;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;

@@ -103,15 +103,9 @@ public class LaunchIdLockFileTest {
 	public void test_launch_uuid_will_be_the_same_for_ten_threads_obtainLaunchUuid() throws InterruptedException {
 		int threadNum = 10;
 		ExecutorService executor = testExecutor(threadNum);
-		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(
-				threadNum,
-				singletonSupplier(launchIdLockFile)
-		);
+		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(launchIdLockFile));
 
-		Collection<String> results = executor.invokeAll(tasks.values())
-				.stream()
-				.map(new GetFutureResults<>())
-				.collect(toList());
+		Collection<String> results = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
 		assertThat(results, hasSize(threadNum));
 		assertThat(results, Matchers.everyItem(equalTo(results.iterator().next())));
 	}
@@ -121,23 +115,12 @@ public class LaunchIdLockFileTest {
 	public void test_sync_file_contains_all_thread_uuids_obtainLaunchUuid() throws InterruptedException, IOException {
 		int threadNum = 5;
 		ExecutorService executor = testExecutor(threadNum);
-		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(
-				threadNum,
-				singletonSupplier(launchIdLockFile)
-		);
+		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(launchIdLockFile));
 
 		// Call Future#get to wait for execution.
-		String launchUuid = executor.invokeAll(tasks.values())
-				.stream()
-				.map(new GetFutureResults<>())
-				.collect(toList())
-				.iterator()
-				.next();
+		String launchUuid = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList()).iterator().next();
 
-		List<String> syncFileContent = FileUtils.readLines(
-				new File(syncFileName),
-				LaunchIdLockFile.LOCK_FILE_CHARSET.name()
-		);
+		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LaunchIdLockFile.LOCK_FILE_CHARSET.name());
 		assertThat(syncFileContent.get(0), matchesPattern("\\d+:" + launchUuid));
 		List<String> syncFileContentUuids = syncFileContent.stream()
 				.map(r -> r.substring(r.indexOf(LaunchIdLockFile.TIME_SEPARATOR) + 1))
@@ -148,14 +131,8 @@ public class LaunchIdLockFileTest {
 	private Pair<Set<String>, Collection<String>> executeParallelLaunchUuidSync(int threadNum,
 			Iterable<LaunchIdLockFile> lockFileCollection) throws InterruptedException {
 		ExecutorService executor = testExecutor(threadNum);
-		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(
-				threadNum,
-				iterableSupplier(lockFileCollection)
-		);
-		Collection<String> result = executor.invokeAll(tasks.values())
-				.stream()
-				.map(new GetFutureResults<>())
-				.collect(toList());
+		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, iterableSupplier(lockFileCollection));
+		Collection<String> result = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
 		final File testFile = new File(lockFileName);
 
 		Awaitility.await("Wait for .lock file creation").until(testFile::exists, equalTo(Boolean.TRUE));
@@ -165,7 +142,8 @@ public class LaunchIdLockFileTest {
 	@Test
 	public void test_temp_files_are_removed_after_last_uuid_removed_finishInstanceUuid() throws InterruptedException {
 		int threadNum = 3;
-		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(threadNum,
+		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(
+				threadNum,
 				Collections.nCopies(threadNum, launchIdLockFile)
 		);
 		Iterator<String> uuidIterator = uuidSet.getLeft().iterator();
@@ -184,17 +162,15 @@ public class LaunchIdLockFileTest {
 	@SuppressWarnings("unchecked")
 	public void test_uuid_remove_finishInstanceUuid() throws InterruptedException, IOException {
 		int threadNum = 3;
-		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(threadNum,
+		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(
+				threadNum,
 				Collections.nCopies(threadNum, launchIdLockFile)
 		);
 
 		String uuidToRemove = uuidSet.getLeft().iterator().next();
 		launchIdLockFile.finishInstanceUuid(uuidToRemove);
 
-		List<String> syncFileContent = FileUtils.readLines(
-				new File(syncFileName),
-				LaunchIdLockFile.LOCK_FILE_CHARSET.name()
-		);
+		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LaunchIdLockFile.LOCK_FILE_CHARSET.name());
 		assertThat(syncFileContent, Matchers.hasSize(threadNum - 1));
 		assertThat(syncFileContent, not(contains(uuidToRemove)));
 	}
@@ -209,17 +185,15 @@ public class LaunchIdLockFileTest {
 	@MethodSource("threadNumProvider")
 	public void test_new_uuid_remove_does_not_spoil_lock_file_finishInstanceUuid(final int threadNum)
 			throws InterruptedException, IOException {
-		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(threadNum,
+		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(
+				threadNum,
 				Collections.nCopies(threadNum, launchIdLockFile)
 		);
 
 		String uuidToRemove = UUID.randomUUID().toString();
 		launchIdLockFile.finishInstanceUuid(uuidToRemove);
 
-		List<String> syncFileContent = FileUtils.readLines(
-				new File(syncFileName),
-				LaunchIdLockFile.LOCK_FILE_CHARSET.name()
-		);
+		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LaunchIdLockFile.LOCK_FILE_CHARSET.name());
 		List<String> syncFileContentUuids = syncFileContent.stream()
 				.map(r -> r.substring(r.indexOf(LaunchIdLockFile.TIME_SEPARATOR) + 1))
 				.collect(Collectors.toList());
@@ -230,8 +204,7 @@ public class LaunchIdLockFileTest {
 
 	@ParameterizedTest
 	@MethodSource("threadNumProvider")
-	public void test_different_lock_file_service_instances_synchronize_correctly(final int threadNum)
-			throws InterruptedException {
+	public void test_different_lock_file_service_instances_synchronize_correctly(final int threadNum) throws InterruptedException {
 		launchIdLockCollection = new ArrayList<>(threadNum);
 		launchIdLockCollection.add(launchIdLockFile);
 		for (int i = 1; i < threadNum; i++) {
@@ -262,17 +235,11 @@ public class LaunchIdLockFileTest {
 		assertThat(secondLaunchUuid, not(equalTo(firstLaunchUuid)));
 		launchIdLockFile.reset();
 
-		List<String> lockFileContent = FileUtils.readLines(
-				new File(lockFileName),
-				LaunchIdLockFile.LOCK_FILE_CHARSET.name()
-		);
+		List<String> lockFileContent = FileUtils.readLines(new File(lockFileName), LaunchIdLockFile.LOCK_FILE_CHARSET.name());
 		assertThat(lockFileContent, Matchers.hasSize(1));
 		assertThat(lockFileContent, contains(matchesPattern("\\d+:" + secondLaunchUuid)));
 
-		List<String> syncFileContent = FileUtils.readLines(
-				new File(syncFileName),
-				LaunchIdLockFile.LOCK_FILE_CHARSET.name()
-		);
+		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LaunchIdLockFile.LOCK_FILE_CHARSET.name());
 		assertThat(syncFileContent, Matchers.hasSize(1));
 		assertThat(syncFileContent, contains(matchesPattern("\\d+:" + secondLaunchUuid)));
 	}
@@ -284,10 +251,9 @@ public class LaunchIdLockFileTest {
 	}
 
 	@Test
-	public void test_lock_file_should_not_throw_exception_if_it_is_not_possible_to_write_sync_file()
-			throws IOException {
+	public void test_lock_file_should_not_throw_exception_if_it_is_not_possible_to_write_sync_file() throws IOException {
 		File syncFile = new File(syncFileName);
-		try(RandomAccessFile raf = new RandomAccessFile(syncFile, "rwd")) {
+		try (RandomAccessFile raf = new RandomAccessFile(syncFile, "rwd")) {
 			try (FileLock ignored = raf.getChannel().lock()) {
 				assertThat(launchIdLockFile.obtainLaunchUuid(UUID.randomUUID().toString()), nullValue());
 			}
@@ -295,11 +261,10 @@ public class LaunchIdLockFileTest {
 	}
 
 	@Test
-	public void test_lock_file_should_not_throw_exception_if_it_is_not_possible_to_write_lock_file()
-			throws IOException {
+	public void test_lock_file_should_not_throw_exception_if_it_is_not_possible_to_write_lock_file() throws IOException {
 		String launchUuid = UUID.randomUUID().toString();
 		File lockFile = new File(lockFileName);
-		try(RandomAccessFile raf = new RandomAccessFile(lockFile, "rwd")) {
+		try (RandomAccessFile raf = new RandomAccessFile(lockFile, "rwd")) {
 			try (FileLock ignored = raf.getChannel().lock()) {
 				assertThat(launchIdLockFile.obtainLaunchUuid(launchUuid), equalTo(launchUuid));
 			}
@@ -308,8 +273,7 @@ public class LaunchIdLockFileTest {
 
 	@Test
 	@Timeout(10)
-	public void test_launch_uuid_get_for_two_processes_returns_equal_values_obtainLaunchUuid()
-			throws IOException, InterruptedException {
+	public void test_launch_uuid_get_for_two_processes_returns_equal_values_obtainLaunchUuid() throws IOException, InterruptedException {
 		Pair<String, String> uuids = ImmutablePair.of(UUID.randomUUID().toString(), UUID.randomUUID().toString());
 
 		LOGGER.info("Running two separate processes");
@@ -334,16 +298,8 @@ public class LaunchIdLockFileTest {
 			secondaryProcessIo.getLeft().write(lineSeparator);
 			secondaryProcessIo.getLeft().flush();
 
-			String result1 = waitForLine(
-					primaryProcessIo.getMiddle(),
-					primaryProcessIo.getRight(),
-					ANY_STRING_PREDICATE
-			);
-			String result2 = waitForLine(
-					secondaryProcessIo.getMiddle(),
-					secondaryProcessIo.getRight(),
-					ANY_STRING_PREDICATE
-			);
+			String result1 = waitForLine(primaryProcessIo.getMiddle(), primaryProcessIo.getRight(), ANY_STRING_PREDICATE);
+			String result2 = waitForLine(secondaryProcessIo.getMiddle(), secondaryProcessIo.getRight(), ANY_STRING_PREDICATE);
 
 			assertThat("Assert two UUIDs from different processes are equal", result1, equalTo(result2));
 

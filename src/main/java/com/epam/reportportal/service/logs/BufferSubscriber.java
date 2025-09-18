@@ -6,10 +6,10 @@ import io.reactivex.FlowableSubscriber;
 import io.reactivex.internal.subscriptions.SubscriptionHelper;
 import io.reactivex.internal.util.BackpressureHelper;
 import io.reactivex.plugins.RxJavaPlugins;
+import jakarta.annotation.Nonnull;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import jakarta.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;

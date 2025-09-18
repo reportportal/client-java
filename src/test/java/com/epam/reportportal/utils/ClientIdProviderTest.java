@@ -32,7 +32,6 @@ import static com.epam.reportportal.utils.ClientIdProvider.getClientId;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
-
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ClientIdProviderTest {
@@ -73,30 +72,40 @@ public class ClientIdProviderTest {
 	public void test_get_client_id_should_read_id_from_property_file() throws IOException {
 		Files.deleteIfExists(RP_PROPERTIES_FILE_PATH);
 		String clientId = UUID.randomUUID().toString();
-		Files.write(RP_PROPERTIES_FILE_PATH, Collections.singletonList("client.id=" + clientId), StandardCharsets.UTF_8,
-				StandardOpenOption.CREATE);
+		Files.write(
+				RP_PROPERTIES_FILE_PATH,
+				Collections.singletonList("client.id=" + clientId),
+				StandardCharsets.UTF_8,
+				StandardOpenOption.CREATE
+		);
 		String actualClientId = getClientId();
 		assertThat(actualClientId, equalTo(clientId));
 	}
 
 	@Test
-	public void test_get_client_id_should_read_id_from_property_file_if_not_empty_and_id_is_the_first_line()
-			throws IOException {
+	public void test_get_client_id_should_read_id_from_property_file_if_not_empty_and_id_is_the_first_line() throws IOException {
 		Files.deleteIfExists(RP_PROPERTIES_FILE_PATH);
 		String clientId = UUID.randomUUID().toString();
-		Files.write(RP_PROPERTIES_FILE_PATH, Arrays.asList("client.id=" + clientId, "test.property=555"),
-				StandardCharsets.UTF_8, StandardOpenOption.CREATE);
+		Files.write(
+				RP_PROPERTIES_FILE_PATH,
+				Arrays.asList("client.id=" + clientId, "test.property=555"),
+				StandardCharsets.UTF_8,
+				StandardOpenOption.CREATE
+		);
 		String actualClientId = getClientId();
 		assertThat(actualClientId, equalTo(clientId));
 	}
 
 	@Test
-	public void test_get_client_id_should_read_id_from_property_file_if_not_empty_and_id_is_not_the_first_line()
-			throws IOException {
+	public void test_get_client_id_should_read_id_from_property_file_if_not_empty_and_id_is_not_the_first_line() throws IOException {
 		Files.deleteIfExists(RP_PROPERTIES_FILE_PATH);
 		String clientId = UUID.randomUUID().toString();
-		Files.write(RP_PROPERTIES_FILE_PATH, Arrays.asList("test.property=555", "client.id=" + clientId),
-				StandardCharsets.UTF_8, StandardOpenOption.CREATE);
+		Files.write(
+				RP_PROPERTIES_FILE_PATH,
+				Arrays.asList("test.property=555", "client.id=" + clientId),
+				StandardCharsets.UTF_8,
+				StandardOpenOption.CREATE
+		);
 		String actualClientId = getClientId();
 		assertThat(actualClientId, equalTo(clientId));
 	}
@@ -107,7 +116,6 @@ public class ClientIdProviderTest {
 		Files.write(RP_PROPERTIES_FILE_PATH, Collections.singletonList("test.property=555"), StandardCharsets.UTF_8);
 		String clientId = getClientId();
 		List<String> lines = Files.readAllLines(RP_PROPERTIES_FILE_PATH);
-		assertThat(lines, hasItems(matchesRegex("^client\\.id\\s*=\\s*" + clientId + "\\s*$"),
-				equalTo("test.property=555")));
+		assertThat(lines, hasItems(matchesRegex("^client\\.id\\s*=\\s*" + clientId + "\\s*$"), equalTo("test.property=555")));
 	}
 }

@@ -52,12 +52,12 @@ public class LaunchResource {
 	@JsonProperty(value = "startTime", required = true)
 	@JsonSerialize(using = TimeSerializer.class)
 	@JsonDeserialize(using = TimeDeserializer.class)
-	private Comparable<?> startTime;
+	private Comparable<? extends Comparable<?>> startTime;
 
 	@JsonProperty(value = "endTime")
 	@JsonSerialize(using = TimeSerializer.class)
 	@JsonDeserialize(using = TimeDeserializer.class)
-	private Comparable<?> endTime;
+	private Comparable<? extends Comparable<?>> endTime;
 
 	@JsonProperty(value = "lastModified")
 	private Object lastModified;
@@ -133,19 +133,19 @@ public class LaunchResource {
 		this.description = description;
 	}
 
-	public Comparable<?> getStartTime() {
+	public Comparable<? extends Comparable<?>> getStartTime() {
 		return startTime;
 	}
 
-	public void setStartTime(Comparable<?> startTime) {
+	public void setStartTime(Comparable<? extends Comparable<?>> startTime) {
 		this.startTime = startTime;
 	}
 
-	public Comparable<?> getEndTime() {
+	public Comparable<? extends Comparable<?>> getEndTime() {
 		return endTime;
 	}
 
-	public void setEndTime(Comparable<?> endTime) {
+	public void setEndTime(Comparable<? extends Comparable<?>> endTime) {
 		this.endTime = endTime;
 	}
 

@@ -16,7 +16,6 @@
 package com.epam.reportportal.utils;
 
 import io.reactivex.functions.Predicate;
-
 import jakarta.annotation.Nonnull;
 
 import static java.lang.Thread.sleep;

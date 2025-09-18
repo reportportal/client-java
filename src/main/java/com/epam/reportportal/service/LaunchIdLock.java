@@ -18,6 +18,7 @@ package com.epam.reportportal.service;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.util.Collection;
 import java.util.Collections;
 

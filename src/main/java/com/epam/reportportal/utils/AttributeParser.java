@@ -17,10 +17,10 @@ package com.epam.reportportal.utils;
 
 import com.epam.reportportal.annotations.attribute.*;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
-import org.apache.commons.lang3.StringUtils;
-
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
