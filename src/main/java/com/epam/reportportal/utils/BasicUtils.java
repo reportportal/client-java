@@ -137,14 +137,17 @@ public class BasicUtils {
 			boolean aNum = isNumeric(a);
 			boolean bNum = isNumeric(b);
 			if (aNum && bNum) {
+				// Both numeric
 				long na = parseLongSafe(a);
 				long nb = parseLongSafe(b);
 				if (na != nb) {
 					return na < nb ? -1 : 1;
 				}
 			} else if (aNum != bNum) {
+				// One numeric, one not
 				return aNum ? -1 : 1;
 			} else {
+				// Both not numeric
 				int cmp = a.compareTo(b);
 				if (cmp != 0) {
 					return cmp < 0 ? -1 : 1;
