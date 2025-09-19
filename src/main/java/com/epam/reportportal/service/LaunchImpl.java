@@ -488,6 +488,12 @@ public class LaunchImpl extends Launch {
 		waitForCompletable(getLaunch().ignoreElement(), createVirtualItemCompletable(), itemCompletable, completeLogCompletables());
 	}
 
+	private void emitLog(@Nonnull final SaveLogRQ rq) {
+		SaveLogRQ myRq = clonePojo(rq, SaveLogRQ.class);
+		myRq.setLogTime(convertIfNecessary(myRq.getLogTime()));
+		logEmitter.onNext(myRq);
+	}
+
 	/**
 	 * Finalizes the batched log emitter ensuring the last batch is sent before
 	 * completing. Blocks within the configured reporting timeout while waiting for
@@ -938,10 +944,6 @@ public class LaunchImpl extends Launch {
 	private SaveLogRQ prepareRequest(@Nonnull final String launchId, @Nonnull final SaveLogRQ rq) throws IOException {
 		rq.setLaunchUuid(launchId);
 		return prepareRequest(rq);
-	}
-
-	private void emitLog(@Nonnull final SaveLogRQ rq) {
-		logEmitter.onNext(rq);
 	}
 
 	/**
