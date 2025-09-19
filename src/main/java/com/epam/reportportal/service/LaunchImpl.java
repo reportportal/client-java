@@ -49,6 +49,7 @@ import jakarta.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
@@ -376,6 +377,21 @@ public class LaunchImpl extends Launch {
 		rq.setAttributes(truncateAttributes(rq.getAttributes()));
 	}
 
+	@Nullable
+	private Comparable<? extends Comparable<?>> convertIfNecessary(@Nullable Comparable<? extends Comparable<?>> dateTime) {
+		if (dateTime == null) {
+			return null;
+		}
+		boolean useMicroseconds = useMicroseconds();
+		if (dateTime instanceof Instant && !useMicroseconds) {
+			// Convert Instant to Date if microseconds are not supported
+			return Date.from((Instant) dateTime);
+		} else {
+			// Not Instant return as is
+			return dateTime;
+		}
+	}
+
 	/**
 	 * Starts the launch asynchronously on first subscription. Subsequent calls do
 	 * not start the launch again due to internal caching.
@@ -390,8 +406,10 @@ public class LaunchImpl extends Launch {
 			return Maybe.empty();
 		}
 
-		ListenerParameters params = getParameters();
+		startRq.setStartTime(convertIfNecessary(startRq.getStartTime()));
 		Maybe<String> myLaunch = getLaunch();
+
+		ListenerParameters params = getParameters();
 		if (params.isPrintLaunchUuid()) {
 			myLaunch.subscribe(printLaunch(params));
 		} else {
@@ -513,6 +531,7 @@ public class LaunchImpl extends Launch {
 				.collect(Collectors.toList()));
 		if (StringUtils.isBlank(getParameters().getLaunchUuid()) || !getParameters().isLaunchUuidCreationSkip()) {
 			FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
+			rq.setEndTime(convertIfNecessary(rq.getEndTime()));
 			truncateAttributes(rq);
 			finish = finish.andThen(getLaunch().map(id -> getClient().finishLaunch(id, rq)
 					.retry(DEFAULT_REQUEST_RETRY)
@@ -554,6 +573,7 @@ public class LaunchImpl extends Launch {
 			return createErrorResponse(new NullPointerException("StartTestItemRQ should not be null"));
 		}
 		StartTestItemRQ rq = clonePojo(request, StartTestItemRQ.class);
+		rq.setStartTime(convertIfNecessary(rq.getStartTime()));
 		truncateName(rq);
 		truncateAttributes(rq);
 
@@ -565,6 +585,47 @@ public class LaunchImpl extends Launch {
 		}).cache();
 		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start " + itemDescription));
 		queue.getOrCompute(item).addToQueue(item.ignoreElement().onErrorComplete());
+		LoggingContext.init(item);
+
+		getStepReporter().setParent(item);
+		return item;
+	}
+
+	/**
+	 * Starts new test item in ReportPortal asynchronously (non-blocking).
+	 *
+	 * @param parentId Promise of parent item ID.
+	 * @param request  Item start request.
+	 * @return Test Item ID promise
+	 */
+	@Nonnull
+	public Maybe<String> startTestItem(final Maybe<String> parentId, final StartTestItemRQ request) {
+		if (parentId == null) {
+			return startTestItem(request);
+		}
+		if (request == null) {
+			/*
+			 * This usually happens when we have a bug inside an agent or supported framework. But in any case we shouldn't rise an exception,
+			 * since we are reporting tool and our problems	should not fail launches.
+			 */
+			return createErrorResponse(new NullPointerException("StartTestItemRQ should not be null"));
+		}
+		StartTestItemRQ rq = clonePojo(request, StartTestItemRQ.class);
+		rq.setStartTime(convertIfNecessary(rq.getStartTime()));
+		truncateName(rq);
+		truncateAttributes(rq);
+
+		String itemDescription = String.format("child test item [%s] '%s'", rq.getType(), rq.getName());
+		final Maybe<String> item = RxJavaPlugins.onAssembly(Maybe.zip(
+				getLaunch(), parentId, (lId, pId) -> {
+					rq.setLaunchUuid(lId);
+					LOGGER.trace("Starting {} in thread: {}", itemDescription, Thread.currentThread().getName());
+					return getClient().startTestItem(pId, rq);
+				}
+		).flatMap(rs -> rs.retry(DEFAULT_REQUEST_RETRY).map(TO_ID)).cache());
+
+		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start " + itemDescription));
+		queue.getOrCompute(item).withParent(parentId).addToQueue(item.ignoreElement().onErrorComplete());
 		LoggingContext.init(item);
 
 		getStepReporter().setParent(item);
@@ -588,46 +649,6 @@ public class LaunchImpl extends Launch {
 			myRq.setRetryOf(s);
 			return startTestItem(parentId, myRq);
 		}).cache();
-	}
-
-	/**
-	 * Starts new test item in ReportPortal asynchronously (non-blocking).
-	 *
-	 * @param parentId Promise of parent item ID.
-	 * @param request  Item start request.
-	 * @return Test Item ID promise
-	 */
-	@Nonnull
-	public Maybe<String> startTestItem(final Maybe<String> parentId, final StartTestItemRQ request) {
-		if (parentId == null) {
-			return startTestItem(request);
-		}
-		if (request == null) {
-			/*
-			 * This usually happens when we have a bug inside an agent or supported framework. But in any case we shouldn't rise an exception,
-			 * since we are reporting tool and our problems	should not fail launches.
-			 */
-			return createErrorResponse(new NullPointerException("StartTestItemRQ should not be null"));
-		}
-		StartTestItemRQ rq = clonePojo(request, StartTestItemRQ.class);
-		truncateName(rq);
-		truncateAttributes(rq);
-
-		String itemDescription = String.format("child test item [%s] '%s'", rq.getType(), rq.getName());
-		final Maybe<String> item = RxJavaPlugins.onAssembly(Maybe.zip(
-				getLaunch(), parentId, (lId, pId) -> {
-					rq.setLaunchUuid(lId);
-					LOGGER.trace("Starting {} in thread: {}", itemDescription, Thread.currentThread().getName());
-					return getClient().startTestItem(pId, rq);
-				}
-		).flatMap(rs -> rs.retry(DEFAULT_REQUEST_RETRY).map(TO_ID)).cache());
-
-		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start " + itemDescription));
-		queue.getOrCompute(item).withParent(parentId).addToQueue(item.ignoreElement().onErrorComplete());
-		LoggingContext.init(item);
-
-		getStepReporter().setParent(item);
-		return item;
 	}
 
 	/**
@@ -751,7 +772,6 @@ public class LaunchImpl extends Launch {
 		if (error != null) {
 			return error;
 		}
-
 		Maybe<String> item = startTestItem(parentId, rq);
 		handleVirtualItemSubscription(virtualItem, item);
 		return item;
@@ -836,6 +856,7 @@ public class LaunchImpl extends Launch {
 			return createErrorResponse(new NullPointerException("FinishTestItemRQ should not be null"));
 		}
 		FinishTestItemRQ rq = clonePojo(request, FinishTestItemRQ.class);
+		rq.setEndTime(convertIfNecessary(rq.getEndTime()));
 		truncateAttributes(rq);
 
 		//noinspection ReactiveStreamsUnusedPublisher

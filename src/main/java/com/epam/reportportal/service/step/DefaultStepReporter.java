@@ -338,6 +338,8 @@ public class DefaultStepReporter implements StepReporter {
 					newDate = new Date(((Date) previousDate).getTime() + 1);
 				} else if (previousDate instanceof Instant) {
 					newDate = ((Instant) previousDate).plus(1, ChronoUnit.MICROS);
+				} else if (previousDate instanceof Long) {
+					newDate = ((Long) previousDate) + 1;
 				} else {
 					// Fallback to the original timestamp if it is not a Date or Instant to not fail reporting
 					newDate = previousDate;
