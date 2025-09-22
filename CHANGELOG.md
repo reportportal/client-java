@@ -8,6 +8,10 @@
 ### Removed
 - Java 8-10 support, by @HardNorth
 
+## [5.3.17]
+### Fixed
+- Item upload in certain rare cases, by @HardNorth
+
 ## [5.3.16]
 ### Fixed
 - Ensure all logs are sent before JVM exit for secondary Launches, by @HardNorth
