@@ -90,7 +90,7 @@ public abstract class Launch {
 	 *
 	 * @param rq Launch finish request.
 	 */
-	abstract public void finish(final FinishExecutionRQ rq);
+	abstract public void finish(@Nonnull FinishExecutionRQ rq);
 
 	/**
 	 * Starts a virtual test item in ReportPortal.
@@ -261,7 +261,7 @@ public abstract class Launch {
 		}
 
 		@Override
-		public void finish(FinishExecutionRQ rq) {
+		public void finish(@Nonnull FinishExecutionRQ rq) {
 		}
 
 		@NotNull

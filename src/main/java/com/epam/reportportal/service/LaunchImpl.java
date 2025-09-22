@@ -530,7 +530,7 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @param request Launch finish request.
 	 */
-	public void finish(final FinishExecutionRQ request) {
+	public void finish(@Nonnull FinishExecutionRQ request) {
 		if (getExecutor().isShutdown()) {
 			LOGGER.error("Unable to finish Launch: executor service is already shut down. The data may be lost.");
 			return;

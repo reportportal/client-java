@@ -100,7 +100,7 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 	}
 
 	@Override
-	public void finish(final FinishExecutionRQ request) {
+	public void finish(@Nonnull FinishExecutionRQ request) {
 		// Collect all items to be reported
 		Completable finish = null;
 		if (!queue.isEmpty()) {
