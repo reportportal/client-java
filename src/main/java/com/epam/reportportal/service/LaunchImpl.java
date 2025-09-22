@@ -138,15 +138,6 @@ public class LaunchImpl extends Launch {
 	private StatisticsService statisticsService;
 	private volatile Boolean useMicroseconds;
 
-	private static Supplier<Maybe<String>> getLaunchSupplier(@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler,
-			@Nonnull final StartLaunchRQ startRq) {
-		return new MemoizingSupplier<>(() -> client.startLaunch(startRq)
-				.retry(DEFAULT_REQUEST_RETRY)
-				.map(StartLaunchRS::getId)
-				.cache()
-				.subscribeOn(scheduler));
-	}
-
 	private static PublishSubject<SaveLogRQ> createLogEmitter(@Nonnull final ReportPortalClient client,
 			@Nonnull final ListenerParameters parameters, @Nonnull final Scheduler scheduler,
 			@Nonnull final FlowableSubscriber<BatchSaveOperatingRS> loggingSubscriber) {
@@ -168,6 +159,12 @@ public class LaunchImpl extends Launch {
 
 	private static Maybe<ApiInfo> getApiInfo(@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler) {
 		return ofNullable(client.getApiInfo()).map(info -> info.subscribeOn(scheduler).cache()).orElse(Maybe.empty());
+	}
+
+	private static StartLaunchRQ emptyStartLaunchForStatistics() {
+		StartLaunchRQ result = new StartLaunchRQ();
+		result.setAttributes(Collections.singleton(new ItemAttributesRQ(DefaultProperties.AGENT.getName(), CUSTOM_AGENT, true)));
+		return result;
 	}
 
 	/**
@@ -192,7 +189,7 @@ public class LaunchImpl extends Launch {
 		}
 		scheduler = createScheduler(executor);
 		statisticsService = new StatisticsService(parameters);
-		startRq = clonePojo(rq, StartLaunchRQ.class);
+		startRq = rq;
 		truncateAttributes(startRq);
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
@@ -247,10 +244,16 @@ public class LaunchImpl extends Launch {
 		apiInfo = getApiInfo(getClient(), getScheduler());
 	}
 
-	private static StartLaunchRQ emptyStartLaunchForStatistics() {
-		StartLaunchRQ result = new StartLaunchRQ();
-		result.setAttributes(Collections.singleton(new ItemAttributesRQ(DefaultProperties.AGENT.getName(), CUSTOM_AGENT, true)));
-		return result;
+	private Supplier<Maybe<String>> getLaunchSupplier(@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler,
+			@Nonnull final StartLaunchRQ startRq) {
+		return new MemoizingSupplier<>(() -> {
+			StartLaunchRQ myStartRq = clonePojo(startRq, StartLaunchRQ.class);
+			myStartRq.setStartTime(convertIfNecessary(myStartRq.getStartTime()));
+			return client.startLaunch(myStartRq)
+					.retry(DEFAULT_REQUEST_RETRY)
+					.map(StartLaunchRS::getId)
+					.cache()
+					.subscribeOn(scheduler);});
 	}
 
 	/**
@@ -405,8 +408,6 @@ public class LaunchImpl extends Launch {
 			LOGGER.error("Unable to start Launch: executor service is already shut down. The data may be lost.");
 			return Maybe.empty();
 		}
-
-		startRq.setStartTime(convertIfNecessary(startRq.getStartTime()));
 		Maybe<String> myLaunch = getLaunch();
 
 		ListenerParameters params = getParameters();
@@ -484,8 +485,15 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @param itemCompletable A completable representing the test items to be completed before finishing the launch
 	 */
-	protected void waitForItemsCompletion(Completable itemCompletable) {
-		waitForCompletable(getLaunch().ignoreElement(), createVirtualItemCompletable(), itemCompletable, completeLogCompletables());
+	protected void waitForItemsCompletion(@Nullable Completable itemCompletable) {
+		List<Completable> completables = new ArrayList<>();
+		completables.add(getLaunch().ignoreElement());
+		completables.add(createVirtualItemCompletable());
+		if (itemCompletable != null) {
+			completables.add(itemCompletable);
+		}
+		completables.add(completeLogCompletables());
+		waitForCompletable(completables.toArray(new Completable[0]));
 	}
 
 	private void emitLog(@Nonnull final SaveLogRQ rq) {
@@ -531,23 +539,23 @@ public class LaunchImpl extends Launch {
 		statisticsService = new StatisticsService(getParameters());
 
 		// Collect all items to be reported
-		Completable finish = Completable.concat(queue.values()
-				.stream()
-				.flatMap(i -> i.getChildren().stream())
-				.collect(Collectors.toList()));
+		Completable finish = null;
+		if (!queue.isEmpty()) {
+			finish = Completable.concat(queue.values().stream().flatMap(i -> i.getChildren().stream()).collect(Collectors.toList()));
+		}
 		if (StringUtils.isBlank(getParameters().getLaunchUuid()) || !getParameters().isLaunchUuidCreationSkip()) {
 			FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
 			rq.setEndTime(convertIfNecessary(rq.getEndTime()));
 			truncateAttributes(rq);
-			finish = finish.andThen(getLaunch().map(id -> getClient().finishLaunch(id, rq)
+			Maybe<OperationCompletionRS> launchCompletable = getLaunch().flatMap(id -> getClient().finishLaunch(id, rq)
 					.retry(DEFAULT_REQUEST_RETRY)
 					.doOnSuccess(LOG_SUCCESS)
-					.doOnError(LOG_ERROR)
-					.blockingGet())).ignoreElement();
+					.doOnError(LOG_ERROR));
+			finish = ofNullable(finish).map(f -> f.andThen(launchCompletable)).orElse(launchCompletable).ignoreElement().cache();
 		}
 
 		// Finish all items
-		waitForItemsCompletion(finish.cache());
+		waitForItemsCompletion(finish);
 
 		// Dispose all collected virtual item disposables
 		virtualItemDisposables.removeIf(d -> {
