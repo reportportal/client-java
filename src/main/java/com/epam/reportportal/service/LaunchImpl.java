@@ -427,8 +427,15 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @param itemCompletable A completable representing the test items to be completed before finishing the launch
 	 */
-	protected void waitForItemsCompletion(Completable itemCompletable) {
-		waitForCompletable(getLaunch().ignoreElement(), createVirtualItemCompletable(), itemCompletable, completeLogCompletables());
+	protected void waitForItemsCompletion(@Nullable Completable itemCompletable) {
+		List<Completable> completables = new ArrayList<>();
+		completables.add(getLaunch().ignoreElement());
+		completables.add(createVirtualItemCompletable());
+		if (itemCompletable != null) {
+			completables.add(itemCompletable);
+		}
+		completables.add(completeLogCompletables());
+		waitForCompletable(completables.toArray(new Completable[0]));
 	}
 
 	/**
@@ -468,22 +475,22 @@ public class LaunchImpl extends Launch {
 		statisticsService = new StatisticsService(getParameters());
 
 		// Collect all items to be reported
-		Completable finish = Completable.concat(queue.values()
-				.stream()
-				.flatMap(i -> i.getChildren().stream())
-				.collect(Collectors.toList()));
+		Completable finish = null;
+		if (!queue.isEmpty()) {
+			finish = Completable.concat(queue.values().stream().flatMap(i -> i.getChildren().stream()).collect(Collectors.toList()));
+		}
 		if (StringUtils.isBlank(getParameters().getLaunchUuid()) || !getParameters().isLaunchUuidCreationSkip()) {
 			FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
 			truncateAttributes(rq);
-			finish = finish.andThen(getLaunch().map(id -> getClient().finishLaunch(id, rq)
+			Maybe<OperationCompletionRS> launchCompletable = getLaunch().flatMap(id -> getClient().finishLaunch(id, rq)
 					.retry(DEFAULT_REQUEST_RETRY)
 					.doOnSuccess(LOG_SUCCESS)
-					.doOnError(LOG_ERROR)
-					.blockingGet())).ignoreElement();
+					.doOnError(LOG_ERROR));
+			finish = ofNullable(finish).map(f -> f.andThen(launchCompletable)).orElse(launchCompletable).ignoreElement().cache();
 		}
 
 		// Finish all items
-		waitForItemsCompletion(finish.cache());
+		waitForItemsCompletion(finish);
 
 		// Dispose all collected virtual item disposables
 		virtualItemDisposables.removeIf(d -> {
