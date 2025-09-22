@@ -257,7 +257,7 @@ public class TestUtils {
 				.map(b -> {
 					try {
 						return HttpRequestUtils.MAPPER.readValue(
-								b, new TypeReference<List<SaveLogRQ>>() {
+								b, new TypeReference<>() {
 								}
 						);
 					} catch (IOException e) {
