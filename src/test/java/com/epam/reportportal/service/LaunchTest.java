@@ -158,6 +158,7 @@ public class LaunchTest {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
+		mockBatchLogging(rpClient);
 		Launch launch = createLaunch();
 
 		Maybe<String> launchUuid = launch.start();
