@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.3.17]
 ### Fixed
 - Item upload in certain rare cases, by @HardNorth
 
