@@ -42,6 +42,7 @@ jobs:
           java-version: '11'
 
       - name: Build with Gradle
+        timeout-minutes: 20
         run: ./gradlew build
 
       - name: Codecov upload
