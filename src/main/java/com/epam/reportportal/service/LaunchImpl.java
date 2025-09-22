@@ -498,6 +498,8 @@ public class LaunchImpl extends Launch {
 
 	private void emitLog(@Nonnull final SaveLogRQ rq) {
 		SaveLogRQ myRq = clonePojo(rq, SaveLogRQ.class);
+		// Ensure file content is not lost during cloning
+		ofNullable(myRq.getFile()).ifPresent(file -> file.setContent(rq.getFile().getContent()));
 		myRq.setLogTime(convertIfNecessary(myRq.getLogTime()));
 		logEmitter.onNext(myRq);
 	}

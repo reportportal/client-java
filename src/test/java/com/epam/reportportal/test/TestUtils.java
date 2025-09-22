@@ -17,6 +17,7 @@
 package com.epam.reportportal.test;
 
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.LaunchImpl;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.*;
@@ -214,6 +215,14 @@ public class TestUtils {
 		rq.setUniqueId(id);
 		rq.setType("STEP");
 		return rq;
+	}
+
+	public static ApiInfo testApiInfo() {
+		ApiInfo apiInfo = new ApiInfo();
+		ApiInfo.Build build = new ApiInfo.Build();
+		apiInfo.setBuild(build);
+		build.setVersion(LaunchImpl.MICROSECONDS_MIN_VERSION);
+		return apiInfo;
 	}
 
 	/**

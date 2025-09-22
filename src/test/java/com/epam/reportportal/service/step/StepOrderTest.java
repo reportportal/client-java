@@ -116,11 +116,7 @@ public class StepOrderTest {
 
 	@Test
 	public void test_steps_have_different_start_time_microseconds() {
-		ApiInfo apiInfo = new ApiInfo();
-		ApiInfo.Build build = new ApiInfo.Build();
-		apiInfo.setBuild(build);
-		build.setVersion(LaunchImpl.MICROSECONDS_MIN_VERSION);
-		when(client.getApiInfo()).thenReturn(Maybe.just(apiInfo));
+		when(client.getApiInfo()).thenReturn(Maybe.just(TestUtils.testApiInfo()));
 		Launch launch = rp.withLaunch(launchUuid);
 		launch.startTestItem(Maybe.just(testClassUuid), TestUtils.standardStartStepRequest());
 		test_steps_start_time(launch.getStepReporter());
