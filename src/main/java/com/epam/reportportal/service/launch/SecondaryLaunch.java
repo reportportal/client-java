@@ -102,10 +102,10 @@ public class SecondaryLaunch extends AbstractJoinedLaunch {
 	@Override
 	public void finish(final FinishExecutionRQ request) {
 		// Collect all items to be reported
-		Completable finish = Completable.concat(queue.values()
-				.stream()
-				.flatMap(i -> i.getChildren().stream())
-				.collect(Collectors.toList()));
+		Completable finish = null;
+		if (!queue.isEmpty()) {
+			finish = Completable.concat(queue.values().stream().flatMap(i -> i.getChildren().stream()).collect(Collectors.toList()));
+		}
 
 		// Wait for all items to be finished
 		waitForItemsCompletion(finish);
