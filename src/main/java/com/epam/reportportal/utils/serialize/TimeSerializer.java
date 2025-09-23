@@ -33,7 +33,7 @@ import java.util.Date;
  */
 public class TimeSerializer extends JsonSerializer<Object> {
 
-	private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ")
+	public static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ")
 			.withZone(ZoneOffset.UTC);
 
 	@Override

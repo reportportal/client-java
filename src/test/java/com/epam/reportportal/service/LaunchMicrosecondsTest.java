@@ -142,7 +142,7 @@ public class LaunchMicrosecondsTest {
 
 	private static void assertTimeIsoMicro(String json, String key) {
 		assertThat("Request body should be present", json, notNullValue());
-		Pattern p = Pattern.compile("\"" + key + "\"\\s*:\\s*\"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6,9}Z\"");
+		Pattern p = Pattern.compile("\"" + key + "\"\\s*:\\s*\"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6,9}\\+0000\"");
 		assertThat("Expected ISO instant with microseconds for " + key + " in JSON: " + json, p.matcher(json).find(), is(true));
 	}
 

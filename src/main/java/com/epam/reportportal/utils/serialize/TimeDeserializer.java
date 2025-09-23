@@ -54,15 +54,18 @@ public class TimeDeserializer extends JsonDeserializer<Comparable<?>> {
 			}
 
 			try {
-				// Try to parse as ISO instant first
-				return Instant.parse(value);
-			} catch (DateTimeParseException e) {
-				// If ISO parsing fails, try to parse as long timestamp
-				try {
-					long timestamp = Long.parseLong(value);
-					return new Date(timestamp);
-				} catch (NumberFormatException nfe) {
-					throw new IOException("Unable to parse time value: " + value, nfe);
+				return TimeSerializer.ISO_FORMATTER.parse(value, Instant::from);
+			} catch (DateTimeParseException e1) {
+				try{
+					return Instant.parse(value);
+				} catch (DateTimeParseException e2) {
+					// If ISO parsing fails, try to parse as long timestamp
+					try {
+						long timestamp = Long.parseLong(value);
+						return new Date(timestamp);
+					} catch (NumberFormatException nfe) {
+						throw new IOException("Unable to parse time value: " + value, nfe);
+					}
 				}
 			}
 		}
