@@ -18,6 +18,7 @@ package com.epam.reportportal.service.launch.lock;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.LaunchIdLock;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.util.test.ProcessUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -39,7 +40,6 @@ import java.net.ServerSocket;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -90,12 +90,13 @@ public class LaunchIdLockSocketTest {
 	@Test
 	public void test_launch_uuid_will_be_the_same_for_ten_threads_obtainLaunchUuid() throws InterruptedException {
 		int threadNum = 10;
-		ExecutorService executor = testExecutor(threadNum);
-		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(launchIdLockSocket));
+		try (CommonUtils.ExecutorService executor = CommonUtils.testExecutor(threadNum)) {
+			Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(launchIdLockSocket));
 
-		Collection<String> results = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
-		assertThat(results, hasSize(threadNum));
-		assertThat(results, Matchers.everyItem(equalTo(results.iterator().next())));
+			Collection<String> results = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
+			assertThat(results, hasSize(threadNum));
+			assertThat(results, Matchers.everyItem(equalTo(results.iterator().next())));
+		}
 	}
 
 	@Test
@@ -210,10 +211,11 @@ public class LaunchIdLockSocketTest {
 
 	private Pair<Set<String>, Collection<String>> executeParallelLaunchUuidSync(int threadNum, Iterable<LaunchIdLock> lockFileCollection)
 			throws InterruptedException {
-		ExecutorService executor = testExecutor(threadNum);
-		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, iterableSupplier(lockFileCollection));
-		Collection<String> result = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
-		return ImmutablePair.of(tasks.keySet(), result);
+		try (CommonUtils.ExecutorService executor = CommonUtils.testExecutor(threadNum)) {
+			Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, iterableSupplier(lockFileCollection));
+			Collection<String> result = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
+			return ImmutablePair.of(tasks.keySet(), result);
+		}
 	}
 
 	@Test

@@ -72,16 +72,6 @@ public class LockTestUtil {
 		return () -> value;
 	}
 
-	public static ExecutorService testExecutor(final int threadNum) {
-		return Executors.newFixedThreadPool(
-				threadNum, r -> {
-					Thread t = Executors.defaultThreadFactory().newThread(r);
-					t.setDaemon(true);
-					return t;
-				}
-		);
-	}
-
 	public static <T> Supplier<T> iterableSupplier(final Iterable<T> instanceIterable) {
 		return new Supplier<>() {
 			private final Iterator<T> instanceIterator = instanceIterable.iterator();
