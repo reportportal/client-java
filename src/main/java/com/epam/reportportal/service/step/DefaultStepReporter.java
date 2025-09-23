@@ -119,7 +119,7 @@ public class DefaultStepReporter implements StepReporter {
 				LOGGER.error("Unable to process nested step: {}", e.getLocalizedMessage(), e);
 			}
 		}
-		addStepEntry(stepId, status, launch.useMicroseconds() ? Instant.now() : Calendar.getInstance().getTime());
+		addStepEntry(stepId, status, rq.getStartTime(), launch.useMicroseconds() ? Instant.now() : Calendar.getInstance().getTime());
 		return stepId;
 	}
 
@@ -362,9 +362,10 @@ public class DefaultStepReporter implements StepReporter {
 		return startTestItemRQ;
 	}
 
-	private void addStepEntry(Maybe<String> stepId, ItemStatus status, @Nonnull Comparable<? extends Comparable<?>> timestamp) {
-		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status, timestamp);
-		steps.put(stepId, new StepEntry(stepId, timestamp, finishTestItemRQ));
+	private void addStepEntry(Maybe<String> stepId, ItemStatus status, @Nonnull Comparable<? extends Comparable<?>> startTime,
+			@Nonnull Comparable<? extends Comparable<?>> finishTime) {
+		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status, finishTime);
+		steps.put(stepId, new StepEntry(stepId, startTime, finishTestItemRQ));
 	}
 
 	private SaveLogRQ buildSaveLogRequest(String itemId, String message, LogLevel level) {
