@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Common response for operation that return just message about completion
+ * Common response for operations that return just a completion message
  */
 @JsonInclude(Include.NON_NULL)
 public class OperationCompletionRS {

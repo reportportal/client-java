@@ -19,7 +19,6 @@ package com.epam.ta.reportportal.ws.model;
 import com.epam.reportportal.utils.serialize.TimeDeserializer;
 import com.epam.reportportal.utils.serialize.TimeSerializer;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -41,13 +40,11 @@ public class StartRQ {
 	private String description;
 
 	@JsonProperty("attributes")
-	@JsonAlias({ "attributes", "tags" })
 	private Set<ItemAttributesRQ> attributes;
 
 	@JsonProperty(value = "startTime", required = true)
 	@JsonSerialize(using = TimeSerializer.class)
 	@JsonDeserialize(using = TimeDeserializer.class)
-	@JsonAlias({ "startTime", "start_time" })
 	private Comparable<? extends Comparable<?>> startTime;
 
 	@JsonProperty(value = "uuid")
