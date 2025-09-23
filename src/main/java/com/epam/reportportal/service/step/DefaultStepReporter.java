@@ -119,7 +119,7 @@ public class DefaultStepReporter implements StepReporter {
 				LOGGER.error("Unable to process nested step: {}", e.getLocalizedMessage(), e);
 			}
 		}
-		addStepEntry(stepId, status, rq.getStartTime());
+		addStepEntry(stepId, status, launch.useMicroseconds() ? Instant.now() : Calendar.getInstance().getTime());
 		return stepId;
 	}
 

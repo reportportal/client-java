@@ -74,7 +74,7 @@ public class LaunchResource {
 	@JsonProperty(value = "mode")
 	private Mode mode;
 
-	@JsonProperty(value = "analysing")
+	@JsonProperty(value = "analyzers")
 	private Set<String> analyzers = new LinkedHashSet<>();
 
 	@JsonProperty(value = "approximateDuration")

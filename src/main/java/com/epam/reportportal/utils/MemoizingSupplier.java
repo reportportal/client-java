@@ -48,7 +48,7 @@ public class MemoizingSupplier<T> implements Supplier<T>, Serializable {
 					value = delegate.get();
 					initialized = true;
 				}
-			} catch (RuntimeException e) {
+			} catch (Throwable e) {
 				lock.unlock();
 				throw e;
 			}

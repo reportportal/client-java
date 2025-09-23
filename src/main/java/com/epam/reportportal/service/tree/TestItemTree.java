@@ -230,7 +230,7 @@ public class TestItemTree {
 
 		private TestItemLeaf(@Nullable Maybe<String> parentId, Maybe<String> itemId, Map<String, Object> attributes,
 				Map<ItemTreeKey, TestItemLeaf> childItems) {
-			this(itemId, parentId, attributes);
+			this(parentId, itemId, attributes);
 			this.childItems.putAll(childItems);
 		}
 

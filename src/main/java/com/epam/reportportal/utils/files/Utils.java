@@ -138,7 +138,9 @@ public class Utils {
 	 * @throws IOException in case of a read error, or a file not found
 	 */
 	public static byte[] readFileToBytes(@Nonnull File file) throws IOException {
-		return readInputStreamToBytes(Files.newInputStream(file.toPath()));
+		try (InputStream is = Files.newInputStream(file.toPath())) {
+			return readInputStreamToBytes(is);
+		}
 	}
 
 	/**
@@ -191,7 +193,9 @@ public class Utils {
 		if (file.exists() && file.isFile()) {
 			data = readFileToBytes(file);
 		} else {
-			data = readInputStreamToBytes(getResourceAsStream(file.getPath()));
+			try (InputStream is = getResourceAsStream(file.getPath())) {
+				data = readInputStreamToBytes(is);
+			}
 		}
 		return ByteSource.wrap(data);
 	}
@@ -223,7 +227,11 @@ public class Utils {
 		String resourcePath = uri.getSchemeSpecificPart();
 		int substringIndex = resourcePath.startsWith("//") ? 2 : resourcePath.startsWith("/") ? 1 : 0;
 		resourcePath = resourcePath.substring(substringIndex);
-		ByteSource byteSource = ByteSource.wrap(readInputStreamToBytes(getResourceAsStream(resourcePath)));
+		byte[] bytes;
+		try (InputStream is = getResourceAsStream(resourcePath)) {
+			bytes = readInputStreamToBytes(is);
+		}
+		ByteSource byteSource = ByteSource.wrap(bytes);
 		String name = resourcePath.substring(Math.max(resourcePath.lastIndexOf('/'), resourcePath.lastIndexOf('\\')) + 1);
 		return new TypeAwareByteSource(byteSource, MimeTypeDetector.detect(byteSource, name));
 	}

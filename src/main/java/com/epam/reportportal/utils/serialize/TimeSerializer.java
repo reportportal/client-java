@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
@@ -32,7 +33,8 @@ import java.util.Date;
  */
 public class TimeSerializer extends JsonSerializer<Object> {
 
-	private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_INSTANT;
+	private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ")
+			.withZone(ZoneOffset.UTC);
 
 	@Override
 	public void serialize(Object value, JsonGenerator gen, SerializerProvider serializers) throws IOException {

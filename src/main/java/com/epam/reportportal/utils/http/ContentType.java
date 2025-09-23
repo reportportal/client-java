@@ -142,7 +142,7 @@ public class ContentType {
 		if (stripMediaType == null) {
 			return false;
 		}
-		return KNOWN_TYPES.contains(stripMediaType(mediaType));
+		return KNOWN_TYPES.contains(stripMediaType);
 	}
 
 	/**
