@@ -49,7 +49,7 @@ public class TimeDeserializer extends JsonDeserializer<Comparable<?>> {
 
 		if (token == JsonToken.VALUE_STRING) {
 			String value = p.getText();
-			if (value == null || value.trim().isEmpty()) {
+			if (value.isBlank()) {
 				return null;
 			}
 
