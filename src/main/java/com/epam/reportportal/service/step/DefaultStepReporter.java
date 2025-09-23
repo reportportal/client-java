@@ -238,10 +238,7 @@ public class DefaultStepReporter implements StepReporter {
 			return Maybe.empty();
 		}
 		Maybe<String> itemId = launch.startTestItem(parent, startStepRequest);
-		steps.put(
-				itemId,
-				new StepEntry(itemId, launch.useMicroseconds() ? Instant.now() : Calendar.getInstance().getTime(), new FinishTestItemRQ())
-		);
+		steps.put(itemId, new StepEntry(itemId, startStepRequest.getStartTime(), new FinishTestItemRQ()));
 		return itemId;
 	}
 
@@ -258,15 +255,16 @@ public class DefaultStepReporter implements StepReporter {
 		String runStatus = ofNullable(finishStepRequest.getStatus()).orElse(ItemStatus.PASSED.name());
 
 		FinishTestItemRQ actualRequest = ObjectUtils.clonePojo(finishStepRequest, FinishTestItemRQ.class);
+		String finalStatus;
 		if (manualStatus != null) {
-			actualRequest.setStatus(manualStatus);
+			finalStatus = manualStatus;
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(manualStatus)) {
 				failParents();
 			}
 		} else {
-			actualRequest.setStatus(runStatus);
+			finalStatus = runStatus;
 		}
-		actualRequest.setStatus(ofNullable(manualStatus).orElse(runStatus));
+		actualRequest.setStatus(finalStatus);
 		return launch.finishTestItem(stepId, actualRequest);
 	}
 

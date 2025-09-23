@@ -109,7 +109,7 @@ public class LaunchMicrosecondsTest {
 	}
 
 	private static Comparable<? extends Comparable<?>> dateOrInstant(boolean instant) {
-		Instant testInstant = Instant.ofEpochSecond(START_TIME_SECONDS_BASE, 123_456_000);
+		Instant testInstant = Instant.ofEpochSecond(START_TIME_SECONDS_BASE, START_TIME_NANO_ADJUSTMENT);
 		if (!instant) {
 			return Date.from(testInstant);
 		}

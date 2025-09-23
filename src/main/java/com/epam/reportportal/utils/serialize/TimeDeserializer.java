@@ -54,7 +54,7 @@ public class TimeDeserializer extends JsonDeserializer<Comparable<?>> {
 			}
 
 			try {
-				return TimeSerializer.ISO_FORMATTER.parse(value, Instant::from);
+				return TimeSerializer.ISO_MICRO_FORMATTER.parse(value, Instant::from);
 			} catch (DateTimeParseException e1) {
 				try{
 					return Instant.parse(value);

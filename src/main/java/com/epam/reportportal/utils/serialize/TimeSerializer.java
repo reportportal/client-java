@@ -29,11 +29,11 @@ import java.util.Date;
 /**
  * Custom serializer for time values that handles both Date and Instant objects.
  * - Date objects are serialized to long values (milliseconds from epoch)
- * - Instant objects are serialized to ISO time format with milliseconds
+ * - Instant objects are serialized to ISO-8601 with microseconds (6 fractional digits) and 'Z' suffix
  */
 public class TimeSerializer extends JsonSerializer<Object> {
 
-	public static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ")
+	public static final DateTimeFormatter ISO_MICRO_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ")
 			.withZone(ZoneOffset.UTC);
 
 	@Override
@@ -50,11 +50,11 @@ public class TimeSerializer extends JsonSerializer<Object> {
 		} else if (value instanceof Instant) {
 			// Serialize Instant to ISO time format with milliseconds
 			Instant instant = (Instant) value;
-			gen.writeString(ISO_FORMATTER.format(instant));
+			gen.writeString(ISO_MICRO_FORMATTER.format(instant));
 		} else if (value instanceof Long) {
 			gen.writeNumber((Long) value);
 		} else {
-			// Fallback for other Comparable types - convert to string
+			// Fallback for other types - convert to string
 			gen.writeString(value.toString());
 		}
 	}
