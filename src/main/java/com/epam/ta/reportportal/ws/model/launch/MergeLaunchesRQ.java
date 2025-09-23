@@ -51,6 +51,8 @@ public class MergeLaunchesRQ {
 	private Set<Long> launches;
 
 	@JsonProperty(value = "endTime")
+	@JsonSerialize(using = TimeSerializer.class)
+	@JsonDeserialize(using = TimeDeserializer.class)
 	private Comparable<? extends Comparable<?>> endTime;
 
 	@JsonProperty("mergeType")

@@ -25,23 +25,22 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 @JsonInclude(Include.NON_NULL)
 public class OperationCompletionRS {
-
 	@JsonProperty("message")
-	private String resultMessage;
+	private String message;
 
 	public OperationCompletionRS() {
 
 	}
 
 	public OperationCompletionRS(String message) {
-		this.resultMessage = message;
+		this.message = message;
 	}
 
-	public String getResultMessage() {
-		return resultMessage;
+	public String getMessage() {
+		return message;
 	}
 
-	public void setResultMessage(String resultMessage) {
-		this.resultMessage = resultMessage;
+	public void setMessage(String message) {
+		this.message = message;
 	}
 } 

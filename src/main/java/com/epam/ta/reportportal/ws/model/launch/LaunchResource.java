@@ -197,11 +197,7 @@ public class LaunchResource {
 		this.analyzers = analyzers;
 	}
 
-	public boolean isHasRetries() {
-		return hasRetries;
-	}
-
-	public boolean getHasRetries() {
+	public boolean hasRetries() {
 		return hasRetries;
 	}
 

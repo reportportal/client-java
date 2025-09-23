@@ -44,7 +44,7 @@ public class StartRQ {
 	@JsonAlias({ "attributes", "tags" })
 	private Set<ItemAttributesRQ> attributes;
 
-	@JsonProperty(required = true)
+	@JsonProperty(value = "startTime", required = true)
 	@JsonSerialize(using = TimeSerializer.class)
 	@JsonDeserialize(using = TimeDeserializer.class)
 	@JsonAlias({ "startTime", "start_time" })

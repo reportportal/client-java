@@ -49,6 +49,8 @@ public class TimeSerializer extends JsonSerializer<Object> {
 			// Serialize Instant to ISO time format with milliseconds
 			Instant instant = (Instant) value;
 			gen.writeString(ISO_FORMATTER.format(instant));
+		} else if (value instanceof Long) {
+			gen.writeNumber((Long) value);
 		} else {
 			// Fallback for other Comparable types - convert to string
 			gen.writeString(value.toString());

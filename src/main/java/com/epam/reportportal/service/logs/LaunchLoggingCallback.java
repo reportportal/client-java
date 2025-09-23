@@ -38,7 +38,7 @@ public final class LaunchLoggingCallback {
 	/**
 	 * Logs success
 	 */
-	public static final Consumer<OperationCompletionRS> LOG_SUCCESS = rs -> LOGGER.debug(rs.getResultMessage());
+	public static final Consumer<OperationCompletionRS> LOG_SUCCESS = rs -> LOGGER.debug(rs.getMessage());
 
 	/**
 	 * Logs an error
