@@ -25,6 +25,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.test.TestUtils;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.utils.ObjectUtils;
 import com.epam.reportportal.utils.StaticStructuresUtils;
 import com.epam.reportportal.utils.properties.DefaultProperties;
@@ -191,38 +192,40 @@ public class LaunchTest {
 		simulateFinishLaunchResponse(rpClient);
 
 		// Verify Launch set on creation
-		ExecutorService launchCreateExecutor = Executors.newSingleThreadExecutor();
-		Launch launchOnCreate = launchCreateExecutor.submit(() -> this.createLaunch()).get();
-		Launch launchGet = launchCreateExecutor.submit(Launch::currentLaunch).get();
-
-		assertThat(launchGet, sameInstance(launchOnCreate));
-		shutdownExecutorService(launchCreateExecutor);
+		Launch launchOnCreate;
+		Launch launchGet;
+		try (CommonUtils.ExecutorService launchCreateExecutor = CommonUtils.testExecutor()) {
+			launchOnCreate = launchCreateExecutor.submit(() -> this.createLaunch()).get();
+			launchGet = launchCreateExecutor.submit(Launch::currentLaunch).get();
+			assertThat(launchGet, sameInstance(launchOnCreate));
+		}
 
 		// Verify Launch set on start
-		ExecutorService launchStartExecutor = Executors.newSingleThreadExecutor();
-		launchStartExecutor.submit(launchOnCreate::start).get();
-		launchGet = launchStartExecutor.submit(Launch::currentLaunch).get();
+		try (CommonUtils.ExecutorService launchStartExecutor = CommonUtils.testExecutor()) {
+			launchStartExecutor.submit(launchOnCreate::start).get();
+			launchGet = launchStartExecutor.submit(Launch::currentLaunch).get();
 
-		assertThat(launchGet, sameInstance(launchOnCreate));
-		shutdownExecutorService(launchStartExecutor);
+			assertThat(launchGet, sameInstance(launchOnCreate));
+		}
 
 		// Verify Launch set on start root test item
-		ExecutorService launchSuiteStartExecutor = Executors.newSingleThreadExecutor();
-		Maybe<String> parent = launchSuiteStartExecutor.submit(() -> launchOnCreate.startTestItem(standardStartSuiteRequest())).get();
-		launchGet = launchSuiteStartExecutor.submit(Launch::currentLaunch).get();
+		Maybe<String> parent;
+		try (CommonUtils.ExecutorService launchSuiteStartExecutor = CommonUtils.testExecutor()) {
+			parent = launchSuiteStartExecutor.submit(() -> launchOnCreate.startTestItem(standardStartSuiteRequest())).get();
+			launchGet = launchSuiteStartExecutor.submit(Launch::currentLaunch).get();
 
-		assertThat(launchGet, sameInstance(launchOnCreate));
-		shutdownExecutorService(launchSuiteStartExecutor);
+			assertThat(launchGet, sameInstance(launchOnCreate));
+		}
 
 		// Verify Launch set on start child test item
-		ExecutorService launchChildStartExecutor = Executors.newSingleThreadExecutor();
-		launchChildStartExecutor.submit(() -> launchOnCreate.startTestItem(parent, standardStartTestRequest())).get();
-		launchGet = launchChildStartExecutor.submit(Launch::currentLaunch).get();
+		try (CommonUtils.ExecutorService launchChildStartExecutor = CommonUtils.testExecutor()) {
+			launchChildStartExecutor.submit(() -> launchOnCreate.startTestItem(parent, standardStartTestRequest())).get();
+			launchGet = launchChildStartExecutor.submit(Launch::currentLaunch).get();
 
-		assertThat(launchGet, sameInstance(launchOnCreate));
+			assertThat(launchGet, sameInstance(launchOnCreate));
 
-		launchOnCreate.finish(TestUtils.standardLaunchFinishRequest());
-		shutdownExecutorService(launchChildStartExecutor);
+			launchOnCreate.finish(TestUtils.standardLaunchFinishRequest());
+		}
 	}
 
 	@Test

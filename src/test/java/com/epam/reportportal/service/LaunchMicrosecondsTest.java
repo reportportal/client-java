@@ -64,11 +64,10 @@ public class LaunchMicrosecondsTest {
 		shutdownExecutorService(clientExecutor);
 	}
 
-	private static <T> Pair<List<String>, T> executeWithClosing(ExecutorService clientExecutor, ServerSocket ss,
-			SocketUtils.ServerCallable serverCallable, Callable<T> clientCallable) throws Exception {
+	private static <T> Pair<List<String>, T> executeWithClosing(ServerSocket ss, SocketUtils.ServerCallable serverCallable,
+			Callable<T> clientCallable) throws Exception {
 		Pair<List<String>, T> result = SocketUtils.executeServerCallable(serverCallable, clientCallable);
 		ss.close();
-		shutdownExecutorService(clientExecutor);
 		return result;
 	}
 
@@ -215,7 +214,6 @@ public class LaunchMicrosecondsTest {
 		SocketUtils.ServerCallable serverCallable = buildServerCallableForStartLaunch(ss, micro);
 
 		Pair<List<String>, String> result = executeWithClosing(
-				clientExecutor,
 				ss,
 				serverCallable,
 				() -> launch.start().timeout(10, TimeUnit.SECONDS).blockingGet()
@@ -264,7 +262,6 @@ public class LaunchMicrosecondsTest {
 		SocketUtils.ServerCallable serverCallable = buildServerCallableForStartItem(ss, micro);
 
 		Pair<List<String>, String> result = executeWithClosing(
-				clientExecutor,
 				ss,
 				serverCallable,
 				() -> launch.startTestItem(rq).timeout(10, TimeUnit.SECONDS).blockingGet()
@@ -315,7 +312,6 @@ public class LaunchMicrosecondsTest {
 		SocketUtils.ServerCallable serverCallable = buildServerCallableForStartItem(ss, micro);
 
 		Pair<List<String>, String> result = executeWithClosing(
-				clientExecutor,
 				ss,
 				serverCallable,
 				() -> launch.startTestItem(parentId, rq).timeout(10, TimeUnit.SECONDS).blockingGet()
@@ -366,7 +362,6 @@ public class LaunchMicrosecondsTest {
 		SocketUtils.ServerCallable serverCallable = buildServerCallableForFinishItem(ss, micro);
 
 		Pair<List<String>, ?> result = executeWithClosing(
-				clientExecutor,
 				ss,
 				serverCallable,
 				() -> launch.finishTestItem(itemId, rq).timeout(10, TimeUnit.SECONDS).blockingGet()
@@ -415,7 +410,7 @@ public class LaunchMicrosecondsTest {
 		SocketUtils.ServerCallable serverCallable = buildServerCallableForFinishLaunch(ss, micro);
 
 		Pair<List<String>, ?> result = executeWithClosing(
-				clientExecutor, ss, serverCallable, () -> {
+				ss, serverCallable, () -> {
 					launch.finish(rq);
 					return Boolean.TRUE;
 				}

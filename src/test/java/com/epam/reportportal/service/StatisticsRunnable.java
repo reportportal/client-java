@@ -20,12 +20,11 @@ import com.epam.reportportal.service.statistics.StatisticsClient;
 import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.service.statistics.item.StatisticsItem;
 import com.epam.reportportal.test.TestUtils;
+import com.epam.reportportal.util.test.CommonUtils;
 import io.reactivex.Maybe;
 
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -34,12 +33,11 @@ public class StatisticsRunnable {
 	public static final StatisticsClient STATISTICS_CLIENT = mock(StatisticsClient.class);
 	public static final StatisticsService STATISTICS_SERVICE = new StatisticsService(TestUtils.standardParameters(), STATISTICS_CLIENT);
 	public static final Maybe<String> LAUNCH_ID = Maybe.just("launch_id");
-	public static final ExecutorService EXECUTOR_SERVICE = Executors.newSingleThreadExecutor();
 	public static final ReportPortalClient CLIENT = mock(ReportPortalClient.class);
 
 	public static class MyLaunch extends LaunchImpl {
-		public MyLaunch() {
-			super(CLIENT, TestUtils.standardParameters(), LAUNCH_ID, EXECUTOR_SERVICE);
+		public MyLaunch(ExecutorService executorService) {
+			super(CLIENT, TestUtils.standardParameters(), LAUNCH_ID, executorService);
 		}
 
 		@Override
@@ -49,10 +47,11 @@ public class StatisticsRunnable {
 	}
 
 	public static void main(String... args) {
-		MyLaunch launch = new MyLaunch();
-		//noinspection ReactiveStreamsUnusedPublisher
-		launch.start();
-		verify(STATISTICS_CLIENT, after(DELAY).times(Integer.parseInt(args[0]))).send(any(StatisticsItem.class));
-		shutdownExecutorService(EXECUTOR_SERVICE);
+		try (CommonUtils.ExecutorService executorService = CommonUtils.testExecutor()) {
+			MyLaunch launch = new MyLaunch(executorService);
+			//noinspection ReactiveStreamsUnusedPublisher
+			launch.start();
+			verify(STATISTICS_CLIENT, after(DELAY).times(Integer.parseInt(args[0]))).send(any(StatisticsItem.class));
+		}
 	}
 }

@@ -17,6 +17,7 @@
 package com.epam.reportportal.service.launch.lock;
 
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.util.test.CommonUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -37,7 +38,6 @@ import java.nio.channels.FileLock;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import static com.epam.reportportal.service.launch.lock.LockTestUtil.*;
@@ -102,40 +102,48 @@ public class LaunchIdLockFileTest {
 	@Test
 	public void test_launch_uuid_will_be_the_same_for_ten_threads_obtainLaunchUuid() throws InterruptedException {
 		int threadNum = 10;
-		ExecutorService executor = testExecutor(threadNum);
-		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(launchIdLockFile));
+		try(CommonUtils.ExecutorService executor = CommonUtils.testExecutor(threadNum)) {
+			Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(launchIdLockFile));
 
-		Collection<String> results = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
-		assertThat(results, hasSize(threadNum));
-		assertThat(results, Matchers.everyItem(equalTo(results.iterator().next())));
+			Collection<String> results = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
+			assertThat(results, hasSize(threadNum));
+			assertThat(results, Matchers.everyItem(equalTo(results.iterator().next())));
+		}
 	}
 
 	@Test
 	public void test_sync_file_contains_all_thread_uuids_obtainLaunchUuid() throws InterruptedException, IOException {
 		int threadNum = 5;
-		ExecutorService executor = testExecutor(threadNum);
-		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(launchIdLockFile));
+		try(CommonUtils.ExecutorService executor = CommonUtils.testExecutor(threadNum)) {
+			Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(launchIdLockFile));
 
-		// Call Future#get to wait for execution.
-		String launchUuid = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList()).iterator().next();
+			// Call Future#get to wait for execution.
+			String launchUuid = executor.invokeAll(tasks.values())
+					.stream()
+					.map(new GetFutureResults<>())
+					.collect(toList())
+					.iterator()
+					.next();
 
-		List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LaunchIdLockFile.LOCK_FILE_CHARSET.name());
-		assertThat(syncFileContent.get(0), matchesPattern("\\d+:" + launchUuid));
-		List<String> syncFileContentUuids = syncFileContent.stream()
-				.map(r -> r.substring(r.indexOf(LaunchIdLockFile.TIME_SEPARATOR) + 1))
-				.collect(Collectors.toList());
-		assertThat(syncFileContentUuids, containsInAnyOrder(tasks.keySet().toArray(new String[0])));
+			List<String> syncFileContent = FileUtils.readLines(new File(syncFileName), LaunchIdLockFile.LOCK_FILE_CHARSET.name());
+			assertThat(syncFileContent.get(0), matchesPattern("\\d+:" + launchUuid));
+			List<String> syncFileContentUuids = syncFileContent.stream()
+					.map(r -> r.substring(r.indexOf(LaunchIdLockFile.TIME_SEPARATOR) + 1))
+					.collect(Collectors.toList());
+			assertThat(syncFileContentUuids, containsInAnyOrder(tasks.keySet().toArray(new String[0])));
+		}
 	}
 
 	private Pair<Set<String>, Collection<String>> executeParallelLaunchUuidSync(int threadNum,
 			Iterable<LaunchIdLockFile> lockFileCollection) throws InterruptedException {
-		ExecutorService executor = testExecutor(threadNum);
-		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, iterableSupplier(lockFileCollection));
-		Collection<String> result = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
-		final File testFile = new File(lockFileName);
+		try(CommonUtils.ExecutorService executor = CommonUtils.testExecutor(threadNum)) {
+			Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, iterableSupplier(lockFileCollection));
+			Collection<String> result = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
+			final File testFile = new File(lockFileName);
 
-		Awaitility.await("Wait for .lock file creation").until(testFile::exists, equalTo(Boolean.TRUE));
-		return ImmutablePair.of(tasks.keySet(), result);
+			Awaitility.await("Wait for .lock file creation").until(testFile::exists, equalTo(Boolean.TRUE));
+			return ImmutablePair.of(tasks.keySet(), result);
+		}
 	}
 
 	@Test

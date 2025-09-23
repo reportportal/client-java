@@ -132,7 +132,8 @@ public class ReportPortalTest {
 		try {
 			SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(
 					server,
-					Collections.emptyMap(), "files/responses/simple_response.txt"
+					Collections.emptyMap(),
+					"files/responses/simple_response.txt"
 			);
 			Pair<List<String>, Response> result = SocketUtils.executeServerCallable(
 					serverCallable,
@@ -269,7 +270,9 @@ public class ReportPortalTest {
 		parameters.setBaseUrl("http://localhost:" + ss.getLocalPort());
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
 		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
-		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss, createCookieModel(),
+		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(
+				ss,
+				createCookieModel(),
 				"files/responses/socket_response.txt"
 		);
 		Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ()).timeout(5, TimeUnit.SECONDS).blockingGet();
@@ -336,8 +339,11 @@ public class ReportPortalTest {
 		listAppender.start();
 		loggerList.get(0).addAppender(listAppender);
 
-		serverCallable = new SocketUtils.ServerCallable(ss, createCookieModel(), Collections.singletonList(
-				"files/responses/socket_response.txt"));
+		serverCallable = new SocketUtils.ServerCallable(
+				ss,
+				createCookieModel(),
+				Collections.singletonList("files/responses/socket_response.txt")
+		);
 		Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ()).timeout(5, TimeUnit.SECONDS).blockingGet();
 		executeWithClosingOnException(clientExecutor, ss, serverCallable, clientCallable);
 
@@ -378,15 +384,13 @@ public class ReportPortalTest {
 	@Test
 	public void verify_launch_uuid_parameter_handling() {
 		simulateStartTestItemResponse(rpClient);
+		mockBatchLogging(rpClient);
 
 		String launchUuid = "test-launch-uuid";
 		ListenerParameters listenerParameters = TestUtils.standardParameters();
 		listenerParameters.setLaunchUuid(launchUuid);
 
-		ExecutorService executor = Executors.newSingleThreadExecutor();
-		RuntimeException error = null;
-
-		try {
+		try (CommonUtils.ExecutorService executor = CommonUtils.testExecutor()) {
 			ReportPortal rp = ReportPortal.create(rpClient, listenerParameters, executor);
 
 			Launch launch = rp.newLaunch(standardLaunchRequest(listenerParameters));
@@ -407,12 +411,6 @@ public class ReportPortalTest {
 			launch.finish(TestUtils.standardLaunchFinishRequest());
 
 			verify(rpClient, after(1000).times(0)).finishLaunch(anyString(), any(FinishExecutionRQ.class));
-		} catch (RuntimeException e) {
-			error = e;
-		}
-		CommonUtils.shutdownExecutorService(executor);
-		if (error != null) {
-			throw error;
 		}
 	}
 
@@ -421,6 +419,7 @@ public class ReportPortalTest {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateFinishLaunchResponse(rpClient);
+		mockBatchLogging(rpClient);
 
 		String launchUuid = "test-launch-uuid";
 		ListenerParameters listenerParameters = TestUtils.standardParameters();
@@ -484,7 +483,8 @@ public class ReportPortalTest {
 
 		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(
 				sslServerSocket,
-				Collections.emptyMap(), "files/responses/socket_response.txt"
+				Collections.emptyMap(),
+				"files/responses/socket_response.txt"
 		);
 
 		ListenerParameters parameters = TestUtils.standardParameters();

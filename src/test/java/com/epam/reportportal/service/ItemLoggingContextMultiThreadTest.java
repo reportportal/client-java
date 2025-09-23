@@ -127,14 +127,14 @@ public class ItemLoggingContextMultiThreadTest {
 
 		@Override
 		public void work(String itemId) {
-			ExecutorService timeoutThread = Executors.newSingleThreadExecutor();
-			Future<?> timeoutFuture = timeoutThread.submit(() -> super.work(itemId));
-			try {
-				timeoutFuture.get();
-			} catch (InterruptedException | ExecutionException e) {
-				throw new RuntimeException(e);
+			try(CommonUtils.ExecutorService timeoutThread = CommonUtils.testExecutor()) {
+				Future<?> timeoutFuture = timeoutThread.submit(() -> super.work(itemId));
+				try {
+					timeoutFuture.get();
+				} catch (InterruptedException | ExecutionException e) {
+					throw new RuntimeException(e);
+				}
 			}
-			CommonUtils.shutdownExecutorService(timeoutThread);
 		}
 	}
 
