@@ -17,11 +17,11 @@ package com.epam.reportportal.service.logs;
 
 import com.epam.ta.reportportal.ws.model.BatchSaveOperatingRS;
 import io.reactivex.FlowableSubscriber;
+import jakarta.annotation.Nonnull;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**

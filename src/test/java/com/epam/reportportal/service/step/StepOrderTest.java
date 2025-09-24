@@ -17,9 +17,11 @@
 package com.epam.reportportal.service.step;
 
 import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.service.LaunchImpl;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
+import com.epam.ta.reportportal.ws.model.ApiInfo;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -31,15 +33,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.any;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.lessThan;
 import static org.mockito.Mockito.*;
 
 public class StepOrderTest {
@@ -53,7 +53,7 @@ public class StepOrderTest {
 	@Mock
 	private ReportPortalClient client;
 
-	private StepReporter sr;
+	private ReportPortal rp;
 
 	private final List<Maybe<ItemCreatedRS>> createdStepsList = new ArrayList<>();
 	private final Supplier<Maybe<ItemCreatedRS>> maybeSupplier = () -> {
@@ -79,14 +79,10 @@ public class StepOrderTest {
 				any(FinishTestItemRQ.class)
 		)).thenAnswer((Answer<Maybe<OperationCompletionRS>>) invocation -> Maybe.just(new OperationCompletionRS()));
 
-		ReportPortal rp = ReportPortal.create(client, TestUtils.STANDARD_PARAMETERS);
-		Launch launch = rp.withLaunch(launchUuid);
-		launch.startTestItem(Maybe.just(testClassUuid), TestUtils.standardStartStepRequest());
-		sr = launch.getStepReporter();
+		rp = ReportPortal.create(client, TestUtils.STANDARD_PARAMETERS);
 	}
 
-	@Test
-	public void test_steps_have_different_start_time() {
+	private void test_steps_start_time(StepReporter sr) {
 		int stepNum = 30;
 
 		// create nested steps
@@ -102,13 +98,27 @@ public class StepOrderTest {
 		verify(client, timeout(1000).times(stepNum)).startTestItem(eq(testMethodUuid), stepCaptor.capture());
 
 		List<StartTestItemRQ> rqs = stepCaptor.getAllValues();
+		rqs.sort(Comparator.comparing(rq -> Integer.valueOf(rq.getName().split(" ", 2)[0])));
 		assertThat(rqs, hasSize(stepNum));
 		for (int i = 1; i < stepNum; i++) {
-			assertThat(
-					"Each nested step should not complete in the same millisecond, iteration: " + i,
-					rqs.get(i - 1).getStartTime(),
-					not(equalTo(rqs.get(i).getStartTime()))
-			);
+			//noinspection rawtypes, unchecked
+			int result = ((Comparable) rqs.get(i - 1).getStartTime()).compareTo(rqs.get(i).getStartTime());
+			assertThat("Each nested step should not complete in the same millisecond, iteration: " + i, result, lessThan(0));
 		}
+	}
+
+	@Test
+	public void test_steps_have_different_start_time() {
+		Launch launch = rp.withLaunch(launchUuid);
+		launch.startTestItem(Maybe.just(testClassUuid), TestUtils.standardStartStepRequest());
+		test_steps_start_time(launch.getStepReporter());
+	}
+
+	@Test
+	public void test_steps_have_different_start_time_microseconds() {
+		when(client.getApiInfo()).thenReturn(Maybe.just(TestUtils.testApiInfo()));
+		Launch launch = rp.withLaunch(launchUuid);
+		launch.startTestItem(Maybe.just(testClassUuid), TestUtils.standardStartStepRequest());
+		test_steps_start_time(launch.getStepReporter());
 	}
 }

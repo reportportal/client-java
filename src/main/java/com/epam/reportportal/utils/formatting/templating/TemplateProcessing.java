@@ -17,11 +17,11 @@
 package com.epam.reportportal.utils.formatting.templating;
 
 import com.epam.reportportal.utils.reflect.Accessible;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.lang.reflect.Array;
 import java.lang.reflect.Executable;
 import java.util.HashMap;
@@ -67,6 +67,7 @@ public class TemplateProcessing {
 		});
 		ofNullable(object).ifPresent(o -> myParams.put(config.getSelfName(), object));
 		Matcher matcher = TEMPLATE_GROUP.matcher(pattern);
+		@SuppressWarnings("StringBufferMayBeStringBuilder")
 		StringBuffer stringBuffer = new StringBuffer();
 		while (matcher.find()) {
 			String templatePart = matcher.group(1);

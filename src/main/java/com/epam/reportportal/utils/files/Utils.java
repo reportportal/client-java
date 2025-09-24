@@ -18,8 +18,8 @@ package com.epam.reportportal.utils.files;
 
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.utils.MimeTypeDetector;
+import jakarta.annotation.Nonnull;
 
-import javax.annotation.Nonnull;
 import java.io.*;
 import java.net.URI;
 import java.net.URL;
@@ -124,7 +124,6 @@ public class Utils {
 			baos.write(buffer.array(), 0, read);
 			// Some strange behavior of ByteBuffer.
 			// See https://stackoverflow.com/questions/48693695/java-nio-buffer-not-loading-clear-method-on-runtime
-			//noinspection RedundantCast
 			((Buffer) buffer).clear();
 		}
 
@@ -139,7 +138,9 @@ public class Utils {
 	 * @throws IOException in case of a read error, or a file not found
 	 */
 	public static byte[] readFileToBytes(@Nonnull File file) throws IOException {
-		return readInputStreamToBytes(Files.newInputStream(file.toPath()));
+		try (InputStream is = Files.newInputStream(file.toPath())) {
+			return readInputStreamToBytes(is);
+		}
 	}
 
 	/**
@@ -192,7 +193,9 @@ public class Utils {
 		if (file.exists() && file.isFile()) {
 			data = readFileToBytes(file);
 		} else {
-			data = readInputStreamToBytes(getResourceAsStream(file.getPath()));
+			try (InputStream is = getResourceAsStream(file.getPath())) {
+				data = readInputStreamToBytes(is);
+			}
 		}
 		return ByteSource.wrap(data);
 	}
@@ -224,7 +227,11 @@ public class Utils {
 		String resourcePath = uri.getSchemeSpecificPart();
 		int substringIndex = resourcePath.startsWith("//") ? 2 : resourcePath.startsWith("/") ? 1 : 0;
 		resourcePath = resourcePath.substring(substringIndex);
-		ByteSource byteSource = ByteSource.wrap(readInputStreamToBytes(getResourceAsStream(resourcePath)));
+		byte[] bytes;
+		try (InputStream is = getResourceAsStream(resourcePath)) {
+			bytes = readInputStreamToBytes(is);
+		}
+		ByteSource byteSource = ByteSource.wrap(bytes);
 		String name = resourcePath.substring(Math.max(resourcePath.lastIndexOf('/'), resourcePath.lastIndexOf('\\')) + 1);
 		return new TypeAwareByteSource(byteSource, MimeTypeDetector.detect(byteSource, name));
 	}

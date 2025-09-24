@@ -28,6 +28,9 @@ import java.util.List;
 
 public interface ReportPortalClient {
 
+	@GET("info")
+	Maybe<ApiInfo> getApiInfo();
+
 	@POST("v1/{projectName}/launch")
 	Maybe<StartLaunchRS> startLaunch(@Body StartLaunchRQ rq);
 

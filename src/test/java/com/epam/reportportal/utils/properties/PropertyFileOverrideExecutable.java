@@ -17,7 +17,7 @@
 package com.epam.reportportal.utils.properties;
 
 public class PropertyFileOverrideExecutable {
-	public static void main(String...args) {
+	public static void main(String... args) {
 		System.out.println(PropertiesLoader.load().getProperty(ListenerProperty.BASE_URL));
 	}
 }

@@ -45,8 +45,8 @@ import java.util.stream.Collectors;
 import static java.util.Optional.ofNullable;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
 
 @SuppressWarnings("unchecked")
 public class FileLocatorTest {
@@ -75,7 +75,8 @@ public class FileLocatorTest {
 		when(rpClient.log(any(List.class))).thenReturn(Maybe.just(new BatchSaveOperatingRS()));
 
 		// mock start nested steps
-		when(rpClient.startTestItem(eq(testMethodUuid),
+		when(rpClient.startTestItem(
+				eq(testMethodUuid),
 				any()
 		)).thenAnswer((Answer<Maybe<ItemCreatedRS>>) invocation -> maybeSupplier.get());
 
@@ -92,7 +93,8 @@ public class FileLocatorTest {
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000).times(1)).log(logCaptor.capture());
 
-		verifyFile(logCaptor.getValue(),
+		verifyFile(
+				logCaptor.getValue(),
 				Utils.readInputStreamToBytes(ofNullable(getClass().getClassLoader().getResourceAsStream("pug/lucky.jpg")).orElse(
 						EMPTY_STREAM))
 		);
@@ -105,7 +107,8 @@ public class FileLocatorTest {
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, timeout(1000).times(1)).log(logCaptor.capture());
 
-		verifyFile(logCaptor.getValue(),
+		verifyFile(
+				logCaptor.getValue(),
 				Utils.readInputStreamToBytes(ofNullable(getClass().getClassLoader().getResourceAsStream("pug/unlucky.jpg")).orElse(
 						EMPTY_STREAM))
 		);
@@ -125,7 +128,8 @@ public class FileLocatorTest {
 	@Test
 	public void test_file_absolute_long_path() throws IOException {
 		String basedir = System.getProperty("user.dir");
-		File testFile = new File(String.join(File.separator,
+		File testFile = new File(String.join(
+				File.separator,
 				basedir,
 				"src",
 				"test",
@@ -140,7 +144,8 @@ public class FileLocatorTest {
 		ArgumentCaptor<List<MultipartBody.Part>> logCaptor = ArgumentCaptor.forClass(List.class);
 		verify(rpClient, after(1000).times(1)).log(logCaptor.capture());
 
-		verifyFile(logCaptor.getValue(),
+		verifyFile(
+				logCaptor.getValue(),
 				Utils.readInputStreamToBytes(ofNullable(getClass().getClassLoader().getResourceAsStream("pug/lucky.jpg")).orElse(
 						EMPTY_STREAM))
 		);
@@ -150,8 +155,7 @@ public class FileLocatorTest {
 		SaveLogRQ saveRq = verifyRq(logRq);
 
 		String fileName = saveRq.getFile().getName();
-		List<byte[]> binaries = logRq
-				.stream()
+		List<byte[]> binaries = logRq.stream()
 				.filter(p -> ofNullable(p.headers()).map(h -> h.get("Content-Disposition"))
 						.map(h -> h.contains(String.format("filename=\"%s\"", fileName)))
 						.orElse(false))

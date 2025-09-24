@@ -45,9 +45,7 @@ public class StepAspectCommon {
 	static void simulateLaunch(ReportPortalClient client, String launchId) {
 		when(client.startLaunch(any())).thenReturn(TestUtils.startLaunchResponse(launchId));
 		lenient().when(client.log(any(List.class))).thenReturn(Maybe.just(new BatchSaveOperatingRS()));
-		when(client.finishLaunch(anyString(),
-				any(FinishExecutionRQ.class)
-		)).thenReturn(Maybe.just(new OperationCompletionRS()));
+		when(client.finishLaunch(anyString(), any(FinishExecutionRQ.class))).thenReturn(Maybe.just(new OperationCompletionRS()));
 	}
 
 	static void simulateStartItemResponse(ReportPortalClient client, String itemUuid) {
@@ -55,9 +53,10 @@ public class StepAspectCommon {
 	}
 
 	static void simulateStartItemResponse(ReportPortalClient client, String parentId, final String itemUuid) {
-		when(client.startTestItem(same(parentId),
-				any(StartTestItemRQ.class)
-		)).thenReturn(Maybe.just(new ItemCreatedRS(itemUuid, itemUuid)));
+		when(client.startTestItem(same(parentId), any(StartTestItemRQ.class))).thenReturn(Maybe.just(new ItemCreatedRS(
+				itemUuid,
+				itemUuid
+		)));
 	}
 
 	static void simulateFinishItemResponse(ReportPortalClient client, String id) {

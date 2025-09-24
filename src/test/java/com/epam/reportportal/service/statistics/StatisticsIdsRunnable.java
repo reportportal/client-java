@@ -40,9 +40,7 @@ public class StatisticsIdsRunnable {
 
 		try (StatisticsClient client = new StatisticsClient("id", "secret", api)) {
 			try (StatisticsService service = new StatisticsService(TestUtils.standardParameters(), client)) {
-				service.sendEvent(Maybe.just("launch_id"),
-						TestUtils.standardLaunchRequest(TestUtils.standardParameters())
-				);
+				service.sendEvent(Maybe.just("launch_id"), TestUtils.standardLaunchRequest(TestUtils.standardParameters()));
 			}
 			ArgumentCaptor<StatisticsItem> captor = ArgumentCaptor.forClass(StatisticsItem.class);
 			verify(api).send(anyString(), anyString(), anyString(), captor.capture());

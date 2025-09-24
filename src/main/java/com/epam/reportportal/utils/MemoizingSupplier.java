@@ -16,7 +16,8 @@
 
 package com.epam.reportportal.utils;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
+
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
@@ -47,7 +48,7 @@ public class MemoizingSupplier<T> implements Supplier<T>, Serializable {
 					value = delegate.get();
 					initialized = true;
 				}
-			} catch (RuntimeException e) {
+			} catch (Throwable e) {
 				lock.unlock();
 				throw e;
 			}

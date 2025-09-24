@@ -21,12 +21,10 @@ import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.io.File;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.function.Supplier;
 
 /**
@@ -150,17 +148,14 @@ public interface StepReporter {
 
 	class StepEntry {
 		private final Maybe<String> itemId;
-		private final Date timestamp;
+		private final Comparable<? extends Comparable<?>> timestamp;
 		private final FinishTestItemRQ finishTestItemRQ;
 
-		public StepEntry(@Nonnull Maybe<String> itemId, @Nonnull Date stepStartTime, @Nonnull FinishTestItemRQ finishTestItemRQ) {
+		public StepEntry(@Nonnull Maybe<String> itemId, @Nonnull Comparable<? extends Comparable<?>> stepStartTime,
+				@Nonnull FinishTestItemRQ finishTestItemRQ) {
 			this.itemId = itemId;
 			this.timestamp = stepStartTime;
 			this.finishTestItemRQ = finishTestItemRQ;
-		}
-
-		public StepEntry(@Nonnull Maybe<String> itemId, @Nonnull FinishTestItemRQ finishTestItemRQ) {
-			this(itemId, Calendar.getInstance().getTime(), finishTestItemRQ);
 		}
 
 		@Nonnull
@@ -169,7 +164,7 @@ public interface StepReporter {
 		}
 
 		@Nonnull
-		public Date getTimestamp() {
+		public Comparable<? extends Comparable<?>> getTimestamp() {
 			return timestamp;
 		}
 

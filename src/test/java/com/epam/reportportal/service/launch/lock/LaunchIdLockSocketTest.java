@@ -18,6 +18,7 @@ package com.epam.reportportal.service.launch.lock;
 
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.LaunchIdLock;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.util.test.ProcessUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -39,7 +40,6 @@ import java.net.ServerSocket;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -90,12 +90,13 @@ public class LaunchIdLockSocketTest {
 	@Test
 	public void test_launch_uuid_will_be_the_same_for_ten_threads_obtainLaunchUuid() throws InterruptedException {
 		int threadNum = 10;
-		ExecutorService executor = testExecutor(threadNum);
-		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(launchIdLockSocket));
+		try (CommonUtils.ExecutorService executor = CommonUtils.testExecutor(threadNum)) {
+			Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(launchIdLockSocket));
 
-		Collection<String> results = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
-		assertThat(results, hasSize(threadNum));
-		assertThat(results, Matchers.everyItem(equalTo(results.iterator().next())));
+			Collection<String> results = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
+			assertThat(results, hasSize(threadNum));
+			assertThat(results, Matchers.everyItem(equalTo(results.iterator().next())));
+		}
 	}
 
 	@Test
@@ -119,7 +120,7 @@ public class LaunchIdLockSocketTest {
 			waitForLine(primaryProcessIo.getMiddle(), primaryProcessIo.getRight(), WELCOME_MESSAGE_PREDICATE);
 			waitForLine(secondaryProcessIo.getMiddle(), secondaryProcessIo.getRight(), WELCOME_MESSAGE_PREDICATE);
 
-			String lineSeparator = System.getProperty("line.separator");
+			String lineSeparator = System.lineSeparator();
 			primaryProcessIo.getLeft().write(lineSeparator);
 			primaryProcessIo.getLeft().flush();
 			String result1 = waitForLine(primaryProcessIo.getMiddle(), primaryProcessIo.getRight(), ANY_STRING_PREDICATE);
@@ -162,7 +163,7 @@ public class LaunchIdLockSocketTest {
 		List<Triple<OutputStreamWriter, BufferedReader, BufferedReader>> processIos = processes.stream()
 				.map(ProcessUtils::getProcessIos)
 				.collect(toList());
-		String lineSeparator = System.getProperty("line.separator");
+		String lineSeparator = System.lineSeparator();
 		List<String> results;
 		try {
 
@@ -210,16 +211,18 @@ public class LaunchIdLockSocketTest {
 
 	private Pair<Set<String>, Collection<String>> executeParallelLaunchUuidSync(int threadNum, Iterable<LaunchIdLock> lockFileCollection)
 			throws InterruptedException {
-		ExecutorService executor = testExecutor(threadNum);
-		Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, iterableSupplier(lockFileCollection));
-		Collection<String> result = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
-		return ImmutablePair.of(tasks.keySet(), result);
+		try (CommonUtils.ExecutorService executor = CommonUtils.testExecutor(threadNum)) {
+			Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, iterableSupplier(lockFileCollection));
+			Collection<String> result = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
+			return ImmutablePair.of(tasks.keySet(), result);
+		}
 	}
 
 	@Test
 	public void test_uuid_remove_finishInstanceUuid() throws InterruptedException {
 		int threadNum = 3;
-		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(threadNum,
+		Pair<Set<String>, Collection<String>> uuidSet = executeParallelLaunchUuidSync(
+				threadNum,
 				Collections.nCopies(threadNum, launchIdLockSocket)
 		);
 

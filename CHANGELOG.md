@@ -1,6 +1,12 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Microseconds precision for timestamps, by @HardNorth
+### Changed
+- Replace "jsr305" with "jakarta.annotation-api", by @HardNorth
+### Removed
+- Java 8-10 support, by @HardNorth
 
 ## [5.3.17]
 ### Fixed

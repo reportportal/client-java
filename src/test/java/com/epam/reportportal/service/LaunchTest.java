@@ -25,6 +25,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.test.TestUtils;
+import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.reportportal.utils.ObjectUtils;
 import com.epam.reportportal.utils.StaticStructuresUtils;
 import com.epam.reportportal.utils.properties.DefaultProperties;
@@ -33,6 +34,7 @@ import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
+import jakarta.annotation.Nonnull;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.awaitility.Awaitility;
@@ -44,10 +46,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
-import javax.annotation.Nonnull;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -159,6 +159,7 @@ public class LaunchTest {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
+		mockBatchLogging(rpClient);
 		Launch launch = createLaunch();
 
 		Maybe<String> launchUuid = launch.start();
@@ -191,38 +192,40 @@ public class LaunchTest {
 		simulateFinishLaunchResponse(rpClient);
 
 		// Verify Launch set on creation
-		ExecutorService launchCreateExecutor = Executors.newSingleThreadExecutor();
-		Launch launchOnCreate = launchCreateExecutor.submit(() -> this.createLaunch()).get();
-		Launch launchGet = launchCreateExecutor.submit(Launch::currentLaunch).get();
-
-		assertThat(launchGet, sameInstance(launchOnCreate));
-		shutdownExecutorService(launchCreateExecutor);
+		Launch launchOnCreate;
+		Launch launchGet;
+		try (CommonUtils.ExecutorService launchCreateExecutor = CommonUtils.testExecutor()) {
+			launchOnCreate = launchCreateExecutor.submit(() -> this.createLaunch()).get();
+			launchGet = launchCreateExecutor.submit(Launch::currentLaunch).get();
+			assertThat(launchGet, sameInstance(launchOnCreate));
+		}
 
 		// Verify Launch set on start
-		ExecutorService launchStartExecutor = Executors.newSingleThreadExecutor();
-		launchStartExecutor.submit(launchOnCreate::start).get();
-		launchGet = launchStartExecutor.submit(Launch::currentLaunch).get();
+		try (CommonUtils.ExecutorService launchStartExecutor = CommonUtils.testExecutor()) {
+			launchStartExecutor.submit(launchOnCreate::start).get();
+			launchGet = launchStartExecutor.submit(Launch::currentLaunch).get();
 
-		assertThat(launchGet, sameInstance(launchOnCreate));
-		shutdownExecutorService(launchStartExecutor);
+			assertThat(launchGet, sameInstance(launchOnCreate));
+		}
 
 		// Verify Launch set on start root test item
-		ExecutorService launchSuiteStartExecutor = Executors.newSingleThreadExecutor();
-		Maybe<String> parent = launchSuiteStartExecutor.submit(() -> launchOnCreate.startTestItem(standardStartSuiteRequest())).get();
-		launchGet = launchSuiteStartExecutor.submit(Launch::currentLaunch).get();
+		Maybe<String> parent;
+		try (CommonUtils.ExecutorService launchSuiteStartExecutor = CommonUtils.testExecutor()) {
+			parent = launchSuiteStartExecutor.submit(() -> launchOnCreate.startTestItem(standardStartSuiteRequest())).get();
+			launchGet = launchSuiteStartExecutor.submit(Launch::currentLaunch).get();
 
-		assertThat(launchGet, sameInstance(launchOnCreate));
-		shutdownExecutorService(launchSuiteStartExecutor);
+			assertThat(launchGet, sameInstance(launchOnCreate));
+		}
 
 		// Verify Launch set on start child test item
-		ExecutorService launchChildStartExecutor = Executors.newSingleThreadExecutor();
-		launchChildStartExecutor.submit(() -> launchOnCreate.startTestItem(parent, standardStartTestRequest())).get();
-		launchGet = launchChildStartExecutor.submit(Launch::currentLaunch).get();
+		try (CommonUtils.ExecutorService launchChildStartExecutor = CommonUtils.testExecutor()) {
+			launchChildStartExecutor.submit(() -> launchOnCreate.startTestItem(parent, standardStartTestRequest())).get();
+			launchGet = launchChildStartExecutor.submit(Launch::currentLaunch).get();
 
-		assertThat(launchGet, sameInstance(launchOnCreate));
+			assertThat(launchGet, sameInstance(launchOnCreate));
 
-		launchOnCreate.finish(TestUtils.standardLaunchFinishRequest());
-		shutdownExecutorService(launchChildStartExecutor);
+			launchOnCreate.finish(TestUtils.standardLaunchFinishRequest());
+		}
 	}
 
 	@Test
@@ -470,11 +473,11 @@ public class LaunchTest {
 	}
 
 	@Test
-	public void verify_launch_print() throws UnsupportedEncodingException {
+	public void verify_launch_print() {
 		simulateStartLaunchResponse(rpClient);
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		PrintStream testStream = new PrintStream(baos, false, StandardCharsets.UTF_8.name());
+		PrintStream testStream = new PrintStream(baos, false, StandardCharsets.UTF_8);
 		ListenerParameters parameters = standardParameters();
 		parameters.setPrintLaunchUuid(true);
 		parameters.setPrintLaunchUuidOutput(testStream);
@@ -485,7 +488,7 @@ public class LaunchTest {
 			testStream.flush();
 			return baos.size() > 0;
 		});
-		String result = baos.toString(StandardCharsets.UTF_8.name());
+		String result = baos.toString(StandardCharsets.UTF_8);
 		assertThat(result, endsWith(launchUuid + System.lineSeparator()));
 	}
 

@@ -19,10 +19,10 @@ package com.epam.reportportal.aspect;
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.utils.formatting.templating.TemplateConfiguration;
 import com.epam.reportportal.utils.formatting.templating.TemplateProcessing;
+import jakarta.annotation.Nonnull;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 
-import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
 

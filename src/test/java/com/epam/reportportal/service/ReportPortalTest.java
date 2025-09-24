@@ -62,8 +62,8 @@ import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorServic
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
 
 public class ReportPortalTest {
 	static {
@@ -133,7 +133,7 @@ public class ReportPortalTest {
 			SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(
 					server,
 					Collections.emptyMap(),
-					"files/simple_response.txt"
+					"files/responses/simple_response.txt"
 			);
 			Pair<List<String>, Response> result = SocketUtils.executeServerCallable(
 					serverCallable,
@@ -171,7 +171,7 @@ public class ReportPortalTest {
 			SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(
 					server,
 					Collections.emptyMap(),
-					Arrays.asList("files/proxy_auth_response.txt", "files/simple_response.txt")
+					Arrays.asList("files/proxy_auth_response.txt", "files/responses/simple_response.txt")
 			);
 			Pair<List<String>, Response> proxyAuth = SocketUtils.executeServerCallable(
 					serverCallable,
@@ -270,7 +270,11 @@ public class ReportPortalTest {
 		parameters.setBaseUrl("http://localhost:" + ss.getLocalPort());
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
 		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
-		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss, createCookieModel(), "files/socket_response.txt");
+		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(
+				ss,
+				createCookieModel(),
+				"files/responses/socket_response.txt"
+		);
 		Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ()).timeout(5, TimeUnit.SECONDS).blockingGet();
 		Pair<List<String>, StartLaunchRS> result = executeWithClosingOnException(clientExecutor, ss, serverCallable, clientCallable);
 
@@ -291,7 +295,7 @@ public class ReportPortalTest {
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
 		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
 		Map<String, Object> model = createCookieModel();
-		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss, model, "files/socket_response.txt");
+		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss, model, "files/responses/socket_response.txt");
 		Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ()).timeout(5, TimeUnit.SECONDS).blockingGet();
 		executeWithClosingOnException(clientExecutor, ss, serverCallable, clientCallable);
 		model.put("cookie", OVERRIDING_COOKIE);
@@ -318,7 +322,7 @@ public class ReportPortalTest {
 		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(
 				ss,
 				Collections.emptyMap(),
-				Collections.singletonList("files/simple_response.txt")
+				Collections.singletonList("files/responses/simple_response.txt")
 		);
 		// trigger http logging to init loggers
 		executeWithClosingOnException(clientExecutor, ss, serverCallable, () -> rpClient.getProjectSettings().blockingGet());
@@ -335,7 +339,11 @@ public class ReportPortalTest {
 		listAppender.start();
 		loggerList.get(0).addAppender(listAppender);
 
-		serverCallable = new SocketUtils.ServerCallable(ss, createCookieModel(), Collections.singletonList("files/socket_response.txt"));
+		serverCallable = new SocketUtils.ServerCallable(
+				ss,
+				createCookieModel(),
+				Collections.singletonList("files/responses/socket_response.txt")
+		);
 		Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ()).timeout(5, TimeUnit.SECONDS).blockingGet();
 		executeWithClosingOnException(clientExecutor, ss, serverCallable, clientCallable);
 
@@ -376,15 +384,13 @@ public class ReportPortalTest {
 	@Test
 	public void verify_launch_uuid_parameter_handling() {
 		simulateStartTestItemResponse(rpClient);
+		mockBatchLogging(rpClient);
 
 		String launchUuid = "test-launch-uuid";
 		ListenerParameters listenerParameters = TestUtils.standardParameters();
 		listenerParameters.setLaunchUuid(launchUuid);
 
-		ExecutorService executor = Executors.newSingleThreadExecutor();
-		RuntimeException error = null;
-
-		try {
+		try (CommonUtils.ExecutorService executor = CommonUtils.testExecutor()) {
 			ReportPortal rp = ReportPortal.create(rpClient, listenerParameters, executor);
 
 			Launch launch = rp.newLaunch(standardLaunchRequest(listenerParameters));
@@ -405,12 +411,6 @@ public class ReportPortalTest {
 			launch.finish(TestUtils.standardLaunchFinishRequest());
 
 			verify(rpClient, after(1000).times(0)).finishLaunch(anyString(), any(FinishExecutionRQ.class));
-		} catch (RuntimeException e) {
-			error = e;
-		}
-		CommonUtils.shutdownExecutorService(executor);
-		if (error != null) {
-			throw error;
 		}
 	}
 
@@ -419,6 +419,7 @@ public class ReportPortalTest {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateFinishLaunchResponse(rpClient);
+		mockBatchLogging(rpClient);
 
 		String launchUuid = "test-launch-uuid";
 		ListenerParameters listenerParameters = TestUtils.standardParameters();
@@ -483,7 +484,7 @@ public class ReportPortalTest {
 		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(
 				sslServerSocket,
 				Collections.emptyMap(),
-				"files/socket_response.txt"
+				"files/responses/socket_response.txt"
 		);
 
 		ListenerParameters parameters = TestUtils.standardParameters();

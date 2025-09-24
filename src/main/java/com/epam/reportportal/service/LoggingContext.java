@@ -18,10 +18,10 @@ package com.epam.reportportal.service;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.apache.commons.lang3.tuple.Pair;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
@@ -91,9 +91,12 @@ public class LoggingContext {
 
 	/**
 	 * Disposes current logging context
+	 *
+	 * @return Disposed Logging Context or 'null' if no context was found
 	 */
-	public static void dispose() {
-		ofNullable(getContext()).ifPresent(Deque::poll);
+	@Nullable
+	public static LoggingContext dispose() {
+		return ofNullable(getContext()).map(Deque::poll).orElse(null);
 	}
 
 	/* a UUID of TestItem in ReportPortal to report into */

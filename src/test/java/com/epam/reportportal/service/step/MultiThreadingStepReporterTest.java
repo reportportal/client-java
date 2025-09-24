@@ -23,6 +23,7 @@ import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import io.reactivex.Maybe;
+import jakarta.annotation.Nonnull;
 import org.apache.commons.lang3.tuple.Pair;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -31,7 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
-import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -62,7 +62,8 @@ public class MultiThreadingStepReporterTest {
 
 	private final ExecutorService clientExecutorService = Executors.newFixedThreadPool(5);
 	// Copy-paste from TestNG executor configuration to reproduce the issue
-	private final ExecutorService testExecutorService = new ThreadPoolExecutor(5,
+	private final ExecutorService testExecutorService = new ThreadPoolExecutor(
+			5,
 			5,
 			10,
 			TimeUnit.SECONDS,

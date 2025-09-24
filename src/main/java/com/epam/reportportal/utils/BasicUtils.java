@@ -16,8 +16,10 @@
 
 package com.epam.reportportal.utils;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
+import java.util.Objects;
 
 public class BasicUtils {
 	private BasicUtils() {
@@ -48,5 +50,135 @@ public class BasicUtils {
 			return string.substring(0, effectiveLimit);
 		}
 		return string.substring(0, effectiveLimit - replacement.length()) + replacement;
+	}
+
+	/**
+	 * Compares two semantic versions following SemVer precedence rules.
+	 * Returns a negative integer, zero, or a positive integer if the first
+	 * argument is less than, equal to, or greater than the second respectively.
+	 *
+	 * @param compared value for comparison
+	 * @param basic    value to compare with
+	 * @return -1 if compared value less than basic, 0 if compared value equals basic, 1 if compared value greater than basic
+	 */
+	public static int compareSemanticVersions(@Nonnull String compared, @Nonnull String basic) {
+		String comparedNorm = normalizeVersion(compared);
+		String basicNorm = normalizeVersion(basic);
+
+		String[] basePreCompared = splitBaseAndPreRelease(comparedNorm);
+		String[] basePreBasic = splitBaseAndPreRelease(basicNorm);
+
+		int coreCompare = compareCoreVersions(basePreCompared[0], basePreBasic[0]);
+		if (coreCompare != 0) {
+			return coreCompare;
+		}
+
+		String pre1 = basePreCompared[1];
+		String pre2 = basePreBasic[1];
+		if (Objects.equals(pre1, pre2)) {
+			return 0;
+		}
+		if (pre1 == null) {
+			return 1;
+		}
+		if (pre2 == null) {
+			return -1;
+		}
+		return comparePreRelease(pre1, pre2);
+	}
+
+	@Nonnull
+	private static String normalizeVersion(@Nonnull String version) {
+		String v = version.trim();
+		if (v.startsWith("v") || v.startsWith("V")) {
+			v = v.substring(1);
+		}
+		int plusIdx = v.indexOf('+');
+		if (plusIdx >= 0) {
+			v = v.substring(0, plusIdx);
+		}
+		return v;
+	}
+
+	@Nonnull
+	private static String[] splitBaseAndPreRelease(@Nonnull String version) {
+		int dashIdx = version.indexOf('-');
+		if (dashIdx < 0) {
+			return new String[] { version, null };
+		}
+		return new String[] { version.substring(0, dashIdx), version.substring(dashIdx + 1) };
+	}
+
+	private static int compareCoreVersions(@Nonnull String core1, @Nonnull String core2) {
+		String[] p1 = core1.split("\\.");
+		String[] p2 = core2.split("\\.");
+		int len = Math.max(p1.length, p2.length);
+		for (int i = 0; i < len; i++) {
+			long n1 = i < p1.length ? parseLongSafe(p1[i]) : 0L;
+			long n2 = i < p2.length ? parseLongSafe(p2[i]) : 0L;
+			if (n1 != n2) {
+				return n1 < n2 ? -1 : 1;
+			}
+		}
+		return 0;
+	}
+
+	private static int comparePreRelease(@Nonnull String pre1, @Nonnull String pre2) {
+		String[] t1 = pre1.split("\\.");
+		String[] t2 = pre2.split("\\.");
+		int len = Math.max(t1.length, t2.length);
+		for (int i = 0; i < len; i++) {
+			String a = i < t1.length ? t1[i] : null;
+			String b = i < t2.length ? t2[i] : null;
+			if (Objects.equals(a, b)) {
+				continue;
+			}
+			if (a == null) {
+				return -1;
+			}
+			if (b == null) {
+				return 1;
+			}
+			boolean aNum = isNumeric(a);
+			boolean bNum = isNumeric(b);
+			if (aNum && bNum) {
+				// Both numeric
+				long na = parseLongSafe(a);
+				long nb = parseLongSafe(b);
+				if (na != nb) {
+					return na < nb ? -1 : 1;
+				}
+			} else if (aNum != bNum) {
+				// One numeric, one not
+				return aNum ? -1 : 1;
+			} else {
+				// Both not numeric
+				int cmp = a.compareTo(b);
+				if (cmp != 0) {
+					return cmp < 0 ? -1 : 1;
+				}
+			}
+		}
+		return 0;
+	}
+
+	private static long parseLongSafe(@Nonnull String s) {
+		try {
+			return Long.parseLong(s);
+		} catch (NumberFormatException e) {
+			return 0L;
+		}
+	}
+
+	private static boolean isNumeric(@Nonnull String s) {
+		if (s.isEmpty()) {
+			return false;
+		}
+		for (int i = 0; i < s.length(); i++) {
+			if (!Character.isDigit(s.charAt(i))) {
+				return false;
+			}
+		}
+		return true;
 	}
 }

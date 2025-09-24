@@ -39,18 +39,13 @@ public class PropertiesLoaderTest {
 		String propertyKey = ListenerProperty.DESCRIPTION.getPropertyName();
 		properties.setProperty(propertyKey, "testvalue");
 
-		PropertiesLoader.overrideWith(properties,
-				Collections.singletonMap(propertyKey, "anothervalue")
-		);
+		PropertiesLoader.overrideWith(properties, Collections.singletonMap(propertyKey, "anothervalue"));
 		assertThat("Incorrect override behaviour", properties.getProperty(propertyKey), equalTo("anothervalue"));
 
 		Properties overrides = new Properties();
 		overrides.setProperty(propertyKey, "overridenFromPropertiesObject");
 		PropertiesLoader.overrideWith(properties, overrides);
-		assertThat("Incorrect override behaviour",
-				properties.getProperty(propertyKey),
-				equalTo("overridenFromPropertiesObject")
-		);
+		assertThat("Incorrect override behaviour", properties.getProperty(propertyKey), equalTo("overridenFromPropertiesObject"));
 	}
 
 	@Test
@@ -58,10 +53,9 @@ public class PropertiesLoaderTest {
 		Properties properties = new Properties();
 		properties.setProperty("rp.description", "testvalue");
 
-		PropertiesLoader.overrideWith(properties,
-				Collections.singletonMap("rp_description", "anothervalue")
-		);
-		assertThat("Incorrect override behaviour",
+		PropertiesLoader.overrideWith(properties, Collections.singletonMap("rp_description", "anothervalue"));
+		assertThat(
+				"Incorrect override behaviour",
 				properties.getProperty(ListenerProperty.DESCRIPTION.getPropertyName()),
 				equalTo("anothervalue")
 		);
@@ -72,10 +66,9 @@ public class PropertiesLoaderTest {
 		Properties properties = new Properties();
 		properties.setProperty("rp.description", "testvalue");
 
-		PropertiesLoader.overrideWith(properties,
-				Collections.singletonMap("RP_DESCRIPTION", "anothervalue")
-		);
-		assertThat("Incorrect override behaviour",
+		PropertiesLoader.overrideWith(properties, Collections.singletonMap("RP_DESCRIPTION", "anothervalue"));
+		assertThat(
+				"Incorrect override behaviour",
 				properties.getProperty(ListenerProperty.DESCRIPTION.getPropertyName()),
 				equalTo("anothervalue")
 		);
@@ -83,7 +76,8 @@ public class PropertiesLoaderTest {
 
 	@Test
 	public void testUtf() {
-		assertThat("Incorrect encoding!",
+		assertThat(
+				"Incorrect encoding!",
 				PropertiesLoader.load("property-test/utf-demo.properties").getProperty("utf8"),
 				equalTo("привет мир!")
 		);
@@ -99,7 +93,8 @@ public class PropertiesLoaderTest {
 		override.put("rp.description", "thirdvalue");
 
 		PropertiesLoader.overrideWith(properties, override);
-		assertThat("Incorrect override behaviour",
+		assertThat(
+				"Incorrect override behaviour",
 				properties.getProperty(ListenerProperty.DESCRIPTION.getPropertyName()),
 				equalTo("anothervalue")
 		);
@@ -116,7 +111,8 @@ public class PropertiesLoaderTest {
 
 	@Test
 	public void verify_property_file_path_system_properties() throws IOException, InterruptedException {
-		Process process = ProcessUtils.buildProcess(false,
+		Process process = ProcessUtils.buildProcess(
+				false,
 				PropertyFileOverrideExecutable.class,
 				null,
 				Collections.singletonMap(PropertiesLoader.PROPERTIES_PATH_PROPERTY, "property-test/utf-demo.properties")
@@ -129,7 +125,8 @@ public class PropertiesLoaderTest {
 
 	@Test
 	public void verify_property_file_path_env_variables() throws IOException, InterruptedException {
-		Process process = ProcessUtils.buildProcess(false,
+		Process process = ProcessUtils.buildProcess(
+				false,
 				PropertyFileOverrideExecutable.class,
 				Collections.singletonMap("RP_PROPERTIES_PATH", "property-test/utf-demo.properties")
 		);
@@ -141,7 +138,8 @@ public class PropertiesLoaderTest {
 
 	@Test
 	public void verify_property_file_path_system_properties_priority() throws IOException, InterruptedException {
-		Process process = ProcessUtils.buildProcess(false,
+		Process process = ProcessUtils.buildProcess(
+				false,
 				PropertyFileOverrideExecutable.class,
 				Collections.singletonMap("RP_PROPERTIES_PATH", "property-test/default-required.properties"),
 				Collections.singletonMap(PropertiesLoader.PROPERTIES_PATH_PROPERTY, "property-test/utf-demo.properties")

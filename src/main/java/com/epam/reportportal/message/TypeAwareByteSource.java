@@ -16,8 +16,8 @@
 package com.epam.reportportal.message;
 
 import com.epam.reportportal.utils.files.ByteSource;
+import jakarta.annotation.Nonnull;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
 

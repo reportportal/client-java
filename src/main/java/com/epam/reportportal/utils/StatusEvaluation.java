@@ -17,8 +17,7 @@
 package com.epam.reportportal.utils;
 
 import com.epam.reportportal.listeners.ItemStatus;
-
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 public class StatusEvaluation {
 

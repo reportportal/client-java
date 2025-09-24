@@ -19,10 +19,9 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import io.reactivex.CompletableObserver;
 import io.reactivex.MaybeObserver;
 import io.reactivex.disposables.Disposable;
+import jakarta.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nonnull;
 
 /**
  * @author Dzianis_Shybeka
@@ -32,7 +31,7 @@ public class SubscriptionUtils {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SubscriptionUtils.class);
 
 	public static <T> MaybeObserver<T> logMaybeResults(final String type) {
-		return new MaybeObserver<T>() {
+		return new MaybeObserver<>() {
 
 			@Override
 			public void onSubscribe(@Nonnull Disposable d) {
@@ -78,7 +77,7 @@ public class SubscriptionUtils {
 	}
 
 	public static MaybeObserver<String> printLaunch(@Nonnull ListenerParameters parameters) {
-		return new MaybeObserver<String>() {
+		return new MaybeObserver<>() {
 			@Override
 			public void onSubscribe(@Nonnull Disposable d) {
 				// ignore

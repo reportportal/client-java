@@ -25,7 +25,7 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 
 public class BasicUtilsTest {
-	public static Object[][] testData() {
+	public static Object[][] truncateTestData() {
 		//@formatter:off
         return new Object[][]{
                 // 1. String is longer than limit, truncateReplacement is less than limit
@@ -50,7 +50,7 @@ public class BasicUtilsTest {
 	}
 
 	@ParameterizedTest
-	@MethodSource("testData")
+	@MethodSource("truncateTestData")
 	public void test_truncate_string_scenarios(String input, int limit, String replacement, String expected) {
 		assertThat(BasicUtils.truncateString(input, limit, replacement), equalTo(expected));
 	}
@@ -62,5 +62,42 @@ public class BasicUtilsTest {
 		String result = BasicUtils.truncateString(input, limit, null);
 		assertThat(result.length(), equalTo(limit));
 		assertThat(result, endsWith(CommonConstants.DEFAULT_TRUNCATE_REPLACEMENT));
+	}
+
+	public static Object[][] versionTestData() {
+		//@formatter:off
+		return new Object[][]{
+				{"5.13.2", "5.13.2", 0},
+				{"5.13.1", "5.13.2", -1},
+				{"5.13.3", "5.13.2", 1},
+				{"5.12.2", "5.13.2", -1},
+				{"5.14.2", "5.13.2", 1},
+				{"4.13.2", "5.13.2", -1},
+				{"6.13.2", "5.13.2", 1},
+				{"v5.13.2", "5.13.2", 0},
+				{"v5.13.1", "v5.13.2", -1},
+				{"5.13.3+12345", "5.13.2+54321", 1},
+				{"5.13.2", "5.13.2+54321", 0},
+				{"5.13.2-1.1", "5.13.2-1.1", 0},
+				{"5.13.2-1.2", "5.13.2-1.1", 1},
+				{"5.13.2-0.9", "5.13.2-1.1", -1},
+				{"5.13.2-1.0", "5.13.2-1.1", -1},
+				{"5.13.2-1", "5.13.2-1.1", -1},
+				{"5.13.2-1.1", "5.13.2-1", 1},
+				{"5.13.2-1.", "5.13.2-1", 0},
+				{"5.13.2-1.", "5.13.2-1.1", -1},
+				{"5.13.2-1.a", "5.13.2-1.1", 1},
+				{"5.13.2-1.1", "5.13.2-1.a", -1},
+				{"5.13.2-1.a", "5.13.2-1.a", 0},
+				{"5.13.2-1.b", "5.13.2-1.a", 1},
+				{"5.13.2-1.a", "5.13.2-1.b", -1},
+		};
+		//@formatter:on
+	}
+
+	@ParameterizedTest
+	@MethodSource("versionTestData")
+	public void compare_semver(String a, String b, int expected) {
+		assertThat(BasicUtils.compareSemanticVersions(a, b), equalTo(expected));
 	}
 }

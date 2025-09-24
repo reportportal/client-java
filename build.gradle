@@ -27,11 +27,11 @@ project.ext.limits = [
         'line'       : 70,
         'complexity' : 60,
         'method'     : 65,
-        'class'      : 90
+        'class'      : 85
 ]
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+sourceCompatibility = JavaVersion.VERSION_11
+targetCompatibility = JavaVersion.VERSION_11
 compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
 
@@ -40,13 +40,10 @@ repositories {
 }
 
 dependencies {
-    api ('com.epam.reportportal:commons-model:5.3.3') {
-        exclude module: 'jackson-databind'
-        exclude module: 'guava'
-    }
-    api 'com.fasterxml.jackson.core:jackson-databind:2.15.4' // Access is needed by HTTP loggers to format JSON
+    api "com.fasterxml.jackson.core:jackson-databind:${project.jackson_version}" // Access is needed by HTTP loggers to format JSON
+
     api 'io.reactivex.rxjava2:rxjava:2.2.21'
-    api 'com.google.code.findbugs:jsr305:3.0.2'
+    api 'jakarta.annotation:jakarta.annotation-api:3.0.0' // To not specify the dependency in all our Agents
 
     api ("com.squareup.retrofit2:retrofit:${project.retrofit_version}") {
         exclude module: 'okhttp'
@@ -64,6 +61,7 @@ dependencies {
     implementation "org.aspectj:aspectjweaver:${project.aspectj_version}"
 
     implementation "org.slf4j:slf4j-api:${slf4j_version}"
+    implementation 'org.apache.commons:commons-lang3:3.18.0'
 
     testImplementation "org.slf4j:jul-to-slf4j:${slf4j_version}"
     testImplementation("org.junit.platform:junit-platform-runner:${project.junit_runner_version}") {
@@ -76,12 +74,12 @@ dependencies {
     testImplementation 'org.hamcrest:hamcrest:2.2'
     testImplementation "org.mockito:mockito-core:${project.mockito_version}"
     testImplementation "org.mockito:mockito-junit-jupiter:${project.mockito_version}"
-    testImplementation 'ch.qos.logback:logback-classic:1.3.15'
+    testImplementation 'ch.qos.logback:logback-classic:1.5.18'
     testImplementation('org.awaitility:awaitility:4.0.2') {
         exclude group: 'org.hamcrest'
     }
     testImplementation 'commons-io:commons-io:2.17.0'
-    testImplementation 'com.epam.reportportal:agent-java-test-utils:0.0.13'
+    testImplementation 'com.epam.reportportal:agent-java-test-utils:0.1.0'
 }
 
 test {
