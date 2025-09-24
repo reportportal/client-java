@@ -16,10 +16,11 @@
 
 package com.epam.reportportal.utils.http;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
+
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -91,7 +92,7 @@ public class ContentType {
 	public static final Set<String> KNOWN_TYPES;
 
 	static {
-		KNOWN_TYPES = Collections.unmodifiableSet(Arrays.stream(ContentType.class.getFields())
+		KNOWN_TYPES = Arrays.stream(ContentType.class.getFields())
 				.filter(f -> String.class.equals(f.getType()) && Modifier.isStatic(f.getModifiers()) && Modifier.isPublic(f.getModifiers()))
 				.map(f -> {
 					try {
@@ -100,7 +101,8 @@ public class ContentType {
 						return null;
 					}
 				})
-				.collect(Collectors.toSet()));
+				.filter(Objects::nonNull)
+				.collect(Collectors.toUnmodifiableSet());
 	}
 
 	private ContentType() {
@@ -136,7 +138,11 @@ public class ContentType {
 	 * @return {@code true} if the Media Type is known, {@code false} otherwise
 	 */
 	public static boolean isKnownType(@Nullable String mediaType) {
-		return KNOWN_TYPES.contains(stripMediaType(mediaType));
+		String stripMediaType = stripMediaType(mediaType);
+		if (stripMediaType == null) {
+			return false;
+		}
+		return KNOWN_TYPES.contains(stripMediaType);
 	}
 
 	/**

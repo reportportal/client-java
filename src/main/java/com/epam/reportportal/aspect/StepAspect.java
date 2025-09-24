@@ -23,6 +23,9 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.MethodSignature;
 
+import java.time.Instant;
+import java.util.Calendar;
+
 import static java.util.Optional.ofNullable;
 
 /**
@@ -46,8 +49,11 @@ public class StepAspect {
 			return;
 		}
 		MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-		StartTestItemRQ startStepRequest = StepRequestUtils.buildStartStepRequest(signature, step, joinPoint);
-		ofNullable(Launch.currentLaunch()).ifPresent(l -> l.getStepReporter().startNestedStep(startStepRequest));
+		ofNullable(Launch.currentLaunch()).ifPresent(l -> {
+			Comparable<? extends Comparable<?>> stepDate = l.useMicroseconds() ? Instant.now() : Calendar.getInstance().getTime();
+			StartTestItemRQ startStepRequest = StepRequestUtils.buildStartStepRequest(signature, step, stepDate, joinPoint);
+			l.getStepReporter().startNestedStep(startStepRequest);
+		});
 	}
 
 	@AfterReturning(value = "anyMethod() && withStepAnnotation(step)", argNames = "step")

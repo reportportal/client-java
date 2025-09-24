@@ -17,6 +17,7 @@
 package com.epam.reportportal.test;
 
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.LaunchImpl;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.*;
@@ -216,6 +217,14 @@ public class TestUtils {
 		return rq;
 	}
 
+	public static ApiInfo testApiInfo() {
+		ApiInfo apiInfo = new ApiInfo();
+		ApiInfo.Build build = new ApiInfo.Build();
+		apiInfo.setBuild(build);
+		build.setVersion(LaunchImpl.MICROSECONDS_MIN_VERSION);
+		return apiInfo;
+	}
+
 	/**
 	 * Generates a unique ID shorter than UUID based on current time in milliseconds and thread ID.
 	 *
@@ -248,7 +257,7 @@ public class TestUtils {
 				.map(b -> {
 					try {
 						return HttpRequestUtils.MAPPER.readValue(
-								b, new TypeReference<List<SaveLogRQ>>() {
+								b, new TypeReference<>() {
 								}
 						);
 					} catch (IOException e) {

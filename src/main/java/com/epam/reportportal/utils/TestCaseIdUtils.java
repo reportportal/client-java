@@ -21,9 +21,9 @@ import com.epam.reportportal.annotations.TestCaseIdKey;
 import com.epam.reportportal.service.item.TestCaseIdEntry;
 import com.epam.reportportal.utils.formatting.templating.TemplateConfiguration;
 import com.epam.reportportal.utils.formatting.templating.TemplateProcessing;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;

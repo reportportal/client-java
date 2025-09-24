@@ -19,11 +19,8 @@ package com.epam.reportportal.service.step;
 import com.epam.reportportal.listeners.ItemStatus;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.Calendar;
-import java.util.Date;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 import static java.util.Optional.ofNullable;
 
@@ -34,26 +31,23 @@ public class StepRequestUtils {
 	}
 
 	@Nonnull
-	public static StartTestItemRQ buildStartStepRequest(@Nonnull String name, @Nullable String description) {
+	public static StartTestItemRQ buildStartStepRequest(@Nonnull String name, @Nullable String description,
+			@Nonnull Comparable<? extends Comparable<?>> dateTime) {
 		StartTestItemRQ request = new StartTestItemRQ();
 		ofNullable(description).filter(d -> !d.isEmpty()).ifPresent(request::setDescription);
 		request.setName(name);
-		request.setStartTime(Calendar.getInstance().getTime());
+		request.setStartTime(dateTime);
 		request.setType("STEP");
 		request.setHasStats(false);
 		return request;
 	}
 
 	@Nonnull
-	public static FinishTestItemRQ buildFinishTestItemRequest(@Nonnull ItemStatus status, @Nonnull Date endTime) {
+	public static FinishTestItemRQ buildFinishTestItemRequest(@Nonnull ItemStatus status,
+			@Nonnull Comparable<? extends Comparable<?>> endTime) {
 		FinishTestItemRQ finishTestItemRQ = new FinishTestItemRQ();
 		finishTestItemRQ.setStatus(status.name());
 		finishTestItemRQ.setEndTime(endTime);
 		return finishTestItemRQ;
-	}
-
-	@Nonnull
-	public static FinishTestItemRQ buildFinishTestItemRequest(@Nonnull ItemStatus status) {
-		return buildFinishTestItemRequest(status, Calendar.getInstance().getTime());
 	}
 }

@@ -31,6 +31,8 @@ import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import io.reactivex.schedulers.Schedulers;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import okhttp3.Cookie;
 import okhttp3.CookieJar;
 import okhttp3.HttpUrl;
@@ -45,14 +47,13 @@ import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.net.ssl.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.*;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -414,13 +415,15 @@ public class ReportPortal {
 	 * @param cause a {@link Throwable}
 	 */
 	public static void sendStackTraceToRP(final Throwable cause) {
-		ListenerParameters myParameters = ofNullable(Launch.currentLaunch()).map(Launch::getParameters).orElseGet(ListenerParameters::new);
+		Launch launch = Launch.currentLaunch();
+		ListenerParameters myParameters = ofNullable(launch).map(Launch::getParameters).orElseGet(ListenerParameters::new);
+		boolean useMicroseconds = ofNullable(launch).map(Launch::useMicroseconds).orElse(false);
 		Throwable base = new Throwable();
 		ReportPortal.emitLog(itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setItemUuid(itemUuid);
 			rq.setLevel("ERROR");
-			rq.setLogTime(Calendar.getInstance().getTime());
+			rq.setLogTime(useMicroseconds ? Instant.now() : Calendar.getInstance().getTime());
 			if (cause != null) {
 				if (myParameters.isExceptionTruncate()) {
 					rq.setMessage(getStackTrace(cause, base));

@@ -48,11 +48,7 @@ public class TestCaseIdUtilsTest {
 
 	@Test
 	public void test_code_reference_generation_from_a_method() throws NoSuchMethodException {
-		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod(
-				"testCaseAnnotationTest",
-				String.class,
-				String.class
-		);
+		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("testCaseAnnotationTest", String.class, String.class);
 		String codeRef = TestCaseIdUtils.getCodeRef(method);
 
 		assertThat(codeRef, equalTo(getClass().getCanonicalName() + ".testCaseAnnotationTest"));
@@ -60,14 +56,11 @@ public class TestCaseIdUtilsTest {
 
 	@Test
 	public void test_case_id_should_use_one_parameter_if_one_key_specified() throws NoSuchMethodException {
-		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod(
-				"testCaseAnnotationTest",
-				String.class,
-				String.class
-		);
+		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("testCaseAnnotationTest", String.class, String.class);
 		TestCaseId annotation = method.getAnnotation(TestCaseId.class);
 		String expectedTestCaseId = "5";
-		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(annotation,
+		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(
+				annotation,
 				method,
 				Arrays.asList("firstParam", expectedTestCaseId)
 		);
@@ -83,18 +76,10 @@ public class TestCaseIdUtilsTest {
 
 	@Test
 	public void test_case_id_should_use_all_parameters_if_no_key_specified() throws NoSuchMethodException {
-		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod(
-				"testCaseIdAnnotationParametersNoKeyTest",
-				String.class,
-				Integer.TYPE
-		);
+		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("testCaseIdAnnotationParametersNoKeyTest", String.class, Integer.TYPE);
 		TestCaseId annotation = method.getAnnotation(TestCaseId.class);
 		String expectedTestCaseId = "[firstParam,5]";
-		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(
-				annotation,
-				method,
-				Arrays.asList("firstParam", 5)
-		);
+		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(annotation, method, Arrays.asList("firstParam", 5));
 
 		assertThat(testCaseIdEntry, notNullValue());
 		assertThat(testCaseIdEntry.getId(), equalTo(expectedTestCaseId));
@@ -102,18 +87,10 @@ public class TestCaseIdUtilsTest {
 
 	@Test
 	public void test_case_id_should_not_fail_if_parameters_are_null() throws NoSuchMethodException {
-		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod(
-				"testCaseIdAnnotationParametersNoKeyTest",
-				String.class,
-				Integer.TYPE
-		);
+		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("testCaseIdAnnotationParametersNoKeyTest", String.class, Integer.TYPE);
 		TestCaseId annotation = method.getAnnotation(TestCaseId.class);
 		String expectedTestCaseId = "[null,5]";
-		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(
-				annotation,
-				method,
-				Arrays.asList(null, 5)
-		);
+		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(annotation, method, Arrays.asList(null, 5));
 
 		assertThat(testCaseIdEntry, notNullValue());
 		assertThat(testCaseIdEntry.getId(), equalTo(expectedTestCaseId));
@@ -125,20 +102,11 @@ public class TestCaseIdUtilsTest {
 	}
 
 	@Test
-	public void test_case_id_should_use_codref_and_parameters_if_nothing_is_specified_in_annotation()
-			throws NoSuchMethodException {
-		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod(
-				"testCaseIdEmptyAnnotationTest",
-				Integer.TYPE,
-				String.class
-		);
+	public void test_case_id_should_use_codref_and_parameters_if_nothing_is_specified_in_annotation() throws NoSuchMethodException {
+		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("testCaseIdEmptyAnnotationTest", Integer.TYPE, String.class);
 		TestCaseId annotation = method.getAnnotation(TestCaseId.class);
 		String expectedTestCaseId = "com.epam.reportportal.utils.TestCaseIdUtilsTest.testCaseIdEmptyAnnotationTest[5,firstParam]";
-		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(
-				annotation,
-				method,
-				Arrays.asList(5, "firstParam")
-		);
+		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(annotation, method, Arrays.asList(5, "firstParam"));
 
 		assertThat(testCaseIdEntry, notNullValue());
 		assertThat(testCaseIdEntry.getId(), equalTo(expectedTestCaseId));
@@ -151,18 +119,10 @@ public class TestCaseIdUtilsTest {
 
 	@Test
 	public void test_case_id_should_use_annotation_and_not_fail_if_parameters_are_null() throws NoSuchMethodException {
-		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod(
-				"testCaseIdAnnotationTest",
-				Integer.TYPE,
-				String.class
-		);
+		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("testCaseIdAnnotationTest", Integer.TYPE, String.class);
 		TestCaseId annotation = method.getAnnotation(TestCaseId.class);
 		String expectedTestCaseId = "my test case id";
-		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(
-				annotation,
-				method,
-				Arrays.asList(5, null)
-		);
+		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(annotation, method, Arrays.asList(5, null));
 
 		assertThat(testCaseIdEntry, notNullValue());
 		assertThat(testCaseIdEntry.getId(), equalTo(expectedTestCaseId));
@@ -170,18 +130,10 @@ public class TestCaseIdUtilsTest {
 
 	@Test
 	public void test_case_id_should_use_annotation_value_if_it_is_only_field_specified() throws NoSuchMethodException {
-		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod(
-				"testCaseIdAnnotationTest",
-				Integer.TYPE,
-				String.class
-		);
+		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("testCaseIdAnnotationTest", Integer.TYPE, String.class);
 		TestCaseId annotation = method.getAnnotation(TestCaseId.class);
 		String expectedTestCaseId = "my test case id";
-		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(
-				annotation,
-				method,
-				Arrays.asList(5, "firstParam")
-		);
+		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(annotation, method, Arrays.asList(5, "firstParam"));
 
 		assertThat(testCaseIdEntry, notNullValue());
 		assertThat(testCaseIdEntry.getId(), equalTo(expectedTestCaseId));
@@ -194,18 +146,10 @@ public class TestCaseIdUtilsTest {
 
 	@Test
 	public void test_case_id_should_use_annotation_value_and_one_marked_parameter() throws NoSuchMethodException {
-		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod(
-				"testCaseIdAnnotationOneParamTest",
-				Integer.TYPE,
-				String.class
-		);
+		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("testCaseIdAnnotationOneParamTest", Integer.TYPE, String.class);
 		TestCaseId annotation = method.getAnnotation(TestCaseId.class);
 		String expectedTestCaseId = "my test case id[5]";
-		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(
-				annotation,
-				method,
-				Arrays.asList(5, "firstParam")
-		);
+		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(annotation, method, Arrays.asList(5, "firstParam"));
 
 		assertThat(testCaseIdEntry, notNullValue());
 		assertThat(testCaseIdEntry.getId(), equalTo(expectedTestCaseId));
@@ -218,42 +162,35 @@ public class TestCaseIdUtilsTest {
 
 	@Test
 	public void test_case_id_should_use_annotation_value_and_parameters() throws NoSuchMethodException {
-		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("testCaseIdAnnotationParameterizedNoKeyParam",
+		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod(
+				"testCaseIdAnnotationParameterizedNoKeyParam",
 				Integer.TYPE,
 				String.class
 		);
 		TestCaseId annotation = method.getAnnotation(TestCaseId.class);
 		String expectedTestCaseId = "my test case id[5,firstParam]";
-		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(
-				annotation,
-				method,
-				Arrays.asList(5, "firstParam")
-		);
+		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(annotation, method, Arrays.asList(5, "firstParam"));
 
 		assertThat(testCaseIdEntry, notNullValue());
 		assertThat(testCaseIdEntry.getId(), equalTo(expectedTestCaseId));
 	}
 
 	@TestCaseId(value = "my test case id", parametrized = true)
-	public void testCaseIdAnnotationTwoParamTest(@TestCaseIdKey int id, String stringParam,
-			@TestCaseIdKey Boolean bool) {
+	public void testCaseIdAnnotationTwoParamTest(@TestCaseIdKey int id, String stringParam, @TestCaseIdKey Boolean bool) {
 
 	}
 
 	@Test
 	public void test_case_id_should_use_annotation_value_and_two_marked_parameter() throws NoSuchMethodException {
-		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("testCaseIdAnnotationTwoParamTest",
+		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod(
+				"testCaseIdAnnotationTwoParamTest",
 				Integer.TYPE,
 				String.class,
 				Boolean.class
 		);
 		TestCaseId annotation = method.getAnnotation(TestCaseId.class);
 		String expectedTestCaseId = "my test case id[5,true]";
-		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(
-				annotation,
-				method,
-				Arrays.asList(5, "stringParam", Boolean.TRUE)
-		);
+		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(annotation, method, Arrays.asList(5, "stringParam", Boolean.TRUE));
 
 		assertThat(testCaseIdEntry, notNullValue());
 		assertThat(testCaseIdEntry.getId(), equalTo(expectedTestCaseId));
@@ -265,19 +202,10 @@ public class TestCaseIdUtilsTest {
 
 	@Test
 	public void test_case_id_should_use_code_ref_and_parameters() throws NoSuchMethodException {
-		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod(
-				"noTestCaseIdAnnotationParameterized",
-				Integer.TYPE,
-				String.class
-		);
+		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("noTestCaseIdAnnotationParameterized", Integer.TYPE, String.class);
 		TestCaseId annotation = method.getAnnotation(TestCaseId.class);
-		String expectedTestCaseId =
-				getClass().getCanonicalName() + ".noTestCaseIdAnnotationParameterized[5,firstParam]";
-		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(
-				annotation,
-				method,
-				Arrays.asList(5, "firstParam")
-		);
+		String expectedTestCaseId = getClass().getCanonicalName() + ".noTestCaseIdAnnotationParameterized[5,firstParam]";
+		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(annotation, method, Arrays.asList(5, "firstParam"));
 
 		assertThat(testCaseIdEntry, notNullValue());
 		assertThat(testCaseIdEntry.getId(), equalTo(expectedTestCaseId));
@@ -307,35 +235,26 @@ public class TestCaseIdUtilsTest {
 
 	@Test
 	public void test_case_id_should_use_bypassed_code_ref_instead_of_method() throws NoSuchMethodException {
-		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod(
-				"noTestCaseIdAnnotationParameterized",
-				Integer.TYPE,
-				String.class
-		);
+		Method method = TestCaseIdUtilsTest.class.getDeclaredMethod("noTestCaseIdAnnotationParameterized", Integer.TYPE, String.class);
 		TestCaseId annotation = method.getAnnotation(TestCaseId.class);
 		String codeRef = "my.custom.code.ref";
 		String expectedTestCaseId = "my.custom.code.ref[5,firstParam]";
-		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(
-				annotation,
-				method,
-				codeRef,
-				Arrays.asList(5, "firstParam")
-		);
+		TestCaseIdEntry testCaseIdEntry = TestCaseIdUtils.getTestCaseId(annotation, method, codeRef, Arrays.asList(5, "firstParam"));
 
 		assertThat(testCaseIdEntry, notNullValue());
 		assertThat(testCaseIdEntry.getId(), equalTo(expectedTestCaseId));
 	}
 
 	private static Stream<Object[]> formatData() {
-		return Stream.of(new Object[] { PARAMS, "Test Case ID {method}", "Test Case ID verifyTestCaseId" },
+		return Stream.of(
+				new Object[] { PARAMS, "Test Case ID {method}", "Test Case ID verifyTestCaseId" },
 				new Object[] { null, "Test Case ID {this.value}", "Test Case ID stepValue" },
 				new Object[] { PARAMS, "Test Case ID {this.object.value}", "Test Case ID pojoValue" },
 				new Object[] { PARAMS, "Test Case ID {0}", "Test Case ID one" },
 				new Object[] { PARAMS, "Test Case ID {1}", "Test Case ID two" },
 				new Object[] { null, "Test Case ID {1}", "Test Case ID {1}" },
 				new Object[] { null, "Test Case ID {class}", "Test Case ID TestCaseIdUtilsTest" },
-				new Object[] { null, "Test Case ID {classRef}",
-						"Test Case ID com.epam.reportportal.utils.TestCaseIdUtilsTest" }
+				new Object[] { null, "Test Case ID {classRef}", "Test Case ID com.epam.reportportal.utils.TestCaseIdUtilsTest" }
 		);
 	}
 
@@ -357,17 +276,18 @@ public class TestCaseIdUtilsTest {
 
 	@ParameterizedTest
 	@MethodSource("formatData")
-	public void test_case_id_format_defaults(List<Object> params, String id, String expectedResult)
-			throws NoSuchMethodException {
+	public void test_case_id_format_defaults(List<Object> params, String id, String expectedResult) throws NoSuchMethodException {
 		Method method = this.getClass().getDeclaredMethod("verifyTestCaseId");
 		TestCaseId realId = method.getAnnotation(TestCaseId.class);
-		TestCaseId testCaseId = mock(TestCaseId.class, withSettings().defaultAnswer(invocation -> {
-			Method invocationMethod = invocation.getMethod();
-			if ("value".equals(invocationMethod.getName())) {
-				return id;
-			}
-			return invocationMethod.invoke(realId, invocation.getArguments());
-		}));
+		TestCaseId testCaseId = mock(
+				TestCaseId.class, withSettings().defaultAnswer(invocation -> {
+					Method invocationMethod = invocation.getMethod();
+					if ("value".equals(invocationMethod.getName())) {
+						return id;
+					}
+					return invocationMethod.invoke(realId, invocation.getArguments());
+				})
+		);
 
 		TestCaseIdEntry result = TestCaseIdUtils.getTestCaseId(testCaseId, method, null, params, this);
 

@@ -31,7 +31,7 @@ public class MimeTypeDetectorTest {
 	public static Iterable<Object[]> files() {
 		return Arrays.asList(
 				new Object[] { Paths.get("src/test/resources/pug/lucky.jpg").toFile(), "image/jpeg" },
-				new Object[] { new File("src/test/resources/files/simple_response.txt"), "text/plain" },
+				new Object[] { new File("src/test/resources/files/responses/simple_response.txt"), "text/plain" },
 				new Object[] { new File("src/test/resources/hello.json"), "application/json" },
 				new Object[] { new File("src/test/resources/logback-test.xml"), "application/xml" },
 				new Object[] { new File("src/test/resources/junit-platform.properties"), "text/plain" },

@@ -16,7 +16,8 @@
 
 package com.epam.reportportal.utils.files;
 
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
+
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -99,8 +100,10 @@ public class ByteSource {
 			return Arrays.copyOf(bytes, bytes.length);
 		}
 		if (url != null) {
-			bytes = Utils.readInputStreamToBytes(url.openStream());
-			return bytes;
+			try (InputStream is = url.openStream()) {
+				bytes = Utils.readInputStreamToBytes(is);
+			}
+			return Arrays.copyOf(bytes, bytes.length);
 		}
 		throw new IOException("Unable to read null sources.");
 	}

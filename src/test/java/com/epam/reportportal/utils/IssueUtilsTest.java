@@ -381,21 +381,27 @@ public class IssueUtilsTest {
 	public static Iterable<Object[]> externalIssueAnnotation() throws NoSuchMethodException {
 		return Arrays.asList(
 				new Object[] {
-						IssueUtilsTest.class.getMethod("method_with_simple_external_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class), null, null, null },
+						IssueUtilsTest.class.getMethod("method_with_simple_external_issue_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						null, null, null },
 				new Object[] {
-						IssueUtilsTest.class.getMethod("method_with_external_issue_bts_url_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class), "https://example.com", null, null },
+						IssueUtilsTest.class.getMethod("method_with_external_issue_bts_url_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						"https://example.com", null, null },
 				new Object[] {
-						IssueUtilsTest.class.getMethod("method_with_external_issue_bts_project_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class), null, "RPP", null },
+						IssueUtilsTest.class.getMethod("method_with_external_issue_bts_project_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						null, "RPP", null },
 				new Object[] {
-						IssueUtilsTest.class.getMethod("method_with_external_issue_url_pattern_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class), null, null, "https://example.com/{bts_project}/{issue_id}" },
+						IssueUtilsTest.class.getMethod("method_with_external_issue_url_pattern_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						null, null, "https://example.com/{bts_project}/{issue_id}" },
 				new Object[] {
-						IssueUtilsTest.class.getMethod("method_with_external_issue_bts_url_project_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class), "https://example.com", "RPP", null }
+						IssueUtilsTest.class.getMethod("method_with_external_issue_bts_url_project_annotation").getAnnotation(com.epam.reportportal.annotations.Issue.class),
+						"https://example.com", "RPP", null }
 		);
 	}
 
 	@ParameterizedTest
 	@MethodSource("externalIssueAnnotation")
-	public void test_create_issue_with_filter_annotation(com.epam.reportportal.annotations.Issue issueAnnotation, String btsUrl, String btsProject, String urlPattern) {
+	public void test_create_issue_with_filter_annotation(com.epam.reportportal.annotations.Issue issueAnnotation, String btsUrl,
+			String btsProject, String urlPattern) {
 		Issue issue = IssueUtils.createIssue(issueAnnotation, "testName", Collections.emptyList());
 		assertThat(issue, notNullValue());
 		assertThat(issue.getExternalSystemIssues(), allOf(notNullValue(), hasSize(1)));

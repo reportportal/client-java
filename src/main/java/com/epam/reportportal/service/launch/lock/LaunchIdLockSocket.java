@@ -19,12 +19,12 @@ package com.epam.reportportal.service.launch.lock;
 import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.utils.Waiter;
 import com.epam.reportportal.utils.properties.ListenerProperty;
+import jakarta.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
+import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -93,9 +93,8 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock {
 					os.write(launchUuid);
 					os.flush();
 					byte[] updateUuid = new byte[(Command.UPDATE.name() + COMMAND_DELIMITER + lockUuid).getBytes(TRANSFER_CHARSET).length];
-					InputStream is = s.getInputStream();
-					//noinspection ResultOfMethodCallIgnored
-					is.read(updateUuid);
+					DataInputStream is = new DataInputStream(s.getInputStream());
+					is.readFully(updateUuid);
 					String data = new String(updateUuid, TRANSFER_CHARSET);
 					final Command command = Command.valueOf(data.substring(0, data.indexOf(COMMAND_DELIMITER)));
 					final String instanceUuid = data.substring(data.indexOf(COMMAND_DELIMITER) + COMMAND_DELIMITER.length());
@@ -152,9 +151,8 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock {
 				.till(() -> {
 					try (Socket socket = new Socket(InetAddress.getLocalHost(), portNumber)) {
 						byte[] launchAnswerBuffer = new byte[instanceUuid.getBytes(TRANSFER_CHARSET).length];
-						InputStream is = socket.getInputStream();
-						//noinspection ResultOfMethodCallIgnored
-						is.read(launchAnswerBuffer);
+						DataInputStream is = new DataInputStream(socket.getInputStream());
+						is.readFully(launchAnswerBuffer);
 						String launchUuid = new String(launchAnswerBuffer, TRANSFER_CHARSET);
 						byte[] saveBuffer = (command.name() + COMMAND_DELIMITER + instanceUuid).getBytes(TRANSFER_CHARSET);
 						OutputStream os = socket.getOutputStream();
@@ -162,8 +160,7 @@ public class LaunchIdLockSocket extends AbstractLaunchIdLock {
 						os.flush();
 						String expectedAnswer = instanceUuid + OK_SUFFIX;
 						byte[] answerBuffer = new byte[expectedAnswer.getBytes(TRANSFER_CHARSET).length];
-						//noinspection ResultOfMethodCallIgnored
-						is.read(answerBuffer);
+						is.readFully(answerBuffer);
 						String answer = new String(answerBuffer, TRANSFER_CHARSET);
 						if (!expectedAnswer.equals(answer)) {
 							LOGGER.warn("Invalid server instance UUID '{}' answer", command.name());

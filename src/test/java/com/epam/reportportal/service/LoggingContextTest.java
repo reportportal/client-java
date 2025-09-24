@@ -22,11 +22,11 @@ import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.CommonUtils;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import jakarta.annotation.Nullable;
 import okhttp3.MultipartBody;
 import org.junit.jupiter.api.*;
 import org.mockito.ArgumentCaptor;
 
-import javax.annotation.Nullable;
 import java.util.Calendar;
 import java.util.List;
 import java.util.concurrent.ExecutorService;

@@ -165,7 +165,8 @@ public class ParameterUtilsTest {
 		assertThat(ParameterUtils.toBoxedType(from), sameInstance(to));
 	}
 
-	private static final List<Pair<String, Object>> PARAM_KEY_VALUES = Arrays.asList(Pair.of("str", "test"),
+	private static final List<Pair<String, Object>> PARAM_KEY_VALUES = Arrays.asList(
+			Pair.of("str", "test"),
 			Pair.of("my_id", null),
 			Pair.of("number", 10)
 	);
@@ -254,7 +255,9 @@ public class ParameterUtilsTest {
 		varB.setValue("2");
 		result.setValue("4");
 
-		assertThat(ParameterUtils.formatParametersAsTable(Arrays.asList(varA, varB, result)),
-				equalTo(MarkdownUtilsTest.ONE_ROW_EXPECTED_TABLE));
+		assertThat(
+				ParameterUtils.formatParametersAsTable(Arrays.asList(varA, varB, result)),
+				equalTo(MarkdownUtilsTest.ONE_ROW_EXPECTED_TABLE)
+		);
 	}
 }

@@ -20,7 +20,6 @@ import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static java.util.Optional.ofNullable;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,12 +53,13 @@ public class SystemAttributesExtractorTest {
 
 	@Test
 	public void nullSafeTestForPath() {
-		SystemAttributesExtractor.extract((Path) null);
+		SystemAttributesExtractor.extract(null);
 	}
 
 	@Test
 	public void testFromResource() {
-		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract("agent-test.properties",
+		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract(
+				"agent-test.properties",
 				SystemAttributesExtractorTest.class.getClassLoader()
 		);
 		assertThat(attributes, hasSize(3));
@@ -108,7 +107,8 @@ public class SystemAttributesExtractorTest {
 
 	@Test
 	public void testFromResourceClientProperties() {
-		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract("client-test.properties",
+		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract(
+				"client-test.properties",
 				SystemAttributesExtractorTest.class.getClassLoader(),
 				ClientProperties.values()
 		);
@@ -126,7 +126,8 @@ public class SystemAttributesExtractorTest {
 
 	@Test
 	public void testFromPathClientProperties() {
-		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract(Paths.get("./src/test/resources/client-test.properties"),
+		Set<ItemAttributesRQ> attributes = SystemAttributesExtractor.extract(
+				Paths.get("./src/test/resources/client-test.properties"),
 				ClientProperties.values()
 		);
 		assertThat(attributes, hasSize(1));
@@ -141,8 +142,7 @@ public class SystemAttributesExtractorTest {
 	}
 
 	private Pattern getPattern(ItemAttributesRQ attribute) {
-		return ofNullable(properties.get(attribute.getKey())).orElse(null);
-
+		return properties.get(attribute.getKey());
 	}
 
 }

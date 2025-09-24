@@ -53,20 +53,20 @@ public class TemplateProcessingTest {
 	}
 
 	public static Object[][] data() {
-		return new Object[][]{{"someObject.outerName", "outer"}, {"someObject.innerName", "inner"},
-				{"someObject.innerStrings", "[firstInner, secondInner, thirdInner]"}, {"someObject", "INNER"},
-				{"someObject.outers", "[OUTER]"},
-				{"someObject.outers.outerStrings", "[[{first, second, third}, {fourth, fifth, sixth}]]"},
-				{"someObject.outers.outerName", "[outer]"}, {"someObject.innerNullString", ParameterUtils.NULL_VALUE},
-				{"someObject.innerNullList", ParameterUtils.NULL_VALUE}, {"someObject.toString()", "INNER"},
-				{"someObject.echo(\"test\")", "someObject.echo(\"test\")"}};
+		return new Object[][] { { "someObject.outerName", "outer" }, { "someObject.innerName", "inner" },
+				{ "someObject.innerStrings", "[firstInner, secondInner, thirdInner]" }, { "someObject", "INNER" },
+				{ "someObject.outers", "[OUTER]" },
+				{ "someObject.outers.outerStrings", "[[{first, second, third}, {fourth, fifth, sixth}]]" },
+				{ "someObject.outers.outerName", "[outer]" }, { "someObject.innerNullString", ParameterUtils.NULL_VALUE },
+				{ "someObject.innerNullList", ParameterUtils.NULL_VALUE }, { "someObject.toString()", "INNER" },
+				{ "someObject.echo(\"test\")", "someObject.echo(\"test\")" } };
 	}
 
 	private Outer.Inner createInnerObject() {
 
-		final String[] strings = {"first", "second", "third"};
-		final String[] moreStrings = {"fourth", "fifth", "sixth"};
-		List<String[]> outerStrings = new ArrayList<String[]>() {
+		final String[] strings = { "first", "second", "third" };
+		final String[] moreStrings = { "fourth", "fifth", "sixth" };
+		List<String[]> outerStrings = new ArrayList<>() {
 			{
 				add(strings);
 				add(moreStrings);
@@ -77,15 +77,20 @@ public class TemplateProcessingTest {
 		final String innerName = "inner";
 
 		List<String> innerStrings = getInnerStrings();
-		return new Outer.Inner(outerName, outerStrings, innerName, innerStrings,
-				Collections.singletonList(new Outer(outerName, outerStrings)));
+		return new Outer.Inner(
+				outerName,
+				outerStrings,
+				innerName,
+				innerStrings,
+				Collections.singletonList(new Outer(outerName, outerStrings))
+		);
 	}
 
 	private static List<String> getInnerStrings() {
 		return Arrays.asList("firstInner", "secondInner", "thirdInner");
 	}
 
-	@SuppressWarnings({"unused", "FieldCanBeLocal"})
+	@SuppressWarnings({ "unused", "FieldCanBeLocal" })
 	private static class Outer {
 
 		private final String outerName;

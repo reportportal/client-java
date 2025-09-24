@@ -29,13 +29,15 @@ import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -117,7 +119,7 @@ public class DefaultStepReporter implements StepReporter {
 				LOGGER.error("Unable to process nested step: {}", e.getLocalizedMessage(), e);
 			}
 		}
-		addStepEntry(stepId, status, rq.getStartTime());
+		addStepEntry(stepId, status, rq.getStartTime(), launch.useMicroseconds() ? Instant.now() : Calendar.getInstance().getTime());
 		return stepId;
 	}
 
@@ -236,7 +238,7 @@ public class DefaultStepReporter implements StepReporter {
 			return Maybe.empty();
 		}
 		Maybe<String> itemId = launch.startTestItem(parent, startStepRequest);
-		steps.put(itemId, new StepEntry(itemId, new FinishTestItemRQ()));
+		steps.put(itemId, new StepEntry(itemId, startStepRequest.getStartTime(), new FinishTestItemRQ()));
 		return itemId;
 	}
 
@@ -253,22 +255,26 @@ public class DefaultStepReporter implements StepReporter {
 		String runStatus = ofNullable(finishStepRequest.getStatus()).orElse(ItemStatus.PASSED.name());
 
 		FinishTestItemRQ actualRequest = ObjectUtils.clonePojo(finishStepRequest, FinishTestItemRQ.class);
+		String finalStatus;
 		if (manualStatus != null) {
-			actualRequest.setStatus(manualStatus);
+			finalStatus = manualStatus;
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(manualStatus)) {
 				failParents();
 			}
 		} else {
-			actualRequest.setStatus(runStatus);
+			finalStatus = runStatus;
 		}
-		actualRequest.setStatus(ofNullable(manualStatus).orElse(runStatus));
+		actualRequest.setStatus(finalStatus);
 		return launch.finishTestItem(stepId, actualRequest);
 	}
 
 	@Override
 	@Nonnull
 	public Maybe<OperationCompletionRS> finishNestedStep(@Nonnull ItemStatus status) {
-		FinishTestItemRQ finishStepRequest = buildFinishTestItemRequest(status);
+		FinishTestItemRQ finishStepRequest = buildFinishTestItemRequest(
+				status,
+				launch.useMicroseconds() ? Instant.now() : Calendar.getInstance().getTime()
+		);
 		return finishNestedStep(finishStepRequest);
 	}
 
@@ -318,13 +324,25 @@ public class DefaultStepReporter implements StepReporter {
 		return step(ItemStatus.PASSED, name, actions);
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Nonnull
 	private Maybe<String> startStepRequest(final StartTestItemRQ startTestItemRQ) {
 		finishPreviousStepInternal(null).ifPresent(e -> {
-			Date previousDate = e.getTimestamp();
-			Date currentDate = startTestItemRQ.getStartTime();
-			if (!previousDate.before(currentDate)) {
-				startTestItemRQ.setStartTime(new Date(previousDate.getTime() + 1));
+			Comparable previousDate = e.getTimestamp();
+			Comparable currentDate = startTestItemRQ.getStartTime();
+			if (previousDate.compareTo(currentDate) >= 0) {
+				Comparable newDate;
+				if (previousDate instanceof Date) {
+					newDate = new Date(((Date) previousDate).getTime() + 1);
+				} else if (previousDate instanceof Instant) {
+					newDate = ((Instant) previousDate).plus(1, ChronoUnit.MICROS);
+				} else if (previousDate instanceof Long) {
+					newDate = ((Long) previousDate) + 1;
+				} else {
+					// Fallback to the original timestamp if it is not a Date or Instant to not fail reporting
+					newDate = previousDate;
+				}
+				startTestItemRQ.setStartTime(newDate);
 			}
 			if (ItemStatus.FAILED.name().equalsIgnoreCase(e.getFinishTestItemRQ().getStatus())) {
 				failParents();
@@ -338,13 +356,14 @@ public class DefaultStepReporter implements StepReporter {
 		startTestItemRQ.setName(name);
 		startTestItemRQ.setType("STEP");
 		startTestItemRQ.setHasStats(false);
-		startTestItemRQ.setStartTime(Calendar.getInstance().getTime());
+		startTestItemRQ.setStartTime(launch.useMicroseconds() ? Instant.now() : Calendar.getInstance().getTime());
 		return startTestItemRQ;
 	}
 
-	private void addStepEntry(Maybe<String> stepId, ItemStatus status, Date timestamp) {
-		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status);
-		steps.put(stepId, new StepEntry(stepId, timestamp, finishTestItemRQ));
+	private void addStepEntry(Maybe<String> stepId, ItemStatus status, @Nonnull Comparable<? extends Comparable<?>> startTime,
+			@Nonnull Comparable<? extends Comparable<?>> finishTime) {
+		FinishTestItemRQ finishTestItemRQ = buildFinishTestItemRequest(status, finishTime);
+		steps.put(stepId, new StepEntry(stepId, startTime, finishTestItemRQ));
 	}
 
 	private SaveLogRQ buildSaveLogRequest(String itemId, String message, LogLevel level) {
@@ -352,7 +371,7 @@ public class DefaultStepReporter implements StepReporter {
 		rq.setItemUuid(itemId);
 		rq.setMessage(message);
 		rq.setLevel(level.name());
-		rq.setLogTime(Calendar.getInstance().getTime());
+		rq.setLogTime(launch.useMicroseconds() ? Instant.now() : Calendar.getInstance().getTime());
 		return rq;
 	}
 

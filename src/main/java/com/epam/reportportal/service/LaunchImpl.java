@@ -44,11 +44,12 @@ import io.reactivex.internal.operators.flowable.FlowableFromObservable;
 import io.reactivex.plugins.RxJavaPlugins;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.PublishSubject;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
@@ -56,6 +57,7 @@ import java.util.stream.Collectors;
 
 import static com.epam.reportportal.service.logs.LaunchLoggingCallback.LOG_ERROR;
 import static com.epam.reportportal.service.logs.LaunchLoggingCallback.LOG_SUCCESS;
+import static com.epam.reportportal.utils.BasicUtils.compareSemanticVersions;
 import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
 import static com.epam.reportportal.utils.SubscriptionUtils.*;
 import static com.epam.reportportal.utils.files.ImageConverter.convert;
@@ -72,6 +74,8 @@ public class LaunchImpl extends Launch {
 	 * Environment variable name to disable analytics
 	 */
 	public static final String DISABLE_PROPERTY = "AGENT_NO_ANALYTICS";
+
+	public static final String MICROSECONDS_MIN_VERSION = "5.13.2";
 
 	private static final Map<ExecutorService, Scheduler> SCHEDULERS = new ConcurrentHashMap<>();
 
@@ -125,21 +129,14 @@ public class LaunchImpl extends Launch {
 
 	protected final StartLaunchRQ startRq;
 	protected final Maybe<ProjectSettingsResource> projectSettings;
+	protected final Maybe<ApiInfo> apiInfo;
 	private final Supplier<Maybe<String>> launch;
 	private final PublishSubject<SaveLogRQ> logEmitter;
 	private final ExecutorService executor;
 	private final Scheduler scheduler;
 	private final LoggingSubscriber loggingSubscriber;
 	private StatisticsService statisticsService;
-
-	private static Supplier<Maybe<String>> getLaunchSupplier(@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler,
-			@Nonnull final StartLaunchRQ startRq) {
-		return new MemoizingSupplier<>(() -> client.startLaunch(startRq)
-				.retry(DEFAULT_REQUEST_RETRY)
-				.map(StartLaunchRS::getId)
-				.cache()
-				.subscribeOn(scheduler));
-	}
+	private volatile Boolean useMicroseconds;
 
 	private static PublishSubject<SaveLogRQ> createLogEmitter(@Nonnull final ReportPortalClient client,
 			@Nonnull final ListenerParameters parameters, @Nonnull final Scheduler scheduler,
@@ -158,6 +155,16 @@ public class LaunchImpl extends Launch {
 	private static Maybe<ProjectSettingsResource> getProjectSettings(@Nonnull final ReportPortalClient client,
 			@Nonnull final Scheduler scheduler) {
 		return ofNullable(client.getProjectSettings()).map(settings -> settings.subscribeOn(scheduler).cache()).orElse(Maybe.empty());
+	}
+
+	private static Maybe<ApiInfo> getApiInfo(@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler) {
+		return ofNullable(client.getApiInfo()).map(info -> info.subscribeOn(scheduler).cache()).orElse(Maybe.empty());
+	}
+
+	private static StartLaunchRQ emptyStartLaunchForStatistics() {
+		StartLaunchRQ result = new StartLaunchRQ();
+		result.setAttributes(Collections.singleton(new ItemAttributesRQ(DefaultProperties.AGENT.getName(), CUSTOM_AGENT, true)));
+		return result;
 	}
 
 	/**
@@ -182,7 +189,7 @@ public class LaunchImpl extends Launch {
 		}
 		scheduler = createScheduler(executor);
 		statisticsService = new StatisticsService(parameters);
-		startRq = clonePojo(rq, StartLaunchRQ.class);
+		startRq = rq;
 		truncateAttributes(startRq);
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
@@ -191,6 +198,7 @@ public class LaunchImpl extends Launch {
 		this.loggingSubscriber = loggingSubscriber;
 		logEmitter = createLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
 		projectSettings = getProjectSettings(getClient(), getScheduler());
+		apiInfo = getApiInfo(getClient(), getScheduler());
 	}
 
 	/**
@@ -233,12 +241,19 @@ public class LaunchImpl extends Launch {
 		loggingSubscriber = new LoggingSubscriber();
 		logEmitter = createLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
 		projectSettings = getProjectSettings(getClient(), getScheduler());
+		apiInfo = getApiInfo(getClient(), getScheduler());
 	}
 
-	private static StartLaunchRQ emptyStartLaunchForStatistics() {
-		StartLaunchRQ result = new StartLaunchRQ();
-		result.setAttributes(Collections.singleton(new ItemAttributesRQ(DefaultProperties.AGENT.getName(), CUSTOM_AGENT, true)));
-		return result;
+	private Supplier<Maybe<String>> getLaunchSupplier(@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler,
+			@Nonnull final StartLaunchRQ startRq) {
+		return new MemoizingSupplier<>(() -> {
+			StartLaunchRQ myStartRq = clonePojo(startRq, StartLaunchRQ.class);
+			myStartRq.setStartTime(convertIfNecessary(myStartRq.getStartTime()));
+			return client.startLaunch(myStartRq)
+					.retry(DEFAULT_REQUEST_RETRY)
+					.map(StartLaunchRS::getId)
+					.cache()
+					.subscribeOn(scheduler);});
 	}
 
 	/**
@@ -250,6 +265,34 @@ public class LaunchImpl extends Launch {
 	 */
 	protected Scheduler createScheduler(ExecutorService executorService) {
 		return SCHEDULERS.computeIfAbsent(executorService, Schedulers::from);
+	}
+
+	/**
+	 * Determines whether timestamps should use microsecond precision based on the
+	 * ReportPortal server version. Versions greater than or equal to 5.13.2
+	 * support microseconds.
+	 * <p>
+	 * The value is computed once and cached for subsequent calls.
+	 *
+	 * @return {@code true} if server version greater or equal 5.13.2, otherwise {@code false}
+	 */
+	public boolean useMicroseconds() {
+		if (useMicroseconds != null) {
+			return useMicroseconds;
+		}
+
+		boolean result = false;
+		try {
+			ApiInfo info = apiInfo.blockingGet();
+			String version = ofNullable(info).map(ApiInfo::getBuild).map(ApiInfo.Build::getVersion).orElse(null);
+			if (StringUtils.isNotBlank(version)) {
+				result = compareSemanticVersions(version, MICROSECONDS_MIN_VERSION) >= 0;
+			}
+		} catch (Exception e) {
+			// Ignore and keep default false when API info is unavailable
+		}
+		this.useMicroseconds = result;
+		return result;
 	}
 
 	/**
@@ -337,6 +380,21 @@ public class LaunchImpl extends Launch {
 		rq.setAttributes(truncateAttributes(rq.getAttributes()));
 	}
 
+	@Nullable
+	private Comparable<? extends Comparable<?>> convertIfNecessary(@Nullable Comparable<? extends Comparable<?>> dateTime) {
+		if (dateTime == null) {
+			return null;
+		}
+		boolean useMicroseconds = useMicroseconds();
+		if (dateTime instanceof Instant && !useMicroseconds) {
+			// Convert Instant to Date if microseconds are not supported
+			return Date.from((Instant) dateTime);
+		} else {
+			// Not Instant return as is
+			return dateTime;
+		}
+	}
+
 	/**
 	 * Starts the launch asynchronously on first subscription. Subsequent calls do
 	 * not start the launch again due to internal caching.
@@ -350,9 +408,9 @@ public class LaunchImpl extends Launch {
 			LOGGER.error("Unable to start Launch: executor service is already shut down. The data may be lost.");
 			return Maybe.empty();
 		}
+		Maybe<String> myLaunch = getLaunch();
 
 		ListenerParameters params = getParameters();
-		Maybe<String> myLaunch = getLaunch();
 		if (params.isPrintLaunchUuid()) {
 			myLaunch.subscribe(printLaunch(params));
 		} else {
@@ -438,6 +496,14 @@ public class LaunchImpl extends Launch {
 		waitForCompletable(completables.toArray(new Completable[0]));
 	}
 
+	private void emitLog(@Nonnull final SaveLogRQ rq) {
+		SaveLogRQ myRq = clonePojo(rq, SaveLogRQ.class);
+		// Ensure file content is not lost during cloning
+		ofNullable(myRq.getFile()).ifPresent(file -> file.setContent(rq.getFile().getContent()));
+		myRq.setLogTime(convertIfNecessary(myRq.getLogTime()));
+		logEmitter.onNext(myRq);
+	}
+
 	/**
 	 * Finalizes the batched log emitter ensuring the last batch is sent before
 	 * completing. Blocks within the configured reporting timeout while waiting for
@@ -464,7 +530,7 @@ public class LaunchImpl extends Launch {
 	 *
 	 * @param request Launch finish request.
 	 */
-	public void finish(final FinishExecutionRQ request) {
+	public void finish(@Nonnull FinishExecutionRQ request) {
 		if (getExecutor().isShutdown()) {
 			LOGGER.error("Unable to finish Launch: executor service is already shut down. The data may be lost.");
 			return;
@@ -481,6 +547,7 @@ public class LaunchImpl extends Launch {
 		}
 		if (StringUtils.isBlank(getParameters().getLaunchUuid()) || !getParameters().isLaunchUuidCreationSkip()) {
 			FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
+			rq.setEndTime(convertIfNecessary(rq.getEndTime()));
 			truncateAttributes(rq);
 			Maybe<OperationCompletionRS> launchCompletable = getLaunch().flatMap(id -> getClient().finishLaunch(id, rq)
 					.retry(DEFAULT_REQUEST_RETRY)
@@ -522,6 +589,7 @@ public class LaunchImpl extends Launch {
 			return createErrorResponse(new NullPointerException("StartTestItemRQ should not be null"));
 		}
 		StartTestItemRQ rq = clonePojo(request, StartTestItemRQ.class);
+		rq.setStartTime(convertIfNecessary(rq.getStartTime()));
 		truncateName(rq);
 		truncateAttributes(rq);
 
@@ -533,6 +601,47 @@ public class LaunchImpl extends Launch {
 		}).cache();
 		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start " + itemDescription));
 		queue.getOrCompute(item).addToQueue(item.ignoreElement().onErrorComplete());
+		LoggingContext.init(item);
+
+		getStepReporter().setParent(item);
+		return item;
+	}
+
+	/**
+	 * Starts new test item in ReportPortal asynchronously (non-blocking).
+	 *
+	 * @param parentId Promise of parent item ID.
+	 * @param request  Item start request.
+	 * @return Test Item ID promise
+	 */
+	@Nonnull
+	public Maybe<String> startTestItem(final Maybe<String> parentId, final StartTestItemRQ request) {
+		if (parentId == null) {
+			return startTestItem(request);
+		}
+		if (request == null) {
+			/*
+			 * This usually happens when we have a bug inside an agent or supported framework. But in any case we shouldn't rise an exception,
+			 * since we are reporting tool and our problems	should not fail launches.
+			 */
+			return createErrorResponse(new NullPointerException("StartTestItemRQ should not be null"));
+		}
+		StartTestItemRQ rq = clonePojo(request, StartTestItemRQ.class);
+		rq.setStartTime(convertIfNecessary(rq.getStartTime()));
+		truncateName(rq);
+		truncateAttributes(rq);
+
+		String itemDescription = String.format("child test item [%s] '%s'", rq.getType(), rq.getName());
+		final Maybe<String> item = RxJavaPlugins.onAssembly(Maybe.zip(
+				getLaunch(), parentId, (lId, pId) -> {
+					rq.setLaunchUuid(lId);
+					LOGGER.trace("Starting {} in thread: {}", itemDescription, Thread.currentThread().getName());
+					return getClient().startTestItem(pId, rq);
+				}
+		).flatMap(rs -> rs.retry(DEFAULT_REQUEST_RETRY).map(TO_ID)).cache());
+
+		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start " + itemDescription));
+		queue.getOrCompute(item).withParent(parentId).addToQueue(item.ignoreElement().onErrorComplete());
 		LoggingContext.init(item);
 
 		getStepReporter().setParent(item);
@@ -556,46 +665,6 @@ public class LaunchImpl extends Launch {
 			myRq.setRetryOf(s);
 			return startTestItem(parentId, myRq);
 		}).cache();
-	}
-
-	/**
-	 * Starts new test item in ReportPortal asynchronously (non-blocking).
-	 *
-	 * @param parentId Promise of parent item ID.
-	 * @param request  Item start request.
-	 * @return Test Item ID promise
-	 */
-	@Nonnull
-	public Maybe<String> startTestItem(final Maybe<String> parentId, final StartTestItemRQ request) {
-		if (parentId == null) {
-			return startTestItem(request);
-		}
-		if (request == null) {
-			/*
-			 * This usually happens when we have a bug inside an agent or supported framework. But in any case we shouldn't rise an exception,
-			 * since we are reporting tool and our problems	should not fail launches.
-			 */
-			return createErrorResponse(new NullPointerException("StartTestItemRQ should not be null"));
-		}
-		StartTestItemRQ rq = clonePojo(request, StartTestItemRQ.class);
-		truncateName(rq);
-		truncateAttributes(rq);
-
-		String itemDescription = String.format("child test item [%s] '%s'", rq.getType(), rq.getName());
-		final Maybe<String> item = RxJavaPlugins.onAssembly(Maybe.zip(
-				getLaunch(), parentId, (lId, pId) -> {
-					rq.setLaunchUuid(lId);
-					LOGGER.trace("Starting {} in thread: {}", itemDescription, Thread.currentThread().getName());
-					return getClient().startTestItem(pId, rq);
-				}
-		).flatMap(rs -> rs.retry(DEFAULT_REQUEST_RETRY).map(TO_ID)).cache());
-
-		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start " + itemDescription));
-		queue.getOrCompute(item).withParent(parentId).addToQueue(item.ignoreElement().onErrorComplete());
-		LoggingContext.init(item);
-
-		getStepReporter().setParent(item);
-		return item;
 	}
 
 	/**
@@ -719,7 +788,6 @@ public class LaunchImpl extends Launch {
 		if (error != null) {
 			return error;
 		}
-
 		Maybe<String> item = startTestItem(parentId, rq);
 		handleVirtualItemSubscription(virtualItem, item);
 		return item;
@@ -753,7 +821,7 @@ public class LaunchImpl extends Launch {
 					}
 				}));
 
-		if (!ofNullable(issue.getExternalSystemIssues()).filter(issues -> !issues.isEmpty()).isPresent()) {
+		if (ofNullable(issue.getExternalSystemIssues()).filter(issues -> !issues.isEmpty()).isEmpty()) {
 			return;
 		}
 		ListenerParameters params = getParameters();
@@ -804,6 +872,7 @@ public class LaunchImpl extends Launch {
 			return createErrorResponse(new NullPointerException("FinishTestItemRQ should not be null"));
 		}
 		FinishTestItemRQ rq = clonePojo(request, FinishTestItemRQ.class);
+		rq.setEndTime(convertIfNecessary(rq.getEndTime()));
 		truncateAttributes(rq);
 
 		//noinspection ReactiveStreamsUnusedPublisher
@@ -861,12 +930,8 @@ public class LaunchImpl extends Launch {
 
 		//find parent and add to its queue
 		final Maybe<String> parent = treeItem.getParent();
-		if (null != parent) {
-			queue.getOrCompute(parent).addToQueue(finishCompletion.onErrorComplete());
-		} else {
-			//seems like this is root item
-			queue.getOrCompute(this.getLaunch()).addToQueue(finishCompletion.onErrorComplete());
-		}
+		// If parent is not present, we use the launch ID, since the item is a root item
+		queue.getOrCompute(Objects.requireNonNullElseGet(parent, this::getLaunch)).addToQueue(finishCompletion.onErrorComplete());
 
 		getStepReporter().removeParent(item);
 		LoggingContext.dispose();
@@ -889,10 +954,6 @@ public class LaunchImpl extends Launch {
 	private SaveLogRQ prepareRequest(@Nonnull final String launchId, @Nonnull final SaveLogRQ rq) throws IOException {
 		rq.setLaunchUuid(launchId);
 		return prepareRequest(rq);
-	}
-
-	private void emitLog(@Nonnull final SaveLogRQ rq) {
-		logEmitter.onNext(rq);
 	}
 
 	/**

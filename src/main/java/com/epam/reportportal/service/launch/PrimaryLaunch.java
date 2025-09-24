@@ -23,7 +23,9 @@ import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.utils.Waiter;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import jakarta.annotation.Nonnull;
 
+import java.time.Instant;
 import java.util.Calendar;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -49,7 +51,7 @@ public class PrimaryLaunch extends AbstractJoinedLaunch {
 	 * @param request Finish Launch Request to use (end time will be updated after wait).
 	 */
 	@Override
-	public void finish(final FinishExecutionRQ request) {
+	public void finish(@Nonnull FinishExecutionRQ request) {
 		Callable<Boolean> finishCondition = new SecondaryLaunchFinishCondition(lock, uuid);
 		Boolean finished = Boolean.FALSE;
 		// If there was launch number change (finished == false) we will wait more.
@@ -59,7 +61,7 @@ public class PrimaryLaunch extends AbstractJoinedLaunch {
 			finished = waiter.till(finishCondition);
 		}
 		FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
-		rq.setEndTime(Calendar.getInstance().getTime());
+		rq.setEndTime(useMicroseconds() ? Instant.now() : Calendar.getInstance().getTime());
 		super.finish(rq);
 		stopRunning();
 		lock.finishInstanceUuid(uuid);
