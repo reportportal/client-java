@@ -71,7 +71,7 @@ public class Issue {
 			return ticketId;
 		}
 
-		public Object getSubmitDate() {
+		public Comparable<? extends Comparable<?>> getSubmitDate() {
 			return submitDate;
 		}
 
