@@ -523,7 +523,7 @@ public class ReportPortal {
 			} catch (NoSuchMethodError e) {
 				throw new InternalReportPortalClientException(
 						"Unable to initialize OkHttp client. ReportPortal client supports OkHttp version 3.11.0 as minimum.\n"
-								+ "Please upComparable<? extends Comparable<?>>  OkHttp dependency.\n"
+								+ "Please update OkHttp dependency.\n"
 								+ "Besides this usually happens due to old selenium-java version (it overrides our dependency), "
 								+ "please use selenium-java 3.141.0 as minimum.", e
 				);
