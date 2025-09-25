@@ -102,7 +102,7 @@ public class LaunchIdLockFileTest {
 	@Test
 	public void test_launch_uuid_will_be_the_same_for_ten_threads_obtainLaunchUuid() throws InterruptedException {
 		int threadNum = 10;
-		try(CommonUtils.ExecutorService executor = CommonUtils.testExecutor(threadNum)) {
+		try (CommonUtils.ExecutorService executor = CommonUtils.testExecutor(threadNum)) {
 			Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(launchIdLockFile));
 
 			Collection<String> results = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
@@ -114,7 +114,7 @@ public class LaunchIdLockFileTest {
 	@Test
 	public void test_sync_file_contains_all_thread_uuids_obtainLaunchUuid() throws InterruptedException, IOException {
 		int threadNum = 5;
-		try(CommonUtils.ExecutorService executor = CommonUtils.testExecutor(threadNum)) {
+		try (CommonUtils.ExecutorService executor = CommonUtils.testExecutor(threadNum)) {
 			Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, singletonSupplier(launchIdLockFile));
 
 			// Call Future#get to wait for execution.
@@ -136,7 +136,7 @@ public class LaunchIdLockFileTest {
 
 	private Pair<Set<String>, Collection<String>> executeParallelLaunchUuidSync(int threadNum,
 			Iterable<LaunchIdLockFile> lockFileCollection) throws InterruptedException {
-		try(CommonUtils.ExecutorService executor = CommonUtils.testExecutor(threadNum)) {
+		try (CommonUtils.ExecutorService executor = CommonUtils.testExecutor(threadNum)) {
 			Map<String, Callable<String>> tasks = getLaunchUuidReadCallables(threadNum, iterableSupplier(lockFileCollection));
 			Collection<String> result = executor.invokeAll(tasks.values()).stream().map(new GetFutureResults<>()).collect(toList());
 			final File testFile = new File(lockFileName);
