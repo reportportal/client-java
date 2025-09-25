@@ -278,7 +278,7 @@ public class ReportPortal {
 	 * @param time    Log time
 	 * @return true if log has been emitted
 	 */
-	public static boolean emitLog(final String message, final String level, final Date time) {
+	public static boolean emitLog(@Nullable String message, @Nullable String level, @Nonnull Comparable<? extends Comparable<?>> time) {
 		return emitLog(itemUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setLevel(level);
@@ -298,7 +298,8 @@ public class ReportPortal {
 	 * @param time    Log time
 	 * @return true if log has been emitted
 	 */
-	public static boolean emitLaunchLog(final String message, final String level, final Date time) {
+	public static boolean emitLaunchLog(@Nullable String message, @Nullable String level,
+			@Nonnull Comparable<? extends Comparable<?>> time) {
 		return emitLaunchLog(launchUuid -> {
 			SaveLogRQ rq = new SaveLogRQ();
 			rq.setLevel(level);
@@ -320,8 +321,8 @@ public class ReportPortal {
 	 * @return converted object
 	 */
 	@Nonnull
-	public static SaveLogRQ toSaveLogRQ(@Nullable String launchUuid, @Nullable String itemUuid, @Nonnull String level, @Nonnull Date time,
-			@Nonnull ReportPortalMessage message) {
+	public static SaveLogRQ toSaveLogRQ(@Nullable String launchUuid, @Nullable String itemUuid, @Nullable String level,
+			@Nonnull Comparable<? extends Comparable<?>> time, @Nonnull ReportPortalMessage message) {
 		SaveLogRQ rq = new SaveLogRQ();
 		rq.setItemUuid(itemUuid);
 		rq.setLaunchUuid(launchUuid);
@@ -352,7 +353,8 @@ public class ReportPortal {
 	 * @param file    a file to attach to the log message
 	 * @return true if log has been emitted
 	 */
-	public static boolean emitLog(final String message, final String level, final Date time, final File file) {
+	public static boolean emitLog(@Nullable String message, @Nullable String level, @Nonnull Comparable<? extends Comparable<?>> time,
+			final File file) {
 		return emitLog(itemUuid -> {
 			try {
 				TypeAwareByteSource byteSource = Utils.getFile(file);
@@ -373,7 +375,8 @@ public class ReportPortal {
 	 * @param file    a file to attach to the log message
 	 * @return true if log has been emitted
 	 */
-	public static boolean emitLaunchLog(final String message, final String level, final Date time, final File file) {
+	public static boolean emitLaunchLog(@Nullable String message, @Nullable String level, @Nonnull Comparable<? extends Comparable<?>> time,
+			final File file) {
 		return emitLaunchLog(launchUuid -> {
 			try {
 				TypeAwareByteSource byteSource = Utils.getFile(file);
@@ -393,7 +396,8 @@ public class ReportPortal {
 	 * @param time    timestamp of the message
 	 * @return true if log has been emitted otherwise false
 	 */
-	public static boolean emitLog(final ReportPortalMessage message, final String level, final Date time) {
+	public static boolean emitLog(final ReportPortalMessage message, @Nullable String level,
+			@Nonnull Comparable<? extends Comparable<?>> time) {
 		return emitLog(itemUuid -> toSaveLogRQ(null, itemUuid, level, time, message));
 	}
 
@@ -405,7 +409,8 @@ public class ReportPortal {
 	 * @param time    timestamp of the message
 	 * @return true if log has been emitted otherwise false
 	 */
-	public static boolean emitLaunchLog(final ReportPortalMessage message, final String level, final Date time) {
+	public static boolean emitLaunchLog(final ReportPortalMessage message, @Nullable String level,
+			@Nonnull Comparable<? extends Comparable<?>> time) {
 		return emitLaunchLog(launchUuid -> toSaveLogRQ(launchUuid, null, level, time, message));
 	}
 

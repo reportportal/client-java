@@ -18,13 +18,12 @@ package com.epam.ta.reportportal.ws.model.log;
 
 import com.epam.reportportal.utils.serialize.TimeDeserializer;
 import com.epam.reportportal.utils.serialize.TimeSerializer;
-import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import java.util.Date;
 
 @JsonInclude(Include.NON_NULL)
 public class SaveLogRQ {
@@ -64,7 +63,12 @@ public class SaveLogRQ {
 		return logTime;
 	}
 
+	@JsonSetter
 	public void setLogTime(Comparable<? extends Comparable<?>> logTime) {
+		this.logTime = logTime;
+	}
+
+	public void setLogTime(Date logTime) {
 		this.logTime = logTime;
 	}
 
