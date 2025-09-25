@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.4.1]
 ### Fixed
 - Log time parameter type changed to Comparable in multiple methods, in `ReportPortal` and `ItemTreeReporter` classes, by @HardNorth
 - Support of Date type in SaveLogRQ for legacy loggers, by @HardNorth
