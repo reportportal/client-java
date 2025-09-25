@@ -52,7 +52,7 @@ public class Issue {
 		private String ticketId;
 
 		@JsonProperty(value = "submitDate")
-		private Object submitDate;
+		private Comparable<? extends Comparable<?>> submitDate;
 
 		@JsonProperty(value = "btsUrl")
 		private String btsUrl;
@@ -75,7 +75,7 @@ public class Issue {
 			return submitDate;
 		}
 
-		public void setSubmitDate(Object submitDate) {
+		public void setSubmitDate(Comparable<? extends Comparable<?>> submitDate) {
 			this.submitDate = submitDate;
 		}
 

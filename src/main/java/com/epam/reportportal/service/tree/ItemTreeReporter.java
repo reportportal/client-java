@@ -22,13 +22,13 @@ import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.ta.reportportal.ws.model.*;
 import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
+import jakarta.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Date;
 
 import static com.epam.reportportal.utils.files.Utils.getFile;
 
@@ -99,8 +99,8 @@ public class ItemTreeReporter {
 	 * @param testItemLeaf       {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
 	 * @return True if request is sent otherwise false
 	 */
-	public static boolean sendLog(final ReportPortalClient reportPortalClient, final String level, final String message, final Date logTime,
-			Maybe<String> launchUuid, TestItemTree.TestItemLeaf testItemLeaf) {
+	public static boolean sendLog(final ReportPortalClient reportPortalClient, final String level, final String message,
+			@Nonnull Comparable<? extends Comparable<?>> logTime, Maybe<String> launchUuid, TestItemTree.TestItemLeaf testItemLeaf) {
 		Maybe<String> itemId = testItemLeaf.getItemId();
 		if (launchUuid != null && itemId != null) {
 			sendLogRequest(reportPortalClient, launchUuid, itemId, level, message, logTime).subscribe();
@@ -120,8 +120,9 @@ public class ItemTreeReporter {
 	 * @param testItemLeaf       {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
 	 * @return True if request is sent otherwise false
 	 */
-	public static boolean sendLog(final ReportPortalClient reportPortalClient, final String level, final String message, final Date logTime,
-			final File file, Maybe<String> launchUuid, TestItemTree.TestItemLeaf testItemLeaf) {
+	public static boolean sendLog(final ReportPortalClient reportPortalClient, final String level, final String message,
+			@Nonnull Comparable<? extends Comparable<?>> logTime, final File file, Maybe<String> launchUuid,
+			TestItemTree.TestItemLeaf testItemLeaf) {
 		Maybe<String> itemId = testItemLeaf.getItemId();
 		if (launchUuid != null && itemId != null) {
 			sendLogMultiPartRequest(reportPortalClient, launchUuid, itemId, level, message, logTime, file).subscribe();
@@ -144,14 +145,14 @@ public class ItemTreeReporter {
 	}
 
 	private static Maybe<EntryCreatedAsyncRS> sendLogRequest(final ReportPortalClient reportPortalClient, Maybe<String> launchUuid,
-			final Maybe<String> itemUuid, final String level, final String message, final Date logTime) {
+			final Maybe<String> itemUuid, final String level, final String message, @Nonnull Comparable<? extends Comparable<?>> logTime) {
 		SaveLogRQ saveLogRequest = createSaveLogRequest(launchUuid.blockingGet(), itemUuid.blockingGet(), level, message, logTime);
 		return reportPortalClient.log(saveLogRequest);
 	}
 
 	private static Maybe<BatchSaveOperatingRS> sendLogMultiPartRequest(final ReportPortalClient reportPortalClient,
-			Maybe<String> launchUuid, final Maybe<String> itemId, final String level, final String message, final Date logTime,
-			final File file) {
+			Maybe<String> launchUuid, final Maybe<String> itemId, final String level, final String message,
+			@Nonnull Comparable<? extends Comparable<?>> logTime, final File file) {
 		SaveLogRQ saveLogRequest = createSaveLogRequest(launchUuid.blockingGet(), itemId.blockingGet(), level, message, logTime);
 		try {
 			saveLogRequest.setFile(createFileModel(file));
@@ -161,7 +162,8 @@ public class ItemTreeReporter {
 		return reportPortalClient.log(HttpRequestUtils.buildLogMultiPartRequest(Collections.singletonList(saveLogRequest)));
 	}
 
-	private static SaveLogRQ createSaveLogRequest(String launchUuid, String itemId, String level, String message, Date logTime) {
+	private static SaveLogRQ createSaveLogRequest(String launchUuid, String itemId, String level, String message,
+			@Nonnull Comparable<? extends Comparable<?>> logTime) {
 		SaveLogRQ saveLogRQ = new SaveLogRQ();
 		saveLogRQ.setLaunchUuid(launchUuid);
 		saveLogRQ.setItemUuid(itemId);
