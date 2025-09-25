@@ -598,8 +598,8 @@ public class LaunchImpl extends Launch {
 			rq.setLaunchUuid(launchId);
 			LOGGER.trace("Starting {} in thread: {}", itemDescription, Thread.currentThread().getName());
 			return getClient().startTestItem(rq).retry(DEFAULT_REQUEST_RETRY).map(TO_ID);
-		}).cache();
-		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start " + itemDescription));
+		}).cache().subscribeOn(getScheduler());
+		item.subscribe(logMaybeResults("Start " + itemDescription));
 		queue.getOrCompute(item).addToQueue(item.ignoreElement().onErrorComplete());
 		LoggingContext.init(item);
 
@@ -638,9 +638,8 @@ public class LaunchImpl extends Launch {
 					LOGGER.trace("Starting {} in thread: {}", itemDescription, Thread.currentThread().getName());
 					return getClient().startTestItem(pId, rq);
 				}
-		).flatMap(rs -> rs.retry(DEFAULT_REQUEST_RETRY).map(TO_ID)).cache());
-
-		item.subscribeOn(getScheduler()).subscribe(logMaybeResults("Start " + itemDescription));
+		).flatMap(rs -> rs.retry(DEFAULT_REQUEST_RETRY).map(TO_ID)).cache()).subscribeOn(getScheduler());
+		item.subscribe(logMaybeResults("Start " + itemDescription));
 		queue.getOrCompute(item).withParent(parentId).addToQueue(item.ignoreElement().onErrorComplete());
 		LoggingContext.init(item);
 
