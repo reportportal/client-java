@@ -17,11 +17,9 @@
 package com.epam.reportportal.service.step;
 
 import com.epam.reportportal.service.Launch;
-import com.epam.reportportal.service.LaunchImpl;
 import com.epam.reportportal.service.ReportPortal;
 import com.epam.reportportal.service.ReportPortalClient;
 import com.epam.reportportal.test.TestUtils;
-import com.epam.ta.reportportal.ws.model.ApiInfo;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
@@ -33,7 +31,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 

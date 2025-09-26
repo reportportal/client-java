@@ -127,7 +127,7 @@ public class ItemLoggingContextMultiThreadTest {
 
 		@Override
 		public void work(String itemId) {
-			try(CommonUtils.ExecutorService timeoutThread = CommonUtils.testExecutor()) {
+			try (CommonUtils.ExecutorService timeoutThread = CommonUtils.testExecutor()) {
 				Future<?> timeoutFuture = timeoutThread.submit(() -> super.work(itemId));
 				try {
 					timeoutFuture.get();
