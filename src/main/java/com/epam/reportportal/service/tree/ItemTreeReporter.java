@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Date;
 
 import static com.epam.reportportal.utils.files.Utils.getFile;
 
@@ -115,6 +116,20 @@ public class ItemTreeReporter {
 	 * @param level              Log level
 	 * @param message            Log message
 	 * @param logTime            Log time
+	 * @param launchUuid         Launch UUID
+	 * @param testItemLeaf       {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
+	 * @return True if request is sent otherwise false
+	 */
+	public static boolean sendLog(final ReportPortalClient reportPortalClient, final String level, final String message,
+			@Nonnull Date logTime, Maybe<String> launchUuid, TestItemTree.TestItemLeaf testItemLeaf) {
+		return sendLog(reportPortalClient, level, message, (Comparable<? extends Comparable<?>>) logTime, launchUuid, testItemLeaf);
+	}
+
+	/**
+	 * @param reportPortalClient {@link com.epam.reportportal.service.ReportPortal}
+	 * @param level              Log level
+	 * @param message            Log message
+	 * @param logTime            Log time
 	 * @param file               a file to attach to the log message
 	 * @param launchUuid         Launch UUID
 	 * @param testItemLeaf       {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
@@ -130,6 +145,21 @@ public class ItemTreeReporter {
 		} else {
 			return false;
 		}
+	}
+
+	/**
+	 * @param reportPortalClient {@link com.epam.reportportal.service.ReportPortal}
+	 * @param level              Log level
+	 * @param message            Log message
+	 * @param logTime            Log time
+	 * @param file               a file to attach to the log message
+	 * @param launchUuid         Launch UUID
+	 * @param testItemLeaf       {@link com.epam.reportportal.service.tree.TestItemTree.TestItemLeaf}
+	 * @return True if request is sent otherwise false
+	 */
+	public static boolean sendLog(final ReportPortalClient reportPortalClient, final String level, final String message,
+			@Nonnull Date logTime, final File file, Maybe<String> launchUuid, TestItemTree.TestItemLeaf testItemLeaf) {
+		return sendLog(reportPortalClient, level, message, (Comparable<? extends Comparable<?>>) logTime, file, launchUuid, testItemLeaf);
 	}
 
 	private static Maybe<String> sendStartItemRequest(final ReportPortalClient reportPortalClient, Maybe<String> launchUuid,
@@ -162,6 +192,20 @@ public class ItemTreeReporter {
 		return reportPortalClient.log(HttpRequestUtils.buildLogMultiPartRequest(Collections.singletonList(saveLogRequest)));
 	}
 
+	private static Maybe<BatchSaveOperatingRS> sendLogMultiPartRequest(final ReportPortalClient reportPortalClient,
+			Maybe<String> launchUuid, final Maybe<String> itemId, final String level, final String message, @Nonnull Date logTime,
+			final File file) {
+		return sendLogMultiPartRequest(
+				reportPortalClient,
+				launchUuid,
+				itemId,
+				level,
+				message,
+				(Comparable<? extends Comparable<?>>) logTime,
+				file
+		);
+	}
+
 	private static SaveLogRQ createSaveLogRequest(String launchUuid, String itemId, String level, String message,
 			@Nonnull Comparable<? extends Comparable<?>> logTime) {
 		SaveLogRQ saveLogRQ = new SaveLogRQ();
@@ -171,6 +215,10 @@ public class ItemTreeReporter {
 		saveLogRQ.setLogTime(logTime);
 		saveLogRQ.setMessage(message);
 		return saveLogRQ;
+	}
+
+	private static SaveLogRQ createSaveLogRequest(String launchUuid, String itemId, String level, String message, @Nonnull Date logTime) {
+		return createSaveLogRequest(launchUuid, itemId, level, message, (Comparable<? extends Comparable<?>>) logTime);
 	}
 
 	private static SaveLogRQ.File createFileModel(File file) throws IOException {

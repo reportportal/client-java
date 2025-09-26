@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Return back logging endpoints with `Date` class for backward compatibility, by @HardNorth
 
 ## [5.4.1]
 ### Fixed

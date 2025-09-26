@@ -291,6 +291,18 @@ public class ReportPortal {
 	}
 
 	/**
+	 * Emits log message if there is any active context attached to the current thread
+	 *
+	 * @param message Log message
+	 * @param level   Log level
+	 * @param time    Log time
+	 * @return true if log has been emitted
+	 */
+	public static boolean emitLog(@Nullable String message, @Nullable String level, @Nonnull Date time) {
+		return emitLog(message, level, (Comparable<? extends Comparable<?>>) time);
+	}
+
+	/**
 	 * Emits log message on Launch level if there is any active context attached to the current thread
 	 *
 	 * @param message Log message
@@ -308,6 +320,18 @@ public class ReportPortal {
 			rq.setMessage(message);
 			return rq;
 		});
+	}
+
+	/**
+	 * Emits log message on Launch level if there is any active context attached to the current thread
+	 *
+	 * @param message Log message
+	 * @param level   Log level
+	 * @param time    Log time
+	 * @return true if log has been emitted
+	 */
+	public static boolean emitLaunchLog(@Nullable String message, @Nullable String level, @Nonnull Date time) {
+		return emitLaunchLog(message, level, (Comparable<? extends Comparable<?>>) time);
 	}
 
 	/**
@@ -367,6 +391,19 @@ public class ReportPortal {
 	}
 
 	/**
+	 * Emits log message if there is any active context attached to the current thread
+	 *
+	 * @param message Log message
+	 * @param level   Log level
+	 * @param time    Log time
+	 * @param file    a file to attach to the log message
+	 * @return true if log has been emitted
+	 */
+	public static boolean emitLog(@Nullable String message, @Nullable String level, @Nonnull Date time, final File file) {
+		return emitLog(message, level, (Comparable<? extends Comparable<?>>) time, file);
+	}
+
+	/**
 	 * Emits log message on Launch level if there is any active context attached to the current thread
 	 *
 	 * @param message Log message
@@ -389,6 +426,19 @@ public class ReportPortal {
 	}
 
 	/**
+	 * Emits log message on Launch level if there is any active context attached to the current thread
+	 *
+	 * @param message Log message
+	 * @param level   Log level
+	 * @param time    Log time
+	 * @param file    a file to attach to the log message
+	 * @return true if log has been emitted
+	 */
+	public static boolean emitLaunchLog(@Nullable String message, @Nullable String level, @Nonnull Date time, final File file) {
+		return emitLaunchLog(message, level, (Comparable<? extends Comparable<?>>) time, file);
+	}
+
+	/**
 	 * Emit log message to the current test item.
 	 *
 	 * @param message an instance of the message
@@ -402,6 +452,18 @@ public class ReportPortal {
 	}
 
 	/**
+	 * Emit log message to the current test item.
+	 *
+	 * @param message an instance of the message
+	 * @param level   message level
+	 * @param time    timestamp of the message
+	 * @return true if log has been emitted otherwise false
+	 */
+	public static boolean emitLog(final ReportPortalMessage message, @Nullable String level, @Nonnull Date time) {
+		return emitLog(message, level, (Comparable<? extends Comparable<?>>) time);
+	}
+
+	/**
 	 * Emit log message to the current Launch.
 	 *
 	 * @param message an instance of the message
@@ -412,6 +474,18 @@ public class ReportPortal {
 	public static boolean emitLaunchLog(final ReportPortalMessage message, @Nullable String level,
 			@Nonnull Comparable<? extends Comparable<?>> time) {
 		return emitLaunchLog(launchUuid -> toSaveLogRQ(launchUuid, null, level, time, message));
+	}
+
+	/**
+	 * Emit log message to the current Launch.
+	 *
+	 * @param message an instance of the message
+	 * @param level   message level
+	 * @param time    timestamp of the message
+	 * @return true if log has been emitted otherwise false
+	 */
+	public static boolean emitLaunchLog(final ReportPortalMessage message, @Nullable String level, @Nonnull Date time) {
+		return emitLaunchLog(message, level, (Comparable<? extends Comparable<?>>) time);
 	}
 
 	/**
