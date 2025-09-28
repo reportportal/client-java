@@ -497,6 +497,7 @@ public class LaunchImpl extends Launch {
 		SaveLogRQ myRq = clonePojo(rq, SaveLogRQ.class);
 		// Ensure file content is not lost during cloning
 		ofNullable(myRq.getFile()).ifPresent(file -> {
+			file.setName(rq.getFile().getName());
 			file.setContent(rq.getFile().getContent());
 			file.setContentType(rq.getFile().getContentType());
 		});

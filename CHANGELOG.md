@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 ### Fixed
-- Losing of file content type on log message cloning, by @HardNorth
+- Losing of file content type and name on log message cloning, by @HardNorth
 
 ## [5.4.2]
 ### Fixed
