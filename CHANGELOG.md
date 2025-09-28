@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.4.3]
 ### Fixed
 - Losing of file content type and name on log message cloning, by @HardNorth
 
