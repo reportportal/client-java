@@ -249,11 +249,8 @@ public class LaunchImpl extends Launch {
 		return new MemoizingSupplier<>(() -> {
 			StartLaunchRQ myStartRq = clonePojo(startRq, StartLaunchRQ.class);
 			myStartRq.setStartTime(convertIfNecessary(myStartRq.getStartTime()));
-			return client.startLaunch(myStartRq)
-					.retry(DEFAULT_REQUEST_RETRY)
-					.map(StartLaunchRS::getId)
-					.cache()
-					.subscribeOn(scheduler);});
+			return client.startLaunch(myStartRq).retry(DEFAULT_REQUEST_RETRY).map(StartLaunchRS::getId).cache().subscribeOn(scheduler);
+		});
 	}
 
 	/**
@@ -499,7 +496,11 @@ public class LaunchImpl extends Launch {
 	private void emitLog(@Nonnull final SaveLogRQ rq) {
 		SaveLogRQ myRq = clonePojo(rq, SaveLogRQ.class);
 		// Ensure file content is not lost during cloning
-		ofNullable(myRq.getFile()).ifPresent(file -> file.setContent(rq.getFile().getContent()));
+		ofNullable(myRq.getFile()).ifPresent(file -> {
+			file.setName(rq.getFile().getName());
+			file.setContent(rq.getFile().getContent());
+			file.setContentType(rq.getFile().getContentType());
+		});
 		myRq.setLogTime(convertIfNecessary(myRq.getLogTime()));
 		logEmitter.onNext(myRq);
 	}
