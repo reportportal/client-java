@@ -83,6 +83,12 @@ public class ListenerParameters implements Cloneable {
 
 	private String description;
 	private String apiKey;
+	private String oauthTokenUri;
+	private String oauthUsername;
+	private String oauthPassword;
+	private String oauthClientId;
+	private String oauthClientSecret;
+	private String oauthScope;
 	private String baseUrl;
 	private String proxyUrl;
 	private String proxyUser;
@@ -235,6 +241,12 @@ public class ListenerParameters implements Cloneable {
 	public ListenerParameters(PropertiesLoader properties) {
 		this.description = properties.getProperty(DESCRIPTION);
 		this.apiKey = ofNullable(properties.getProperty(API_KEY, properties.getProperty(UUID))).map(String::trim).orElse(null);
+		this.oauthTokenUri = properties.getProperty(OAUTH_TOKEN_URI);
+		this.oauthUsername = properties.getProperty(OAUTH_USERNAME);
+		this.oauthPassword = properties.getProperty(OAUTH_PASSWORD);
+		this.oauthClientId = properties.getProperty(OAUTH_CLIENT_ID);
+		this.oauthClientSecret = properties.getProperty(OAUTH_CLIENT_SECRET);
+		this.oauthScope = properties.getProperty(OAUTH_SCOPE);
 		this.baseUrl = properties.getProperty(BASE_URL) != null ? properties.getProperty(BASE_URL).trim() : null;
 		this.proxyUrl = properties.getProperty(HTTP_PROXY_URL);
 		this.proxyUser = properties.getProperty(HTTP_PROXY_USER);
@@ -331,6 +343,60 @@ public class ListenerParameters implements Cloneable {
 
 	public void setApiKey(String apiKey) {
 		this.apiKey = apiKey;
+	}
+
+	@Nullable
+	public String getOauthTokenUri() {
+		return oauthTokenUri;
+	}
+
+	public void setOauthTokenUri(@Nullable String oauthTokenUri) {
+		this.oauthTokenUri = oauthTokenUri;
+	}
+
+	@Nullable
+	public String getOauthUsername() {
+		return oauthUsername;
+	}
+
+	public void setOauthUsername(@Nullable String oauthUsername) {
+		this.oauthUsername = oauthUsername;
+	}
+
+	@Nullable
+	public String getOauthPassword() {
+		return oauthPassword;
+	}
+
+	public void setOauthPassword(@Nullable String oauthPassword) {
+		this.oauthPassword = oauthPassword;
+	}
+
+	@Nullable
+	public String getOauthClientId() {
+		return oauthClientId;
+	}
+
+	public void setOauthClientId(@Nullable String oauthClientId) {
+		this.oauthClientId = oauthClientId;
+	}
+
+	@Nullable
+	public String getOauthClientSecret() {
+		return oauthClientSecret;
+	}
+
+	public void setOauthClientSecret(@Nullable String oauthClientSecret) {
+		this.oauthClientSecret = oauthClientSecret;
+	}
+
+	@Nullable
+	public String getOauthScope() {
+		return oauthScope;
+	}
+
+	public void setOauthScope(@Nullable String oauthScope) {
+		this.oauthScope = oauthScope;
 	}
 
 	public String getBaseUrl() {
@@ -791,6 +857,9 @@ public class ListenerParameters implements Cloneable {
 		final StringBuilder sb = new StringBuilder("ListenerParameters{");
 		sb.append("description='").append(description).append('\'');
 		sb.append(", apiKey='").append(apiKey).append('\'');
+		sb.append(", oauthTokenUri='").append(oauthTokenUri).append('\'');
+		sb.append(", oauthUsername='").append(oauthUsername).append('\'');
+		sb.append(", oauthClientId='").append(oauthClientId).append('\'');
 		sb.append(", baseUrl='").append(baseUrl).append('\'');
 		sb.append(", proxyUrl='").append(proxyUrl).append('\'');
 		sb.append(", httpLogging='").append(httpLogging).append('\'');

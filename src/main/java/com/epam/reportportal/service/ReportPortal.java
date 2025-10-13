@@ -22,7 +22,6 @@ import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.service.launch.PrimaryLaunch;
 import com.epam.reportportal.service.launch.SecondaryLaunch;
 import com.epam.reportportal.utils.MultithreadingUtils;
-import com.epam.reportportal.utils.SslUtils;
 import com.epam.reportportal.utils.files.Utils;
 import com.epam.reportportal.utils.http.ClientUtils;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
@@ -47,12 +46,8 @@ import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
-import javax.net.ssl.*;
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.security.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -518,7 +513,6 @@ public class ReportPortal {
 
 	public static class Builder {
 		static final String API_PATH = "api/";
-		private static final String HTTPS = "https";
 
 		private OkHttpClient.Builder httpClient;
 		private ListenerParameters parameters;
@@ -554,6 +548,7 @@ public class ReportPortal {
 		 * @param <T>        ReportPortal Client interface class
 		 * @return a ReportPortal Client instance
 		 */
+		@Nullable
 		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType, @Nonnull final ListenerParameters params) {
 			return buildClient(clientType, params, buildExecutorService(params));
 		}
@@ -565,10 +560,16 @@ public class ReportPortal {
 		 * @param executor   {@link ExecutorService} an Executor which will be used for internal request / response queue processing
 		 * @return a ReportPortal Client instance
 		 */
+		@Nullable
 		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType, @Nonnull final ListenerParameters params,
 				@Nonnull final ExecutorService executor) {
-			OkHttpClient client = ofNullable(this.httpClient).map(c -> c.addInterceptor(new BearerAuthInterceptor(params.getApiKey()))
-					.build()).orElseGet(() -> defaultClient(params));
+			OkHttpClient client = ofNullable(this.httpClient).map(c -> {
+				OkHttpClient.Builder builder = ClientUtils.setupAuthInterceptor(c, params);
+				if (builder == null) {
+					return c.build();
+				}
+				return builder.build();
+			}).orElseGet(() -> defaultClient(params));
 
 			return ofNullable(client).map(c -> buildRestEndpoint(params, c, executor).create(clientType)).orElse(null);
 		}
@@ -609,86 +610,23 @@ public class ReportPortal {
 
 		@Nullable
 		protected OkHttpClient defaultClient(@Nonnull ListenerParameters parameters) {
-			String baseUrlStr = parameters.getBaseUrl();
-			if (baseUrlStr == null) {
-				LOGGER.warn("Base url for ReportPortal server is not set!");
-				return null;
-			}
-
-			URL baseUrl;
-			try {
-				baseUrl = new URL(baseUrlStr);
-			} catch (MalformedURLException e) {
-				LOGGER.warn("Unable to parse ReportPortal URL", e);
-				return null;
-			}
-
-			String keyStore = parameters.getKeystore();
-			String keyStorePassword = parameters.getKeystorePassword();
-			String trustStore = parameters.getTruststore();
-			String trustStorePassword = parameters.getTruststorePassword();
-
 			OkHttpClient.Builder builder = new OkHttpClient.Builder();
 
-			if (HTTPS.equals(baseUrl.getProtocol()) && (keyStore != null || trustStore != null)) {
-				KeyManager[] keyManagers = null;
-				if (keyStore != null) {
-					KeyStore ks = SslUtils.loadKeyStore(keyStore, keyStorePassword, parameters.getKeystoreType());
-					try {
-						KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-						kmf.init(ks, ofNullable(keyStorePassword).map(String::toCharArray).orElse(null));
-						keyManagers = kmf.getKeyManagers();
-					} catch (KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
-						String error = "Unable to load key store";
-						LOGGER.error(error, e);
-						throw new InternalReportPortalClientException(error, e);
-					}
-				}
-
-				TrustManager[] trustManagers = null;
-				if (trustStore != null) {
-					KeyStore ts = SslUtils.loadKeyStore(trustStore, trustStorePassword, parameters.getTruststoreType());
-					try {
-						TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-						tmf.init(ts);
-						trustManagers = tmf.getTrustManagers();
-					} catch (KeyStoreException | NoSuchAlgorithmException e) {
-						String trustStoreError = "Unable to load trust store";
-						LOGGER.error(trustStoreError, e);
-						throw new InternalReportPortalClientException(trustStoreError, e);
-					}
-				}
-
-				if (trustManagers == null) {
-					try {
-						TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-						tmf.init((KeyStore) null);
-						trustManagers = tmf.getTrustManagers();
-					} catch (NoSuchAlgorithmException | KeyStoreException e) {
-						String trustStoreError = "Unable to load default trust store";
-						LOGGER.error(trustStoreError, e);
-						throw new InternalReportPortalClientException(trustStoreError, e);
-					}
-				}
-
-				try {
-					SSLContext sslContext = SSLContext.getInstance("TLS");
-					sslContext.init(keyManagers, trustManagers, new SecureRandom());
-					X509TrustManager trustManager = Arrays.stream(ofNullable(trustManagers).orElse(new TrustManager[] {}))
-							.filter(m -> m instanceof X509TrustManager)
-							.map(m -> (X509TrustManager) m)
-							.findAny()
-							.orElseThrow(() -> new InternalReportPortalClientException("Unable to find X509 trust manager"));
-					builder.sslSocketFactory(sslContext.getSocketFactory(), trustManager);
-				} catch (NoSuchAlgorithmException | KeyManagementException e) {
-					String error = "Unable to initialize SSL context";
-					LOGGER.error(error, e);
-					throw new InternalReportPortalClientException(error, e);
-				}
+			builder = ClientUtils.setupSsl(builder, parameters);
+			if (builder == null) {
+				return null;
 			}
 
-			ClientUtils.setupProxy(builder, parameters);
-			builder.addInterceptor(new BearerAuthInterceptor(parameters.getApiKey()));
+			builder = ClientUtils.setupProxy(builder, parameters);
+			if (builder == null) {
+				return null;
+			}
+
+			builder = ClientUtils.setupAuthInterceptor(builder, parameters);
+			if (builder == null) {
+				return null;
+			}
+
 			builder.addInterceptor(new PathParamInterceptor("projectName", parameters.getProjectName()));
 			if (parameters.isHttpLogging()) {
 				HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
