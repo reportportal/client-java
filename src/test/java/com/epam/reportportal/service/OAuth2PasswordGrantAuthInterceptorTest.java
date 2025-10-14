@@ -20,6 +20,8 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import okhttp3.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -117,12 +119,12 @@ public class OAuth2PasswordGrantAuthInterceptorTest {
 				.build();
 	}
 
-	private Response create403MockApiResponse(Request request) {
+	private Response createAuthFailureMockApiResponse(Request request, int statusCode) {
 		return new Response.Builder().request(request)
 				.protocol(Protocol.HTTP_1_1)
-				.code(403)
-				.message("Forbidden")
-				.body(ResponseBody.create("{\"error\":\"forbidden\"}", MediaType.parse("application/json")))
+				.code(statusCode)
+				.message(statusCode == 401 ? "Unauthorized" : "Forbidden")
+				.body(ResponseBody.create("{\"error\":\"invalid_token\"}", MediaType.parse("application/json")))
 				.build();
 	}
 
@@ -347,8 +349,9 @@ public class OAuth2PasswordGrantAuthInterceptorTest {
 		}
 	}
 
-	@Test
-	public void test403ResponseTriggersTokenRefresh() throws Exception {
+	@ParameterizedTest
+	@ValueSource(ints = { 401, 403 })
+	public void testAuthFailureResponseTriggersTokenRefresh(int statusCode) throws Exception {
 		// Track API request count
 		final List<Integer> apiRequestCount = new ArrayList<>();
 
@@ -356,16 +359,16 @@ public class OAuth2PasswordGrantAuthInterceptorTest {
 		OkHttpClient tokenClient = createMockTokenClientWithRefreshToken(3600);
 		OAuth2PasswordGrantAuthInterceptor interceptor = new OAuth2PasswordGrantAuthInterceptor(tokenClient, parameters);
 
-		// Create API client that returns 403 on first attempt with initial token, then 200
+		// Create API client that returns auth failure on first attempt with initial token, then 200
 		OkHttpClient apiClient = new OkHttpClient.Builder().addInterceptor(interceptor).addInterceptor(chain -> {
 			Request request = chain.request();
 			apiRequestCount.add(1);
 
 			String authHeader = request.header("Authorization");
 
-			// First API request with "initial-token" returns 403
+			// First API request with "initial-token" returns auth failure
 			if (authHeader != null && authHeader.contains("initial-token")) {
-				return create403MockApiResponse(request);
+				return createAuthFailureMockApiResponse(request, statusCode);
 			}
 
 			// Subsequent requests with refreshed token return 200
@@ -380,8 +383,8 @@ public class OAuth2PasswordGrantAuthInterceptorTest {
 			assertTrue(response.isSuccessful());
 			assertEquals(200, response.code());
 
-			// Verify we made 2 token requests (initial + refresh after 403)
-			assertEquals(2, capturedRequests.size(), "Should have made 2 token requests (initial + refresh after 403)");
+			// Verify we made 2 token requests (initial + refresh after auth failure)
+			assertEquals(2, capturedRequests.size(), "Should have made 2 token requests (initial + refresh after " + statusCode + ")");
 
 			// Verify first token request was password grant
 			Request firstTokenRequest = capturedRequests.get(0);
@@ -402,13 +405,14 @@ public class OAuth2PasswordGrantAuthInterceptorTest {
 			assertThat(secondTokenBody, containsString("grant_type=refresh_token"));
 			assertThat(secondTokenBody, containsString("refresh_token=refresh-token-value"));
 
-			// Verify API was called twice (initial 403 + retry with refreshed token)
+			// Verify API was called twice (initial auth failure + retry with refreshed token)
 			assertEquals(2, apiRequestCount.size(), "API should have been called twice");
 		}
 	}
 
-	@Test
-	public void test403ResponseThrottling() throws Exception {
+	@ParameterizedTest
+	@ValueSource(ints = { 401, 403 })
+	public void testAuthFailureResponseThrottling(int statusCode) throws Exception {
 		// Track API request count
 		final List<Integer> apiRequestCount = new ArrayList<>();
 
@@ -416,43 +420,43 @@ public class OAuth2PasswordGrantAuthInterceptorTest {
 		OkHttpClient tokenClient = createMockTokenClient(createTokenResponse("test-token", "test-refresh-token", 3600));
 		OAuth2PasswordGrantAuthInterceptor interceptor = new OAuth2PasswordGrantAuthInterceptor(tokenClient, parameters);
 
-		// Create API client that always returns 403
+		// Create API client that always returns auth failure
 		OkHttpClient apiClient = new OkHttpClient.Builder().addInterceptor(interceptor).addInterceptor(chain -> {
 			Request request = chain.request();
 			apiRequestCount.add(1);
 
-			// Always return 403
-			return create403MockApiResponse(request);
+			// Always return auth failure
+			return createAuthFailureMockApiResponse(request, statusCode);
 		}).build();
 
-		// Execute first API request (will get 403, trigger refresh attempt)
+		// Execute first API request (will get auth failure, trigger refresh attempt)
 		Request firstApiRequest = new Request.Builder().url(API_URL).get().build();
 		try (Response response = apiClient.newCall(firstApiRequest).execute()) {
-			assertEquals(403, response.code());
+			assertEquals(statusCode, response.code());
 		}
 
 		// Verify initial token request + refresh attempt were made
-		assertEquals(2, capturedRequests.size(), "Initial token request + refresh after 403 should have been made");
+		assertEquals(2, capturedRequests.size(), "Initial token request + refresh after " + statusCode + " should have been made");
 		assertEquals(2, apiRequestCount.size(), "API should have been called twice (initial + retry after refresh)");
 
-		// Execute second API request immediately (within same second, should get 403 but NO refresh)
+		// Execute second API request immediately (within same second, should get auth failure but NO refresh)
 		Request secondApiRequest = new Request.Builder().url(API_URL).get().build();
 		try (Response response = apiClient.newCall(secondApiRequest).execute()) {
-			assertEquals(403, response.code());
+			assertEquals(statusCode, response.code());
 		}
 
-		// Verify NO additional token requests were made due to 403 throttling
-		assertEquals(2, capturedRequests.size(), "Token refresh should have been throttled on second 403");
+		// Verify NO additional token requests were made due to throttling
+		assertEquals(2, capturedRequests.size(), "Token refresh should have been throttled on second " + statusCode);
 		assertEquals(3, apiRequestCount.size(), "API should have been called once more (no retry due to throttling)");
 
 		// Execute third API request immediately (within same second, should still be throttled)
 		Request thirdApiRequest = new Request.Builder().url(API_URL).get().build();
 		try (Response response = apiClient.newCall(thirdApiRequest).execute()) {
-			assertEquals(403, response.code());
+			assertEquals(statusCode, response.code());
 		}
 
 		// Verify still NO additional token requests were made
-		assertEquals(2, capturedRequests.size(), "Token refresh should still be throttled on third 403");
+		assertEquals(2, capturedRequests.size(), "Token refresh should still be throttled on third " + statusCode);
 		assertEquals(4, apiRequestCount.size(), "API should have been called once more (no retry due to throttling)");
 
 		// Wait for throttling period to expire (1+ second)
@@ -461,7 +465,7 @@ public class OAuth2PasswordGrantAuthInterceptorTest {
 		// Execute fourth API request (should trigger new refresh attempt after throttling period)
 		Request fourthApiRequest = new Request.Builder().url(API_URL).get().build();
 		try (Response response = apiClient.newCall(fourthApiRequest).execute()) {
-			assertEquals(403, response.code());
+			assertEquals(statusCode, response.code());
 		}
 
 		// Verify token refresh was attempted after throttling period
@@ -477,5 +481,68 @@ public class OAuth2PasswordGrantAuthInterceptorTest {
 		String thirdTokenBody = thirdBuffer.readUtf8();
 		assertThat(thirdTokenBody, containsString("grant_type=refresh_token"));
 		assertThat(thirdTokenBody, containsString("refresh_token=test-refresh-token"));
+	}
+
+	@Test
+	public void test401And403ThrottledSimultaneously() throws Exception {
+		// Track API request count
+		final List<Integer> apiRequestCount = new ArrayList<>();
+
+		// Setup: Create mock token client that always returns same token
+		OkHttpClient tokenClient = createMockTokenClient(createTokenResponse("test-token", "test-refresh-token", 3600));
+		OAuth2PasswordGrantAuthInterceptor interceptor = new OAuth2PasswordGrantAuthInterceptor(tokenClient, parameters);
+
+		// Create API client that alternates between 401 and 403
+		OkHttpClient apiClient = new OkHttpClient.Builder().addInterceptor(interceptor).addInterceptor(chain -> {
+			Request request = chain.request();
+			apiRequestCount.add(1);
+
+			// Alternate between 401 and 403
+			int statusCode = (apiRequestCount.size() % 2 == 0) ? 403 : 401;
+			return createAuthFailureMockApiResponse(request, statusCode);
+		}).build();
+
+		// Execute first API request (will get 401, trigger refresh attempt, retry gets 403)
+		Request firstApiRequest = new Request.Builder().url(API_URL).get().build();
+		try (Response response = apiClient.newCall(firstApiRequest).execute()) {
+			assertEquals(403, response.code()); // Final response after retry
+		}
+
+		// Verify initial token request + refresh attempt were made
+		assertEquals(2, capturedRequests.size(), "Initial token request + refresh after 401 should have been made");
+		assertEquals(2, apiRequestCount.size(), "API should have been called twice (initial 401 + retry 403)");
+
+		// Execute second API request immediately (within same second, should get 401 but NO refresh)
+		Request secondApiRequest = new Request.Builder().url(API_URL).get().build();
+		try (Response response = apiClient.newCall(secondApiRequest).execute()) {
+			assertEquals(401, response.code());
+		}
+
+		// Verify NO additional token requests were made due to throttling
+		assertEquals(2, capturedRequests.size(), "Token refresh should have been throttled on second 401");
+		assertEquals(3, apiRequestCount.size(), "API should have been called once more (no retry due to throttling)");
+
+		// Execute third API request immediately (within same second, should get 403 but NO refresh)
+		Request thirdApiRequest = new Request.Builder().url(API_URL).get().build();
+		try (Response response = apiClient.newCall(thirdApiRequest).execute()) {
+			assertEquals(403, response.code());
+		}
+
+		// Verify still NO additional token requests were made (401 and 403 throttled together)
+		assertEquals(2, capturedRequests.size(), "Token refresh should still be throttled on 403");
+		assertEquals(4, apiRequestCount.size(), "API should have been called once more (no retry due to throttling)");
+
+		// Wait for throttling period to expire (1+ second)
+		Thread.sleep(1100);
+
+		// Execute fourth API request (should trigger new refresh attempt after throttling period)
+		Request fourthApiRequest = new Request.Builder().url(API_URL).get().build();
+		try (Response response = apiClient.newCall(fourthApiRequest).execute()) {
+			assertEquals(403, response.code()); // Final response after retry
+		}
+
+		// Verify token refresh was attempted after throttling period
+		assertEquals(3, capturedRequests.size(), "Token refresh should have been attempted after throttling period");
+		assertEquals(6, apiRequestCount.size(), "API should have been called twice (initial + retry after refresh)");
 	}
 }
