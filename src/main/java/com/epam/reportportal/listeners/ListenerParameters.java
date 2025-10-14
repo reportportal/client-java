@@ -241,13 +241,13 @@ public class ListenerParameters implements Cloneable {
 	public ListenerParameters(PropertiesLoader properties) {
 		this.description = properties.getProperty(DESCRIPTION);
 		this.apiKey = ofNullable(properties.getProperty(API_KEY, properties.getProperty(UUID))).map(String::trim).orElse(null);
-		this.oauthTokenUri = properties.getProperty(OAUTH_TOKEN_URI);
-		this.oauthUsername = properties.getProperty(OAUTH_USERNAME);
-		this.oauthPassword = properties.getProperty(OAUTH_PASSWORD);
-		this.oauthClientId = properties.getProperty(OAUTH_CLIENT_ID);
-		this.oauthClientSecret = properties.getProperty(OAUTH_CLIENT_SECRET);
-		this.oauthScope = properties.getProperty(OAUTH_SCOPE);
-		this.baseUrl = properties.getProperty(BASE_URL) != null ? properties.getProperty(BASE_URL).trim() : null;
+		this.oauthTokenUri = ofNullable(properties.getProperty(OAUTH_TOKEN_URI)).map(String::trim).orElse(null);
+		this.oauthUsername = ofNullable(properties.getProperty(OAUTH_USERNAME)).map(String::trim).orElse(null);
+		this.oauthPassword = ofNullable(properties.getProperty(OAUTH_PASSWORD)).map(String::trim).orElse(null);
+		this.oauthClientId = ofNullable(properties.getProperty(OAUTH_CLIENT_ID)).map(String::trim).orElse(null);
+		this.oauthClientSecret = ofNullable(properties.getProperty(OAUTH_CLIENT_SECRET)).map(String::trim).orElse(null);
+		this.oauthScope = ofNullable(properties.getProperty(OAUTH_SCOPE)).map(String::trim).orElse(null);
+		this.baseUrl = ofNullable(properties.getProperty(BASE_URL)).map(String::trim).orElse(null);
 		this.proxyUrl = properties.getProperty(HTTP_PROXY_URL);
 		this.proxyUser = properties.getProperty(HTTP_PROXY_USER);
 		this.proxyPassword = properties.getProperty(HTTP_PROXY_PASSWORD);
@@ -258,7 +258,7 @@ public class ListenerParameters implements Cloneable {
 		this.httpReadTimeout = getDurationProperty(properties, HTTP_READ_TIMEOUT_VALUE, HTTP_READ_TIMEOUT_UNIT);
 		this.httpWriteTimeout = getDurationProperty(properties, HTTP_WRITE_TIMEOUT_VALUE, HTTP_WRITE_TIMEOUT_UNIT);
 
-		this.projectName = properties.getProperty(PROJECT_NAME) != null ? properties.getProperty(PROJECT_NAME).trim() : null;
+		this.projectName = ofNullable(properties.getProperty(PROJECT_NAME)).map(String::trim).orElse(null);
 		this.launchName = properties.getProperty(LAUNCH_NAME);
 		this.attributes = Collections.unmodifiableSet(AttributeParser.parseAsSet(properties.getProperty(LAUNCH_ATTRIBUTES)));
 		this.launchRunningMode = parseLaunchMode(properties.getProperty(MODE));
