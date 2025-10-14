@@ -56,6 +56,7 @@ public class TestUtils {
 
 	public static ListenerParameters standardParameters() {
 		ListenerParameters result = new ListenerParameters();
+		result.setApiKey("apiKey");
 		result.setBaseUrl("http://localhost:8080");
 		result.setClientJoin(false);
 		result.setBatchLogsSize(1);

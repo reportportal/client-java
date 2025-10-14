@@ -94,9 +94,10 @@ public class ReportPortalTest {
 	}
 
 	@Test
-	public void verify_correct_url_results_in_not_null_client() {
+	public void verify_correct_url_and_apiKey_results_in_not_null_client() {
 		ListenerParameters listenerParameters = new ListenerParameters();
 		listenerParameters.setBaseUrl("http://localhost");
+		listenerParameters.setApiKey("apiKey");
 		assertThat(ReportPortal.builder().defaultClient(listenerParameters), notNullValue());
 	}
 
@@ -109,9 +110,10 @@ public class ReportPortalTest {
 	}
 
 	@Test
-	public void verify_correct_url_results_in_correct_launch() {
+	public void verify_correct_url_and_apiKey_results_in_correct_launch() {
 		ListenerParameters listenerParameters = new ListenerParameters();
 		listenerParameters.setBaseUrl("http://localhost");
+		listenerParameters.setApiKey("apiKey");
 		listenerParameters.setEnable(true);
 		ReportPortal rp = ReportPortal.builder().withParameters(listenerParameters).build();
 		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(listenerParameters));
@@ -269,7 +271,8 @@ public class ReportPortalTest {
 		ListenerParameters parameters = standardParameters();
 		parameters.setBaseUrl("http://localhost:" + ss.getLocalPort());
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
-		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
+		ReportPortalClient rpClient = Objects.requireNonNull(ReportPortal.builder()
+				.buildClient(ReportPortalClient.class, parameters, clientExecutor));
 		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(
 				ss,
 				createCookieModel(),
@@ -293,7 +296,8 @@ public class ReportPortalTest {
 		ListenerParameters parameters = standardParameters();
 		parameters.setBaseUrl("http://localhost:" + ss.getLocalPort());
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
-		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
+		ReportPortalClient rpClient = Objects.requireNonNull(ReportPortal.builder()
+				.buildClient(ReportPortalClient.class, parameters, clientExecutor));
 		Map<String, Object> model = createCookieModel();
 		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss, model, "files/responses/socket_response.txt");
 		Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ()).timeout(5, TimeUnit.SECONDS).blockingGet();
@@ -317,7 +321,8 @@ public class ReportPortalTest {
 		String baseUrl = "http://" + host;
 		parameters.setBaseUrl(baseUrl);
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
-		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
+		ReportPortalClient rpClient = Objects.requireNonNull(ReportPortal.builder()
+				.buildClient(ReportPortalClient.class, parameters, clientExecutor));
 
 		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(
 				ss,
@@ -363,9 +368,10 @@ public class ReportPortalTest {
 	}
 
 	@Test
-	public void verify_timeout_properties_bypass() {
+	public void verify_timeout_properties_passing() {
 		ListenerParameters listenerParameters = new ListenerParameters();
 		listenerParameters.setBaseUrl("http://localhost");
+		listenerParameters.setApiKey("apiKey");
 		Duration defaultTimeout = Duration.ofSeconds(1);
 		listenerParameters.setHttpCallTimeout(defaultTimeout);
 		listenerParameters.setHttpConnectTimeout(defaultTimeout);
@@ -495,7 +501,8 @@ public class ReportPortalTest {
 		parameters.setTruststorePassword(truststorePassword);
 
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
-		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
+		ReportPortalClient rpClient = Objects.requireNonNull(ReportPortal.builder()
+				.buildClient(ReportPortalClient.class, parameters, clientExecutor));
 
 		Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ())
 				.timeout(20, TimeUnit.SECONDS)
