@@ -338,7 +338,7 @@ public class OAuth2PasswordGrantAuthInterceptor implements Interceptor {
 		Request retryRequest = chain.request().newBuilder().addHeader("Authorization", "Bearer " + accessToken).build();
 		response = chain.proceed(retryRequest);
 
-		if (response.code() != 403 && response.code() != 401) {
+		if (response.code() == 403 || response.code() == 401) {
 			LOGGER.warn("Still received {} after token refresh, request may be forbidden", response.code());
 		}
 		return response;
