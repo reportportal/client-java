@@ -48,6 +48,8 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -610,12 +612,21 @@ public class ReportPortal {
 
 		@Nullable
 		protected OkHttpClient defaultClient(@Nonnull ListenerParameters parameters) {
-			OkHttpClient.Builder builder = new OkHttpClient.Builder();
-
-			builder = ClientUtils.setupSsl(builder, parameters);
-			if (builder == null) {
+			String baseUrlStr = parameters.getBaseUrl();
+			if (baseUrlStr == null) {
+				LOGGER.warn("Base url for ReportPortal server is not set!");
 				return null;
 			}
+
+			URL baseUrl;
+			try {
+				baseUrl = new URL(baseUrlStr);
+			} catch (MalformedURLException e) {
+				LOGGER.warn("Unable to parse ReportPortal URL", e);
+				return null;
+			}
+
+			OkHttpClient.Builder builder = ClientUtils.setupSsl(new OkHttpClient.Builder(), baseUrl, parameters);
 
 			builder = ClientUtils.setupProxy(builder, parameters);
 			if (builder == null) {

@@ -82,22 +82,9 @@ public class ClientUtils {
 		return builder;
 	}
 
-	@Nullable
-	public static OkHttpClient.Builder setupSsl(@Nonnull OkHttpClient.Builder builder, @Nonnull ListenerParameters parameters) {
-		String baseUrlStr = parameters.getBaseUrl();
-		if (baseUrlStr == null) {
-			LOGGER.warn("Base url for ReportPortal server is not set!");
-			return null;
-		}
-
-		URL baseUrl;
-		try {
-			baseUrl = new URL(baseUrlStr);
-		} catch (MalformedURLException e) {
-			LOGGER.warn("Unable to parse ReportPortal URL", e);
-			return null;
-		}
-
+	@Nonnull
+	public static OkHttpClient.Builder setupSsl(@Nonnull OkHttpClient.Builder builder, URL baseUrl,
+			@Nonnull ListenerParameters parameters) {
 		String keyStore = parameters.getKeystore();
 		String keyStorePassword = parameters.getKeystorePassword();
 		String trustStore = parameters.getTruststore();
@@ -162,14 +149,19 @@ public class ClientUtils {
 		return builder;
 	}
 
+	private static boolean isOAuthConfigured(@Nonnull ListenerParameters parameters) {
+		return StringUtils.isNotBlank(parameters.getOauthTokenUri()) && StringUtils.isNotBlank(parameters.getOauthUsername())
+				&& StringUtils.isNotBlank(parameters.getOauthPassword()) && StringUtils.isNotBlank(parameters.getOauthClientId());
+	}
+
 	@Nullable
 	private static Interceptor createAuthInterceptor(@Nonnull ListenerParameters parameters) {
 		// Check if OAuth 2.0 is configured (takes precedence over API key)
 		if (isOAuthConfigured(parameters)) {
 			try {
 				return new OAuth2PasswordGrantAuthInterceptor(parameters);
-			} catch (Exception e) {
-				LOGGER.error("Failed to create OAuth 2.0 authentication interceptor", e);
+			} catch (InternalReportPortalClientException e) {
+				// Already logged in the interceptor
 				return null;
 			}
 		}
@@ -182,11 +174,6 @@ public class ClientUtils {
 		// No authentication configured
 		LOGGER.warn("Neither OAuth 2.0 nor API key authentication is configured");
 		return null;
-	}
-
-	private static boolean isOAuthConfigured(@Nonnull ListenerParameters parameters) {
-		return StringUtils.isNotBlank(parameters.getOauthTokenUri()) && StringUtils.isNotBlank(parameters.getOauthUsername())
-				&& StringUtils.isNotBlank(parameters.getOauthPassword()) && StringUtils.isNotBlank(parameters.getOauthClientId());
 	}
 
 	@Nullable
