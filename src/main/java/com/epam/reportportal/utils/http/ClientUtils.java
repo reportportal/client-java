@@ -26,6 +26,7 @@ import jakarta.annotation.Nullable;
 import okhttp3.Credentials;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -184,5 +185,16 @@ public class ClientUtils {
 		}
 		builder.addInterceptor(authInterceptor);
 		return builder;
+	}
+
+	@Nonnull
+	public static OkHttpClient.Builder setupHttpLoggingInterceptor(@Nonnull OkHttpClient.Builder builder,
+			@Nonnull ListenerParameters parameters) {
+		if (!parameters.isHttpLogging()) {
+			return builder;
+		}
+		HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
+		logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+		return builder.addNetworkInterceptor(logging);
 	}
 }

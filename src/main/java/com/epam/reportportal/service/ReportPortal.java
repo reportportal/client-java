@@ -36,7 +36,6 @@ import okhttp3.Cookie;
 import okhttp3.CookieJar;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
-import okhttp3.logging.HttpLoggingInterceptor;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -566,10 +565,10 @@ public class ReportPortal {
 		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType, @Nonnull final ListenerParameters params,
 				@Nonnull final ExecutorService executor) {
 			OkHttpClient client = ofNullable(this.httpClient).map(c -> {
-				OkHttpClient.Builder builder = ClientUtils.setupAuthInterceptor(c, params);
-				if (builder == null) {
-					return c.build();
-				}
+				OkHttpClient.Builder auth = ClientUtils.setupAuthInterceptor(c, params);
+				OkHttpClient.Builder builder = (auth != null ? auth : c);
+				builder.addInterceptor(new PathParamInterceptor("projectName", params.getProjectName()));
+				builder = ClientUtils.setupHttpLoggingInterceptor(builder, parameters);
 				return builder.build();
 			}).orElseGet(() -> defaultClient(params));
 
@@ -639,11 +638,7 @@ public class ReportPortal {
 			}
 
 			builder.addInterceptor(new PathParamInterceptor("projectName", parameters.getProjectName()));
-			if (parameters.isHttpLogging()) {
-				HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
-				logging.setLevel(HttpLoggingInterceptor.Level.BODY);
-				builder.addNetworkInterceptor(logging);
-			}
+			builder = ClientUtils.setupHttpLoggingInterceptor(builder, parameters);
 
 			ofNullable(parameters.getHttpCallTimeout()).ifPresent(builder::callTimeout);
 			ofNullable(parameters.getHttpConnectTimeout()).ifPresent(builder::connectTimeout);
