@@ -568,7 +568,7 @@ public class ReportPortal {
 				OkHttpClient.Builder auth = ClientUtils.setupAuthInterceptor(c, params);
 				OkHttpClient.Builder builder = (auth != null ? auth : c);
 				builder.addInterceptor(new PathParamInterceptor("projectName", params.getProjectName()));
-				builder = ClientUtils.setupHttpLoggingInterceptor(builder, parameters);
+				builder = ClientUtils.setupHttpLoggingInterceptor(builder, params);
 				return builder.build();
 			}).orElseGet(() -> defaultClient(params));
 
