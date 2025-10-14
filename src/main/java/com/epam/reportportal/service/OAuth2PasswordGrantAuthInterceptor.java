@@ -82,7 +82,7 @@ public class OAuth2PasswordGrantAuthInterceptor implements Interceptor {
 	private volatile String refreshToken;
 	private volatile long tokenExpiryTime;
 	private volatile long lastAttemptTime;
-	private volatile long last403Time;
+	private volatile long lastAuthFailureTime;
 	private final LockCloseable tokenLock = new LockCloseable(new ReentrantLock());
 	private final OkHttpClient client;
 
@@ -297,29 +297,39 @@ public class OAuth2PasswordGrantAuthInterceptor implements Interceptor {
 	public Response intercept(@Nonnull Chain chain) throws IOException {
 		ensureValidToken();
 
+		if (accessToken == null) {
+			return chain.proceed(chain.request());
+		}
+
 		Request request = chain.request().newBuilder().addHeader("Authorization", "Bearer " + accessToken).build();
 		Response response = chain.proceed(request);
 
-		if (response.code() != 403) {
+		if (response.code() != 403 && response.code() != 401) {
 			return response;
 		}
 
 		// Skip token request if we already caught 403 within the same second
 		// This prevents slowing down tests when OAuth is failing
 		long currentTime = System.currentTimeMillis();
-		if (last403Time > 0 && TimeUnit.MILLISECONDS.toSeconds(currentTime) == TimeUnit.MILLISECONDS.toSeconds(last403Time)) {
+		if (lastAuthFailureTime > 0
+				&& TimeUnit.MILLISECONDS.toSeconds(currentTime) == TimeUnit.MILLISECONDS.toSeconds(lastAuthFailureTime)) {
 			return response;
 		}
-		last403Time = currentTime;
+		lastAuthFailureTime = currentTime;
 
-		// If we get a 403, the token might be invalid. Try to refresh and retry once.
-		LOGGER.debug("Received 403 response, attempting to refresh token and retry request");
+		// If we get a 401/403, the token might be invalid. Try to refresh and retry once.
+		LOGGER.debug("Received {} response, attempting to refresh token and retry request", response.code());
 
 		// Invalidate the current token
 		invalidateToken();
 
 		// Try to get a new token
 		ensureValidToken();
+
+		// If we still don't have a token, return the original response without closing it
+		if (accessToken == null) {
+			return response;
+		}
 
 		// Close the previous response
 		response.close();
@@ -328,8 +338,8 @@ public class OAuth2PasswordGrantAuthInterceptor implements Interceptor {
 		Request retryRequest = chain.request().newBuilder().addHeader("Authorization", "Bearer " + accessToken).build();
 		response = chain.proceed(retryRequest);
 
-		if (response.code() == 403) {
-			LOGGER.warn("Still received 403 after token refresh, request may be forbidden");
+		if (response.code() != 403 && response.code() != 401) {
+			LOGGER.warn("Still received {} after token refresh, request may be forbidden", response.code());
 		}
 		return response;
 	}
