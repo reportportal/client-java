@@ -12,7 +12,7 @@
 [![Build with Love](https://img.shields.io/badge/build%20with-❤%EF%B8%8F%E2%80%8D-lightgrey.svg)](http://reportportal.io?style=flat)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-The latest version: 5.4.3. Please use `Maven Central` link above to get the client.
+The latest version: 5.4.4. Please use `Maven Central` link above to get the client.
 
 ## JVM-based clients configuration
 
@@ -58,6 +58,7 @@ rp.api.key=8967de3b-fec7-47bb-9dbc-2aa4ceab8b1e
 rp.launch=launch-name
 rp.project=project-name
 ## OPTIONAL PARAMETERS
+rp.reporting.async=true
 rp.reporting.callback=true
 rp.enable=true
 rp.description=My awesome launch
@@ -87,7 +88,13 @@ value will be used.
 | **Property name**            | **Type** | **Description**                                                                                                                                                                                                                                                                                                                                                              | **Required** |
 |------------------------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
 | rp.endpoint                  | String   | URL of web service, where requests should be send                                                                                                                                                                                                                                                                                                                            | Yes          |
-| rp.api.key                   | String   | Api token of user                                                                                                                                                                                                                                                                                                                                                            | Yes          |
+| rp.api.key                   | String   | Api token of user. **Required** if OAuth 2.0 authentication is not used.                                                                                                                                                                                                                                                                                                     | Conditional  |
+| rp.oauth.token.uri           | String   | OAuth 2.0 token endpoint URL for password grant authentication. **Required** if API key is not used.                                                                                                                                                                                                                                                                         | Conditional  |
+| rp.oauth.username            | String   | OAuth 2.0 username for password grant authentication. **Required** if OAuth 2.0 is used.                                                                                                                                                                                                                                                                                     | Conditional  |
+| rp.oauth.password            | String   | OAuth 2.0 password for password grant authentication. **Required** if OAuth 2.0 is used.                                                                                                                                                                                                                                                                                     | Conditional  |
+| rp.oauth.client.id           | String   | OAuth 2.0 client identifier. **Required** if OAuth 2.0 is used.                                                                                                                                                                                                                                                                                                              | Conditional  |
+| rp.oauth.client.secret       | String   | OAuth 2.0 client secret. **Optional** for OAuth 2.0 authentication.                                                                                                                                                                                                                                                                                                          | No           |
+| rp.oauth.scope               | String   | OAuth 2.0 access token scope. **Optional** for OAuth 2.0 authentication.                                                                                                                                                                                                                                                                                                     | No           |
 | rp.launch                    | String   | A unique name of Launch (Run). Based on that name a history of runs will be created for particular name                                                                                                                                                                                                                                                                      | Yes          |
 | rp.project                   | String   | Project name to identify scope                                                                                                                                                                                                                                                                                                                                               | Yes          |
 | rp.launch.uuid               | String   | A unique Launch UUID to which the whole test execution will be uploaded.                                                                                                                                                                                                                                                                                                     | No           |
@@ -119,6 +126,33 @@ Launch name sets once before first execution, because in common launch parts are
 same launch name we will know a fixed list of suites behind it. That will allow us to have a history trend. On Report
 Portal UI different launch iterations will be saved with postfix "\#number", like "Test Launch \#1", "Test Launch \#2"
 etc.
+
+#### Authentication
+
+ReportPortal supports two authentication methods:
+
+1. **API Key authentication** (default) - using `rp.api.key` parameter
+2. **OAuth 2.0 Password Grant authentication** - using OAuth parameters (`rp.oauth.*`)
+
+**Authentication priority:**
+- If both API key and OAuth parameters are provided, OAuth 2.0 authentication will be used.
+- Either API key or complete OAuth 2.0 configuration is required to connect to ReportPortal.
+
+**OAuth 2.0 configuration example:**
+
+```properties
+rp.endpoint=https://reportportal.example.com/
+rp.oauth.token.uri=https://reportportal.example.com/uat/sso/oauth/token
+rp.oauth.username=my-username
+rp.oauth.password=my-password
+rp.oauth.client.id=client-id
+rp.oauth.client.secret=client-id-secret
+rp.oauth.scope=offline_access
+rp.launch=launch-name
+rp.project=project-name
+```
+
+> **Note:** `rp.oauth.client.secret` and `rp.oauth.scope` are optional parameters.
 
 > If mandatory parameters are missed client will log a warning and will be initialized in inactive state.
 
