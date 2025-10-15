@@ -86,25 +86,7 @@ public class OAuth2PasswordGrantAuthInterceptor implements Interceptor {
 	private final LockCloseable tokenLock = new LockCloseable(new ReentrantLock());
 	private final OkHttpClient client;
 
-	/**
-	 * Creates a new OAuth 2.0 Password Grant interceptor.
-	 *
-	 * @param client     the HTTP client to use
-	 * @param parameters The listener parameters containing OAuth 2.0 and proxy configuration
-	 */
-	public OAuth2PasswordGrantAuthInterceptor(@Nonnull OkHttpClient client, @Nonnull ListenerParameters parameters) {
-		this.client = client;
-		this.parameters = parameters;
-	}
-
-	/**
-	 * Creates a new OAuth 2.0 Password Grant interceptor.
-	 *
-	 * @param parameters The listener parameters containing OAuth 2.0 and proxy configuration
-	 */
-	public OAuth2PasswordGrantAuthInterceptor(@Nonnull ListenerParameters parameters) {
-		this.parameters = parameters;
-
+	private static URL parseTokenUri(@Nonnull ListenerParameters parameters) {
 		String tokenUrlStr = parameters.getOauthTokenUri();
 		if (StringUtils.isBlank(tokenUrlStr)) {
 			LOGGER.error("URL for oAuth token is not set!");
@@ -118,6 +100,31 @@ public class OAuth2PasswordGrantAuthInterceptor implements Interceptor {
 			LOGGER.error("Unable to parse oAuth token URL", e);
 			throw new InternalReportPortalClientException("Unable to parse oAuth token URL", e);
 		}
+		return tokenUrl;
+	}
+
+	/**
+	 * Creates a new OAuth 2.0 Password Grant interceptor.
+	 *
+	 * @param client     the HTTP client to use
+	 * @param parameters The listener parameters containing OAuth 2.0 and proxy configuration
+	 */
+	public OAuth2PasswordGrantAuthInterceptor(@Nonnull OkHttpClient client, @Nonnull ListenerParameters parameters) {
+		this.client = client;
+		this.parameters = parameters;
+
+		parseTokenUri(parameters);
+	}
+
+	/**
+	 * Creates a new OAuth 2.0 Password Grant interceptor.
+	 *
+	 * @param parameters The listener parameters containing OAuth 2.0 and proxy configuration
+	 */
+	public OAuth2PasswordGrantAuthInterceptor(@Nonnull ListenerParameters parameters) {
+		this.parameters = parameters;
+
+		URL tokenUrl = parseTokenUri(parameters);
 
 		OkHttpClient.Builder clientBuilder = ClientUtils.setupSsl(new OkHttpClient.Builder(), tokenUrl, parameters);
 		ClientUtils.setupProxy(clientBuilder, parameters);

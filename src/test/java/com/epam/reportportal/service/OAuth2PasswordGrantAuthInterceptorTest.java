@@ -263,6 +263,8 @@ public class OAuth2PasswordGrantAuthInterceptorTest {
 		// Verify token request was made
 		assertEquals(1, capturedRequests.size(), "First token request should have been made");
 
+		assertNull(capturedRequests.get(0).header("Authorization"), "Authorization header must be absent when token acquisition fails");
+
 		// Execute second API request immediately (within same second)
 		Request secondApiRequest = new Request.Builder().url(API_URL).get().build();
 		try (Response response = apiClient.newCall(secondApiRequest).execute()) {

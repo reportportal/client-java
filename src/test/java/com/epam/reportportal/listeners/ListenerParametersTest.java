@@ -229,6 +229,7 @@ public class ListenerParametersTest {
 		assertEquals("test-password", listenerParameters.getOauthPassword());
 		assertEquals("test-client-id", listenerParameters.getOauthClientId());
 		assertEquals("test-client-secret", listenerParameters.getOauthClientSecret());
+		assertEquals("oauth-scope", listenerParameters.getOauthScope());
 	}
 
 	@Test
