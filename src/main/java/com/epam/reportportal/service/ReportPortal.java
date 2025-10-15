@@ -565,8 +565,7 @@ public class ReportPortal {
 		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType, @Nonnull final ListenerParameters params,
 				@Nonnull final ExecutorService executor) {
 			OkHttpClient client = ofNullable(this.httpClient).map(c -> {
-				OkHttpClient.Builder auth = ClientUtils.setupAuthInterceptor(c, params);
-				OkHttpClient.Builder builder = (auth != null ? auth : c);
+				OkHttpClient.Builder builder = ClientUtils.setupAuthInterceptor(c, params);
 				builder.addInterceptor(new PathParamInterceptor("projectName", params.getProjectName()));
 				builder = ClientUtils.setupHttpLoggingInterceptor(builder, params);
 				return builder.build();
@@ -625,14 +624,9 @@ public class ReportPortal {
 				return null;
 			}
 
-			OkHttpClient.Builder builder = ClientUtils.setupSsl(new OkHttpClient.Builder(), baseUrl, parameters);
-
+			OkHttpClient.Builder builder = ClientUtils.setupAuthInterceptor(new OkHttpClient.Builder(), parameters);
+			ClientUtils.setupSsl(builder, baseUrl, parameters);
 			builder = ClientUtils.setupProxy(builder, parameters);
-			if (builder == null) {
-				return null;
-			}
-
-			builder = ClientUtils.setupAuthInterceptor(builder, parameters);
 			if (builder == null) {
 				return null;
 			}

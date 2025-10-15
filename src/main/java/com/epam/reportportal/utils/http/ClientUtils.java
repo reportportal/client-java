@@ -155,16 +155,11 @@ public class ClientUtils {
 				&& StringUtils.isNotBlank(parameters.getOauthPassword()) && StringUtils.isNotBlank(parameters.getOauthClientId());
 	}
 
-	@Nullable
+	@Nonnull
 	private static Interceptor createAuthInterceptor(@Nonnull ListenerParameters parameters) {
 		// Check if OAuth 2.0 is configured (takes precedence over API key)
 		if (isOAuthConfigured(parameters)) {
-			try {
-				return new OAuth2PasswordGrantAuthInterceptor(parameters);
-			} catch (InternalReportPortalClientException e) {
-				// Already logged in the interceptor
-				return null;
-			}
+			return new OAuth2PasswordGrantAuthInterceptor(parameters);
 		}
 
 		// Fall back to API key authentication
@@ -173,18 +168,12 @@ public class ClientUtils {
 		}
 
 		// No authentication configured
-		LOGGER.warn("Neither OAuth 2.0 nor API key authentication is configured");
-		return null;
+		throw new InternalReportPortalClientException("Neither OAuth 2.0 nor API key authentication is configured");
 	}
 
-	@Nullable
+	@Nonnull
 	public static OkHttpClient.Builder setupAuthInterceptor(@Nonnull OkHttpClient.Builder builder, @Nonnull ListenerParameters parameters) {
-		Interceptor authInterceptor = ClientUtils.createAuthInterceptor(parameters);
-		if (authInterceptor == null) {
-			return null;
-		}
-		builder.addInterceptor(authInterceptor);
-		return builder;
+		return builder.addInterceptor(ClientUtils.createAuthInterceptor(parameters));
 	}
 
 	@Nonnull
