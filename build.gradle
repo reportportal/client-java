@@ -74,7 +74,7 @@ dependencies {
     testImplementation 'org.hamcrest:hamcrest:2.2'
     testImplementation "org.mockito:mockito-core:${project.mockito_version}"
     testImplementation "org.mockito:mockito-junit-jupiter:${project.mockito_version}"
-    testImplementation 'ch.qos.logback:logback-classic:1.5.18'
+    testImplementation 'ch.qos.logback:logback-classic:1.5.19'
     testImplementation('org.awaitility:awaitility:4.0.2') {
         exclude group: 'org.hamcrest'
     }

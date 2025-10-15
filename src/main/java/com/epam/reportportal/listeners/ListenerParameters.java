@@ -83,6 +83,12 @@ public class ListenerParameters implements Cloneable {
 
 	private String description;
 	private String apiKey;
+	private String oauthTokenUri;
+	private String oauthUsername;
+	private String oauthPassword;
+	private String oauthClientId;
+	private String oauthClientSecret;
+	private String oauthScope;
 	private String baseUrl;
 	private String proxyUrl;
 	private String proxyUser;
@@ -235,7 +241,13 @@ public class ListenerParameters implements Cloneable {
 	public ListenerParameters(PropertiesLoader properties) {
 		this.description = properties.getProperty(DESCRIPTION);
 		this.apiKey = ofNullable(properties.getProperty(API_KEY, properties.getProperty(UUID))).map(String::trim).orElse(null);
-		this.baseUrl = properties.getProperty(BASE_URL) != null ? properties.getProperty(BASE_URL).trim() : null;
+		this.oauthTokenUri = ofNullable(properties.getProperty(OAUTH_TOKEN_URI)).map(String::trim).orElse(null);
+		this.oauthUsername = ofNullable(properties.getProperty(OAUTH_USERNAME)).map(String::trim).orElse(null);
+		this.oauthPassword = ofNullable(properties.getProperty(OAUTH_PASSWORD)).map(String::trim).orElse(null);
+		this.oauthClientId = ofNullable(properties.getProperty(OAUTH_CLIENT_ID)).map(String::trim).orElse(null);
+		this.oauthClientSecret = ofNullable(properties.getProperty(OAUTH_CLIENT_SECRET)).map(String::trim).orElse(null);
+		this.oauthScope = ofNullable(properties.getProperty(OAUTH_SCOPE)).map(String::trim).orElse(null);
+		this.baseUrl = ofNullable(properties.getProperty(BASE_URL)).map(String::trim).orElse(null);
 		this.proxyUrl = properties.getProperty(HTTP_PROXY_URL);
 		this.proxyUser = properties.getProperty(HTTP_PROXY_USER);
 		this.proxyPassword = properties.getProperty(HTTP_PROXY_PASSWORD);
@@ -246,7 +258,7 @@ public class ListenerParameters implements Cloneable {
 		this.httpReadTimeout = getDurationProperty(properties, HTTP_READ_TIMEOUT_VALUE, HTTP_READ_TIMEOUT_UNIT);
 		this.httpWriteTimeout = getDurationProperty(properties, HTTP_WRITE_TIMEOUT_VALUE, HTTP_WRITE_TIMEOUT_UNIT);
 
-		this.projectName = properties.getProperty(PROJECT_NAME) != null ? properties.getProperty(PROJECT_NAME).trim() : null;
+		this.projectName = ofNullable(properties.getProperty(PROJECT_NAME)).map(String::trim).orElse(null);
 		this.launchName = properties.getProperty(LAUNCH_NAME);
 		this.attributes = Collections.unmodifiableSet(AttributeParser.parseAsSet(properties.getProperty(LAUNCH_ATTRIBUTES)));
 		this.launchRunningMode = parseLaunchMode(properties.getProperty(MODE));
@@ -331,6 +343,60 @@ public class ListenerParameters implements Cloneable {
 
 	public void setApiKey(String apiKey) {
 		this.apiKey = apiKey;
+	}
+
+	@Nullable
+	public String getOauthTokenUri() {
+		return oauthTokenUri;
+	}
+
+	public void setOauthTokenUri(@Nullable String oauthTokenUri) {
+		this.oauthTokenUri = oauthTokenUri;
+	}
+
+	@Nullable
+	public String getOauthUsername() {
+		return oauthUsername;
+	}
+
+	public void setOauthUsername(@Nullable String oauthUsername) {
+		this.oauthUsername = oauthUsername;
+	}
+
+	@Nullable
+	public String getOauthPassword() {
+		return oauthPassword;
+	}
+
+	public void setOauthPassword(@Nullable String oauthPassword) {
+		this.oauthPassword = oauthPassword;
+	}
+
+	@Nullable
+	public String getOauthClientId() {
+		return oauthClientId;
+	}
+
+	public void setOauthClientId(@Nullable String oauthClientId) {
+		this.oauthClientId = oauthClientId;
+	}
+
+	@Nullable
+	public String getOauthClientSecret() {
+		return oauthClientSecret;
+	}
+
+	public void setOauthClientSecret(@Nullable String oauthClientSecret) {
+		this.oauthClientSecret = oauthClientSecret;
+	}
+
+	@Nullable
+	public String getOauthScope() {
+		return oauthScope;
+	}
+
+	public void setOauthScope(@Nullable String oauthScope) {
+		this.oauthScope = oauthScope;
 	}
 
 	public String getBaseUrl() {
@@ -782,58 +848,5 @@ public class ListenerParameters implements Cloneable {
 			}
 		});
 		return clone;
-	}
-
-	@Override
-	@Nonnull
-	public String toString() {
-		@SuppressWarnings("StringBufferReplaceableByString")
-		final StringBuilder sb = new StringBuilder("ListenerParameters{");
-		sb.append("description='").append(description).append('\'');
-		sb.append(", apiKey='").append(apiKey).append('\'');
-		sb.append(", baseUrl='").append(baseUrl).append('\'');
-		sb.append(", proxyUrl='").append(proxyUrl).append('\'');
-		sb.append(", httpLogging='").append(httpLogging).append('\'');
-		sb.append(", httpCallTimeout='").append(httpCallTimeout).append('\'');
-		sb.append(", httpConnectTimeout='").append(httpConnectTimeout).append('\'');
-		sb.append(", httpReadTimeout='").append(httpReadTimeout).append('\'');
-		sb.append(", httpWriteTimeout='").append(httpWriteTimeout).append('\'');
-		sb.append(", projectName='").append(projectName).append('\'');
-		sb.append(", launchName='").append(launchName).append('\'');
-		sb.append(", launchUuid='").append(launchUuid).append('\'');
-		sb.append(", launchUuidCreationSkip='").append(isLaunchUuidCreationSkip).append('\'');
-		sb.append(", printLaunchUuid='").append(printLaunchUuid).append('\'');
-		sb.append(", printLaunchUuidOutput='").append(printLaunchUuidOutput).append('\'');
-		sb.append(", launchRunningMode=").append(launchRunningMode);
-		sb.append(", attributes=").append(attributes);
-		sb.append(", enable=").append(enable);
-		sb.append(", isSkippedAnIssue=").append(isSkippedAnIssue);
-		sb.append(", batchLogsSize=").append(batchLogsSize);
-		sb.append(", convertImage=").append(convertImage);
-		sb.append(", reportingTimeout=").append(reportingTimeout);
-		sb.append(", keystore='").append(keystore).append('\'');
-		sb.append(", keystorePassword='").append(keystorePassword).append('\'');
-		sb.append(", rerun=").append(rerun);
-		sb.append(", rerunOf='").append(rerunOf).append('\'');
-		sb.append(", asyncReporting=").append(asyncReporting);
-		sb.append(", ioPoolSize=").append(ioPoolSize);
-		sb.append(", callbackReportingEnabled=").append(callbackReportingEnabled);
-		sb.append(", clientJoin=").append(clientJoin);
-		sb.append(", clientJoinMode=").append(ofNullable(clientJoinMode).map(Enum::name).orElse(null));
-		sb.append(", clientJoinTimeout=").append(clientJoinTimeout);
-		sb.append(", clientJoinLaunchTimeout=").append(clientJoinLaunchTimeout);
-		sb.append(", lockFileName=").append(lockFileName);
-		sb.append(", syncFileName=").append(syncFileName);
-		sb.append(", lockWaitTimeout=").append(lockWaitTimeout);
-		sb.append(", lockPortNumber=").append(lockPortNumber);
-		sb.append(", rxBufferSize=").append(rxBufferSize);
-		sb.append(", truncateFields=").append(truncateFields);
-		sb.append(", exceptionTruncate=").append(exceptionTruncate);
-		sb.append(", btsProjectId=").append(btsProjectId);
-		sb.append(", btsUrl=").append(btsUrl);
-		sb.append(", btsIssueUrl=").append(btsIssueUrl);
-		sb.append(", btsIssueFail=").append(btsIssueFail);
-		sb.append('}');
-		return sb.toString();
 	}
 }

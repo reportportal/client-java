@@ -21,3 +21,6 @@ build/
 *.iml
 out/
 .vscode/
+
+AGENTS.md
+PROMPTS.md
