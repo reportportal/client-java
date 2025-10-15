@@ -36,7 +36,6 @@ import okhttp3.Cookie;
 import okhttp3.CookieJar;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
@@ -109,7 +108,7 @@ public class ReportPortal {
 	 */
 	@Nonnull
 	public Launch newLaunch(@Nonnull StartLaunchRQ rq) {
-		if (BooleanUtils.isNotTrue(parameters.getEnable()) || rpClient == null) {
+		if (rpClient == null) {
 			return Launch.NOOP_LAUNCH;
 		}
 
@@ -540,7 +539,12 @@ public class ReportPortal {
 			Class<? extends ReportPortalClient> clientType = params.isAsyncReporting() ?
 					ReportPortalClientV2.class :
 					ReportPortalClient.class;
-			return new ReportPortal(buildClient(clientType, params, executorService), executorService, params, buildLaunchLock(params));
+			return new ReportPortal(
+					ofNullable(params.getEnable()).orElse(false) ? buildClient(clientType, params, executorService) : null,
+					executorService,
+					params,
+					buildLaunchLock(params)
+			);
 		}
 
 		/**
@@ -612,7 +616,7 @@ public class ReportPortal {
 		protected OkHttpClient defaultClient(@Nonnull ListenerParameters parameters) {
 			String baseUrlStr = parameters.getBaseUrl();
 			if (baseUrlStr == null) {
-				LOGGER.warn("Base url for ReportPortal server is not set!");
+				LOGGER.error("Base url for ReportPortal server is not set!");
 				return null;
 			}
 
@@ -620,8 +624,7 @@ public class ReportPortal {
 			try {
 				baseUrl = new URL(baseUrlStr);
 			} catch (MalformedURLException e) {
-				LOGGER.warn("Unable to parse ReportPortal URL", e);
-				return null;
+				throw new InternalReportPortalClientException("Unable to parse ReportPortal URL", e);
 			}
 
 			OkHttpClient.Builder builder = ClientUtils.setupAuthInterceptor(new OkHttpClient.Builder(), parameters);
