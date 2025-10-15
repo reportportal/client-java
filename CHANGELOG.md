@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.4.4]
 ### Added
 - OAuth 2.0 Password Grant authentication, by @HardNorth
 
