@@ -52,6 +52,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
@@ -108,7 +109,7 @@ public class ReportPortal {
 	 */
 	@Nonnull
 	public Launch newLaunch(@Nonnull StartLaunchRQ rq) {
-		if (!parameters.getEnable() || rpClient == null) {
+		if (!ofNullable(parameters.getEnable()).orElse(false) || rpClient == null) {
 			return Launch.NOOP_LAUNCH;
 		}
 
@@ -568,10 +569,10 @@ public class ReportPortal {
 		@Nullable
 		public <T extends ReportPortalClient> T buildClient(@Nonnull final Class<T> clientType, @Nonnull final ListenerParameters params,
 				@Nonnull final ExecutorService executor) {
-			OkHttpClient client = ofNullable(this.httpClient).map(c -> {
-				OkHttpClient.Builder builder = ClientUtils.setupAuthInterceptor(c, params);
+			OkHttpClient client = ofNullable(this.httpClient).map(builder -> {
+				ClientUtils.setupAuthInterceptor(builder, params);
 				builder.addInterceptor(new PathParamInterceptor("projectName", params.getProjectName()));
-				builder = ClientUtils.setupHttpLoggingInterceptor(builder, params);
+				ClientUtils.setupHttpLoggingInterceptor(builder, params);
 				return builder.build();
 			}).orElseGet(() -> defaultClient(params));
 
@@ -627,11 +628,17 @@ public class ReportPortal {
 				throw new InternalReportPortalClientException("Unable to parse ReportPortal URL", e);
 			}
 
-			OkHttpClient.Builder builder = ClientUtils.setupAuthInterceptor(new OkHttpClient.Builder(), parameters);
+			OkHttpClient.Builder builder = new OkHttpClient.Builder();
+			ClientUtils.setupAuthInterceptor(builder, parameters);
 			ClientUtils.setupSsl(builder, baseUrl, parameters);
 			ClientUtils.setupProxy(builder, parameters);
 			builder.addInterceptor(new PathParamInterceptor("projectName", parameters.getProjectName()));
-			builder = ClientUtils.setupHttpLoggingInterceptor(builder, parameters);
+			ClientUtils.setupHttpLoggingInterceptor(builder, parameters);
+
+			ofNullable(parameters.getHttpConnectTimeout()).map(d -> builder.connectTimeout(d.toMillis(), TimeUnit.MILLISECONDS));
+			ofNullable(parameters.getHttpReadTimeout()).map(d -> builder.readTimeout(d.toMillis(), TimeUnit.MILLISECONDS));
+			ofNullable(parameters.getHttpWriteTimeout()).map(d -> builder.writeTimeout(d.toMillis(), TimeUnit.MILLISECONDS));
+			ofNullable(parameters.getHttpCallTimeout()).map(d -> builder.callTimeout(d.toMillis(), TimeUnit.MILLISECONDS));
 
 			ofNullable(parameters.getHttpCallTimeout()).ifPresent(builder::callTimeout);
 			ofNullable(parameters.getHttpConnectTimeout()).ifPresent(builder::connectTimeout);

@@ -129,10 +129,10 @@ public class OAuth2PasswordGrantAuthInterceptor implements Interceptor {
 		OkHttpClient.Builder clientBuilder = ClientUtils.setupSsl(new OkHttpClient.Builder(), tokenUrl, parameters);
 		ClientUtils.setupProxy(clientBuilder, parameters);
 
-		ofNullable(parameters.getHttpConnectTimeout()).ifPresent(clientBuilder::connectTimeout);
-		ofNullable(parameters.getHttpReadTimeout()).ifPresent(clientBuilder::readTimeout);
-		ofNullable(parameters.getHttpWriteTimeout()).ifPresent(clientBuilder::writeTimeout);
-		ofNullable(parameters.getHttpCallTimeout()).ifPresent(clientBuilder::callTimeout);
+		ofNullable(parameters.getHttpConnectTimeout()).ifPresent(d -> clientBuilder.connectTimeout(d.toMillis(), TimeUnit.MILLISECONDS));
+		ofNullable(parameters.getHttpReadTimeout()).ifPresent(d -> clientBuilder.readTimeout(d.toMillis(), TimeUnit.MILLISECONDS));
+		ofNullable(parameters.getHttpWriteTimeout()).ifPresent(d -> clientBuilder.writeTimeout(d.toMillis(), TimeUnit.MILLISECONDS));
+		ofNullable(parameters.getHttpCallTimeout()).ifPresent(d -> clientBuilder.callTimeout(d.toMillis(), TimeUnit.MILLISECONDS));
 
 		client = clientBuilder.build();
 	}
@@ -304,7 +304,7 @@ public class OAuth2PasswordGrantAuthInterceptor implements Interceptor {
 			return chain.proceed(chain.request());
 		}
 
-		Request request = chain.request().newBuilder().addHeader("Authorization", "Bearer " + accessToken).build();
+		Request request = chain.request().newBuilder().header("Authorization", "Bearer " + accessToken).build();
 		Response response = chain.proceed(request);
 
 		if (response.code() != 403 && response.code() != 401) {
@@ -338,7 +338,7 @@ public class OAuth2PasswordGrantAuthInterceptor implements Interceptor {
 		response.close();
 
 		// Retry the request with the new token
-		Request retryRequest = chain.request().newBuilder().addHeader("Authorization", "Bearer " + accessToken).build();
+		Request retryRequest = chain.request().newBuilder().header("Authorization", "Bearer " + accessToken).build();
 		response = chain.proceed(retryRequest);
 
 		if (response.code() == 403 || response.code() == 401) {

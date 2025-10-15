@@ -197,7 +197,7 @@ public class OAuth2PasswordGrantAuthInterceptorTest {
 
 		// Wait 1 second to ensure we're in a different second for throttling
 		// and token is considered expired (1 sec expiry + 1 minute buffer)
-		Thread.sleep(1000);
+		Thread.sleep(1100);
 
 		// Execute second API request (should trigger token refresh)
 		Request secondApiRequest = new Request.Builder().url(API_URL).get().build();

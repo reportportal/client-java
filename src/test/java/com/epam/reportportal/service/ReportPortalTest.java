@@ -102,8 +102,17 @@ public class ReportPortalTest {
 	}
 
 	@Test
+	public void verify_no_params_results_in_noop_launch() {
+		ListenerParameters listenerParameters = new ListenerParameters();
+		ReportPortal rp = ReportPortal.builder().withParameters(listenerParameters).build();
+		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(listenerParameters));
+		assertThat(launch, sameInstance(Launch.NOOP_LAUNCH));
+	}
+
+	@Test
 	public void verify_no_url_results_in_noop_launch() {
 		ListenerParameters listenerParameters = new ListenerParameters();
+		listenerParameters.setEnable(true);
 		ReportPortal rp = ReportPortal.builder().withParameters(listenerParameters).build();
 		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(listenerParameters));
 		assertThat(launch, sameInstance(Launch.NOOP_LAUNCH));
