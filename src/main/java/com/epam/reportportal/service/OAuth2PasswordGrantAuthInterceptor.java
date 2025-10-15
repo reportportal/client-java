@@ -74,7 +74,7 @@ public class OAuth2PasswordGrantAuthInterceptor implements Interceptor {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(OAuth2PasswordGrantAuthInterceptor.class);
 	private static final ObjectMapper MAPPER = new ObjectMapper();
-	private static final long TOKEN_EXPIRY_BUFFER_SECONDS = TimeUnit.MINUTES.toMillis(1);
+	private static final long TOKEN_EXPIRY_BUFFER_MILLIS = TimeUnit.MINUTES.toMillis(1);
 
 	private final ListenerParameters parameters;
 
@@ -120,11 +120,7 @@ public class OAuth2PasswordGrantAuthInterceptor implements Interceptor {
 		}
 
 		OkHttpClient.Builder clientBuilder = ClientUtils.setupSsl(new OkHttpClient.Builder(), tokenUrl, parameters);
-		clientBuilder = ClientUtils.setupProxy(clientBuilder, parameters);
-		if (clientBuilder == null) {
-			LOGGER.error("Failed to setup proxy for OAuth 2.0 token requests");
-			throw new InternalReportPortalClientException("Failed to setup proxy for OAuth 2.0 token requests");
-		}
+		ClientUtils.setupProxy(clientBuilder, parameters);
 
 		ofNullable(parameters.getHttpConnectTimeout()).ifPresent(clientBuilder::connectTimeout);
 		ofNullable(parameters.getHttpReadTimeout()).ifPresent(clientBuilder::readTimeout);
@@ -203,7 +199,7 @@ public class OAuth2PasswordGrantAuthInterceptor implements Interceptor {
 	 * @return true if the token is valid, false otherwise
 	 */
 	private boolean isTokenValid() {
-		return accessToken != null && System.currentTimeMillis() < (tokenExpiryTime - TOKEN_EXPIRY_BUFFER_SECONDS);
+		return accessToken != null && System.currentTimeMillis() < (tokenExpiryTime - TOKEN_EXPIRY_BUFFER_MILLIS);
 	}
 
 	/**

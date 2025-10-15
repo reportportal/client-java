@@ -22,7 +22,6 @@ import com.epam.reportportal.service.BearerAuthInterceptor;
 import com.epam.reportportal.service.OAuth2PasswordGrantAuthInterceptor;
 import com.epam.reportportal.utils.SslUtils;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import okhttp3.Credentials;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
@@ -56,29 +55,29 @@ public class ClientUtils {
 		throw new IllegalStateException("Static only class");
 	}
 
-	@Nullable
+	@Nonnull
 	public static OkHttpClient.Builder setupProxy(@Nonnull OkHttpClient.Builder builder, @Nonnull ListenerParameters parameters) {
 		String proxyStr = parameters.getProxyUrl();
 		if (isBlank(proxyStr)) {
 			return builder;
 		}
+		URL proxyUrl;
 		try {
-			URL proxyUrl = new URL(proxyStr);
-			int port = proxyUrl.getPort();
-			builder.proxy(new Proxy(
-					Proxy.Type.HTTP,
-					InetSocketAddress.createUnresolved(proxyUrl.getHost(), port >= 0 ? port : proxyUrl.getDefaultPort())
-			));
-			String proxyUser = parameters.getProxyUser();
-			if (isNotBlank(proxyUser)) {
-				builder.proxyAuthenticator((route, response) -> {
-					String credential = Credentials.basic(proxyUser, parameters.getProxyPassword(), StandardCharsets.UTF_8);
-					return response.request().newBuilder().header("Proxy-Authorization", credential).build();
-				});
-			}
+			proxyUrl = new URL(proxyStr);
 		} catch (MalformedURLException e) {
-			LOGGER.warn("Unable to parse proxy URL", e);
-			return null;
+			throw new InternalReportPortalClientException("Unable to parse proxy URL", e);
+		}
+		int port = proxyUrl.getPort();
+		builder.proxy(new Proxy(
+				Proxy.Type.HTTP,
+				InetSocketAddress.createUnresolved(proxyUrl.getHost(), port >= 0 ? port : proxyUrl.getDefaultPort())
+		));
+		String proxyUser = parameters.getProxyUser();
+		if (isNotBlank(proxyUser)) {
+			builder.proxyAuthenticator((route, response) -> {
+				String credential = Credentials.basic(proxyUser, parameters.getProxyPassword(), StandardCharsets.UTF_8);
+				return response.request().newBuilder().header("Proxy-Authorization", credential).build();
+			});
 		}
 		return builder;
 	}

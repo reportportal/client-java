@@ -626,11 +626,7 @@ public class ReportPortal {
 
 			OkHttpClient.Builder builder = ClientUtils.setupAuthInterceptor(new OkHttpClient.Builder(), parameters);
 			ClientUtils.setupSsl(builder, baseUrl, parameters);
-			builder = ClientUtils.setupProxy(builder, parameters);
-			if (builder == null) {
-				return null;
-			}
-
+			ClientUtils.setupProxy(builder, parameters);
 			builder.addInterceptor(new PathParamInterceptor("projectName", parameters.getProjectName()));
 			builder = ClientUtils.setupHttpLoggingInterceptor(builder, parameters);
 
