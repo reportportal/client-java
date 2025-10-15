@@ -108,7 +108,7 @@ public class ReportPortal {
 	 */
 	@Nonnull
 	public Launch newLaunch(@Nonnull StartLaunchRQ rq) {
-		if (rpClient == null) {
+		if (!parameters.getEnable() || rpClient == null) {
 			return Launch.NOOP_LAUNCH;
 		}
 
