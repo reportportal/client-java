@@ -31,10 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import java.net.ServerSocket;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -76,6 +73,7 @@ public class LaunchMicrosecondsTest {
 	private static ListenerParameters baseParameters(String baseUrl) {
 		ListenerParameters parameters = TestUtils.standardParameters();
 		parameters.setBaseUrl(baseUrl);
+		parameters.setApiKey("apiKey");
 		parameters.setHttpLogging(true);
 		return parameters;
 	}
@@ -206,7 +204,8 @@ public class LaunchMicrosecondsTest {
 		String baseUrl = "http://localhost:" + ss.getLocalPort();
 		ListenerParameters parameters = baseParameters(baseUrl);
 
-		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
+		ReportPortalClient rpClient = Objects.requireNonNull(ReportPortal.builder()
+				.buildClient(ReportPortalClient.class, parameters, clientExecutor));
 		StartLaunchRQ rq = buildStartLaunchRq(dateOrInstant(instant));
 		ReportPortal rp = ReportPortal.create(rpClient, parameters, clientExecutor);
 		Launch launch = rp.newLaunch(rq);
@@ -253,7 +252,8 @@ public class LaunchMicrosecondsTest {
 		String baseUrl = "http://localhost:" + ss.getLocalPort();
 		ListenerParameters parameters = baseParameters(baseUrl);
 
-		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
+		ReportPortalClient rpClient = Objects.requireNonNull(ReportPortal.builder()
+				.buildClient(ReportPortalClient.class, parameters, clientExecutor));
 		StartLaunchRQ launchRq = buildStartLaunchRq(new Date());
 		ReportPortal rp = ReportPortal.create(rpClient, parameters, clientExecutor);
 		Launch launch = rp.newLaunch(launchRq);
@@ -301,7 +301,8 @@ public class LaunchMicrosecondsTest {
 		String baseUrl = "http://localhost:" + ss.getLocalPort();
 		ListenerParameters parameters = baseParameters(baseUrl);
 
-		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
+		ReportPortalClient rpClient = Objects.requireNonNull(ReportPortal.builder()
+				.buildClient(ReportPortalClient.class, parameters, clientExecutor));
 		StartLaunchRQ launchRq = buildStartLaunchRq(new Date());
 		ReportPortal rp = ReportPortal.create(rpClient, parameters, clientExecutor);
 		Launch launch = rp.newLaunch(launchRq);
@@ -351,7 +352,8 @@ public class LaunchMicrosecondsTest {
 		String baseUrl = "http://localhost:" + ss.getLocalPort();
 		ListenerParameters parameters = baseParameters(baseUrl);
 
-		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
+		ReportPortalClient rpClient = Objects.requireNonNull(ReportPortal.builder()
+				.buildClient(ReportPortalClient.class, parameters, clientExecutor));
 		StartLaunchRQ launchRq = buildStartLaunchRq(new Date());
 		ReportPortal rp = ReportPortal.create(rpClient, parameters, clientExecutor);
 		Launch launch = rp.newLaunch(launchRq);
@@ -401,7 +403,8 @@ public class LaunchMicrosecondsTest {
 		String baseUrl = "http://localhost:" + ss.getLocalPort();
 		ListenerParameters parameters = baseParameters(baseUrl);
 
-		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
+		ReportPortalClient rpClient = Objects.requireNonNull(ReportPortal.builder()
+				.buildClient(ReportPortalClient.class, parameters, clientExecutor));
 		StartLaunchRQ launchRq = buildStartLaunchRq(new Date());
 		ReportPortal rp = ReportPortal.create(rpClient, parameters, clientExecutor);
 		Launch launch = rp.newLaunch(launchRq);

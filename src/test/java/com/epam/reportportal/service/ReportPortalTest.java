@@ -94,14 +94,15 @@ public class ReportPortalTest {
 	}
 
 	@Test
-	public void verify_correct_url_results_in_not_null_client() {
+	public void verify_correct_url_and_apiKey_results_in_not_null_client() {
 		ListenerParameters listenerParameters = new ListenerParameters();
 		listenerParameters.setBaseUrl("http://localhost");
+		listenerParameters.setApiKey("apiKey");
 		assertThat(ReportPortal.builder().defaultClient(listenerParameters), notNullValue());
 	}
 
 	@Test
-	public void verify_no_url_results_in_noop_launch() {
+	public void verify_no_params_results_in_noop_launch() {
 		ListenerParameters listenerParameters = new ListenerParameters();
 		ReportPortal rp = ReportPortal.builder().withParameters(listenerParameters).build();
 		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(listenerParameters));
@@ -109,9 +110,19 @@ public class ReportPortalTest {
 	}
 
 	@Test
-	public void verify_correct_url_results_in_correct_launch() {
+	public void verify_no_url_results_in_noop_launch() {
+		ListenerParameters listenerParameters = new ListenerParameters();
+		listenerParameters.setEnable(true);
+		ReportPortal rp = ReportPortal.builder().withParameters(listenerParameters).build();
+		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(listenerParameters));
+		assertThat(launch, sameInstance(Launch.NOOP_LAUNCH));
+	}
+
+	@Test
+	public void verify_correct_url_and_apiKey_results_in_correct_launch() {
 		ListenerParameters listenerParameters = new ListenerParameters();
 		listenerParameters.setBaseUrl("http://localhost");
+		listenerParameters.setApiKey("apiKey");
 		listenerParameters.setEnable(true);
 		ReportPortal rp = ReportPortal.builder().withParameters(listenerParameters).build();
 		Launch launch = rp.newLaunch(TestUtils.standardLaunchRequest(listenerParameters));
@@ -269,7 +280,8 @@ public class ReportPortalTest {
 		ListenerParameters parameters = standardParameters();
 		parameters.setBaseUrl("http://localhost:" + ss.getLocalPort());
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
-		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
+		ReportPortalClient rpClient = Objects.requireNonNull(ReportPortal.builder()
+				.buildClient(ReportPortalClient.class, parameters, clientExecutor));
 		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(
 				ss,
 				createCookieModel(),
@@ -293,7 +305,8 @@ public class ReportPortalTest {
 		ListenerParameters parameters = standardParameters();
 		parameters.setBaseUrl("http://localhost:" + ss.getLocalPort());
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
-		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
+		ReportPortalClient rpClient = Objects.requireNonNull(ReportPortal.builder()
+				.buildClient(ReportPortalClient.class, parameters, clientExecutor));
 		Map<String, Object> model = createCookieModel();
 		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(ss, model, "files/responses/socket_response.txt");
 		Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ()).timeout(5, TimeUnit.SECONDS).blockingGet();
@@ -317,7 +330,8 @@ public class ReportPortalTest {
 		String baseUrl = "http://" + host;
 		parameters.setBaseUrl(baseUrl);
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
-		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
+		ReportPortalClient rpClient = Objects.requireNonNull(ReportPortal.builder()
+				.buildClient(ReportPortalClient.class, parameters, clientExecutor));
 
 		SocketUtils.ServerCallable serverCallable = new SocketUtils.ServerCallable(
 				ss,
@@ -363,9 +377,10 @@ public class ReportPortalTest {
 	}
 
 	@Test
-	public void verify_timeout_properties_bypass() {
+	public void verify_timeout_properties_passing() {
 		ListenerParameters listenerParameters = new ListenerParameters();
 		listenerParameters.setBaseUrl("http://localhost");
+		listenerParameters.setApiKey("apiKey");
 		Duration defaultTimeout = Duration.ofSeconds(1);
 		listenerParameters.setHttpCallTimeout(defaultTimeout);
 		listenerParameters.setHttpConnectTimeout(defaultTimeout);
@@ -495,7 +510,8 @@ public class ReportPortalTest {
 		parameters.setTruststorePassword(truststorePassword);
 
 		ExecutorService clientExecutor = Executors.newSingleThreadExecutor();
-		ReportPortalClient rpClient = ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor);
+		ReportPortalClient rpClient = Objects.requireNonNull(ReportPortal.builder()
+				.buildClient(ReportPortalClient.class, parameters, clientExecutor));
 
 		Callable<StartLaunchRS> clientCallable = () -> rpClient.startLaunch(new StartLaunchRQ())
 				.timeout(20, TimeUnit.SECONDS)
@@ -564,6 +580,77 @@ public class ReportPortalTest {
 		assertThrows(
 				InternalReportPortalClientException.class,
 				() -> ReportPortal.builder().buildClient(ReportPortalClient.class, parameters, clientExecutor)
+		);
+	}
+
+	@Test
+	public void verify_oauth_password_grant_auth_builds_client() {
+		ListenerParameters parameters = new ListenerParameters();
+		parameters.setBaseUrl("http://localhost");
+		parameters.setOauthTokenUri("http://localhost/oauth/token");
+		parameters.setOauthUsername("test-user");
+		parameters.setOauthPassword("test-password");
+		parameters.setOauthClientId("test-client-id");
+
+		OkHttpClient client = ReportPortal.builder().defaultClient(parameters);
+		assertThat(client, notNullValue());
+		assertThat(
+				"Client should have OAuth interceptor",
+				client.interceptors().stream().anyMatch(i -> i instanceof OAuth2PasswordGrantAuthInterceptor),
+				equalTo(true)
+		);
+	}
+
+	@Test
+	public void verify_api_key_auth_builds_client() {
+		ListenerParameters parameters = new ListenerParameters();
+		parameters.setBaseUrl("http://localhost");
+		parameters.setApiKey("test-api-key");
+
+		OkHttpClient client = ReportPortal.builder().defaultClient(parameters);
+		assertThat(client, notNullValue());
+		assertThat(
+				"Client should have Bearer auth interceptor",
+				client.interceptors().stream().filter(i -> i instanceof BearerAuthInterceptor).collect(Collectors.toList()),
+				hasSize(1)
+		);
+	}
+
+	@Test
+	public void verify_no_auth_configuration_throws_exception() {
+		ListenerParameters parameters = new ListenerParameters();
+		parameters.setBaseUrl("http://localhost");
+		// No API key and no OAuth configuration
+
+		InternalReportPortalClientException exception = assertThrows(
+				InternalReportPortalClientException.class,
+				() -> ReportPortal.builder().defaultClient(parameters)
+		);
+		assertThat(exception.getMessage(), containsString("Neither OAuth 2.0 nor API key authentication is configured"));
+	}
+
+	@Test
+	public void verify_both_auth_methods_configured_uses_oauth() {
+		ListenerParameters parameters = new ListenerParameters();
+		parameters.setBaseUrl("http://localhost");
+		// Set both API key and OAuth
+		parameters.setApiKey("test-api-key");
+		parameters.setOauthTokenUri("http://localhost/oauth/token");
+		parameters.setOauthUsername("test-user");
+		parameters.setOauthPassword("test-password");
+		parameters.setOauthClientId("test-client-id");
+
+		OkHttpClient client = ReportPortal.builder().defaultClient(parameters);
+		assertThat(client, notNullValue());
+		assertThat(
+				"Client should have OAuth interceptor when both auth methods are configured",
+				client.interceptors().stream().filter(i -> i instanceof OAuth2PasswordGrantAuthInterceptor).collect(Collectors.toList()),
+				hasSize(1)
+		);
+		assertThat(
+				"Client should NOT have Bearer auth interceptor when both auth methods are configured",
+				client.interceptors().stream().filter(i -> i instanceof BearerAuthInterceptor).collect(Collectors.toList()),
+				hasSize(0)
 		);
 	}
 }

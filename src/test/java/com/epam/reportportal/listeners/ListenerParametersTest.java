@@ -218,4 +218,30 @@ public class ListenerParametersTest {
 		assertEquals("test-uuid", listenerParameters.getLaunchUuid());
 		assertFalse(listenerParameters.isLaunchUuidCreationSkip());
 	}
+
+	@Test
+	public void test_oauth_with_all_parameters() {
+		PropertiesLoader properties = PropertiesLoader.load("property-test/reportportal-oauth.properties");
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		assertEquals("http://localhost:8080/oauth/token", listenerParameters.getOauthTokenUri());
+		assertEquals("test-user", listenerParameters.getOauthUsername());
+		assertEquals("test-password", listenerParameters.getOauthPassword());
+		assertEquals("test-client-id", listenerParameters.getOauthClientId());
+		assertEquals("test-client-secret", listenerParameters.getOauthClientSecret());
+		assertEquals("oauth-scope", listenerParameters.getOauthScope());
+	}
+
+	@Test
+	public void test_oauth_without_secret() {
+		PropertiesLoader properties = PropertiesLoader.load("property-test/reportportal-oauth-no-secret.properties");
+		ListenerParameters listenerParameters = new ListenerParameters(properties);
+
+		assertEquals("http://localhost:8080/oauth/token", listenerParameters.getOauthTokenUri());
+		assertEquals("test-user", listenerParameters.getOauthUsername());
+		assertEquals("test-password", listenerParameters.getOauthPassword());
+		assertEquals("test-client-id", listenerParameters.getOauthClientId());
+		assertNull(listenerParameters.getOauthClientSecret());
+		assertNull(listenerParameters.getOauthScope());
+	}
 }
