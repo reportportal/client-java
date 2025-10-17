@@ -154,7 +154,7 @@ rp.project=project-name
 
 > **Note:** `rp.oauth.client.secret` and `rp.oauth.scope` are optional parameters.
 
-> If mandatory parameters are missed client will log a warning and will be initialized in inactive state.
+> If mandatory parameters are missed client will throw an [InternalReportPortalClientException](https://github.com/reportportal/client-java/blob/master/src/main/java/com/epam/reportportal/exception/InternalReportPortalClientException.java).
 
 ### Multi-process join parameters
 
