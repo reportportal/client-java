@@ -20,7 +20,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.statistics.item.StatisticsEvent;
 import com.epam.reportportal.service.statistics.item.StatisticsItem;
 import com.epam.reportportal.utils.ClientIdProvider;
-import com.epam.reportportal.utils.MultithreadingUtils;
+import com.epam.reportportal.utils.concurrency.MultithreadingUtils;
 import com.epam.reportportal.utils.properties.ClientProperties;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.reportportal.utils.properties.SystemAttributesExtractor;

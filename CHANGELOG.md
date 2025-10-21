@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `LockCloseable` class as a separate entity, by @HardNorth
 
 ## [5.4.4]
 ### Added

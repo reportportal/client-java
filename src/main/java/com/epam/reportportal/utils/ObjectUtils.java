@@ -17,6 +17,7 @@
 package com.epam.reportportal.utils;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
+import com.epam.reportportal.service.OAuth2PasswordGrantAuthInterceptor;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +26,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import jakarta.annotation.Nonnull;
 
 import java.io.IOException;
+import java.util.concurrent.locks.Lock;
 
 import static com.epam.reportportal.utils.CommonConstants.TEN_MEGABYTES;
 
