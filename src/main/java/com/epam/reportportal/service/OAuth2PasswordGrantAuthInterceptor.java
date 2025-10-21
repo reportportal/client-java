@@ -18,6 +18,7 @@ package com.epam.reportportal.service;
 
 import com.epam.reportportal.exception.InternalReportPortalClientException;
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.utils.concurrency.LockCloseable;
 import com.epam.reportportal.utils.http.ClientUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,7 +34,6 @@ import java.net.URL;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static java.util.Optional.ofNullable;
@@ -45,32 +45,6 @@ import static java.util.Optional.ofNullable;
  * @see <a href="https://www.oauth.com/oauth2-servers/access-tokens/password-grant/">OAuth 2.0 Password Grant</a>
  */
 public class OAuth2PasswordGrantAuthInterceptor implements Interceptor {
-
-	/**
-	 * AutoCloseable wrapper for Lock that enables try-with-resources usage.
-	 */
-	private static class LockCloseable implements AutoCloseable {
-		private final Lock lock;
-
-		private LockCloseable(Lock lock) {
-			this.lock = lock;
-		}
-
-		/**
-		 * Locks the underlying lock and returns this instance for use in try-with-resources.
-		 *
-		 * @return this LockCloseable instance
-		 */
-		public LockCloseable lock() {
-			lock.lock();
-			return this;
-		}
-
-		@Override
-		public void close() {
-			lock.unlock();
-		}
-	}
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(OAuth2PasswordGrantAuthInterceptor.class);
 	private static final ObjectMapper MAPPER = new ObjectMapper();

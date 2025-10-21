@@ -21,7 +21,7 @@ import com.epam.reportportal.message.ReportPortalMessage;
 import com.epam.reportportal.message.TypeAwareByteSource;
 import com.epam.reportportal.service.launch.PrimaryLaunch;
 import com.epam.reportportal.service.launch.SecondaryLaunch;
-import com.epam.reportportal.utils.MultithreadingUtils;
+import com.epam.reportportal.utils.concurrency.MultithreadingUtils;
 import com.epam.reportportal.utils.files.Utils;
 import com.epam.reportportal.utils.http.ClientUtils;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
