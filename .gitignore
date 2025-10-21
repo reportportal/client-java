@@ -21,6 +21,7 @@ build/
 *.iml
 out/
 .vscode/
+bin/
 
 AGENTS.md
 PROMPTS.md
