@@ -230,6 +230,7 @@ public class ListenerParametersTest {
 		assertEquals("test-client-id", listenerParameters.getOauthClientId());
 		assertEquals("test-client-secret", listenerParameters.getOauthClientSecret());
 		assertEquals("oauth-scope", listenerParameters.getOauthScope());
+		assertFalse(listenerParameters.isOauthUseProxy());
 	}
 
 	@Test
@@ -243,5 +244,6 @@ public class ListenerParametersTest {
 		assertEquals("test-client-id", listenerParameters.getOauthClientId());
 		assertNull(listenerParameters.getOauthClientSecret());
 		assertNull(listenerParameters.getOauthScope());
+		assertTrue(listenerParameters.isOauthUseProxy());
 	}
 }

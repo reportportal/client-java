@@ -75,7 +75,7 @@ public enum ListenerProperty {
     LAUNCH_UUID_PRINT_OUTPUT("rp.launch.uuid.print.output", false),
     UUID("rp.uuid", false),
     API_KEY("rp.api.key", false),
-    
+
     /**
      * OAuth 2.0 authentication properties
      */
@@ -85,6 +85,7 @@ public enum ListenerProperty {
     OAUTH_CLIENT_ID("rp.oauth.client.id", false),
     OAUTH_CLIENT_SECRET("rp.oauth.client.secret", false),
     OAUTH_SCOPE("rp.oauth.scope", false),
+	OAUTH_USE_PROXY("rp.oauth.use.proxy", false),
     
     BATCH_SIZE_LOGS("rp.batch.size.logs", false),
     BATCH_PAYLOAD_LIMIT("rp.batch.payload.limit", false),
