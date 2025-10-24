@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `rp.oauth.use.proxy` parameter to control if OAuth HTTP client Inherits proxy settings from general client, by @HardNorth
 
 ## [5.4.5]
 ### Added

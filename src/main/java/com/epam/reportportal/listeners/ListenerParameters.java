@@ -52,6 +52,7 @@ public class ListenerParameters implements Cloneable {
 	private static final boolean DEFAULT_HTTP_LOGGING = false;
 	private static final int DEFAULT_RX_BUFFER_SIZE = 128;
 	private static final String DEFAULT_KEYSTORE_TYPE = "JKS";
+	private static final boolean DEFAULT_OAUTH_USE_PROXY = true;
 
 	private static final boolean DEFAULT_CLIENT_JOIN = true;
 	private static final String DEFAULT_CLIENT_JOIN_MODE = "FILE";
@@ -89,6 +90,7 @@ public class ListenerParameters implements Cloneable {
 	private String oauthClientId;
 	private String oauthClientSecret;
 	private String oauthScope;
+	private boolean oauthUseProxy;
 	private String baseUrl;
 	private String proxyUrl;
 	private String proxyUser;
@@ -247,6 +249,7 @@ public class ListenerParameters implements Cloneable {
 		this.oauthClientId = ofNullable(properties.getProperty(OAUTH_CLIENT_ID)).map(String::trim).orElse(null);
 		this.oauthClientSecret = ofNullable(properties.getProperty(OAUTH_CLIENT_SECRET)).map(String::trim).orElse(null);
 		this.oauthScope = ofNullable(properties.getProperty(OAUTH_SCOPE)).map(String::trim).orElse(null);
+		this.oauthUseProxy = properties.getPropertyAsBoolean(OAUTH_USE_PROXY, DEFAULT_OAUTH_USE_PROXY);
 		this.baseUrl = ofNullable(properties.getProperty(BASE_URL)).map(String::trim).orElse(null);
 		this.proxyUrl = properties.getProperty(HTTP_PROXY_URL);
 		this.proxyUser = properties.getProperty(HTTP_PROXY_USER);
@@ -393,6 +396,14 @@ public class ListenerParameters implements Cloneable {
 	@Nullable
 	public String getOauthScope() {
 		return oauthScope;
+	}
+
+	public boolean isOauthUseProxy() {
+		return oauthUseProxy;
+	}
+
+	public void setOauthUseProxy(boolean oauthUseProxy) {
+		this.oauthUseProxy = oauthUseProxy;
 	}
 
 	public void setOauthScope(@Nullable String oauthScope) {
