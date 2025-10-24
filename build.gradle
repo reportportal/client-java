@@ -61,7 +61,7 @@ dependencies {
     implementation "org.aspectj:aspectjweaver:${project.aspectj_version}"
 
     implementation "org.slf4j:slf4j-api:${slf4j_version}"
-    implementation 'org.apache.commons:commons-lang3:3.18.0'
+    implementation 'org.apache.commons:commons-lang3:3.19.0'
 
     testImplementation "org.slf4j:jul-to-slf4j:${slf4j_version}"
     testImplementation("org.junit.platform:junit-platform-runner:${project.junit_runner_version}") {
