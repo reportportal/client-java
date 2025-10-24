@@ -17,12 +17,14 @@
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.listeners.LogLevel;
 import com.epam.reportportal.test.TestUtils;
 import com.epam.reportportal.util.test.SocketUtils;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import com.epam.ta.reportportal.ws.model.log.SaveLogRQ;
 import io.reactivex.Maybe;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.AfterEach;
@@ -106,6 +108,14 @@ public class LaunchMicrosecondsTest {
 		return rq;
 	}
 
+	private static SaveLogRQ buildSaveLogRq(Comparable<? extends Comparable<?>> logTime) {
+		SaveLogRQ rq = new SaveLogRQ();
+		rq.setLogTime(logTime);
+		rq.setLevel(LogLevel.INFO.name());
+		rq.setMessage("some message");
+		return rq;
+	}
+
 	private static Comparable<? extends Comparable<?>> dateOrInstant(boolean instant) {
 		Instant testInstant = Instant.ofEpochSecond(START_TIME_SECONDS_BASE, START_TIME_NANO_ADJUSTMENT);
 		if (!instant) {
@@ -163,7 +173,7 @@ public class LaunchMicrosecondsTest {
 
 	private static SocketUtils.ServerCallable buildServerCallableForFinishItem(ServerSocket ss, boolean micro) {
 		List<String> responses = new ArrayList<>();
-		responses.add(micro ? "files/responses/info_response_microseconds.txt" : "files/responses/info_response_no_microseconds.txt");
+		responses.add(micro ? "files/responses/info_response_microseconds.txt" : "files/responses/info_response_no_microseconds2.txt");
 		responses.add("files/responses/start_launch_response.txt");
 		responses.add("files/responses/simple_response.txt"); // finish item response
 		return new SocketUtils.ServerCallable(ss, Collections.emptyMap(), responses);
@@ -175,6 +185,14 @@ public class LaunchMicrosecondsTest {
 		responses.add("files/responses/start_launch_response.txt");
 		responses.add("files/responses/simple_response.txt"); // finish launch response
 		responses.add("files/responses/simple_response.txt"); // last log batch
+		return new SocketUtils.ServerCallable(ss, Collections.emptyMap(), responses);
+	}
+
+	private static SocketUtils.ServerCallable buildServerCallableForLog(ServerSocket ss, boolean micro) {
+		List<String> responses = new ArrayList<>();
+		responses.add(micro ? "files/responses/info_response_microseconds.txt" : "files/responses/info_response_no_microseconds2.txt");
+		responses.add("files/responses/start_launch_response.txt");
+		responses.add("files/responses/simple_response.txt"); // finish item response
 		return new SocketUtils.ServerCallable(ss, Collections.emptyMap(), responses);
 	}
 
@@ -424,6 +442,58 @@ public class LaunchMicrosecondsTest {
 			assertTimeIsoMicro(json, "endTime");
 		} else {
 			assertTimeNumeric(json, "endTime");
+		}
+	}
+
+	/* ---------------------- log ---------------------- */
+
+	@Test
+	public void log_useMicroseconds_false_Date_sends_numeric_time() throws Exception {
+		logTimeCase(false, false);
+	}
+
+	@Test
+	public void log_launch_useMicroseconds_false_Instant_sends_numeric_time() throws Exception {
+		logTimeCase(false, true);
+	}
+
+	@Test
+	public void log_launch_useMicroseconds_true_Instant_sends_iso_micro_time() throws Exception {
+		logTimeCase(true, true);
+	}
+
+	@Test
+	public void log_launch_useMicroseconds_true_Date_sends_numeric_time() throws Exception {
+		logTimeCase(true, false);
+	}
+
+	private void logTimeCase(boolean micro, boolean instant) throws Exception {
+		ServerSocket ss = SocketUtils.getServerSocketOnFreePort();
+		String baseUrl = "http://localhost:" + ss.getLocalPort();
+		ListenerParameters parameters = baseParameters(baseUrl);
+		parameters.setBatchLogsSize(1);
+
+		ReportPortalClient rpClient = Objects.requireNonNull(ReportPortal.builder()
+				.buildClient(ReportPortalClient.class, parameters, clientExecutor));
+		StartLaunchRQ launchRq = buildStartLaunchRq(new Date());
+		ReportPortal rp = ReportPortal.create(rpClient, parameters, clientExecutor);
+		Launch launch = rp.newLaunch(launchRq);
+		SaveLogRQ rq = buildSaveLogRq(dateOrInstant(instant));
+
+		SocketUtils.ServerCallable serverCallable = buildServerCallableForLog(ss, micro);
+
+		Pair<List<String>, ?> result = executeWithClosing(
+				ss, serverCallable, () -> {
+					launch.log(rq);
+					return Boolean.TRUE;
+				}
+		);
+
+		String json = findLastJsonWithKey(result, "time");
+		if (expectString(micro, instant)) {
+			assertTimeIsoMicro(json, "time");
+		} else {
+			assertTimeNumeric(json, "time");
 		}
 	}
 }
