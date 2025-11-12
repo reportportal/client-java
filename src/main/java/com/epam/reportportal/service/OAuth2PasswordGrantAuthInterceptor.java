@@ -101,6 +101,7 @@ public class OAuth2PasswordGrantAuthInterceptor implements Interceptor {
 		URL tokenUrl = parseTokenUri(parameters);
 
 		OkHttpClient.Builder clientBuilder = ClientUtils.setupSsl(new OkHttpClient.Builder(), tokenUrl, parameters);
+		ClientUtils.setupHttpLoggingInterceptor(clientBuilder, parameters);
 
 		if (parameters.isOauthUseProxy()) {
 			ClientUtils.setupProxy(clientBuilder, parameters);

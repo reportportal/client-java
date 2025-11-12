@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- HTTP logging support for OAuth 2.0 Password Grant authentication, by @HardNorth
 
 ## [5.4.6]
 ### Added
