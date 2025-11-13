@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.Proxy;
 import java.net.URL;
 import java.util.Map;
 import java.util.Objects;
@@ -101,9 +102,13 @@ public class OAuth2PasswordGrantAuthInterceptor implements Interceptor {
 		URL tokenUrl = parseTokenUri(parameters);
 
 		OkHttpClient.Builder clientBuilder = ClientUtils.setupSsl(new OkHttpClient.Builder(), tokenUrl, parameters);
+		ClientUtils.setupHttpLoggingInterceptor(clientBuilder, parameters);
 
 		if (parameters.isOauthUseProxy()) {
 			ClientUtils.setupProxy(clientBuilder, parameters);
+		} else {
+			// Explicitly disable proxy to override system proxy settings
+			clientBuilder.proxy(Proxy.NO_PROXY);
 		}
 
 		ofNullable(parameters.getHttpConnectTimeout()).ifPresent(d -> clientBuilder.connectTimeout(d.toMillis(), TimeUnit.MILLISECONDS));

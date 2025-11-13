@@ -61,7 +61,7 @@ dependencies {
     implementation "org.aspectj:aspectjweaver:${project.aspectj_version}"
 
     implementation "org.slf4j:slf4j-api:${slf4j_version}"
-    implementation 'org.apache.commons:commons-lang3:3.18.0'
+    implementation 'org.apache.commons:commons-lang3:3.19.0'
 
     testImplementation "org.slf4j:jul-to-slf4j:${slf4j_version}"
     testImplementation("org.junit.platform:junit-platform-runner:${project.junit_runner_version}") {
@@ -80,6 +80,7 @@ dependencies {
     }
     testImplementation 'commons-io:commons-io:2.17.0'
     testImplementation 'com.epam.reportportal:agent-java-test-utils:0.1.0'
+    testImplementation "com.squareup.okhttp3:mockwebserver:${project.okhttp_version}"
 }
 
 test {
