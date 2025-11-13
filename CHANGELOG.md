@@ -4,7 +4,7 @@
 ### Added
 - HTTP logging support for OAuth 2.0 Password Grant authentication, by @HardNorth
 ### Fixed
-- Force not using proxy for OAuth authentication in case `rp.oauth.use.proxy=false` to avoid issues when proxy is set through system properties, by @HardNorth
+- Explicitly disable proxy for OAuth authentication when `rp.oauth.use.proxy=false` to avoid issues when proxy is set through system properties, by @HardNorth
 
 ## [5.4.6]
 ### Added
