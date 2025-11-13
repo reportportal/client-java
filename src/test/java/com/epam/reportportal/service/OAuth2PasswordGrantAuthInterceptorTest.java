@@ -17,7 +17,9 @@
 package com.epam.reportportal.service;
 
 import com.epam.reportportal.listeners.ListenerParameters;
+import jakarta.annotation.Nonnull;
 import okhttp3.*;
+import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -546,5 +548,71 @@ public class OAuth2PasswordGrantAuthInterceptorTest {
 		// Verify token refresh was attempted after throttling period
 		assertEquals(3, capturedRequests.size(), "Token refresh should have been attempted after throttling period");
 		assertEquals(6, apiRequestCount.size(), "API should have been called twice (initial + retry after refresh)");
+	}
+
+	@Nonnull
+	private static OAuth2PasswordGrantAuthInterceptor getOAuth2PasswordGrantAuthInterceptor() {
+		ListenerParameters params = new ListenerParameters();
+		params.setOauthTokenUri("https://oauth.example.com/token");
+		params.setOauthUsername("test-user");
+		params.setOauthPassword("test-password");
+		params.setOauthClientId("test-client-id");
+		params.setOauthClientSecret("test-client-secret");
+		params.setOauthScope("test-scope");
+		params.setOauthUseProxy(false); // This is the key setting
+
+		// Create interceptor using constructor that creates its own client
+		// This will respect the oauthUseProxy setting
+		return new OAuth2PasswordGrantAuthInterceptor(params);
+	}
+
+	@Test
+	public void testOAuthAvoidsProxyWhenOauthUseProxyIsFalse() throws Exception {
+		// Save original system properties
+		String originalHttpsProxyHost = System.getProperty("https.proxyHost");
+		String originalHttpsProxyPort = System.getProperty("https.proxyPort");
+
+		try (MockWebServer mockProxyServer = new MockWebServer()) {
+			// Start mock proxy server on localhost
+			mockProxyServer.start();
+
+			// Set system proxy properties to point to our mock proxy
+			System.setProperty("https.proxyHost", "localhost");
+			System.setProperty("https.proxyPort", String.valueOf(mockProxyServer.getPort()));
+
+			// Configure parameters with oauthUseProxy = false and a non-localhost token URL
+			OAuth2PasswordGrantAuthInterceptor interceptor = getOAuth2PasswordGrantAuthInterceptor();
+
+			// Create API client with OAuth interceptor
+			OkHttpClient apiClient = createMockApiClient(interceptor);
+
+			// Execute API request - this will trigger OAuth token request
+			Request apiRequest = new Request.Builder().url("http://localhost/api/test").get().build();
+
+			try (Response response = apiClient.newCall(apiRequest).execute()) {
+				// Verify API response is successful (from our mock API client)
+				assertTrue(response.isSuccessful());
+				assertEquals(200, response.code());
+
+				// Wait a bit to ensure no request comes to proxy
+				Thread.sleep(100);
+
+				// Verify that NO requests were made to the proxy server
+				// because oauthUseProxy=false means OAuth client should bypass proxy
+				assertEquals(0, mockProxyServer.getRequestCount(), "Proxy server should NOT receive any requests when oauthUseProxy=false");
+			}
+		} finally {
+			// Restore original system properties
+			if (originalHttpsProxyHost != null) {
+				System.setProperty("https.proxyHost", originalHttpsProxyHost);
+			} else {
+				System.clearProperty("https.proxyHost");
+			}
+			if (originalHttpsProxyPort != null) {
+				System.setProperty("https.proxyPort", originalHttpsProxyPort);
+			} else {
+				System.clearProperty("https.proxyPort");
+			}
+		}
 	}
 }

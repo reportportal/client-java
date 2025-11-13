@@ -197,6 +197,7 @@ public class ListenerParameters implements Cloneable {
 		this.convertImage = DEFAULT_CONVERT_IMAGE;
 		this.reportingTimeout = DEFAULT_REPORTING_TIMEOUT;
 		this.httpLogging = DEFAULT_HTTP_LOGGING;
+		this.oauthUseProxy = DEFAULT_OAUTH_USE_PROXY;
 
 		this.keystoreType = DEFAULT_KEYSTORE_TYPE;
 		this.truststoreType = DEFAULT_KEYSTORE_TYPE;

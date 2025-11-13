@@ -80,6 +80,7 @@ dependencies {
     }
     testImplementation 'commons-io:commons-io:2.17.0'
     testImplementation 'com.epam.reportportal:agent-java-test-utils:0.1.0'
+    testImplementation "com.squareup.okhttp3:mockwebserver:${project.okhttp_version}"
 }
 
 test {
