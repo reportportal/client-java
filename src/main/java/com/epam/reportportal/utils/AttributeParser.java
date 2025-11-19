@@ -21,6 +21,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 
+import java.lang.reflect.Executable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -74,7 +75,7 @@ public class AttributeParser {
 	 */
 	@Nullable
 	public static ItemAttributesRQ splitKeyValue(@Nullable String attribute) {
-		if (null == attribute || attribute.trim().isEmpty()) {
+		if (StringUtils.isBlank(attribute)) {
 			return null;
 		}
 		String[] keyValue = attribute.split(KEY_VALUE_SPLITTER);
@@ -97,25 +98,87 @@ public class AttributeParser {
 	 * @return a set of ReportPortal attributes
 	 */
 	@Nonnull
-	public static Set<ItemAttributesRQ> retrieveAttributes(@Nonnull Attributes attributesAnnotation) {
+	public static Set<ItemAttributesRQ> retrieveAttributes(@Nullable Attributes attributesAnnotation) {
 		Set<ItemAttributesRQ> itemAttributes = new LinkedHashSet<>();
-		for (Attribute attribute : attributesAnnotation.attributes()) {
-			if (!attribute.value().trim().isEmpty()) {
-				itemAttributes.add(createItemAttribute(attribute.key(), attribute.value()));
-			}
+		if (attributesAnnotation == null) {
+			return itemAttributes;
 		}
-		for (AttributeValue attributeValue : attributesAnnotation.attributeValues()) {
-			if (!attributeValue.value().trim().isEmpty()) {
-				itemAttributes.add(createItemAttribute(null, attributeValue.value()));
-			}
-		}
-		for (MultiKeyAttribute attribute : attributesAnnotation.multiKeyAttributes()) {
-			itemAttributes.addAll(createItemAttributes(attribute.keys(), attribute.value()));
-		}
-		for (MultiValueAttribute attribute : attributesAnnotation.multiValueAttributes()) {
-			itemAttributes.addAll(createItemAttributes(attribute.isNullKey() ? null : attribute.key(), attribute.values()));
-		}
+		itemAttributes.addAll(retrieveAttributes(attributesAnnotation.attributes()));
+		itemAttributes.addAll(retrieveAttributes(attributesAnnotation.attributeValues()));
+		itemAttributes.addAll(retrieveAttributes(attributesAnnotation.multiKeyAttributes()));
+		itemAttributes.addAll(retrieveAttributes(attributesAnnotation.multiValueAttributes()));
+		return itemAttributes;
+	}
 
+	/**
+	 * Parse ReportPortal attributes from {@link Attribute} annotations.
+	 *
+	 * @param attributes annotation instances
+	 * @return a set of ReportPortal attributes
+	 */
+	@Nonnull
+	public static Set<ItemAttributesRQ> retrieveAttributes(@Nullable Attribute... attributes) {
+		Set<ItemAttributesRQ> itemAttributes = new LinkedHashSet<>();
+		if (attributes != null) {
+			for (Attribute attribute : attributes) {
+				if (StringUtils.isNotBlank(attribute.value())) {
+					itemAttributes.add(createItemAttribute(attribute.key(), attribute.value()));
+				}
+			}
+		}
+		return itemAttributes;
+	}
+
+	/**
+	 * Parse ReportPortal attributes from {@link AttributeValue} annotations.
+	 *
+	 * @param attributeValues annotation instances
+	 * @return a set of ReportPortal attributes
+	 */
+	@Nonnull
+	public static Set<ItemAttributesRQ> retrieveAttributes(@Nullable AttributeValue... attributeValues) {
+		Set<ItemAttributesRQ> itemAttributes = new LinkedHashSet<>();
+		if (attributeValues != null) {
+			for (AttributeValue attributeValue : attributeValues) {
+				if (StringUtils.isNotBlank(attributeValue.value())) {
+					itemAttributes.add(createItemAttribute(null, attributeValue.value()));
+				}
+			}
+		}
+		return itemAttributes;
+	}
+
+	/**
+	 * Parse ReportPortal attributes from {@link MultiKeyAttribute} annotations.
+	 *
+	 * @param multiKeyAttributes annotation instances
+	 * @return a set of ReportPortal attributes
+	 */
+	@Nonnull
+	public static Set<ItemAttributesRQ> retrieveAttributes(@Nullable MultiKeyAttribute... multiKeyAttributes) {
+		Set<ItemAttributesRQ> itemAttributes = new LinkedHashSet<>();
+		if (multiKeyAttributes != null) {
+			for (MultiKeyAttribute attribute : multiKeyAttributes) {
+				itemAttributes.addAll(createItemAttributes(attribute.keys(), attribute.value()));
+			}
+		}
+		return itemAttributes;
+	}
+
+	/**
+	 * Parse ReportPortal attributes from {@link MultiValueAttribute} annotations.
+	 *
+	 * @param multiValueAttributes annotation instances
+	 * @return a set of ReportPortal attributes
+	 */
+	@Nonnull
+	public static Set<ItemAttributesRQ> retrieveAttributes(@Nullable MultiValueAttribute... multiValueAttributes) {
+		Set<ItemAttributesRQ> itemAttributes = new LinkedHashSet<>();
+		if (multiValueAttributes != null) {
+			for (MultiValueAttribute attribute : multiValueAttributes) {
+				itemAttributes.addAll(createItemAttributes(attribute.isNullKey() ? null : attribute.key(), attribute.values()));
+			}
+		}
 		return itemAttributes;
 	}
 
@@ -128,7 +191,7 @@ public class AttributeParser {
 	 */
 	@Nonnull
 	public static List<ItemAttributesRQ> createItemAttributes(@Nullable String[] keys, @Nullable String value) {
-		if (value == null || value.trim().isEmpty()) {
+		if (StringUtils.isBlank(value)) {
 			return Collections.emptyList();
 		}
 		if (keys == null || keys.length < 1) {
@@ -163,5 +226,22 @@ public class AttributeParser {
 	@Nonnull
 	public static ItemAttributesRQ createItemAttribute(@Nullable String key, @Nonnull String value) {
 		return new ItemAttributesRQ(key, value);
+	}
+
+	/**
+	 * Scan for attributes annotations on the given executable and its declaration.
+	 *
+	 * @param executable the executable to scan
+	 * @return a set of ReportPortal attributes or null if not found
+	 */
+	@Nonnull
+	public static Set<ItemAttributesRQ> retrieveAttributes(@Nonnull Executable executable) {
+		Set<ItemAttributesRQ> itemAttributes = new LinkedHashSet<>();
+		itemAttributes.addAll(retrieveAttributes(executable.getAnnotation(Attributes.class)));
+		itemAttributes.addAll(retrieveAttributes(executable.getAnnotationsByType(Attribute.class)));
+		itemAttributes.addAll(retrieveAttributes(executable.getAnnotationsByType(AttributeValue.class)));
+		itemAttributes.addAll(retrieveAttributes(executable.getAnnotationsByType(MultiKeyAttribute.class)));
+		itemAttributes.addAll(retrieveAttributes(executable.getAnnotationsByType(MultiValueAttribute.class)));
+		return itemAttributes;
 	}
 }
