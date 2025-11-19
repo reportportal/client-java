@@ -28,7 +28,7 @@ import java.lang.annotation.*;
  * @see MultiValueAttribute
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.METHOD, ElementType.TYPE })
+@Target({ ElementType.METHOD, ElementType.TYPE, ElementType.CONSTRUCTOR })
 @Inherited
 public @interface Attributes {
 

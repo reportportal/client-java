@@ -16,18 +16,17 @@
 
 package com.epam.reportportal.annotations.attribute;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
- * Annotation used in {@link Attributes} as field, to provide {@link com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ}
- * with both 'key' and 'value' fields specified
- *
- * @author <a href="mailto:ivan_budayeu@epam.com">Ivan Budayeu</a>
+ * Annotation used per se or in {@link Attributes} as field, to provide {@link com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ}
+ * with both 'key' and 'value' fields specified.
  */
+@Inherited
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({})
+@Repeatable(AttributeGroup.class)
+@Target({ ElementType.METHOD, ElementType.TYPE, ElementType.CONSTRUCTOR })
 public @interface Attribute {
 
 	String key();

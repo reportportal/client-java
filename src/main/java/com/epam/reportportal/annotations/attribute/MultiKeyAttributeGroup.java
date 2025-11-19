@@ -1,11 +1,11 @@
 /*
- * Copyright 2019 EPAM Systems
+ * Copyright 2025 EPAM Systems
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,15 +19,12 @@ package com.epam.reportportal.annotations.attribute;
 import java.lang.annotation.*;
 
 /**
- * Annotation used per se or in {@link Attributes} as field, to provide {@link com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ}
- * with only 'value' field specified ('key' in the resulted entity will be NULL). In this case it will appear as a tag on ReportPortal.
+ * Gathering annotation for {@link MultiKeyAttribute}
  */
 @Inherited
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Repeatable(AttributeValueGroup.class)
 @Target({ ElementType.METHOD, ElementType.TYPE, ElementType.CONSTRUCTOR })
-public @interface AttributeValue {
-
-	String value();
+public @interface MultiKeyAttributeGroup {
+	MultiKeyAttribute[] value();
 }

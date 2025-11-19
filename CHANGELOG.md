@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `AttributeParser.retrieveAttributes(Executable)` method, by @HardNorth
+### Changed
+- Attribute annotations and their extraction improved, by @HardNorth
 
 ## [5.4.7]
 ### Added

@@ -325,4 +325,73 @@ public class AnnotationAttributeParserTest {
 
 		assertThat(result, hasSize(4));
 	}
+
+	private static final class StandaloneAttributeVerify {
+		@Attribute(key = "standaloneKey", value = "standaloneValue")
+		public void testMethod() {
+		}
+	}
+
+	@Test
+	public void verify_standalone_attribute_on_method() throws NoSuchMethodException {
+		java.lang.reflect.Method method = StandaloneAttributeVerify.class.getMethod("testMethod");
+		Set<ItemAttributesRQ> result = AttributeParser.retrieveAttributes(method);
+
+		assertThat(result, hasSize(1));
+		ItemAttributesRQ request = result.iterator().next();
+		assertThat(request.getKey(), equalTo("standaloneKey"));
+		assertThat(request.getValue(), equalTo("standaloneValue"));
+	}
+
+	private static final class RepeatedAttributeVerify {
+		@Attribute(key = "key1", value = "value1")
+		@Attribute(key = "key2", value = "value2")
+		public void testMethod() {
+		}
+	}
+
+	@Test
+	public void verify_repeated_attribute_on_method() throws NoSuchMethodException {
+		java.lang.reflect.Method method = RepeatedAttributeVerify.class.getMethod("testMethod");
+		Set<ItemAttributesRQ> result = AttributeParser.retrieveAttributes(method);
+
+		assertThat(result, hasSize(2));
+		assertThat(result.stream().map(KEY_EXTRACT).collect(toList()), containsInAnyOrder("key1", "key2"));
+		assertThat(result.stream().map(VALUE_EXTRACT).collect(toList()), containsInAnyOrder("value1", "value2"));
+	}
+
+	private static final class MixedAttributeVerify {
+		@Attributes(attributes = @Attribute(key = "innerKey", value = "innerValue"))
+		@Attribute(key = "outerKey", value = "outerValue")
+		public void testMethod() {
+		}
+	}
+
+	@Test
+	public void verify_mixed_attributes_on_method() throws NoSuchMethodException {
+		java.lang.reflect.Method method = MixedAttributeVerify.class.getMethod("testMethod");
+		Set<ItemAttributesRQ> result = AttributeParser.retrieveAttributes(method);
+
+		assertThat(result, hasSize(2));
+		assertThat(result.stream().map(KEY_EXTRACT).collect(toList()), containsInAnyOrder("innerKey", "outerKey"));
+		assertThat(result.stream().map(VALUE_EXTRACT).collect(toList()), containsInAnyOrder("innerValue", "outerValue"));
+	}
+
+	private static final class AllTypesOnMethodVerify {
+		@Attribute(key = "attrKey", value = "attrValue")
+		@AttributeValue("attrValueOnly")
+		@MultiKeyAttribute(keys = { "mk1", "mk2" }, value = "mkValue")
+		@MultiValueAttribute(key = "mvKey", values = { "mv1", "mv2" })
+		public void testMethod() {
+		}
+	}
+
+	@Test
+	public void verify_all_types_on_method() throws NoSuchMethodException {
+		java.lang.reflect.Method method = AllTypesOnMethodVerify.class.getMethod("testMethod");
+		Set<ItemAttributesRQ> result = AttributeParser.retrieveAttributes(method);
+
+		// 1 (Attribute) + 1 (AttributeValue) + 2 (MultiKey) + 2 (MultiValue) = 6
+		assertThat(result, hasSize(6));
+	}
 }
