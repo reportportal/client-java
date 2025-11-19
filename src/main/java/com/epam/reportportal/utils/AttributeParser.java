@@ -232,7 +232,7 @@ public class AttributeParser {
 	 * Scan for attributes annotations on the given executable and its declaration.
 	 *
 	 * @param executable the executable to scan
-	 * @return a set of ReportPortal attributes or null if not found
+	 * @return a non-null set of ReportPortal attributes (may be empty if none are found)
 	 */
 	@Nonnull
 	public static Set<ItemAttributesRQ> retrieveAttributes(@Nonnull Executable executable) {
