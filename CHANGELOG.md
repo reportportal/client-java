@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.4.8]
 ### Added
 - `AttributeParser.retrieveAttributes(Executable)` method, by @HardNorth
 ### Changed
