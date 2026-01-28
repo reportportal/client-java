@@ -362,7 +362,7 @@ public class LaunchImpl extends Launch {
 	private void applyNameFormat(@Nonnull StartTestItemRQ rq) {
 		TemplateConfiguration config = getTemplateConfiguration();
 		List<ParameterResource> params = rq.getParameters();
-		if (params == null || params.isEmpty()) {
+		if (params == null || params.isEmpty() || rq.getName() == null || rq.getName().isEmpty()) {
 			return;
 		}
 		Map<String, Object> formatParameters = IntStream.range(0, params.size()).boxed().flatMap(i -> {
