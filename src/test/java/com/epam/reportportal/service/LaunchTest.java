@@ -35,6 +35,7 @@ import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.awaitility.Awaitility;
@@ -42,6 +43,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -52,10 +55,12 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Stream;
 
 import static com.epam.reportportal.test.TestUtils.*;
 import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
@@ -348,6 +353,54 @@ public class LaunchTest {
 
 		String testName = testCaptor.getValue().getName();
 		assertThat(testName, allOf(hasLength(1024), endsWith("...")));
+	}
+
+	@Nonnull
+	private static ParameterResource parameter(@Nullable String key, @Nullable String value) {
+		ParameterResource resource = new ParameterResource();
+		resource.setKey(key);
+		resource.setValue(value);
+		return resource;
+	}
+
+	private static Stream<Arguments> item_name_templates() {
+		return Stream.of(
+				Arguments.of("Step {param}", List.of(parameter("param", "value")), "Step value"),
+				Arguments.of("Step {0}", List.of(parameter("paramByIdx", "valueByIdx")), "Step valueByIdx"),
+				Arguments.of("Step {param}", null, "Step {param}"),
+				Arguments.of("Step {0}", List.of(parameter(null, "value")), "Step value"),
+				Arguments.of("Step {param}", List.of(parameter("param", "value"), parameter("param", "value2")), "Step value2"),
+				Arguments.of("Step {0} {1}", List.of(parameter("param", "value"), parameter("param", "value2")), "Step value value2"),
+				Arguments.of("Step {param}", List.of(parameter("param", null)), "Step NULL")
+		);
+	}
+
+	@ParameterizedTest
+	@MethodSource("item_name_templates")
+	public void launch_should_format_item_name_template(String templateName, List<ParameterResource> parameters, String expectedName) {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateStartChildTestItemResponse(rpClient);
+		Launch launch = createLaunch();
+
+		StartTestItemRQ rootRq = standardStartSuiteRequest();
+		rootRq.setName(templateName);
+		rootRq.setParameters(parameters);
+		StartTestItemRQ childRq = standardStartTestRequest();
+		childRq.setName(templateName);
+		childRq.setParameters(parameters);
+
+		launch.start();
+		Maybe<String> rootId = launch.startTestItem(rootRq);
+		launch.startTestItem(rootId, childRq);
+
+		ArgumentCaptor<StartTestItemRQ> rootCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(rpClient, timeout(1000)).startTestItem(rootCaptor.capture());
+		assertThat(rootCaptor.getValue().getName(), equalTo(expectedName));
+
+		ArgumentCaptor<StartTestItemRQ> childCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(rpClient, timeout(1000)).startTestItem(eq(rootId.blockingGet()), childCaptor.capture());
+		assertThat(childCaptor.getValue().getName(), equalTo(expectedName));
 	}
 
 	private static void verify_attribute_truncation(Set<ItemAttributesRQ> attributes) {

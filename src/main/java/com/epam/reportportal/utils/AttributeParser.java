@@ -54,7 +54,7 @@ public class AttributeParser {
 		if (null == rawAttributes) {
 			return Collections.emptySet();
 		}
-		Set<ItemAttributesRQ> attributes = new HashSet<>();
+		Set<ItemAttributesRQ> attributes = new LinkedHashSet<>();
 
 		String[] attributesSplit = rawAttributes.trim().split(ATTRIBUTES_SPLITTER);
 		for (String s : attributesSplit) {

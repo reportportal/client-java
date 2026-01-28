@@ -111,10 +111,10 @@ public class OAuth2PasswordGrantAuthInterceptor implements Interceptor {
 			clientBuilder.proxy(Proxy.NO_PROXY);
 		}
 
-		ofNullable(parameters.getHttpConnectTimeout()).ifPresent(d -> clientBuilder.connectTimeout(d.toMillis(), TimeUnit.MILLISECONDS));
-		ofNullable(parameters.getHttpReadTimeout()).ifPresent(d -> clientBuilder.readTimeout(d.toMillis(), TimeUnit.MILLISECONDS));
-		ofNullable(parameters.getHttpWriteTimeout()).ifPresent(d -> clientBuilder.writeTimeout(d.toMillis(), TimeUnit.MILLISECONDS));
-		ofNullable(parameters.getHttpCallTimeout()).ifPresent(d -> clientBuilder.callTimeout(d.toMillis(), TimeUnit.MILLISECONDS));
+		ofNullable(parameters.getHttpConnectTimeout()).ifPresent(clientBuilder::connectTimeout);
+		ofNullable(parameters.getHttpReadTimeout()).ifPresent(clientBuilder::readTimeout);
+		ofNullable(parameters.getHttpWriteTimeout()).ifPresent(clientBuilder::writeTimeout);
+		ofNullable(parameters.getHttpCallTimeout()).ifPresent(clientBuilder::callTimeout);
 
 		client = clientBuilder.build();
 	}

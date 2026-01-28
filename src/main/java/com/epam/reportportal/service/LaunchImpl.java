@@ -26,6 +26,8 @@ import com.epam.reportportal.service.logs.LoggingSubscriber;
 import com.epam.reportportal.service.statistics.StatisticsService;
 import com.epam.reportportal.utils.*;
 import com.epam.reportportal.utils.files.ByteSource;
+import com.epam.reportportal.utils.formatting.templating.TemplateConfiguration;
+import com.epam.reportportal.utils.formatting.templating.TemplateProcessing;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.ta.reportportal.ws.model.*;
@@ -47,6 +49,7 @@ import io.reactivex.subjects.PublishSubject;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -54,11 +57,14 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static com.epam.reportportal.service.logs.LaunchLoggingCallback.LOG_ERROR;
 import static com.epam.reportportal.service.logs.LaunchLoggingCallback.LOG_SUCCESS;
 import static com.epam.reportportal.utils.BasicUtils.compareSemanticVersions;
 import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
+import static com.epam.reportportal.utils.ParameterUtils.NULL_VALUE;
 import static com.epam.reportportal.utils.SubscriptionUtils.*;
 import static com.epam.reportportal.utils.files.ImageConverter.convert;
 import static com.epam.reportportal.utils.files.ImageConverter.isImage;
@@ -135,6 +141,7 @@ public class LaunchImpl extends Launch {
 	private final ExecutorService executor;
 	private final Scheduler scheduler;
 	private final LoggingSubscriber loggingSubscriber;
+	private final TemplateConfiguration templateConfiguration;
 	private StatisticsService statisticsService;
 	private volatile Boolean useMicroseconds;
 
@@ -199,6 +206,7 @@ public class LaunchImpl extends Launch {
 		logEmitter = createLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
 		projectSettings = getProjectSettings(getClient(), getScheduler());
 		apiInfo = getApiInfo(getClient(), getScheduler());
+		templateConfiguration = new TemplateConfiguration();
 	}
 
 	/**
@@ -242,6 +250,7 @@ public class LaunchImpl extends Launch {
 		logEmitter = createLogEmitter(getClient(), getParameters(), getScheduler(), loggingSubscriber);
 		projectSettings = getProjectSettings(getClient(), getScheduler());
 		apiInfo = getApiInfo(getClient(), getScheduler());
+		templateConfiguration = new TemplateConfiguration();
 	}
 
 	private Supplier<Maybe<String>> getLaunchSupplier(@Nonnull final ReportPortalClient client, @Nonnull final Scheduler scheduler,
@@ -330,6 +339,17 @@ public class LaunchImpl extends Launch {
 		return statisticsService;
 	}
 
+	/**
+	 * Returns current configuration of Template engine to adjust it.
+	 *
+	 * @return Template engine configuration.
+	 */
+	@Nonnull
+	@Override
+	public TemplateConfiguration getTemplateConfiguration() {
+		return templateConfiguration;
+	}
+
 	private void truncateName(@Nonnull final StartTestItemRQ rq) {
 		if (!getParameters().isTruncateFields() || rq.getName() == null || rq.getName().isEmpty()) {
 			return;
@@ -337,6 +357,34 @@ public class LaunchImpl extends Launch {
 		String name = rq.getName();
 		ListenerParameters params = getParameters();
 		rq.setName(BasicUtils.truncateString(name, params.getTruncateItemNamesLimit(), params.getTruncateReplacement()));
+	}
+
+	private void applyNameFormat(@Nonnull StartTestItemRQ rq) {
+		TemplateConfiguration config = getTemplateConfiguration();
+		List<ParameterResource> params = rq.getParameters();
+		if (params == null || params.isEmpty() || rq.getName() == null || rq.getName().isEmpty()) {
+			return;
+		}
+		Map<String, Object> formatParameters = IntStream.range(0, params.size()).boxed().flatMap(i -> {
+			var param = params.get(i);
+			var newParam = new ParameterResource();
+			newParam.setKey(param.getKey());
+			newParam.setValue(param.getValue());
+			var idxParam = new ParameterResource();
+			idxParam.setKey(String.valueOf(i));
+			idxParam.setValue(param.getValue());
+			return Stream.of(newParam, idxParam);
+		}).peek(param -> {
+			if (param.getKey() == null) {
+				param.setKey(NULL_VALUE);
+			}
+			if (param.getValue() == null) {
+				param.setValue(NULL_VALUE);
+			}
+		}).collect(Collectors.toMap(
+				ParameterResource::getKey, ParameterResource::getValue, (existing, replacement) -> replacement
+		));
+		rq.setName(TemplateProcessing.processTemplate(rq.getName(), null, null, formatParameters, config));
 	}
 
 	@Nullable
@@ -574,6 +622,17 @@ public class LaunchImpl extends Launch {
 		return Maybe.error(cause);
 	}
 
+	@NotNull
+	private StartTestItemRQ applyRequestModifications(StartTestItemRQ request) {
+		StartTestItemRQ rq = clonePojo(request, StartTestItemRQ.class);
+		rq.setStartTime(convertIfNecessary(rq.getStartTime()));
+		truncateName(rq); // Truncate before templating to not allow too long names to be passed to Template engine
+		applyNameFormat(rq);
+		truncateName(rq); // Truncate after templating to not allow too long names to be posted
+		truncateAttributes(rq);
+		return rq;
+	}
+
 	/**
 	 * Starts new root test item in ReportPortal asynchronously (non-blocking).
 	 *
@@ -589,10 +648,7 @@ public class LaunchImpl extends Launch {
 			 */
 			return createErrorResponse(new NullPointerException("StartTestItemRQ should not be null"));
 		}
-		StartTestItemRQ rq = clonePojo(request, StartTestItemRQ.class);
-		rq.setStartTime(convertIfNecessary(rq.getStartTime()));
-		truncateName(rq);
-		truncateAttributes(rq);
+		StartTestItemRQ rq = applyRequestModifications(request);
 
 		String itemDescription = String.format("root test item [%s] '%s'", rq.getType(), rq.getName());
 		final Maybe<String> item = getLaunch().flatMap((Function<String, Maybe<String>>) launchId -> {
@@ -627,10 +683,7 @@ public class LaunchImpl extends Launch {
 			 */
 			return createErrorResponse(new NullPointerException("StartTestItemRQ should not be null"));
 		}
-		StartTestItemRQ rq = clonePojo(request, StartTestItemRQ.class);
-		rq.setStartTime(convertIfNecessary(rq.getStartTime()));
-		truncateName(rq);
-		truncateAttributes(rq);
+		StartTestItemRQ rq = applyRequestModifications(request);
 
 		String itemDescription = String.format("child test item [%s] '%s'", rq.getType(), rq.getName());
 		final Maybe<String> item = RxJavaPlugins.onAssembly(Maybe.zip(

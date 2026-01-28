@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Item name formatting according to passed parameters, by @HardNorth
 
 ## [5.4.8]
 ### Added
