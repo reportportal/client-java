@@ -381,7 +381,9 @@ public class LaunchImpl extends Launch {
 			if (param.getValue() == null) {
 				param.setValue(NULL_VALUE);
 			}
-		}).collect(Collectors.toMap(ParameterResource::getKey, ParameterResource::getValue));
+		}).collect(Collectors.toMap(
+				ParameterResource::getKey, ParameterResource::getValue, (existing, replacement) -> replacement
+		));
 		rq.setName(TemplateProcessing.processTemplate(rq.getName(), null, null, formatParameters, config));
 	}
 

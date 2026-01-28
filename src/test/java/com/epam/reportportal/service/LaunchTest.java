@@ -369,6 +369,8 @@ public class LaunchTest {
 				Arguments.of("Step {0}", List.of(parameter("paramByIdx", "valueByIdx")), "Step valueByIdx"),
 				Arguments.of("Step {param}", null, "Step {param}"),
 				Arguments.of("Step {0}", List.of(parameter(null, "value")), "Step value"),
+				Arguments.of("Step {param}", List.of(parameter("param", "value"), parameter("param", "value2")), "Step value2"),
+				Arguments.of("Step {0} {1}", List.of(parameter("param", "value"), parameter("param", "value2")), "Step value value2"),
 				Arguments.of("Step {param}", List.of(parameter("param", null)), "Step NULL")
 		);
 	}
