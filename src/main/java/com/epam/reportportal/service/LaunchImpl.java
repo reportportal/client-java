@@ -64,6 +64,7 @@ import static com.epam.reportportal.service.logs.LaunchLoggingCallback.LOG_ERROR
 import static com.epam.reportportal.service.logs.LaunchLoggingCallback.LOG_SUCCESS;
 import static com.epam.reportportal.utils.BasicUtils.compareSemanticVersions;
 import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
+import static com.epam.reportportal.utils.ParameterUtils.NULL_VALUE;
 import static com.epam.reportportal.utils.SubscriptionUtils.*;
 import static com.epam.reportportal.utils.files.ImageConverter.convert;
 import static com.epam.reportportal.utils.files.ImageConverter.isImage;
@@ -366,10 +367,20 @@ public class LaunchImpl extends Launch {
 		}
 		Map<String, Object> formatParameters = IntStream.range(0, params.size()).boxed().flatMap(i -> {
 			var param = params.get(i);
+			var newParam = new ParameterResource();
+			newParam.setKey(param.getKey());
+			newParam.setValue(param.getValue());
 			var idxParam = new ParameterResource();
 			idxParam.setKey(String.valueOf(i));
 			idxParam.setValue(param.getValue());
-			return Stream.of(param, idxParam);
+			return Stream.of(newParam, idxParam);
+		}).peek(param -> {
+			if (param.getKey() == null) {
+				param.setKey(NULL_VALUE);
+			}
+			if (param.getValue() == null) {
+				param.setValue(NULL_VALUE);
+			}
 		}).collect(Collectors.toMap(ParameterResource::getKey, ParameterResource::getValue));
 		rq.setName(TemplateProcessing.processTemplate(rq.getName(), null, null, formatParameters, config));
 	}

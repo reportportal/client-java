@@ -35,6 +35,7 @@ import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
 import io.reactivex.Maybe;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.awaitility.Awaitility;
@@ -354,7 +355,8 @@ public class LaunchTest {
 		assertThat(testName, allOf(hasLength(1024), endsWith("...")));
 	}
 
-	private static ParameterResource parameter(String key, String value) {
+	@Nonnull
+	private static ParameterResource parameter(@Nullable String key, @Nullable String value) {
 		ParameterResource resource = new ParameterResource();
 		resource.setKey(key);
 		resource.setValue(value);
@@ -365,14 +367,15 @@ public class LaunchTest {
 		return Stream.of(
 				Arguments.of("Step {param}", List.of(parameter("param", "value")), "Step value"),
 				Arguments.of("Step {0}", List.of(parameter("paramByIdx", "valueByIdx")), "Step valueByIdx"),
-				Arguments.of("Step {param}", null, "Step {param}")
+				Arguments.of("Step {param}", null, "Step {param}"),
+				Arguments.of("Step {0}", List.of(parameter(null, "value")), "Step value"),
+				Arguments.of("Step {param}", List.of(parameter("param", null)), "Step NULL")
 		);
 	}
 
 	@ParameterizedTest
 	@MethodSource("item_name_templates")
-	public void launch_should_format_item_name_template(String templateName, List<ParameterResource> parameters,
-			String expectedName) {
+	public void launch_should_format_item_name_template(String templateName, List<ParameterResource> parameters, String expectedName) {
 		simulateStartLaunchResponse(rpClient);
 		simulateStartTestItemResponse(rpClient);
 		simulateStartChildTestItemResponse(rpClient);
