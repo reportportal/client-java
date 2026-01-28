@@ -19,6 +19,7 @@ import com.epam.reportportal.listeners.ListenerParameters;
 import com.epam.reportportal.service.step.DefaultStepReporter;
 import com.epam.reportportal.service.step.StepReporter;
 import com.epam.reportportal.utils.StaticStructuresUtils;
+import com.epam.reportportal.utils.formatting.templating.TemplateConfiguration;
 import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
 import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
 import com.epam.ta.reportportal.ws.model.OperationCompletionRS;
@@ -238,6 +239,14 @@ public abstract class Launch {
 	public abstract Maybe<String> getLaunch();
 
 	/**
+	 * Returns current configuration of Template engine to adjust it.
+	 *
+	 * @return Template engine configuration.
+	 */
+	@Nonnull
+	public abstract TemplateConfiguration getTemplateConfiguration();
+
+	/**
 	 * Launch implementation for disabled Reporting, every method does nothing.
 	 */
 	public static final Launch NOOP_LAUNCH = new Launch(
@@ -249,6 +258,8 @@ public abstract class Launch {
 			new ListenerParameters(),
 			StepReporter.NOOP_STEP_REPORTER
 	) {
+		private final TemplateConfiguration templateConfiguration = new TemplateConfiguration();
+
 		@Override
 		public boolean useMicroseconds() {
 			return false;
@@ -322,6 +333,12 @@ public abstract class Launch {
 		@Override
 		public Maybe<String> getLaunch() {
 			return Maybe.empty();
+		}
+
+		@Nonnull
+		@Override
+		public TemplateConfiguration getTemplateConfiguration() {
+			return templateConfiguration;
 		}
 	};
 
