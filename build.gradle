@@ -57,7 +57,6 @@ dependencies {
         exclude module: 'rxjava'
     }
     implementation "com.squareup.okhttp3:logging-interceptor:${project.okhttp_version}"
-    implementation "org.aspectj:aspectjrt:${project.aspectj_version}"
     implementation "org.aspectj:aspectjweaver:${project.aspectj_version}"
 
     implementation "org.slf4j:slf4j-api:${slf4j_version}"
@@ -74,7 +73,7 @@ dependencies {
     testImplementation 'org.hamcrest:hamcrest:2.2'
     testImplementation "org.mockito:mockito-core:${project.mockito_version}"
     testImplementation "org.mockito:mockito-junit-jupiter:${project.mockito_version}"
-    testImplementation 'ch.qos.logback:logback-classic:1.5.19'
+    testImplementation 'ch.qos.logback:logback-classic:1.5.32'
     testImplementation('org.awaitility:awaitility:4.0.2') {
         exclude group: 'org.hamcrest'
     }
