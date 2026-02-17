@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Removed
+- `aspectjrt` dependency, by @HardNorth
 
 ## [5.4.9]
 ### Added
