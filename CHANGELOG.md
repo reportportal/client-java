@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.4.10]
 ### Removed
 - `aspectjrt` dependency, by @HardNorth
 
