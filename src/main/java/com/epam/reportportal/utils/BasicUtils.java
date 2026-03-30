@@ -26,6 +26,45 @@ public class BasicUtils {
 		throw new IllegalStateException("Static only class");
 	}
 
+	// System/Data Controls
+	private static final int NUL = 0x00, SOH = 0x01, STX = 0x02, ETX = 0x03, EOT = 0x04, ENQ = 0x05, ACK = 0x06, NAK = 0x15, SYN = 0x16, ETB = 0x17;
+
+	// Legacy Device Controls
+	private static final int BEL = 0x07, DC1 = 0x11, DC2 = 0x12, DC3 = 0x13, DC4 = 0x14, CAN = 0x18, EM  = 0x19, SUB = 0x1A, ESC = 0x1B;
+
+	private static final boolean[] IS_JUNK = new boolean[128];
+	static {
+		int[] codes = {NUL, SOH, STX, ETX, EOT, ENQ, ACK, NAK, SYN, ETB,
+				BEL, DC1, DC2, DC3, DC4, CAN, EM, SUB, ESC};
+		for (int c : codes) {
+			IS_JUNK[c] = true;
+		}
+	}
+
+	private static final String JUNK_REPLACEMENT = "\uFFFD";
+
+	/**
+	 * The method cleans a string from obviously binary characters, replaces them with a question mark inside diamond (\uFFFD).
+	 *
+	 * @param input a string to clean
+	 * @return clean string
+	 */
+	public static String cleanBinaryCharacters(String input) {
+		if (input == null) return null;
+
+		StringBuilder sb = new StringBuilder(input.length());
+		for (int i = 0; i < input.length(); i++) {
+			char c = input.charAt(i);
+			// Only check if it's in the ASCII range (0-127)
+			if (c < 128 && IS_JUNK[c]) {
+				sb.append(JUNK_REPLACEMENT);
+			} else {
+				sb.append(c);
+			}
+		}
+		return sb.toString();
+	}
+
 	/**
 	 * Truncates string to the specified limit. If string length exceeds the limit, it will be cut and the truncateReplacement will be
 	 * appended.
