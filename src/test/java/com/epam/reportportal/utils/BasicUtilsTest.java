@@ -64,6 +64,27 @@ public class BasicUtilsTest {
 		assertThat(result, endsWith(CommonConstants.DEFAULT_TRUNCATE_REPLACEMENT));
 	}
 
+	public static Object[][] cleanBinaryCharactersTestData() {
+		//@formatter:off
+		return new Object[][]{
+				// 1. null input
+				{null, null},
+				// 2. clean text remains unchanged
+				{"Hello, ReportPortal!", "Hello, ReportPortal!"},
+				// 3. known binary control characters are replaced
+				{"A\u0000B\u0007C\u0011D\u001bE", "A\uFFFDB\uFFFDC\uFFFDD\uFFFDE"},
+				// 4. allowed control chars and non-ASCII chars are preserved
+				{"Line1\nLine2\tПривет", "Line1\nLine2\tПривет"}
+		};
+		//@formatter:on
+	}
+
+	@ParameterizedTest
+	@MethodSource("cleanBinaryCharactersTestData")
+	public void test_clean_binary_characters_scenarios(String input, String expected) {
+		assertThat(BasicUtils.cleanBinaryCharacters(input), equalTo(expected));
+	}
+
 	public static Object[][] versionTestData() {
 		//@formatter:off
 		return new Object[][]{

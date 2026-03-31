@@ -30,12 +30,12 @@ public class BasicUtils {
 	private static final int NUL = 0x00, SOH = 0x01, STX = 0x02, ETX = 0x03, EOT = 0x04, ENQ = 0x05, ACK = 0x06, NAK = 0x15, SYN = 0x16, ETB = 0x17;
 
 	// Legacy Device Controls
-	private static final int BEL = 0x07, DC1 = 0x11, DC2 = 0x12, DC3 = 0x13, DC4 = 0x14, CAN = 0x18, EM  = 0x19, SUB = 0x1A, ESC = 0x1B;
+	private static final int BEL = 0x07, DC1 = 0x11, DC2 = 0x12, DC3 = 0x13, DC4 = 0x14, CAN = 0x18, EM = 0x19, SUB = 0x1A, ESC = 0x1B;
 
 	private static final boolean[] IS_JUNK = new boolean[128];
+
 	static {
-		int[] codes = {NUL, SOH, STX, ETX, EOT, ENQ, ACK, NAK, SYN, ETB,
-				BEL, DC1, DC2, DC3, DC4, CAN, EM, SUB, ESC};
+		int[] codes = { NUL, SOH, STX, ETX, EOT, ENQ, ACK, NAK, SYN, ETB, BEL, DC1, DC2, DC3, DC4, CAN, EM, SUB, ESC };
 		for (int c : codes) {
 			IS_JUNK[c] = true;
 		}
@@ -50,7 +50,9 @@ public class BasicUtils {
 	 * @return clean string
 	 */
 	public static String cleanBinaryCharacters(String input) {
-		if (input == null) return null;
+		if (input == null) {
+			return null;
+		}
 
 		StringBuilder sb = new StringBuilder(input.length());
 		for (int i = 0; i < input.length(); i++) {
