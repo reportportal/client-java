@@ -148,6 +148,7 @@ public enum ListenerProperty {
     TRUNCATE_REPLACEMENT("rp.truncation.replacement", false),
     TRUNCATE_ITEM_NAME_LIMIT("rp.truncation.item.name.limit", false),
     TRUNCATE_ATTRIBUTE_LIMIT("rp.truncation.attribute.limit", false),
+    ATTRIBUTE_NUMBER_LIMIT("rp.attribute.limit", false),
 
     /**
      * Enable/Disable the feature to truncate Stack Traces of exceptions that being logged to ReportPortal. Default value: <code>true</code>.

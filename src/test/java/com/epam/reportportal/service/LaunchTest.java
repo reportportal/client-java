@@ -458,6 +458,60 @@ public class LaunchTest {
 		verify_attribute_truncation(launchFinishCaptor.getValue().getAttributes());
 	}
 
+	private static void verify_attribute_number_truncation(Set<ItemAttributesRQ> attributes) {
+		assertThat(attributes, hasSize(2));
+		assertThat(attributes.stream().map(ItemAttributesRQ::getKey).toArray(), arrayContainingInAnyOrder("a", "b"));
+	}
+
+	@Test
+	public void launch_should_truncate_attribute_number() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateFinishTestItemResponse(rpClient);
+		simulateBatchLogResponse(rpClient);
+		simulateFinishLaunchResponse(rpClient);
+
+		ListenerParameters parameters = standardParameters();
+		parameters.setAttributeNumberLimit(2);
+		Set<ItemAttributesRQ> attributes = Set.of(
+				new ItemAttributesRQ("d", "1"),
+				new ItemAttributesRQ("b", "1"),
+				new ItemAttributesRQ("a", "1"),
+				new ItemAttributesRQ("c", "1")
+		);
+		parameters.setAttributes(attributes);
+
+		Launch launch = createLaunch(parameters);
+
+		StartTestItemRQ suiteStartRq = standardStartSuiteRequest();
+		suiteStartRq.setAttributes(attributes);
+		FinishTestItemRQ suiteFinishRq = positiveFinishRequest();
+		suiteFinishRq.setAttributes(attributes);
+		FinishExecutionRQ finishRq = standardLaunchFinishRequest();
+		finishRq.setAttributes(attributes);
+
+		launch.start();
+		Maybe<String> suiteRs = launch.startTestItem(suiteStartRq);
+		launch.finishTestItem(suiteRs, suiteFinishRq);
+		launch.finish(finishRq);
+
+		ArgumentCaptor<StartLaunchRQ> launchStartCaptor = ArgumentCaptor.forClass(StartLaunchRQ.class);
+		verify(rpClient, timeout(1000)).startLaunch(launchStartCaptor.capture());
+		verify_attribute_number_truncation(launchStartCaptor.getValue().getAttributes());
+
+		ArgumentCaptor<StartTestItemRQ> suiteStartCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(rpClient, timeout(1000)).startTestItem(suiteStartCaptor.capture());
+		verify_attribute_number_truncation(suiteStartCaptor.getValue().getAttributes());
+
+		ArgumentCaptor<FinishTestItemRQ> suiteFinishCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(rpClient, timeout(1000)).finishTestItem(anyString(), suiteFinishCaptor.capture());
+		verify_attribute_number_truncation(suiteFinishCaptor.getValue().getAttributes());
+
+		ArgumentCaptor<FinishExecutionRQ> launchFinishCaptor = ArgumentCaptor.forClass(FinishExecutionRQ.class);
+		verify(rpClient, timeout(1000)).finishLaunch(anyString(), launchFinishCaptor.capture());
+		verify_attribute_number_truncation(launchFinishCaptor.getValue().getAttributes());
+	}
+
 	@Test
 	@Timeout(10)
 	public void launch_should_not_throw_exceptions_or_hang_if_finished_and_started_again() {

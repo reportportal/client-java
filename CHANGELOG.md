@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- Attribute number truncation, by @HardNorth
 
 ## [5.4.11]
 ### Changed

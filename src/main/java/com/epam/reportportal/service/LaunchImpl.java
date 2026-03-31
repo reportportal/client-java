@@ -31,6 +31,7 @@ import com.epam.reportportal.utils.formatting.templating.TemplateProcessing;
 import com.epam.reportportal.utils.http.HttpRequestUtils;
 import com.epam.reportportal.utils.properties.DefaultProperties;
 import com.epam.ta.reportportal.ws.model.*;
+import com.epam.ta.reportportal.ws.model.attribute.ItemAttributeResource;
 import com.epam.ta.reportportal.ws.model.attribute.ItemAttributesRQ;
 import com.epam.ta.reportportal.ws.model.issue.Issue;
 import com.epam.ta.reportportal.ws.model.item.ItemCreatedRS;
@@ -381,9 +382,7 @@ public class LaunchImpl extends Launch {
 			if (param.getValue() == null) {
 				param.setValue(NULL_VALUE);
 			}
-		}).collect(Collectors.toMap(
-				ParameterResource::getKey, ParameterResource::getValue, (existing, replacement) -> replacement
-		));
+		}).collect(Collectors.toMap(ParameterResource::getKey, ParameterResource::getValue, (existing, replacement) -> replacement));
 		rq.setName(TemplateProcessing.processTemplate(rq.getName(), null, null, formatParameters, config));
 	}
 
@@ -393,23 +392,32 @@ public class LaunchImpl extends Launch {
 			return attributes;
 		}
 
-		int limit = getParameters().getAttributeLengthLimit();
+		int numberLimit = getParameters().getAttributeNumberLimit();
+		Set<ItemAttributesRQ> myAttributes = attributes;
+		if (myAttributes.size() > numberLimit) {
+			myAttributes = myAttributes.stream()
+					.sorted(Comparator.comparing(ItemAttributeResource::getKey))
+					.limit(numberLimit)
+					.collect(Collectors.toSet());
+		}
+
+		int lengthLimit = getParameters().getAttributeLengthLimit();
 		String replacement = getParameters().getTruncateReplacement();
-		return attributes.stream().map(attribute -> {
+		return myAttributes.stream().map(attribute -> {
 			ItemAttributesRQ updated = attribute;
 			int keyLength = ofNullable(updated.getKey()).map(String::length).orElse(0);
-			if (keyLength > limit && keyLength > replacement.length()) {
+			if (keyLength > lengthLimit && keyLength > replacement.length()) {
 				updated = new ItemAttributesRQ(
-						updated.getKey().substring(0, limit - replacement.length()) + replacement,
+						updated.getKey().substring(0, lengthLimit - replacement.length()) + replacement,
 						updated.getValue(),
 						updated.isSystem()
 				);
 			}
 			int valueLength = ofNullable(updated.getValue()).map(String::length).orElse(0);
-			if (valueLength > limit && valueLength > replacement.length()) {
+			if (valueLength > lengthLimit && valueLength > replacement.length()) {
 				updated = new ItemAttributesRQ(
 						updated.getKey(),
-						updated.getValue().substring(0, limit - replacement.length()) + replacement,
+						updated.getValue().substring(0, lengthLimit - replacement.length()) + replacement,
 						updated.isSystem()
 				);
 			}

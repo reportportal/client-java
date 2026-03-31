@@ -69,6 +69,7 @@ public class ListenerParameters implements Cloneable {
 	private static final boolean DEFAULT_TRUNCATE = true;
 	private static final int DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT = 1024;
 	private static final int DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT = 128;
+	private static final int DEFAULT_ATTRIBUTE_NUMBER_LIMIT = 256;
 
 	public static final boolean DEFAULT_EXCEPTION_TRUNCATE = true;
 
@@ -139,6 +140,7 @@ public class ListenerParameters implements Cloneable {
 	private int truncateItemNamesLimit;
 	private String truncateReplacement;
 	private int attributeLengthLimit;
+	private int attributeNumberLimit;
 
 	private boolean exceptionTruncate;
 
@@ -226,6 +228,7 @@ public class ListenerParameters implements Cloneable {
 		this.truncateItemNamesLimit = DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT;
 		this.truncateReplacement = CommonConstants.DEFAULT_TRUNCATE_REPLACEMENT;
 		this.attributeLengthLimit = DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT;
+		this.attributeNumberLimit = DEFAULT_ATTRIBUTE_NUMBER_LIMIT;
 
 		this.printLaunchUuid = DEFAULT_LAUNCH_UUID_PRINT;
 		this.printLaunchUuidOutput = OutputTypes.valueOf(DEFAULT_LAUNCH_UUID_OUTPUT.toUpperCase(Locale.ROOT)).getOutput();
@@ -314,6 +317,7 @@ public class ListenerParameters implements Cloneable {
 		this.truncateItemNamesLimit = properties.getPropertyAsInt(TRUNCATE_ITEM_NAME_LIMIT, DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT);
 		this.truncateReplacement = properties.getProperty(TRUNCATE_REPLACEMENT, CommonConstants.DEFAULT_TRUNCATE_REPLACEMENT);
 		this.attributeLengthLimit = properties.getPropertyAsInt(TRUNCATE_ATTRIBUTE_LIMIT, DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT);
+		this.attributeNumberLimit = properties.getPropertyAsInt(ATTRIBUTE_NUMBER_LIMIT, DEFAULT_ATTRIBUTE_NUMBER_LIMIT);
 
 		this.exceptionTruncate = properties.getPropertyAsBoolean(EXCEPTION_TRUNCATE, DEFAULT_EXCEPTION_TRUNCATE);
 
@@ -757,6 +761,14 @@ public class ListenerParameters implements Cloneable {
 
 	public void setAttributeLengthLimit(int attributeLengthLimit) {
 		this.attributeLengthLimit = attributeLengthLimit;
+	}
+
+	public int getAttributeNumberLimit() {
+		return attributeNumberLimit;
+	}
+
+	public void setAttributeNumberLimit(int attributeNumberLimit) {
+		this.attributeNumberLimit = attributeNumberLimit;
 	}
 
 	public boolean isExceptionTruncate() {
