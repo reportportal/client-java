@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.4.12]
 ### Added
 - Attribute number truncation, by @HardNorth
 - Binary character replacement in basic text fields, by @HardNorth
