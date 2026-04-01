@@ -12,7 +12,7 @@
 [![Build with Love](https://img.shields.io/badge/build%20with-❤%EF%B8%8F%E2%80%8D-lightgrey.svg)](http://reportportal.io?style=flat)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-The latest version: 5.4.11. Please use `Maven Central` link above to get the client.
+The latest version: 5.4.12. Please use `Maven Central` link above to get the client.
 
 ## JVM-based clients configuration
 
@@ -188,15 +188,17 @@ rp.project=project-name
 | rp.http.timeout.write.value   | Integer  | Default: 10 seconds<br> Data write timeout for new HTTP connections.                                                                                                                                                                                     |
 | rp.http.timeout.write.unit    | Enum     | Default: `MILLISECONDS`<br> Timeout value time unit. Should be one of values from `java.util.concurrent.TimeUnit` class                                                                                                                                  |
 
-### Truncation parameters
+### Truncation and sanitization parameters
 
-| **Property name**             | **Type** | **Description**                                                                                              | 
-|-------------------------------|----------|--------------------------------------------------------------------------------------------------------------|
-| rp.truncation.field           | Boolean  | Default: `true`<br> Enable / disable certain field truncation to avoid API failures.                         |
-| rp.truncation.replacement     | String   | Default: `...`<br> Replacement pattern for truncated fields                                                  |
-| rp.truncation.item.name.limit | Integer  | Default: `1024`<br> Maximum item names length before truncation.                                             |
-| rp.truncation.attribute.limit | Integer  | Default: `128`<br> Maximum attribute key and value limit (counts separately)                                 |
-| rp.truncation.exception       | Boolean  | Default: `true`<br> Enable / disable Stack Trace truncation of exceptions that being logged to ReportPortal. |
+| **Property name**              | **Type** | **Description**                                                                                    | 
+|--------------------------------|----------|----------------------------------------------------------------------------------------------------|
+| rp.truncation.field            | Boolean  | Default: `true`<br> Toggle certain field truncation to avoid API failures.                         |
+| rp.truncation.replacement      | String   | Default: `...`<br> Replacement pattern for truncated fields                                        |
+| rp.truncation.item.name.limit  | Integer  | Default: `1024`<br> Maximum item names length before truncation.                                   |
+| rp.truncation.attribute.limit  | Integer  | Default: `128`<br> Maximum attribute key and value limit (counts separately)                       |
+| rp.truncation.exception        | Boolean  | Default: `true`<br> Toggle Stack Trace truncation of exceptions that being logged to ReportPortal. |
+| rp.attribute.limit             | Integer  | Default: `256`<br> Maximum number of attributes sent in request.                                   |
+| rp.sanitization.replace.binary | Boolean  | Default: `true`<br> Toggle replacement of basic binary characters with \uFFFD char.                |
 
 ### Bug Tracking System parameters
 
