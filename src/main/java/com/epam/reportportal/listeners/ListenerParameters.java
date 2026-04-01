@@ -70,6 +70,7 @@ public class ListenerParameters implements Cloneable {
 	private static final int DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT = 1024;
 	private static final int DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT = 128;
 	private static final int DEFAULT_ATTRIBUTE_NUMBER_LIMIT = 256;
+	private static final boolean DEFAULT_REPLACE_BINARY_CHARACTERS = true;
 
 	public static final boolean DEFAULT_EXCEPTION_TRUNCATE = true;
 
@@ -141,6 +142,7 @@ public class ListenerParameters implements Cloneable {
 	private String truncateReplacement;
 	private int attributeLengthLimit;
 	private int attributeNumberLimit;
+	private boolean replaceBinaryCharacters;
 
 	private boolean exceptionTruncate;
 
@@ -228,7 +230,9 @@ public class ListenerParameters implements Cloneable {
 		this.truncateItemNamesLimit = DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT;
 		this.truncateReplacement = CommonConstants.DEFAULT_TRUNCATE_REPLACEMENT;
 		this.attributeLengthLimit = DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT;
+		this.exceptionTruncate = DEFAULT_EXCEPTION_TRUNCATE;
 		this.attributeNumberLimit = DEFAULT_ATTRIBUTE_NUMBER_LIMIT;
+		this.replaceBinaryCharacters = DEFAULT_REPLACE_BINARY_CHARACTERS;
 
 		this.printLaunchUuid = DEFAULT_LAUNCH_UUID_PRINT;
 		this.printLaunchUuidOutput = OutputTypes.valueOf(DEFAULT_LAUNCH_UUID_OUTPUT.toUpperCase(Locale.ROOT)).getOutput();
@@ -236,7 +240,6 @@ public class ListenerParameters implements Cloneable {
 
 		this.btsIssueFail = DEFAULT_BTS_ISSUE_FAIL;
 
-		this.exceptionTruncate = DEFAULT_EXCEPTION_TRUNCATE;
 	}
 
 	/**
@@ -317,9 +320,9 @@ public class ListenerParameters implements Cloneable {
 		this.truncateItemNamesLimit = properties.getPropertyAsInt(TRUNCATE_ITEM_NAME_LIMIT, DEFAULT_TRUNCATE_ITEM_NAMES_LIMIT);
 		this.truncateReplacement = properties.getProperty(TRUNCATE_REPLACEMENT, CommonConstants.DEFAULT_TRUNCATE_REPLACEMENT);
 		this.attributeLengthLimit = properties.getPropertyAsInt(TRUNCATE_ATTRIBUTE_LIMIT, DEFAULT_TRUNCATE_ATTRIBUTE_LIMIT);
-		this.attributeNumberLimit = properties.getPropertyAsInt(ATTRIBUTE_NUMBER_LIMIT, DEFAULT_ATTRIBUTE_NUMBER_LIMIT);
-
 		this.exceptionTruncate = properties.getPropertyAsBoolean(EXCEPTION_TRUNCATE, DEFAULT_EXCEPTION_TRUNCATE);
+		this.attributeNumberLimit = properties.getPropertyAsInt(ATTRIBUTE_NUMBER_LIMIT, DEFAULT_ATTRIBUTE_NUMBER_LIMIT);
+		this.replaceBinaryCharacters = properties.getPropertyAsBoolean(REPLACE_BINARY_CHARACTERS, DEFAULT_REPLACE_BINARY_CHARACTERS);
 
 		this.launchUuid = properties.getProperty(LAUNCH_UUID);
 		this.isLaunchUuidCreationSkip = properties.getPropertyAsBoolean(LAUNCH_UUID_CREATION_SKIP, DEFAULT_LAUNCH_CREATION_SKIP);
@@ -763,6 +766,14 @@ public class ListenerParameters implements Cloneable {
 		this.attributeLengthLimit = attributeLengthLimit;
 	}
 
+	public boolean isExceptionTruncate() {
+		return exceptionTruncate;
+	}
+
+	public void setExceptionTruncate(boolean exceptionTruncate) {
+		this.exceptionTruncate = exceptionTruncate;
+	}
+
 	public int getAttributeNumberLimit() {
 		return attributeNumberLimit;
 	}
@@ -771,12 +782,12 @@ public class ListenerParameters implements Cloneable {
 		this.attributeNumberLimit = attributeNumberLimit;
 	}
 
-	public boolean isExceptionTruncate() {
-		return exceptionTruncate;
+	public boolean isReplaceBinaryCharacters() {
+		return replaceBinaryCharacters;
 	}
 
-	public void setExceptionTruncate(boolean exceptionTruncate) {
-		this.exceptionTruncate = exceptionTruncate;
+	public void setReplaceBinaryCharacters(boolean replaceBinaryCharacters) {
+		this.replaceBinaryCharacters = replaceBinaryCharacters;
 	}
 
 	public void setHttpCallTimeout(@Nullable Duration httpCallTimeout) {

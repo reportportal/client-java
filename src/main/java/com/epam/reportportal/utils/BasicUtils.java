@@ -49,7 +49,8 @@ public class BasicUtils {
 	 * @param input a string to clean
 	 * @return clean string
 	 */
-	public static String cleanBinaryCharacters(String input) {
+	@Nullable
+	public static String cleanBinaryCharacters(@Nullable String input) {
 		if (input == null) {
 			return null;
 		}

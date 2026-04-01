@@ -76,6 +76,7 @@ public class LaunchTest {
 
 	private static final ErrorRS START_ERROR_RS;
 	private static final ErrorRS FINISH_ERROR_RS;
+	private static final String REPLACEMENT_CHARACTER = "\uFFFD";
 
 	static {
 		START_ERROR_RS = new ErrorRS();
@@ -463,6 +464,13 @@ public class LaunchTest {
 		assertThat(attributes.stream().map(ItemAttributesRQ::getKey).toArray(), arrayContainingInAnyOrder("a", "b"));
 	}
 
+	private static void verify_attribute_binary_symbol_replacement(Set<ItemAttributesRQ> attributes) {
+		assertThat(attributes, hasSize(1));
+		ItemAttributesRQ attribute = attributes.iterator().next();
+		assertThat(attribute.getKey(), allOf(containsString(REPLACEMENT_CHARACTER), not(containsString("\u0000"))));
+		assertThat(attribute.getValue(), allOf(containsString(REPLACEMENT_CHARACTER), not(containsString("\u0001"))));
+	}
+
 	@Test
 	public void launch_should_truncate_attribute_number() {
 		simulateStartLaunchResponse(rpClient);
@@ -510,6 +518,122 @@ public class LaunchTest {
 		ArgumentCaptor<FinishExecutionRQ> launchFinishCaptor = ArgumentCaptor.forClass(FinishExecutionRQ.class);
 		verify(rpClient, timeout(1000)).finishLaunch(anyString(), launchFinishCaptor.capture());
 		verify_attribute_number_truncation(launchFinishCaptor.getValue().getAttributes());
+	}
+
+	@Test
+	public void launch_should_truncate_start_name_and_replace_binary_symbols() {
+		simulateStartLaunchResponse(rpClient);
+
+		ListenerParameters parameters = standardParameters();
+		String name = "\u0000" + RandomStringUtils.randomAlphanumeric(LaunchImpl.MAX_LAUNCH_NAME_LENGTH) + "tail";
+		parameters.setLaunchName(name);
+
+		Launch launch = createLaunch(parameters);
+		launch.start();
+
+		ArgumentCaptor<StartLaunchRQ> launchStartCaptor = ArgumentCaptor.forClass(StartLaunchRQ.class);
+		verify(rpClient, timeout(1000)).startLaunch(launchStartCaptor.capture());
+		String launchName = launchStartCaptor.getValue().getName();
+
+		assertThat(launchName, allOf(hasLength(LaunchImpl.MAX_LAUNCH_NAME_LENGTH), endsWith("..."), containsString(REPLACEMENT_CHARACTER)));
+		assertThat(launchName, not(containsString("\u0000")));
+	}
+
+	@Test
+	public void launch_should_truncate_start_and_finish_descriptions_and_replace_binary_symbols() {
+		simulateStartLaunchResponse(rpClient);
+		simulateBatchLogResponse(rpClient);
+		simulateFinishLaunchResponse(rpClient);
+
+		ListenerParameters parameters = standardParameters();
+		String description = "\u0001" + RandomStringUtils.randomAlphanumeric(LaunchImpl.MAX_LAUNCH_DESCRIPTION_LENGTH) + "description";
+
+		StartLaunchRQ launchStartRq = standardLaunchRequest(parameters);
+		launchStartRq.setDescription(description);
+		Launch launch = createLaunch(launchStartRq, parameters);
+
+		FinishExecutionRQ launchFinishRq = standardLaunchFinishRequest();
+		launchFinishRq.setDescription(description);
+
+		launch.start();
+		launch.finish(launchFinishRq);
+
+		ArgumentCaptor<StartLaunchRQ> launchStartCaptor = ArgumentCaptor.forClass(StartLaunchRQ.class);
+		verify(rpClient, timeout(1000)).startLaunch(launchStartCaptor.capture());
+		String launchStartDescription = launchStartCaptor.getValue().getDescription();
+		assertThat(
+				launchStartDescription,
+				allOf(hasLength(LaunchImpl.MAX_LAUNCH_DESCRIPTION_LENGTH), endsWith("..."), containsString(REPLACEMENT_CHARACTER))
+		);
+		assertThat(launchStartDescription, not(containsString("\u0001")));
+
+		ArgumentCaptor<FinishExecutionRQ> launchFinishCaptor = ArgumentCaptor.forClass(FinishExecutionRQ.class);
+		verify(rpClient, timeout(1000)).finishLaunch(anyString(), launchFinishCaptor.capture());
+		String launchFinishDescription = launchFinishCaptor.getValue().getDescription();
+		assertThat(
+				launchFinishDescription,
+				allOf(hasLength(LaunchImpl.MAX_LAUNCH_DESCRIPTION_LENGTH), endsWith("..."), containsString(REPLACEMENT_CHARACTER))
+		);
+		assertThat(launchFinishDescription, not(containsString("\u0001")));
+	}
+
+	@Test
+	public void launch_should_replace_binary_symbols_in_item_start_name() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+
+		Launch launch = createLaunch();
+		StartTestItemRQ itemRq = standardStartSuiteRequest();
+		itemRq.setName("suite\u0000name\u0001value");
+
+		launch.start();
+		launch.startTestItem(itemRq);
+
+		ArgumentCaptor<StartTestItemRQ> itemStartCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(rpClient, timeout(1000)).startTestItem(itemStartCaptor.capture());
+		assertThat(itemStartCaptor.getValue().getName(), equalTo("suite\uFFFDname\uFFFDvalue"));
+	}
+
+	@Test
+	public void launch_should_replace_binary_symbols_in_launch_and_item_attributes() {
+		simulateStartLaunchResponse(rpClient);
+		simulateStartTestItemResponse(rpClient);
+		simulateFinishTestItemResponse(rpClient);
+		simulateBatchLogResponse(rpClient);
+		simulateFinishLaunchResponse(rpClient);
+
+		ListenerParameters parameters = standardParameters();
+		Set<ItemAttributesRQ> attributes = Collections.singleton(new ItemAttributesRQ("k\u0000ey", "v\u0001alue"));
+		parameters.setAttributes(attributes);
+		Launch launch = createLaunch(parameters);
+
+		StartTestItemRQ suiteStartRq = standardStartSuiteRequest();
+		suiteStartRq.setAttributes(attributes);
+		FinishTestItemRQ suiteFinishRq = positiveFinishRequest();
+		suiteFinishRq.setAttributes(attributes);
+		FinishExecutionRQ launchFinishRq = standardLaunchFinishRequest();
+		launchFinishRq.setAttributes(attributes);
+
+		launch.start();
+		Maybe<String> suiteRs = launch.startTestItem(suiteStartRq);
+		launch.finishTestItem(suiteRs, suiteFinishRq);
+		launch.finish(launchFinishRq);
+
+		ArgumentCaptor<StartLaunchRQ> launchStartCaptor = ArgumentCaptor.forClass(StartLaunchRQ.class);
+		verify(rpClient, timeout(1000)).startLaunch(launchStartCaptor.capture());
+		verify_attribute_binary_symbol_replacement(launchStartCaptor.getValue().getAttributes());
+
+		ArgumentCaptor<StartTestItemRQ> suiteStartCaptor = ArgumentCaptor.forClass(StartTestItemRQ.class);
+		verify(rpClient, timeout(1000)).startTestItem(suiteStartCaptor.capture());
+		verify_attribute_binary_symbol_replacement(suiteStartCaptor.getValue().getAttributes());
+
+		ArgumentCaptor<FinishTestItemRQ> suiteFinishCaptor = ArgumentCaptor.forClass(FinishTestItemRQ.class);
+		verify(rpClient, timeout(1000)).finishTestItem(anyString(), suiteFinishCaptor.capture());
+		verify_attribute_binary_symbol_replacement(suiteFinishCaptor.getValue().getAttributes());
+
+		ArgumentCaptor<FinishExecutionRQ> launchFinishCaptor = ArgumentCaptor.forClass(FinishExecutionRQ.class);
+		verify(rpClient, timeout(1000)).finishLaunch(anyString(), launchFinishCaptor.capture());
+		verify_attribute_binary_symbol_replacement(launchFinishCaptor.getValue().getAttributes());
 	}
 
 	@Test

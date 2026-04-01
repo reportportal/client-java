@@ -63,7 +63,7 @@ import java.util.stream.Stream;
 
 import static com.epam.reportportal.service.logs.LaunchLoggingCallback.LOG_ERROR;
 import static com.epam.reportportal.service.logs.LaunchLoggingCallback.LOG_SUCCESS;
-import static com.epam.reportportal.utils.BasicUtils.compareSemanticVersions;
+import static com.epam.reportportal.utils.BasicUtils.*;
 import static com.epam.reportportal.utils.ObjectUtils.clonePojo;
 import static com.epam.reportportal.utils.ParameterUtils.NULL_VALUE;
 import static com.epam.reportportal.utils.SubscriptionUtils.*;
@@ -83,6 +83,10 @@ public class LaunchImpl extends Launch {
 	public static final String DISABLE_PROPERTY = "AGENT_NO_ANALYTICS";
 
 	public static final String MICROSECONDS_MIN_VERSION = "5.13.2";
+
+	public static final int MAX_LAUNCH_NAME_LENGTH = 256;
+	public static final int MAX_LAUNCH_DESCRIPTION_LENGTH = 2048;
+	public static final int MAX_DESCRIPTION_LENGTH = 65536;
 
 	private static final Map<ExecutorService, Scheduler> SCHEDULERS = new ConcurrentHashMap<>();
 
@@ -198,7 +202,9 @@ public class LaunchImpl extends Launch {
 		scheduler = createScheduler(executor);
 		statisticsService = new StatisticsService(parameters);
 		startRq = rq;
+		truncateName(startRq, MAX_LAUNCH_NAME_LENGTH);
 		truncateAttributes(startRq);
+		truncateDescription(startRq);
 
 		LOGGER.info("Rerun: {}", parameters.isRerun());
 
@@ -351,13 +357,56 @@ public class LaunchImpl extends Launch {
 		return templateConfiguration;
 	}
 
-	private void truncateName(@Nonnull final StartTestItemRQ rq) {
-		if (!getParameters().isTruncateFields() || rq.getName() == null || rq.getName().isEmpty()) {
+	private void truncateName(@Nonnull final StartRQ rq, int limit) {
+		if (rq.getName() == null || rq.getName().isEmpty()) {
 			return;
 		}
+
 		String name = rq.getName();
 		ListenerParameters params = getParameters();
-		rq.setName(BasicUtils.truncateString(name, params.getTruncateItemNamesLimit(), params.getTruncateReplacement()));
+		if (params.isReplaceBinaryCharacters()) {
+			name = cleanBinaryCharacters(name);
+			rq.setName(name);
+		}
+
+		if (!params.isTruncateFields()) {
+			return;
+		}
+		rq.setName(truncateString(name, limit, params.getTruncateReplacement()));
+	}
+
+	@Nullable
+	private String truncateDescription(@Nullable String description, int maxLength) {
+		if (description == null || description.isEmpty()) {
+			return description;
+		}
+
+		ListenerParameters params = getParameters();
+		String myDescription = description;
+		if (params.isReplaceBinaryCharacters()) {
+			myDescription = cleanBinaryCharacters(myDescription);
+		}
+
+		if (!params.isTruncateFields()) {
+			return myDescription;
+		}
+		return truncateString(myDescription, maxLength, params.getTruncateReplacement());
+	}
+
+	private void truncateDescription(@Nonnull StartLaunchRQ rq) {
+		rq.setDescription(truncateDescription(rq.getDescription(), MAX_LAUNCH_DESCRIPTION_LENGTH));
+	}
+
+	private void truncateDescription(@Nonnull StartTestItemRQ rq) {
+		rq.setDescription(truncateDescription(rq.getDescription(), MAX_DESCRIPTION_LENGTH));
+	}
+
+	private void truncateDescription(@Nonnull FinishExecutionRQ rq) {
+		rq.setDescription(truncateDescription(rq.getDescription(), MAX_LAUNCH_DESCRIPTION_LENGTH));
+	}
+
+	private void truncateDescription(@Nonnull FinishTestItemRQ rq) {
+		rq.setDescription(truncateDescription(rq.getDescription(), MAX_DESCRIPTION_LENGTH));
 	}
 
 	private void applyNameFormat(@Nonnull StartTestItemRQ rq) {
@@ -388,7 +437,7 @@ public class LaunchImpl extends Launch {
 
 	@Nullable
 	private Set<ItemAttributesRQ> truncateAttributes(@Nullable final Set<ItemAttributesRQ> attributes) {
-		if (!getParameters().isTruncateFields() || attributes == null || attributes.isEmpty()) {
+		if (attributes == null || attributes.isEmpty()) {
 			return attributes;
 		}
 
@@ -399,6 +448,16 @@ public class LaunchImpl extends Launch {
 					.sorted(Comparator.comparing(ItemAttributeResource::getKey))
 					.limit(numberLimit)
 					.collect(Collectors.toSet());
+		}
+
+		if (getParameters().isReplaceBinaryCharacters()) {
+			myAttributes = myAttributes.stream()
+					.map(a -> new ItemAttributesRQ(cleanBinaryCharacters(a.getKey()), cleanBinaryCharacters(a.getValue()), a.isSystem()))
+					.collect(Collectors.toSet());
+		}
+
+		if (!getParameters().isTruncateFields()) {
+			return myAttributes;
 		}
 
 		int lengthLimit = getParameters().getAttributeLengthLimit();
@@ -431,6 +490,23 @@ public class LaunchImpl extends Launch {
 
 	private void truncateAttributes(@Nonnull final FinishExecutionRQ rq) {
 		rq.setAttributes(truncateAttributes(rq.getAttributes()));
+	}
+
+	private void truncateParameters(@Nonnull final StartTestItemRQ rq) {
+		List<ParameterResource> myParameters = rq.getParameters();
+		if (myParameters == null || myParameters.isEmpty()) {
+			return;
+		}
+
+		if (getParameters().isReplaceBinaryCharacters()) {
+			myParameters = myParameters.stream().map(a -> {
+				ParameterResource newParam = new ParameterResource();
+				newParam.setKey(cleanBinaryCharacters(a.getKey()));
+				newParam.setValue(cleanBinaryCharacters(a.getValue()));
+				return newParam;
+			}).collect(Collectors.toList());
+		}
+		rq.setParameters(myParameters);
 	}
 
 	@Nullable
@@ -606,6 +682,7 @@ public class LaunchImpl extends Launch {
 			FinishExecutionRQ rq = clonePojo(request, FinishExecutionRQ.class);
 			rq.setEndTime(convertIfNecessary(rq.getEndTime()));
 			truncateAttributes(rq);
+			truncateDescription(rq);
 			Maybe<OperationCompletionRS> launchCompletable = getLaunch().flatMap(id -> getClient().finishLaunch(id, rq)
 					.retry(DEFAULT_REQUEST_RETRY)
 					.doOnSuccess(LOG_SUCCESS)
@@ -634,10 +711,13 @@ public class LaunchImpl extends Launch {
 	private StartTestItemRQ applyRequestModifications(StartTestItemRQ request) {
 		StartTestItemRQ rq = clonePojo(request, StartTestItemRQ.class);
 		rq.setStartTime(convertIfNecessary(rq.getStartTime()));
-		truncateName(rq); // Truncate before templating to not allow too long names to be passed to Template engine
+		int nameLimit = getParameters().getTruncateItemNamesLimit();
+		truncateName(rq, nameLimit); // Truncate before templating to not allow too long names to be passed to Template engine
+		truncateDescription(request);
 		applyNameFormat(rq);
-		truncateName(rq); // Truncate after templating to not allow too long names to be posted
+		truncateName(rq, nameLimit); // Truncate after templating to not allow too long names to be posted
 		truncateAttributes(rq);
+		truncateParameters(rq);
 		return rq;
 	}
 
@@ -935,6 +1015,7 @@ public class LaunchImpl extends Launch {
 		FinishTestItemRQ rq = clonePojo(request, FinishTestItemRQ.class);
 		rq.setEndTime(convertIfNecessary(rq.getEndTime()));
 		truncateAttributes(rq);
+		truncateDescription(rq);
 
 		//noinspection ReactiveStreamsUnusedPublisher
 		getStepReporter().finishPreviousStep(ofNullable(rq.getStatus()).map(ItemStatus::valueOf).orElse(null));
