@@ -358,14 +358,17 @@ public class LaunchImpl extends Launch {
 	}
 
 	private void truncateName(@Nonnull final StartRQ rq, int limit) {
-		if (rq.getName() == null || rq.getName().isEmpty()) {
+		String name = rq.getName();
+		if (name == null || name.isEmpty()) {
 			return;
 		}
 
-		String name = rq.getName();
 		ListenerParameters params = getParameters();
 		if (params.isReplaceBinaryCharacters()) {
 			name = cleanBinaryCharacters(name);
+			if (name == null || name.isEmpty()) {
+				return;
+			}
 			rq.setName(name);
 		}
 
@@ -385,6 +388,9 @@ public class LaunchImpl extends Launch {
 		String myDescription = description;
 		if (params.isReplaceBinaryCharacters()) {
 			myDescription = cleanBinaryCharacters(myDescription);
+			if (myDescription == null || myDescription.isEmpty()) {
+				return description;
+			}
 		}
 
 		if (!params.isTruncateFields()) {
