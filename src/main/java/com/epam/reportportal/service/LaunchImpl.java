@@ -357,62 +357,45 @@ public class LaunchImpl extends Launch {
 		return templateConfiguration;
 	}
 
-	private void truncateName(@Nonnull final StartRQ rq, int limit) {
-		String name = rq.getName();
-		if (name == null || name.isEmpty()) {
-			return;
+	@Nullable
+	private String sanitizeField(@Nullable final String field, int limit) {
+		if (field == null || field.isEmpty()) {
+			return field;
 		}
 
 		ListenerParameters params = getParameters();
+		String myField = field;
 		if (params.isReplaceBinaryCharacters()) {
-			name = cleanBinaryCharacters(name);
-			if (name == null || name.isEmpty()) {
-				return;
+			myField = cleanBinaryCharacters(field);
+			if (myField == null || myField.isEmpty()) {
+				return field;
 			}
-			rq.setName(name);
 		}
 
 		if (!params.isTruncateFields()) {
-			return;
+			return myField;
 		}
-		rq.setName(truncateString(name, limit, params.getTruncateReplacement()));
+		return truncateString(myField, limit, params.getTruncateReplacement());
 	}
 
-	@Nullable
-	private String truncateDescription(@Nullable String description, int maxLength) {
-		if (description == null || description.isEmpty()) {
-			return description;
-		}
-
-		ListenerParameters params = getParameters();
-		String myDescription = description;
-		if (params.isReplaceBinaryCharacters()) {
-			myDescription = cleanBinaryCharacters(myDescription);
-			if (myDescription == null || myDescription.isEmpty()) {
-				return description;
-			}
-		}
-
-		if (!params.isTruncateFields()) {
-			return myDescription;
-		}
-		return truncateString(myDescription, maxLength, params.getTruncateReplacement());
+	private void truncateName(@Nonnull final StartRQ rq, int limit) {
+		rq.setName(sanitizeField(rq.getName(), limit));
 	}
 
 	private void truncateDescription(@Nonnull StartLaunchRQ rq) {
-		rq.setDescription(truncateDescription(rq.getDescription(), MAX_LAUNCH_DESCRIPTION_LENGTH));
+		rq.setDescription(sanitizeField(rq.getDescription(), MAX_LAUNCH_DESCRIPTION_LENGTH));
 	}
 
 	private void truncateDescription(@Nonnull StartTestItemRQ rq) {
-		rq.setDescription(truncateDescription(rq.getDescription(), MAX_DESCRIPTION_LENGTH));
+		rq.setDescription(sanitizeField(rq.getDescription(), MAX_DESCRIPTION_LENGTH));
 	}
 
 	private void truncateDescription(@Nonnull FinishExecutionRQ rq) {
-		rq.setDescription(truncateDescription(rq.getDescription(), MAX_LAUNCH_DESCRIPTION_LENGTH));
+		rq.setDescription(sanitizeField(rq.getDescription(), MAX_LAUNCH_DESCRIPTION_LENGTH));
 	}
 
 	private void truncateDescription(@Nonnull FinishTestItemRQ rq) {
-		rq.setDescription(truncateDescription(rq.getDescription(), MAX_DESCRIPTION_LENGTH));
+		rq.setDescription(sanitizeField(rq.getDescription(), MAX_DESCRIPTION_LENGTH));
 	}
 
 	private void applyNameFormat(@Nonnull StartTestItemRQ rq) {
