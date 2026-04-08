@@ -635,10 +635,16 @@ public class LaunchImpl extends Launch {
 		if (logEmitter.hasComplete()) {
 			return;
 		}
-		// To ensure we sent all logs post one message (for the case when there were no logs at all) and wait for it to be sent
-		// Use blocking get, since we are at the end of the flow and Maybe.map(..) will be stopped by system exit
-		String launchUUID = getLaunch().blockingGet();
+		String launchUUID;
+		try {
+			// Use blocking get, since we are at the end of the flow and Maybe.map(..) will be stopped by system exit
+			launchUUID = getLaunch().blockingGet();
+		} catch (Throwable e) {
+			LOGGER.error("Unable to finish the Launch", e);
+			return; // Nothing to finish, we are unable to even start the Launch
+		}
 		int logBatchesSent = loggingSubscriber.getProcessedCount();
+		// To ensure we sent all logs post one message (for the case when there were no logs at all) and wait for it to be sent
 		emitLog(StaticStructuresUtils.getLastLogRQ(launchUUID));
 		logEmitter.onComplete();
 		Waiter waiter = new Waiter("Wait for last log batch sent").duration(getParameters().getReportingTimeout(), TimeUnit.SECONDS)

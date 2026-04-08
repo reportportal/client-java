@@ -64,6 +64,7 @@ import java.util.stream.Stream;
 
 import static com.epam.reportportal.test.TestUtils.*;
 import static com.epam.reportportal.util.test.CommonUtils.shutdownExecutorService;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.endsWith;
@@ -661,6 +662,16 @@ public class LaunchTest {
 
 		verify(rpClient, times(2)).startTestItem(any());
 		verify(rpClient, times(1)).finishTestItem(same(id.blockingGet()), any());
+	}
+
+	@Test
+	public void launch_should_not_throw_exception_if_launch_start_failed_on_finish() {
+		when(rpClient.startLaunch(any(StartLaunchRQ.class))).thenReturn(Maybe.error(new IllegalStateException("Unable to start launch")));
+		Launch launch = createLaunch();
+		launch.start();
+
+		assertDoesNotThrow(() -> launch.finish(standardLaunchFinishRequest()));
+		verify(rpClient, never()).log(anyList());
 	}
 
 	@Test
