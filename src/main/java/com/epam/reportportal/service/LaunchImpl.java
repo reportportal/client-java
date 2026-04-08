@@ -357,56 +357,45 @@ public class LaunchImpl extends Launch {
 		return templateConfiguration;
 	}
 
-	private void truncateName(@Nonnull final StartRQ rq, int limit) {
-		if (rq.getName() == null || rq.getName().isEmpty()) {
-			return;
+	@Nullable
+	private String sanitizeField(@Nullable final String field, int limit) {
+		if (field == null || field.isEmpty()) {
+			return field;
 		}
 
-		String name = rq.getName();
 		ListenerParameters params = getParameters();
+		String myField = field;
 		if (params.isReplaceBinaryCharacters()) {
-			name = cleanBinaryCharacters(name);
-			rq.setName(name);
+			myField = cleanBinaryCharacters(field);
+			if (myField == null || myField.isEmpty()) {
+				return field;
+			}
 		}
 
 		if (!params.isTruncateFields()) {
-			return;
+			return myField;
 		}
-		rq.setName(truncateString(name, limit, params.getTruncateReplacement()));
+		return truncateString(myField, limit, params.getTruncateReplacement());
 	}
 
-	@Nullable
-	private String truncateDescription(@Nullable String description, int maxLength) {
-		if (description == null || description.isEmpty()) {
-			return description;
-		}
-
-		ListenerParameters params = getParameters();
-		String myDescription = description;
-		if (params.isReplaceBinaryCharacters()) {
-			myDescription = cleanBinaryCharacters(myDescription);
-		}
-
-		if (!params.isTruncateFields()) {
-			return myDescription;
-		}
-		return truncateString(myDescription, maxLength, params.getTruncateReplacement());
+	private void truncateName(@Nonnull final StartRQ rq, int limit) {
+		rq.setName(sanitizeField(rq.getName(), limit));
 	}
 
 	private void truncateDescription(@Nonnull StartLaunchRQ rq) {
-		rq.setDescription(truncateDescription(rq.getDescription(), MAX_LAUNCH_DESCRIPTION_LENGTH));
+		rq.setDescription(sanitizeField(rq.getDescription(), MAX_LAUNCH_DESCRIPTION_LENGTH));
 	}
 
 	private void truncateDescription(@Nonnull StartTestItemRQ rq) {
-		rq.setDescription(truncateDescription(rq.getDescription(), MAX_DESCRIPTION_LENGTH));
+		rq.setDescription(sanitizeField(rq.getDescription(), MAX_DESCRIPTION_LENGTH));
 	}
 
 	private void truncateDescription(@Nonnull FinishExecutionRQ rq) {
-		rq.setDescription(truncateDescription(rq.getDescription(), MAX_LAUNCH_DESCRIPTION_LENGTH));
+		rq.setDescription(sanitizeField(rq.getDescription(), MAX_LAUNCH_DESCRIPTION_LENGTH));
 	}
 
 	private void truncateDescription(@Nonnull FinishTestItemRQ rq) {
-		rq.setDescription(truncateDescription(rq.getDescription(), MAX_DESCRIPTION_LENGTH));
+		rq.setDescription(sanitizeField(rq.getDescription(), MAX_DESCRIPTION_LENGTH));
 	}
 
 	private void applyNameFormat(@Nonnull StartTestItemRQ rq) {
@@ -646,10 +635,16 @@ public class LaunchImpl extends Launch {
 		if (logEmitter.hasComplete()) {
 			return;
 		}
-		// To ensure we sent all logs post one message (for the case when there were no logs at all) and wait for it to be sent
-		// Use blocking get, since we are at the end of the flow and Maybe.map(..) will be stopped by system exit
-		String launchUUID = getLaunch().blockingGet();
+		String launchUUID;
+		try {
+			// Use blocking get, since we are at the end of the flow and Maybe.map(..) will be stopped by system exit
+			launchUUID = getLaunch().blockingGet();
+		} catch (Throwable e) {
+			LOGGER.error("Unable to finish the Launch", e);
+			return; // Nothing to finish, we are unable to even start the Launch
+		}
 		int logBatchesSent = loggingSubscriber.getProcessedCount();
+		// To ensure we sent all logs post one message (for the case when there were no logs at all) and wait for it to be sent
 		emitLog(StaticStructuresUtils.getLastLogRQ(launchUUID));
 		logEmitter.onComplete();
 		Waiter waiter = new Waiter("Wait for last log batch sent").duration(getParameters().getReportingTimeout(), TimeUnit.SECONDS)

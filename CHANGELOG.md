@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Fixed
+- Issue [#319](https://github.com/reportportal/client-java/issues/319): RP client threw exception on Launch finish if the Launch wasn't started, by @HardNorth
 
 ## [5.4.12]
 ### Added
