@@ -19,12 +19,14 @@ package com.epam.reportportal.utils.formatting.templating;
 import com.epam.reportportal.annotations.Step;
 import com.epam.reportportal.utils.ParameterUtils;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -52,14 +54,20 @@ public class TemplateProcessingTest {
 		assertThat(replacement, equalTo(expected));
 	}
 
-	public static Object[][] data() {
-		return new Object[][] { { "someObject.outerName", "outer" }, { "someObject.innerName", "inner" },
-				{ "someObject.innerStrings", "[firstInner, secondInner, thirdInner]" }, { "someObject", "INNER" },
-				{ "someObject.outers", "[OUTER]" },
-				{ "someObject.outers.outerStrings", "[[{first, second, third}, {fourth, fifth, sixth}]]" },
-				{ "someObject.outers.outerName", "[outer]" }, { "someObject.innerNullString", ParameterUtils.NULL_VALUE },
-				{ "someObject.innerNullList", ParameterUtils.NULL_VALUE }, { "someObject.toString()", "INNER" },
-				{ "someObject.echo(\"test\")", "someObject.echo(\"test\")" } };
+	public static Stream<Arguments> data() {
+		return Stream.of(
+				Arguments.of("someObject.outerName", "outer"),
+				Arguments.of("someObject.innerName", "inner"),
+				Arguments.of("someObject.innerStrings", "[firstInner, secondInner, thirdInner]"),
+				Arguments.of("someObject", "INNER"),
+				Arguments.of("someObject.outers", "[OUTER]"),
+				Arguments.of("someObject.outers.outerStrings", "[[{first, second, third}, {fourth, fifth, sixth}]]"),
+				Arguments.of("someObject.outers.outerName", "[outer]"),
+				Arguments.of("someObject.innerNullString", ParameterUtils.NULL_VALUE),
+				Arguments.of("someObject.innerNullList", ParameterUtils.NULL_VALUE),
+				Arguments.of("someObject.toString()", "INNER"),
+				Arguments.of("someObject.echo(\"test\")", "someObject.echo(\"test\")")
+		);
 	}
 
 	private Outer.Inner createInnerObject() {
