@@ -226,3 +226,321 @@ way to configure proxies, since it supports different proxy types. You can find 
 
 If you need to set up just a simple HTTP proxy you can use `reportportal.properties` file. `rp.http.proxy` parameter
 accepts HTTP proxy URL. This parameter can override JVM proxy arguments, so watch your back.
+
+## Client usage
+
+### When to use the client
+
+This library is **not** an end-to-end integration with a test framework. If you use a common framework (JUnit 4/5, TestNG, Cucumber, etc.) prefer one of the ready-made **agents** which handle the full lifecycle for you. You can find the full list of supported Java agents by searching for the `agent-java-` prefix on our GitHub organization page: <https://github.com/reportportal?q=agent-java-&type=all>.
+
+Use the Client directly only if:
+* you need to report data from a **custom** or a **rare** test framework which is not covered by an existing agent;
+* you are **extending** an existing agent and need to send extra items, logs or attachments;
+* you are writing an auxiliary listener (for example, a browser / WebDriver / HTTP step logger) which runs together
+  with an already running agent.
+
+There are two typical ways to work with the client:
+
+1. **Simplified access** — reuse a `Launch` instance that is already created and managed by an agent. This is the way
+   to go for listeners, loggers and custom steps running inside a test which is already reported by an agent.
+2. **Direct instantiation** — build a `ReportPortal` object, start a `Launch` from scratch, and drive the whole
+   reporting lifecycle yourself. This is what you need when you integrate a custom or exotic framework.
+
+### Simplified usage: reuse the Launch created by an agent
+
+When a ReportPortal agent is active, it stores the current `Launch` instance in a thread-local-like holder. You can
+retrieve it from anywhere in your code via the static method `Launch.currentLaunch()`:
+
+```java
+import com.epam.reportportal.service.Launch;
+
+Launch launch = Launch.currentLaunch();
+if (launch == null || launch == Launch.NOOP_LAUNCH) {
+    return; // no active ReportPortal agent, nothing to do
+}
+```
+
+The `NOOP_LAUNCH` check is important: when ReportPortal is disabled (for example, via `rp.enable=false` or because of a
+misconfiguration), the agent installs a no-op instance instead of throwing an exception. Your listener must gracefully
+skip reporting in such case.
+
+Once you have a `Launch`, you can:
+
+* inspect runtime configuration via `launch.getParameters()` (returns `ListenerParameters`);
+* access the low-level REST client via `launch.getClient()` (returns `ReportPortalClient`);
+* obtain the current Launch UUID via `launch.getLaunch()` (returns `Maybe<String>`);
+* reuse the current-item stack via `launch.getStepReporter()` (returns `StepReporter`);
+* start / finish nested items on the current item via `launch.startTestItem(...)` / `launch.finishTestItem(...)`;
+* send logs via `ReportPortal.emitLog(...)`.
+
+#### Example 1. Reporting the current Launch URL
+
+Useful in a CI log, typically called from an `@AfterClass` / `@AfterSuite` hook:
+
+```java
+import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.Launch;
+
+import static java.util.Optional.ofNullable;
+
+Launch launch = ofNullable(Launch.currentLaunch())
+        .filter(l -> l != Launch.NOOP_LAUNCH)
+        .orElseThrow(() -> new IllegalStateException("Launch not found"));
+
+ListenerParameters parameters = launch.getParameters();
+String launchUuid = launch.getLaunch().blockingGet();
+String baseUrl = parameters.getBaseUrl();
+baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+LOGGER.info("Launch URL: {}/ui/#{}/launches/all/{}", baseUrl, parameters.getProjectName(), launchUuid);
+```
+
+#### Example 2. Resolving numeric Launch ID via the REST client
+
+`launch.getClient()` exposes the same Retrofit-based REST client that the agent uses internally, so you can call any
+ReportPortal API method without creating another HTTP client:
+
+```java
+ofNullable(Launch.currentLaunch()).ifPresent(l -> {
+    String launchUuid = l.getLaunch().blockingGet();
+    LaunchResource info = l.getClient().getLaunchByUuid(launchUuid).blockingGet();
+    LOGGER.info("Launch ID: {}", info != null ? info.getLaunchId() : null);
+});
+```
+
+> **Note:** REST calls may throw `retrofit2.HttpException` if the launch is not yet visible on the server side in async
+> mode. Wrap such calls in a small retry loop if you depend on their result.
+
+#### Example 3. Reporting custom steps and attachments from a listener
+
+The `StepReporter` obtained via `launch.getStepReporter()` maintains its own stack of "virtual" steps which are nested
+inside the current test item of the agent. It is the recommended entry point for any custom step / log / screenshot
+reporting — for instance, a Selenide, Selenium, REST Assured or HTTP client listener:
+
+```java
+import com.epam.reportportal.listeners.ItemStatus;
+import com.epam.reportportal.listeners.LogLevel;
+import com.epam.reportportal.message.ReportPortalMessage;
+import com.epam.reportportal.service.Launch;
+import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.utils.files.ByteSource;
+
+import java.time.Instant;
+
+public void beforeEvent(String stepName) {
+    ofNullable(Launch.currentLaunch())
+            .ifPresent(l -> l.getStepReporter().sendStep(ItemStatus.INFO, stepName));
+}
+
+public void afterEvent(boolean passed, byte[] screenshotPng) {
+    ofNullable(Launch.currentLaunch()).ifPresent(l -> {
+        if (!passed) {
+            ReportPortal.emitLog(
+                    new ReportPortalMessage(ByteSource.wrap(screenshotPng), "image/png", "Screenshot"),
+                    LogLevel.ERROR.name(),
+                    Instant.now());
+            l.getStepReporter().finishPreviousStep(ItemStatus.FAILED);
+        } else {
+            l.getStepReporter().finishPreviousStep();
+        }
+    });
+}
+```
+
+Key points of the `StepReporter` API:
+
+* `sendStep(ItemStatus, String)` — starts and immediately schedules to finish a virtual step with the given status;
+* `finishPreviousStep()` / `finishPreviousStep(ItemStatus)` — closes the previous virtual step, optionally overriding
+  its status (useful when the step outcome becomes known only after the next event arrives);
+* `ReportPortal.emitLog(...)` — sends a log / attachment for the **currently active** test item, whether it is a
+  "real" agent item or a virtual step. Use it for screenshots, page sources, request / response dumps, etc.
+
+Because `currentLaunch()` works across threads, the same listener can be plugged into any framework without knowing
+which agent is running underneath, as long as that agent uses this client library (which all official
+`agent-java-*` integrations do).
+
+### Direct usage: instantiate the client from scratch
+
+If you are writing a custom framework integration, you need to build the client yourself and drive the launch
+lifecycle end-to-end. The canonical recipe is used by every official agent (see
+[`agent-java-junit5`](https://github.com/reportportal/agent-java-junit5/blob/develop/src/main/java/com/epam/reportportal/junit5/ReportPortalExtension.java)
+and
+[`agent-java-testNG`](https://github.com/reportportal/agent-java-testNG/blob/develop/src/main/java/com/epam/reportportal/testng/TestNGService.java)).
+
+#### Step 1. Build a `ReportPortal` instance
+
+`ReportPortal.builder().build()` reads all `rp.*` parameters from the sources described above (JVM args, environment
+variables, `reportportal.properties`). You usually create a **single shared** instance per JVM:
+
+```java
+import com.epam.reportportal.service.ReportPortal;
+
+public static final ReportPortal REPORT_PORTAL = ReportPortal.builder().build();
+```
+
+The builder accepts optional overrides if you need them:
+
+```java
+import com.epam.reportportal.listeners.ListenerParameters;
+import com.epam.reportportal.service.ReportPortal;
+import okhttp3.OkHttpClient;
+
+import java.util.concurrent.Executors;
+
+ListenerParameters params = new ListenerParameters();
+params.setBaseUrl("https://reportportal.example.com/");
+params.setApiKey("YOUR-API-KEY");
+params.setProjectName("my-project");
+params.setLaunchName("My Custom Launch");
+params.setEnable(true);
+
+ReportPortal rp = ReportPortal.builder()
+        .withParameters(params)
+        .withHttpClient(new OkHttpClient.Builder())
+        .withExecutorService(Executors.newFixedThreadPool(4))
+        .build();
+```
+
+If you already have a fully configured low-level `ReportPortalClient` (for example, when you write tests for the
+client itself), use the static factory methods `ReportPortal.create(client, params)` instead of the builder.
+
+#### Step 2. Start a `Launch`
+
+A `Launch` object is a reactive wrapper around the REST API which batches requests, retries failures and finishes
+in the correct order:
+
+```java
+import com.epam.reportportal.service.Launch;
+import com.epam.ta.reportportal.ws.model.launch.StartLaunchRQ;
+import io.reactivex.Maybe;
+
+import java.time.Instant;
+
+ListenerParameters params = rp.getParameters();
+
+StartLaunchRQ startRq = new StartLaunchRQ();
+startRq.setName(params.getLaunchName());
+startRq.setDescription(params.getDescription());
+startRq.setStartTime(Instant.now());
+startRq.setMode(params.getLaunchRunningMode());
+startRq.setAttributes(params.getAttributes());
+startRq.setRerun(params.isRerun());
+if (params.getRerunOf() != null && !params.getRerunOf().isBlank()) {
+    startRq.setRerunOf(params.getRerunOf());
+}
+
+Launch launch = rp.newLaunch(startRq);
+Maybe<String> launchId = launch.start(); // returns a promise; the request is sent asynchronously
+```
+
+> **Tip:** Always register a JVM shutdown hook to finish the launch even when the process is terminated abnormally.
+> Agents do it like this:
+>
+> ```java
+> Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+>     FinishExecutionRQ finishRq = new FinishExecutionRQ();
+>     finishRq.setEndTime(Instant.now());
+>     launch.finish(finishRq);
+> }));
+> ```
+
+If you want to **report into an existing launch** (for example, a launch started by a primary process in a
+multi-module build), use `ReportPortal.withLaunch(Maybe<String> launchUuid)` instead of `newLaunch(...)`. Do not call
+`launch.start()` in that case, and do not send `finish` either — the primary process owns the lifecycle.
+
+#### Step 3. Start and finish test items
+
+Test items form a tree: suites contain tests, tests contain steps, steps may contain nested steps. Each call returns
+a `Maybe<String>` promise with the item UUID which you pass to children and to the finish request:
+
+```java
+import com.epam.reportportal.listeners.ItemStatus;
+import com.epam.ta.reportportal.ws.model.FinishTestItemRQ;
+import com.epam.ta.reportportal.ws.model.StartTestItemRQ;
+import io.reactivex.Maybe;
+
+StartTestItemRQ suiteRq = new StartTestItemRQ();
+suiteRq.setName("My Suite");
+suiteRq.setType("SUITE");
+suiteRq.setStartTime(Instant.now());
+Maybe<String> suiteId = launch.startTestItem(suiteRq);
+
+StartTestItemRQ stepRq = new StartTestItemRQ();
+stepRq.setName("My first test");
+stepRq.setType("STEP");
+stepRq.setCodeRef("com.example.MyTest.firstTest");
+stepRq.setStartTime(Instant.now());
+Maybe<String> stepId = launch.startTestItem(suiteId, stepRq);
+
+// ... run the test, report logs, attachments, nested steps ...
+
+FinishTestItemRQ finishStep = new FinishTestItemRQ();
+finishStep.setStatus(ItemStatus.PASSED.name());
+finishStep.setEndTime(Instant.now());
+launch.finishTestItem(stepId, finishStep);
+
+FinishTestItemRQ finishSuite = new FinishTestItemRQ();
+finishSuite.setEndTime(Instant.now());
+launch.finishTestItem(suiteId, finishSuite);
+```
+
+Allowed item types: `SUITE`, `STORY`, `TEST`, `SCENARIO`, `STEP`, `BEFORE_CLASS`, `BEFORE_GROUPS`, `BEFORE_METHOD`,
+`BEFORE_SUITE`, `BEFORE_TEST`, `AFTER_CLASS`, `AFTER_GROUPS`, `AFTER_METHOD`, `AFTER_SUITE`, `AFTER_TEST`.
+
+Item statuses are values of the `com.epam.reportportal.listeners.ItemStatus` enum: `PASSED`, `FAILED`, `SKIPPED`,
+`STOPPED`, `INTERRUPTED`, `CANCELLED`, `INFO`, `WARN`.
+
+#### Step 4. Send logs and attachments
+
+Logs are attached to the currently active item (determined automatically from the thread that emits them):
+
+```java
+import com.epam.reportportal.listeners.LogLevel;
+import com.epam.reportportal.message.ReportPortalMessage;
+import com.epam.reportportal.service.ReportPortal;
+import com.epam.reportportal.utils.files.ByteSource;
+
+import java.time.Instant;
+
+ReportPortal.emitLog("My test started", LogLevel.INFO.name(), Instant.now());
+
+byte[] screenshotPng = takeScreenshot();
+ReportPortal.emitLog(
+        new ReportPortalMessage(ByteSource.wrap(screenshotPng), "image/png", "Screenshot on failure"),
+        LogLevel.ERROR.name(),
+        Instant.now());
+```
+
+To log stack traces from caught exceptions use the helper `ReportPortal.sendStackTraceToRP(throwable)`.
+
+#### Step 5. Finish the launch
+
+Always call `launch.finish(...)` after the last item is finished — it flushes pending batches, waits for in-flight
+requests and releases resources:
+
+```java
+import com.epam.ta.reportportal.ws.model.FinishExecutionRQ;
+
+FinishExecutionRQ finishRq = new FinishExecutionRQ();
+finishRq.setEndTime(Instant.now());
+launch.finish(finishRq);
+```
+
+#### Threading and asynchrony notes
+
+* All `startTestItem` / `finishTestItem` / `log` / `emitLog` calls are **non-blocking** — they return immediately and
+  schedule the actual HTTP request on the internal `RxJava` scheduler. This means exceptions from the server do not
+  propagate back to your code; instead they are logged at `WARN` / `ERROR` level, in accordance with the rules
+  described in `AGENTS.md`. Do not call `blockingGet()` on the returned `Maybe` in hot paths.
+* `ReportPortal.emitLog(...)` picks the currently active item from the calling thread. If you emit logs from a worker
+  thread that was not spawned by the agent, make sure the parent item is still open at that moment.
+* When `rp.reporting.async` is `false`, requests are still asynchronous on the client side but are issued
+  synchronously on the server — useful for tests of the client itself.
+* If you need to correlate multiple independent processes into the same launch, enable the multi-process join
+  parameters (see the **Multi-process join parameters** section above) — no extra code changes are required.
+
+For more elaborate, production-grade examples study the source code of the official agents — they are the best
+reference for edge cases (retries, reruns, callback reporting, test item tree tracking, etc.):
+
+* [`agent-java-junit5` — ReportPortalExtension](https://github.com/reportportal/agent-java-junit5/blob/develop/src/main/java/com/epam/reportportal/junit5/ReportPortalExtension.java)
+* [`agent-java-testNG` — TestNGService](https://github.com/reportportal/agent-java-testNG/blob/develop/src/main/java/com/epam/reportportal/testng/TestNGService.java)
+* [`logger-java-selenide` — listener that reuses the current `Launch`](https://github.com/reportportal/logger-java-selenide/blob/master/src/main/java/com/epam/reportportal/selenide/ReportPortalSelenideEventListener.java)
