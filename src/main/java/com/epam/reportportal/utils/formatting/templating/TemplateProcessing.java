@@ -40,7 +40,7 @@ public class TemplateProcessing {
 
 	public static final String NULL_VALUE = "NULL";
 
-	private static final Pattern TEMPLATE_GROUP = Pattern.compile("\\{([\\w$]+(\\.[\\w$]+)*)}");
+	private static final Pattern TEMPLATE_GROUP = Pattern.compile("\\{([\\w$]+(\\.[\\w$]+)*)\\}");
 
 	private TemplateProcessing() {
 		throw new IllegalStateException("Static only class");
