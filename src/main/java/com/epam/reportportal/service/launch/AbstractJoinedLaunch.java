@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class AbstractJoinedLaunch extends LaunchImpl {
 	final LaunchIdLock lock;
 	volatile String uuid;
+	private static final Random random = new Random();
 	private static final AtomicLong THREAD_COUNTER = new AtomicLong();
 	private static final ThreadFactory THREAD_FACTORY = r -> {
 		Thread t = new Thread(r);
@@ -45,8 +46,7 @@ public class AbstractJoinedLaunch extends LaunchImpl {
 
 	private static ScheduledFuture<?> getUpdateTask(String instanceUuid, long updateInterval, LaunchIdLock launchIdLock,
 			ScheduledExecutorService service) {
-		Random r = new Random();
-		int delay = updateInterval > Integer.MAX_VALUE ? r.nextInt(Integer.MAX_VALUE) : r.nextInt((int) updateInterval);
+		int delay = updateInterval > Integer.MAX_VALUE ? random.nextInt(Integer.MAX_VALUE) : random.nextInt((int) updateInterval);
 		return service.scheduleWithFixedDelay(
 				() -> launchIdLock.updateInstanceUuid(instanceUuid),
 				delay,
