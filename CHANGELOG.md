@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [5.4.15]
 ### Fixed
 - Issue [#322](https://github.com/reportportal/client-java/issues/322): PatternSyntaxException on Android: unescaped '}' in TemplateProcessing regex, by @blundell
 
