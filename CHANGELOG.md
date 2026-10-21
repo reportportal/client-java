@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Jackson version updated to `2.22.3` to address vulnerabilities, by @HardNorth
 
 ## [5.4.15]
 ### Fixed
